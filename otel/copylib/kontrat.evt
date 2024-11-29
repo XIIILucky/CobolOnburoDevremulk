@@ -1,0 +1,867 @@
+* kontrat.evt
+* kontrat.evt is generated from D:\asya\acugt.ytl\otel\kontrat.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     move tarih-tasi    to baslangic-tarihi bitis-tarihi.
+*
+ Form1-Aft-Initdata.
+     initialize i
+     open input konum
+     initialize konum-rec
+     start konum key not < konum-anahtar invalid
+           continue
+     not invalid
+     perform  with test after until fs-konum = "10"
+           read konum next no lock end move "10" to fs-konum
+           not at end
+                if konum-anahtar > 0 and konum-anahtar not > 9
+                   move konum-adi    to konumlar-adi(konum-anahtar)
+                   move "E"          to konumlar-eh(konum-anahtar)
+                end-if
+           end-read
+     end-perform
+     close konum.
+       
+     display accept-00,accept-01,accept-02,accept-03
+     accept-04,accept-04,accept-05, accept-06,accept-07
+     accept-08.
+
+     perform grid-yukle.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ grid-yukle.
+     open input kllnc 
+     initialize kllnc-rec 
+     move k-kodu-tasi to k-kodu
+     read kllnc no lock invalid 
+         continue 
+     end-read 
+     close kllnc 
+     modify form1-gd-1,
+            reset-grid  = 1
+            mass-update = 1
+
+     move " "             to gd-1-col-1
+     move "Bas.Tarih"     to gd-1-col-2
+     move "Bit.Tarih"     to gd-1-col-3
+     move "Kont.Tip"      to gd-1-col-14
+     move "Bekleme"        to gd-1-col-4
+     move konumlar-adi(1) to gd-1-col-5
+     move konumlar-adi(2) to gd-1-col-6
+     move konumlar-adi(3) to gd-1-col-7
+     move konumlar-adi(4) to gd-1-col-8
+     move konumlar-adi(5) to gd-1-col-9
+     move konumlar-adi(6) to gd-1-col-10
+     move konumlar-adi(7) to gd-1-col-11
+     move konumlar-adi(8) to gd-1-col-12
+     move konumlar-adi(9) to gd-1-col-13
+     modify form1-gd-1,
+            record-to-add(form1-gd-1-record)
+
+     open i-o kontrat.
+     initialize kontrat-rec
+     move acc-acenta-kodu  to kontrat-acenta
+     start kontrat key not < kontrat-anah invalid
+           continue
+     not invalid
+     initialize fs-kontrat
+     perform with test after until fs-kontrat = "10"
+           read kontrat next no lock end move "10" to fs-kontrat
+           not at end
+                if kontrat-acenta = acc-acenta-kodu
+                   and (k-tfiyat-bas-tar <= kontrat-son-tarih and 
+                        k-tfiyat-bit-tar >= kontrat-ilk-tarih ) then
+
+
+                   initialize form1-gd-1-record
+                   move kontrat-ilk-yil       to eyil
+                   move kontrat-ilk-ay        to eay
+                   move kontrat-ilk-gun       to egun
+                   move etarih                to gd-1-col-2
+                   move kontrat-son-yil       to eyil
+                   move kontrat-son-ay        to eay
+                   move kontrat-son-gun       to egun
+                   move etarih                to gd-1-col-3
+                   move kontrat-bekle-gunu    to gd-1-col-4
+                   evaluate kontrat-tipi
+                        when 1 move "Single"  to gd-1-col-14
+                        when 2 move "Double"  to gd-1-col-14
+                        when 3 move "Triple"  to gd-1-col-14
+                        when 4 move "Group"   to gd-1-col-14
+                        when other move all "*" to gd-1-col-14
+                   end-evaluate
+                   move kontrat-oda(1)        to gd-1-col-5
+                   move kontrat-oda(2)        to gd-1-col-6
+                   move kontrat-oda(3)        to gd-1-col-7
+                   move kontrat-oda(4)        to gd-1-col-8
+                   move kontrat-oda(5)        to gd-1-col-9
+                   move kontrat-oda(6)        to gd-1-col-10
+                   move kontrat-oda(7)        to gd-1-col-11
+                   move kontrat-oda(8)        to gd-1-col-12
+                   move kontrat-oda(9)        to gd-1-col-13
+                   modify form1-gd-1,
+                          record-to-add(form1-gd-1-record)
+                else
+                   move "10" to fs-kontrat
+                end-if
+           end-read
+     end-perform
+     end-start
+     initialize form1-gd-1-record
+     close kontrat.
+     modify form1-gd-1,
+            mass-update = 0.
+
+     move msg-goto-cell to event-type
+     perform Form1-Gd-1-Ev-Other.
+
+    .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+        when msg-begin-entry
+             move event-action-fail to event-action
+             inquire form1-gd-1,
+                     record-data in form1-gd-1-record
+             perform giris-yap
+             move gd-1-col-2(1:2)   to bas-gun
+             move gd-1-col-2(4:2)   to bas-ay
+             move gd-1-col-2(7:4)   to bas-yil
+             move gd-1-col-3(1:2)   to bit-gun
+             move gd-1-col-3(4:2)   to bit-ay
+             move gd-1-col-3(7:4)   to bit-yil
+             perform Form1-Ef-2aaa-Aft-Procedure
+             display form1-ef-2 form1-ef-2a form1-ef-2aa
+             form1-ef-2b form1-ef-2ab form1-ef-2aaa
+             exit paragraph
+        when msg-goto-cell
+        when msg-goto-cell-mouse
+        when msg-begin-drag
+        when msg-end-drag
+        when msg-goto-cell-drag
+              inquire form1-gd-1, y in yeni-y
+              if yeni-y < 2 
+                 move 2 to yeni-y eski-y
+              end-if
+              if eski-y > zeroes
+                modify form1-gd-1(eski-y),
+                       x = 1
+                       row-color = 0
+                       cell-color = 0
+                       cell-data = " "
+              end-if
+              modify form1-gd-1,
+                     y = yeni-y,
+                     x = 1,
+                     row-color = 128
+                     cell-color = 128
+                     cell-data = "*"
+              move yeni-y to eski-y
+
+     end-evaluate.
+     
+     .
+*
+ Form1-Ef-2aaa-Aft-Procedure.
+     open input takvim.
+     move bas-gun     to takvim-gun
+     move bas-ay      to takvim-ay
+     move bas-yil     to takvim-yil
+     read takvim no lock invalid
+          display omitted beep
+          move 4 to accept-control
+          move 11 to control-id
+          close takvim
+          initialize mesaj-link
+          move 13 to mesaj-no
+          perform mesaj-ver
+          exit paragraph
+     end-read
+
+     move bit-gun     to takvim-gun
+     move bit-ay      to takvim-ay
+     move bit-yil     to takvim-yil
+     read takvim no lock invalid
+          display omitted beep
+          move 4 to accept-control
+          move 14 to control-id
+          close takvim
+          initialize mesaj-link
+          move 13 to mesaj-no
+          perform mesaj-ver
+          exit paragraph
+     end-read
+     close takvim.
+     
+     if baslangic-tarihi > bitis-tarihi 
+        display omitted beep
+        move 4 to accept-control
+        move 11 to control-id
+        initialize mesaj-link
+        move 14 to mesaj-no
+        perform mesaj-ver
+        exit paragraph
+     end-if.
+
+     perform  acc-acenta-Aft-Procedure
+     if gec-gecme = 1 
+        move 4 to accept-control
+        move 6 to control-id
+        exit paragraph
+     end-if
+
+     initialize kayit-durum.
+
+     open input kontrat.
+*/ SINGLE.
+     move acc-acenta-kodu         to kontrat-acenta
+     move baslangic-tarihi        to kontrat-ilk-tarih
+     move bitis-tarihi            to kontrat-son-tarih
+     move 1                       to kontrat-tipi
+     read kontrat no lock invalid
+          initialize kontrat-rec
+     not invalid
+          add 1 to kayit-durum
+     end-read
+     perform varying i from 1 by 1 until i > 9
+             move kontrat-oda(i)   to s(i)
+     end-perform
+     move kontrat-bekle-gunu      to bekle(1)
+*/ DOUBLE 
+     move acc-acenta-kodu         to kontrat-acenta
+     move baslangic-tarihi        to kontrat-ilk-tarih
+     move bitis-tarihi            to kontrat-son-tarih
+     move 2                       to kontrat-tipi
+     read kontrat no lock invalid
+          initialize kontrat-rec
+     not invalid
+          add 1 to kayit-durum
+     end-read
+     perform varying i from 1 by 1 until i > 9
+             move kontrat-oda(i)   to d(i)
+     end-perform
+     move kontrat-bekle-gunu      to bekle(2)
+
+*/ TRIPLE 
+     move acc-acenta-kodu         to kontrat-acenta
+     move baslangic-tarihi        to kontrat-ilk-tarih
+     move bitis-tarihi            to kontrat-son-tarih
+     move 3                       to kontrat-tipi
+     read kontrat no lock invalid
+          initialize kontrat-rec
+     not invalid
+          add 1 to kayit-durum
+     end-read
+     perform varying i from 1 by 1 until i > 9
+             move kontrat-oda(i)   to t(i)
+     end-perform
+     move kontrat-bekle-gunu      to bekle(3)
+
+*/ GROUP 
+     move acc-acenta-kodu         to kontrat-acenta
+     move baslangic-tarihi        to kontrat-ilk-tarih
+     move bitis-tarihi            to kontrat-son-tarih
+     move 4                       to kontrat-tipi
+     read kontrat no lock invalid
+          initialize kontrat-rec
+     not invalid
+          add 1 to kayit-durum
+     end-read
+     perform varying i from 1 by 1 until i > 9
+             move kontrat-oda(i)   to g(i)
+     end-perform
+     move kontrat-bekle-gunu      to bekle(4)
+
+
+     close kontrat.
+
+*/ eger kontratta yoksa ama aralikta bir deger veriliyorsa 
+*/ acenhrk'den kayit kontrolu yapiliyor .....
+     if kayit-durum = 0 
+        open input acenhrk
+        initialize acenhrk-rec
+        move acc-acenta-kodu         to acenhrk-acenta
+        move baslangic-tarihi        to acenhrk-tarih
+        start acenhrk key not < acenhrk-anah invalid
+              continue
+        not invalid
+        perform with test after until fs-acenhrk = "10"
+        read acenhrk next no lock end move "10" to fs-acenhrk
+        not at end
+             if acenhrk-acenta not = acc-acenta-kodu
+                exit perform
+             end-if
+             if acenhrk-tarih > bitis-tarihi
+                continue 
+             else  
+                if acenhrk-tarih not < baslangic-tarihi
+                   and acenhrk-kontrat-oda > zeroes
+                   add 1 to kayit-durum
+                   exit perform
+                end-if
+             end-if
+        end-read
+        end-perform
+        end-start
+        close acenhrk
+***** yýldýzlanacak yer
+        if kayit-durum > zeroes
+           initialize mesaj-link
+           move 11 to mesaj-no
+           perform mesaj-ver
+           move 4 to accept-control
+           move 11 to control-id
+           exit paragraph
+        end-if
+****** yildizlanacak
+
+     end-if.
+     modify acc-acenta,enabled = 0
+     modify form1-ef-2,enabled = 0
+     modify form1-ef-2a,enabled = 0
+     modify form1-ef-2aa,enabled = 0
+     modify form1-ef-2aaa,enabled = 0
+     modify form1-ef-2ab,enabled = 0
+     modify form1-ef-2b,enabled = 0
+
+     modify accept-bekle1,enabled = true
+     modify accept-bekle2,enabled = true
+     modify accept-bekle3,enabled = true
+     modify accept-bekle4,enabled = true
+     
+     initialize konum1-enabled konum2-enabled konum3-enabled
+     konum4-enabled konum5-enabled konum6-enabled konum7-enabled
+     konum8-enabled konum9-enabled.
+     if konumlar-eh(1) = "E" move 1 to konum1-enabled end-if.
+     if konumlar-eh(2) = "E" move 1 to konum2-enabled end-if
+     if konumlar-eh(3) = "E" move 1 to konum3-enabled end-if
+     if konumlar-eh(4) = "E" move 1 to konum4-enabled end-if
+     if konumlar-eh(5) = "E" move 1 to konum5-enabled end-if
+     if konumlar-eh(6) = "E" move 1 to konum6-enabled end-if
+     if konumlar-eh(7) = "E" move 1 to konum7-enabled end-if
+     if konumlar-eh(8) = "E" move 1 to konum8-enabled end-if
+     if konumlar-eh(9) = "E" move 1 to konum9-enabled end-if.
+
+     perform accept-goster.
+
+     modify button-01,enabled = true
+     modify button-02,enabled = true
+     modify button-04,enabled = true.
+
+
+ accept-goster.
+     display 
+     accept-11 accept-12 accept-13 accept-14 accept-15
+     accept-16 accept-17 accept-18 accept-19
+     accept-21 accept-22 accept-23 accept-24 accept-25
+     accept-26 accept-27 accept-28 accept-29
+     accept-31 accept-32 accept-33 accept-34 accept-35
+     accept-36 accept-37 accept-38 accept-39
+     accept-41 accept-42 accept-43 accept-44 accept-45
+     accept-46 accept-47 accept-48 accept-49
+     accept-bekle1 accept-bekle2 accept-bekle3 accept-bekle4.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+         when 17 
+             move kontrat-dosya         to link-logview-dosya-adi
+             set link-logview-pointer  to address of kontrat-rec
+             set link-logview-rec-size to size of kontrat-rec
+             perform logview-call
+             initialize key-status
+
+          when 1 
+              if 
+              (control-id = 6 or 79)
+              initialize acenta-cagir
+              call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+              on exception 
+                 perform callerr-proc
+              not on exception
+              cancel "/asya/ytl/obj/otel/acenara.asy"
+              end-call
+              if acenta-cagir <> spaces
+                 move acenta-cagir   to acc-acenta-kodu
+                 display acc-acenta
+              end-if
+              move 4 to accept-control
+              move 6 to control-id
+              exit paragraph
+              end-if
+          when 2
+               if control-id < 17 or control-id = 5 or control-id = 72
+                  exit paragraph
+               end-if
+               perform kaydet
+          when 3
+               if control-id < 17 or control-id = 5 or control-id = 72
+                  exit paragraph
+               end-if
+               move control-id to yedek-id
+               perform sil
+               move 4 to accept-control
+               move yedek-id to control-id
+          when 4
+               perform rapor
+          when 5
+               if control-id < 17 or control-id = 5 or control-id = 72
+                  exit paragraph
+               end-if
+               initialize mesaj-link
+               move 12 to mesaj-no
+               perform mesaj-ver
+               if mesaj-evet 
+                  perform tum-sil
+                  perform giris-yap
+               end-if
+          when 6
+               perform giris-yap
+     end-evaluate.
+ kaydet.
+     open input acenta
+     move acc-acenta-kodu to acenta-kodu
+     read acenta no lock invalid
+          display omitted beep
+          move 4 to accept-control
+          move 4 to control-id
+          close acenta
+          exit paragraph
+     end-read
+     close acenta.
+     open i-o kontrat acenhrk.
+     open input takvim.
+
+*/SINGLE
+     initialize kontrat-rec
+     move acc-acenta-kodu        to kontrat-acenta
+     move baslangic-tarihi       to kontrat-ilk-tarih
+     move bitis-tarihi           to kontrat-son-tarih
+     move 1                      to kontrat-tipi
+*/ eger single icin bir sey girilmediyse 
+*/ ve bilgiler elle sifirlandiysa acenhrk ve kontrattan bilgiler siliniyor
+     if s(1) = 0 and s(2) = 0 and s(3) = 0 and s(4) = 0 and s(5) = 0
+        and s(6) = 0 and s(7) = 0 and s(8) = 0 and s(9) = 0
+        delete kontrat invalid continue 
+        end-delete
+            perform log-operation-kontrat
+        move 1 to tip
+        perform acenhrk-sil
+     else
+        perform varying i from 1 by 1 until i > 9
+                move s(i)      to kontrat-oda(i)
+        end-perform
+        move bekle(1)          to kontrat-bekle-gunu
+        move k-kodu-tasi       to kontrat-staf
+        write kontrat-rec invalid
+              rewrite kontrat-rec end-rewrite
+        end-write
+            perform log-operation-kontrat
+        move 1 to tip
+        perform acenhrk-yaz
+     end-if.
+
+*/DOUBLE
+     initialize kontrat-rec
+     move acc-acenta-kodu        to kontrat-acenta
+     move baslangic-tarihi       to kontrat-ilk-tarih
+     move bitis-tarihi           to kontrat-son-tarih
+     move 2                      to kontrat-tipi
+*/ eger double icin bir sey girilmediyse 
+*/ ve bilgiler elle sifirlandiysa acenhrk ve kontrattan bilgiler siliniyor
+     if d(1) = 0 and d(2) = 0 and d(3) = 0 and d(4) = 0 and d(5) = 0
+        and d(6) = 0 and d(7) = 0 and d(8) = 0 and d(9) = 0
+        delete kontrat invalid continue 
+        end-delete
+            perform log-operation-kontrat
+        move 2 to tip
+        perform acenhrk-sil
+     else
+        perform varying i from 1 by 1 until i > 9
+                move d(i)      to kontrat-oda(i)
+        end-perform
+        move bekle(2)          to kontrat-bekle-gunu
+        move k-kodu-tasi       to kontrat-staf
+        write kontrat-rec invalid
+              rewrite kontrat-rec end-rewrite
+        end-write
+            perform log-operation-kontrat
+        move 2 to tip
+        perform acenhrk-yaz
+     end-if.
+
+*/TRIPLE
+     initialize kontrat-rec
+     move acc-acenta-kodu        to kontrat-acenta
+     move baslangic-tarihi       to kontrat-ilk-tarih
+     move bitis-tarihi           to kontrat-son-tarih
+     move 3                      to kontrat-tipi
+*/ eger triple icin bir sey girilmediyse 
+*/ ve bilgiler elle sifirlandiysa acenhrk ve kontrattan bilgiler siliniyor
+     if t(1) = 0 and t(2) = 0 and t(3) = 0 and t(4) = 0 and t(5) = 0
+        and t(6) = 0 and t(7) = 0 and t(8) = 0 and t(9) = 0
+        delete kontrat invalid continue 
+        end-delete
+            perform log-operation-kontrat
+        move 3 to tip
+        perform acenhrk-sil
+     else
+        perform varying i from 1 by 1 until i > 9
+                move t(i)      to kontrat-oda(i)
+        end-perform
+        move bekle(3)          to kontrat-bekle-gunu
+        move k-kodu-tasi       to kontrat-staf
+        write kontrat-rec invalid
+              rewrite kontrat-rec end-rewrite
+        end-write
+            perform log-operation-kontrat
+        move 3 to tip
+        perform acenhrk-yaz
+     end-if.
+
+*/GROUP 
+     initialize kontrat-rec
+     move acc-acenta-kodu        to kontrat-acenta
+     move baslangic-tarihi       to kontrat-ilk-tarih
+     move bitis-tarihi           to kontrat-son-tarih
+     move 4                      to kontrat-tipi
+*/ eger group  icin bir sey girilmediyse 
+*/ ve bilgiler elle sifirlandiysa acenhrk ve kontrattan bilgiler siliniyor
+     if g(1) = 0 and g(2) = 0 and g(3) = 0 and g(4) = 0 and g(5) = 0
+        and g(6) = 0 and g(7) = 0 and g(8) = 0 and g(9) = 0
+        delete kontrat invalid continue 
+        end-delete
+            perform log-operation-kontrat
+        move 4 to tip
+        perform acenhrk-sil
+     else
+        perform varying i from 1 by 1 until i > 9
+                move g(i)      to kontrat-oda(i)
+        end-perform
+        move bekle(4)          to kontrat-bekle-gunu
+        move k-kodu-tasi       to kontrat-staf
+        write kontrat-rec invalid
+              rewrite kontrat-rec end-rewrite
+        end-write
+            perform log-operation-kontrat
+        move 4 to tip
+        perform acenhrk-yaz
+     end-if.
+     close takvim.
+     close kontrat acenhrk.
+     perform grid-yukle.
+     perform giris-yap.
+
+ giris-yap.
+     perform sifirla.
+     modify acc-acenta,   enabled = 1
+     modify form1-ef-2,   enabled = 1
+     modify form1-ef-2a,  enabled = 1
+     modify form1-ef-2aa, enabled = 1
+     modify form1-ef-2aaa,enabled = 1
+     modify form1-ef-2ab, enabled = 1
+     modify form1-ef-2b,  enabled = 1
+
+     modify accept-bekle1,enabled = false
+     modify accept-bekle2,enabled = false
+     modify accept-bekle3,enabled = false
+     modify accept-bekle4,enabled = false
+     
+     initialize konum1-enabled konum2-enabled konum3-enabled
+     konum4-enabled konum5-enabled konum6-enabled konum7-enabled
+     konum8-enabled konum9-enabled.
+
+     perform accept-goster.
+     move 4 to accept-control
+     move 4 to control-id.
+
+ sil.
+     open input acenta
+     move acc-acenta-kodu       to acenta-kodu
+     read acenta no lock invalid
+          display omitted beep
+          move 4 to accept-control
+          move 4 to control-id
+          close acenta
+          exit paragraph
+     end-read
+     close acenta.
+
+     perform acu-form2-routine.
+ rapor.
+ acenhrk-sil.
+     move baslangic-tarihi     to takvim-anah
+     start takvim key not < takvim-anah invalid
+           exit paragraph.
+     perform with test after until fs-takvim = "10"
+           read takvim next no lock end move "10" to fs-takvim
+           not at end
+                if takvim-anah > bitis-tarihi 
+                   exit perform
+                end-if
+                perform varying ii from 1 by 1 until ii > 9
+                        move acc-acenta-kodu       to acenhrk-acenta
+                        move takvim-anah           to acenhrk-tarih
+                        move tip                   to acenhrk-s-d-t-g
+                        move ii                    to acenhrk-oda-konumu
+                        delete acenhrk invalid continue end-delete
+                end-perform
+           end-read
+     end-perform.
+*
+ tum-sil.
+     open input acenta
+     move acc-acenta-kodu       to acenta-kodu
+     read acenta no lock invalid
+          display omitted beep
+          move 4 to accept-control
+          move 4 to control-id
+          close acenta
+          exit paragraph
+     end-read
+     close acenta.
+
+
+     open i-o kontrat acenhrk.
+     open input takvim
+     perform varying i from 1 by 1 until i > 4
+             initialize kontrat-rec
+             move acc-acenta-kodu           to kontrat-acenta
+             move baslangic-tarihi          to kontrat-ilk-tarih
+             move bitis-tarihi              to kontrat-son-tarih
+             move i                         to kontrat-tipi
+             delete kontrat invalid continue 
+             end-delete
+                 perform log-operation-kontrat
+             move i                         to tip
+             perform acenhrk-sil
+     end-perform.
+     close takvim kontrat acenhrk.
+
+     perform grid-yukle.
+     
+     .
+ acenhrk-yaz.
+     move baslangic-tarihi    to takvim-anah
+     start takvim key not < takvim-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-takvim = "10"
+           read takvim next no lock end move "10" to fs-takvim
+           not at end
+                if takvim-anah > bitis-tarihi
+                   exit perform
+                end-if
+                perform varying i from 1 by 1 until i > 9
+                        initialize acenhrk-rec
+                        move acc-acenta-kodu           to acenhrk-acenta
+                        move takvim-anah               to acenhrk-tarih
+                        move tip                       to acenhrk-s-d-t-g
+                        move i                         to acenhrk-oda-konumu
+                        read acenhrk no lock invalid continue end-read
+                        evaluate tip
+                             when 1 move s(i)    to acenhrk-kontrat-oda
+                                    compute acenhrk-kontrat-buyuk = 
+                                            acenhrk-kontrat-oda * 1
+                             when 2 move d(i)    to acenhrk-kontrat-oda
+                                    compute acenhrk-kontrat-buyuk = 
+                                            acenhrk-kontrat-oda * 2
+                             when 3 move t(i)    to acenhrk-kontrat-oda
+                                    compute acenhrk-kontrat-buyuk = 
+                                            acenhrk-kontrat-oda * 3
+                             when 4 move g(i)    to acenhrk-kontrat-oda
+                                    compute acenhrk-kontrat-buyuk = 
+                                            acenhrk-kontrat-oda * 4
+                        end-evaluate
+                        write acenhrk-rec invalid
+                              rewrite acenhrk-rec end-rewrite
+                        end-write
+                end-perform
+           end-read
+     end-perform
+     end-start.
+
+ sifirla.
+     perform varying i from 1 by 1 until i > 9
+             initialize s(i) d(i) t(i) g(i)
+     end-perform.
+     initialize bekle(1) bekle(2) bekle(3) bekle(4).
+*
+ Form2-Ex-Other.
+     evaluate key-status
+           when 1001
+                initialize tip
+                inquire radio-1,value in tip
+                if tip = 1 continue
+                else
+                   inquire radio-2,value in tip
+                   if tip = 2 continue
+                   else
+                      inquire radio-3,value in tip
+                      if tip = 3 continue
+                      else
+                         inquire radio-4,value in tip
+                      end-if
+                   end-if
+                end-if
+                open input takvim
+                open i-o acenhrk kontrat
+                initialize kontrat-rec
+                move acc-acenta-kodu         to kontrat-acenta
+                move baslangic-tarihi        to kontrat-ilk-tarih
+                move bitis-tarihi            to kontrat-son-tarih
+                move tip                     to kontrat-tipi
+                delete kontrat invalid continue 
+                end-delete
+                    perform log-operation-kontrat
+                evaluate tip
+                      when 1 
+                           initialize s(1) s(2) s(3) s(4) s(5) s(6) s(7) s(8) s(9)
+                           display accept-11 accept-12 accept-13 accept-14 accept-15
+                                   accept-16 accept-17 accept-18 accept-19
+                      when 2
+                           initialize d(1) d(2) d(3) d(4) d(5) d(6) d(7) d(8) d(9)
+                           display accept-21 accept-22 accept-23 accept-24 accept-25
+                                   accept-26 accept-27 accept-28 accept-29
+                      when 3
+                           initialize t(1) t(2) t(3) t(4) t(5) t(6) t(7) t(8) t(9)
+                           display accept-31 accept-32 accept-33 accept-34 accept-35
+                                   accept-36 accept-37 accept-38 accept-39
+                      when 4
+                           initialize g(1) g(2) g(3) g(4) g(5) g(6) g(7) g(8) g(9)
+                           display accept-41 accept-42 accept-43 accept-44 accept-45
+                                   accept-46 accept-47 accept-48 accept-49
+                end-evaluate
+                perform acenhrk-sil
+                close takvim acenhrk kontrat
+                move 27 to key-status
+                perform grid-yukle
+     end-evaluate.
+     
+     .
+ bef-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 4
+              evaluate true
+                  when turkce
+                       move "Acenta Kodunu Seciniz ..." to  mesaj
+                  when ingilizce
+                       move "Acenta Kodunu Seciniz ..." to  mesaj
+                  when almanca
+                       move "Acenta Kodunu Seciniz ..." to  mesaj
+              end-evaluate
+          when 8
+          when 12
+          when 13
+              evaluate true
+                  when turkce
+                       move "Kontrat Baslangic Tarihini Giriniz ... " to mesaj
+                  when ingilizce
+                       move "Kontrat Baslangic Tarihini Giriniz ... " to mesaj
+                  when almanca
+                       move "Kontrat Baslangic Tarihini Giriniz ... " to mesaj
+              end-evaluate
+          when 14
+          when 15
+          when 16
+              evaluate true
+                  when turkce
+                       move "Kontrat Bitis Tarihini Giriniz ... " to mesaj
+                  when ingilizce
+                       move "Kontrat Bitis Tarihini Giriniz ... " to mesaj
+                  when almanca
+                       move "Kontrat Bitis Tarihini Giriniz ... " to mesaj
+              end-evaluate
+
+          when 32 thru 67
+              evaluate true
+                  when turkce
+                       move "Bu Oda Tipi ve Konumu Icin Kontrat Oda sayisini giriniz" to mesaj
+                  when ingilizce
+                       move "Bu Oda Tipi ve Konumu Icin Kontrat Oda sayisini giriniz" to mesaj
+                  when almanca
+                       move "Bu Oda Tipi ve Konumu Icin Kontrat Oda sayisini giriniz" to mesaj
+              end-evaluate
+          when 76
+          when 77
+          when 78
+              evaluate true
+                  when turkce
+                       move "Bekleme Gun Sayisini Giriniz" to mesaj
+                  when ingilizce
+                       move "Bekleme Gun Sayisini Giriniz" to mesaj
+                  when almanca
+                       move "Bekleme Gun Sayisini Giriniz" to mesaj
+              end-evaluate
+          when 68
+              evaluate true
+                  when turkce
+                       move "Satirlar Uzerine Cift tiklayarak kontrat bilgileri uzerinde silme ve duzeltme yapabilirsiniz" to mesaj
+                  when ingilizce
+                       move "Satirlar Uzerine Cift tiklayarak kontrat bilgileri uzerinde silme ve duzeltme yapabilirsiniz" to mesaj
+                  when almanca
+                       move "Satirlar Uzerine Cift tiklayarak kontrat bilgileri uzerinde silme ve duzeltme yapabilirsiniz" to mesaj
+              end-evaluate
+
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 1
+            panel-text = mesaj.
+*
+*
+ acc-acenta-Aft-Procedure.
+     initialize gec-gecme
+     open input acenta
+     move acc-acenta-kodu   to acenta-kodu
+     read acenta no lock invalid
+          move "Tanimsiz ..." to acenta-adi
+          move 1 to gec-gecme
+     end-read
+     close acenta.
+     display lb-acenta-adi.
+     if gec-gecme <> 1 
+        perform grid-yukle.
+     .
+*
+ acc-acenta-Bef-Procedure.
+     modify button-01,enabled = false
+     modify button-02,enabled = false
+     modify button-04,enabled = false.
+     perform bef-procedure.
+     .
+*
+ Form2-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+ 

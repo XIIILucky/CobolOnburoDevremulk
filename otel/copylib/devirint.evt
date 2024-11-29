@@ -1,0 +1,422 @@
+* devirint.evt
+* devirint.evt is generated from D:\asya\acugt.ytl\otel\devirint.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM exception-procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+       perform adresleri-tasi.
+       open i-o onkasa onkasar.
+       open input depkod takvim.
+        call "c$narg" using link-var.
+        if k-kodu-tasi = "ASYA" |and isyeri-adres-tasi(1:4) = "alex"
+            move 1 to vis-dene
+        end-if
+        .
+     
+*
+ before-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 4
+          when 5
+          when 6
+              evaluate true
+                  when turkce
+                       move "Devir Baslangic Tarihini Giriniz " to mesaj
+                  when ingilizce
+                       move "Devir Baslangic Tarihini Giriniz " to mesaj
+                  when almanca
+                       move "Devir Baslangic Tarihini Giriniz " to mesaj
+              end-evaluate
+          when 8
+          when 9
+          when 10
+              evaluate true
+                  when turkce
+                       move "Devir Bitis Tarihini Giriniz " to mesaj
+                  when ingilizce
+                       move "Devir Bitis Tarihini Giriniz " to mesaj
+                  when almanca
+                       move "Devir Bitis Tarihini Giriniz " to mesaj
+              end-evaluate
+          when 11
+              evaluate true
+                  when turkce
+                       move "Islemi Baslat  "   to mesaj
+                  when ingilizce
+                       move "Islemi Baslat  "   to mesaj
+                  when almanca
+                       move "Islemi Baslat  "   to mesaj
+              end-evaluate
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 1 
+            panel-text = mesaj.
+     .
+
+ dogrula.
+    initialize gec-gecme gidis-id
+    move rapor-bas-tarih  to takvim-anah
+    read takvim no lock invalid
+          move 1 to gec-gecme
+          initialize mesaj-link
+          move 13 to mesaj-no
+          perform mesaj-ver
+          move 4 to accept-control
+          move 6 to control-id gidis-id
+    not invalid
+        continue
+    end-read
+    move rapor-bit-tarih  to takvim-anah
+    read takvim no lock invalid
+          move 1 to gec-gecme
+          initialize mesaj-link
+          move 13 to mesaj-no
+          perform mesaj-ver
+          move 4  to accept-control
+          move 10 to control-id gidis-id
+    not invalid
+        continue
+    end-read
+    if rapor-bit-tarih < rapor-bas-tarih
+          move 1 to gec-gecme
+          initialize mesaj-link
+          move 14 to mesaj-no
+          perform mesaj-ver
+          move 4  to accept-control
+          move 10 to control-id gidis-id
+    end-if. 
+
+ Form1-Aft-Initdata.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid
+          initialize mesaj-link
+          move 03 to mesaj-no
+          perform mesaj-ver
+    not invalid
+        continue
+    end-read
+    close genel
+    move calis-gun   to rapor-bas-gun rapor-bit-gun
+    move calis-ay    to rapor-bas-ay  rapor-bit-ay
+    move calis-yil   to rapor-bas-yil rapor-bit-yil
+
+     display form1.
+     if link-var > 0 then 
+        move ilk-gelen to rapor-bas-tarih
+        move son-gelen to rapor-bit-tarih
+        display form1
+        perform devir-yap thru devir-yap-exit
+        set exit-pushed to true
+     end-if 
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+ exception-procedure.
+     evaluate key-status
+         when 2 
+              perform dogrula
+              if gec-gecme = 0
+                 perform devir-yap thru devir-yap-exit
+                 perform loga-yaz
+              else
+                  move 4         to accept-control
+                  move gidis-id  to control-id
+              end-if
+     end-evaluate.
+ devir-yap.
+ tarih-kontrol.
+    initialize degiskenler okuma-sayisi.
+    move rapor-bas-tarih to takvim-anah.
+    start takvim key not < takvim-anah 
+          invalid go son-1. 
+ tarih-oku.  
+    read takvim next no lock end 
+         go tarih-kontrol-exit. 
+    if fs-takvim = 99 go tarih-oku.  
+       if takvim-anah > rapor-bit-tarih
+          go tarih-kontrol-exit
+       end-if. 
+       add 1 to okuma-sayisi.
+     if okuma-sayisi = 1 go  devir-basla.
+    initialize onkasa-rec.
+    move takvim-anah   to onkasa-tarih.
+    move 888           to onkasa-dep.   
+    move bakiye-tl     to onkasa-tutar-tl.
+    move bakiye-dv     to onkasa-tutar-dv.
+    write onkasa-rec invalid 
+          rewrite onkasa-rec 
+          end-rewrite
+    end-write. 
+ devir-basla. 
+    initialize onkasa-rec degiskenler
+******** 888 dunden devir departmanidir..........
+    move takvim-anah   to onkasa-tarih.
+    move 888       to onkasa-dep.   
+    read  onkasa no lock invalid 
+          initialize onkasa-rec. 
+        move onkasa-tutar-tl    to borc-tutar-tl.
+        move onkasa-tutar-dv    to borc-tutar-dv.
+    initialize onkasa-rec.
+    move takvim-anah to onkasa-tarih.
+    start onkasa key not < onkasa-anah 
+          invalid go devir-bitti. 
+ devir-oku.   
+    read onkasa next no lock end go devir-bitti.
+    if fs-onkasa = 99 go devir-oku.
+    if onkasa-tarih > takvim-anah go devir-bitti.  
+    if onkasa-tarih = takvim-anah 
+       continue
+    else 
+       go devir-oku
+    end-if. 
+    if onkasa-dep   = 888 go devir-oku. 
+    if onkasa-dep   = 999 go devir-oku. 
+****if onkasa-tutar-tl = 0 and onkasa-tutar-dv = 0
+****   delete onkasa invalid continue
+       move onkasa-dep  to depkod-kodu. 
+            read depkod no lock invalid go devir-oku. 
+       if depkod-ba = "B" 
+          compute borc-tutar-tl = borc-tutar-tl + onkasa-tutar-tl
+          compute borc-tutar-dv = borc-tutar-dv + onkasa-tutar-dv.
+       if depkod-ba = "A" 
+          compute alac-tutar-tl = alac-tutar-tl + onkasa-tutar-tl
+          compute alac-tutar-dv = alac-tutar-dv + onkasa-tutar-dv.
+       go devir-oku.
+ devir-bitti. 
+    compute bakiye-tl  = borc-tutar-tl - alac-tutar-tl.
+    compute bakiye-dv  = borc-tutar-dv - alac-tutar-dv.
+******** 999 Yarina devir departmanidir..........
+         initialize onkasa-rec.
+    move takvim-anah to onkasa-tarih.
+    move 999       to onkasa-dep. 
+  
+    if bakiye-tl = 0 then move 0 to bakiye-dv end-if
+    move bakiye-tl      to onkasa-tutar-tl.
+    move bakiye-dv      to onkasa-tutar-dv.
+    write onkasa-rec invalid 
+          rewrite onkasa-rec 
+          end-rewrite
+    end-write.
+****move rapor-bit-tarih to onkasa-tarih.
+****move 888       to onkasa-dep.   
+****move bakiye-tl      to onkasa-tutar-tl.
+****move bakiye-dv      to onkasa-tutar-dv.
+****write onkasa-rec invalid rewrite onkasa-rec end-write. 
+            go tarih-oku.
+ tarih-kontrol-exit.
+      exit.  
+ krkrkrk.
+          display message box "Devir Yapildi...Islem Tamam.".
+          if onkpara-referans-var = 1
+             perform varying i from 1 by 1  until i=9 
+             perform devir-yap2 thru devir-yap-exit2
+             end-perform
+             
+          end-if
+          move 27 to key-status go devir-yap-exit.
+ son-1.
+          display message box "Devir Basarisiz.[ENTER].".
+
+ devir-yap-exit.
+      exit.
+*
+ Form1-Aft-Routine.
+    close takvim depkod onkasa onkasar.
+     .
+ devir-yap2.
+ tarih-kontrol2.
+    initialize degiskenler okuma-sayisi.
+    move rapor-bas-tarih to takvim-anah.
+    start takvim key not < takvim-anah 
+          invalid go son-12. 
+ tarih-oku2.  
+    read takvim next no lock end 
+         go tarih-kontrol-exit2. 
+    if fs-takvim = 99 go tarih-oku2.  
+       if takvim-anah > rapor-bit-tarih
+          go tarih-kontrol-exit2
+       end-if. 
+       add 1 to okuma-sayisi.
+     if okuma-sayisi = 1 go  devir-basla2.
+    initialize onkasar-rec.
+    move i to onkasar-ref
+    move takvim-anah   to onkasar-tarih.
+    move 888           to onkasar-dep.   
+    move bakiye-tl     to onkasar-tutar-tl.
+    move bakiye-dv     to onkasar-tutar-dv.
+
+    write onkasar-rec invalid 
+          rewrite onkasar-rec 
+          end-rewrite
+    end-write. 
+ devir-basla2. 
+    initialize onkasar-rec degiskenler
+******** 888 dunden devir departmanidir..........
+    move i to onkasar-ref
+    move takvim-anah   to onkasar-tarih.
+    move 888       to onkasar-dep.   
+    read  onkasar no lock invalid 
+          initialize onkasar-rec. 
+        move onkasar-tutar-tl    to borc-tutar-tl.
+        move onkasar-tutar-dv    to borc-tutar-dv.
+    initialize onkasar-rec.
+        move i to onkasar-ref
+    move takvim-anah to onkasar-tarih.
+    start onkasar key not < onkasar-anah 
+          invalid go devir-bitti2. 
+ devir-oku2.   
+    read onkasar next no lock end go devir-bitti2.
+    if fs-onkasar = 99 go devir-oku2.
+    if onkasar-tarih > takvim-anah or onkasar-ref not = i go devir-bitti2.  
+    if onkasar-tarih = takvim-anah and onkasar-ref = i
+       continue
+    else 
+       go devir-oku2
+    end-if. 
+    if onkasar-dep   = 888 go devir-oku2. 
+    if onkasar-dep   = 999 go devir-oku2. 
+****if onkasa-tutar-tl = 0 and onkasa-tutar-dv = 0
+****   delete onkasa invalid continue
+       move onkasar-dep  to depkod-kodu. 
+            read depkod no lock invalid go devir-oku2. 
+       if depkod-ba = "B" 
+          compute borc-tutar-tl = borc-tutar-tl + onkasar-tutar-tl
+          compute borc-tutar-dv = borc-tutar-dv + onkasar-tutar-dv.
+       if depkod-ba = "A" 
+          compute alac-tutar-tl = alac-tutar-tl + onkasar-tutar-tl
+          compute alac-tutar-dv = alac-tutar-dv + onkasar-tutar-dv.
+       go devir-oku2.
+ devir-bitti2. 
+    compute bakiye-tl  = borc-tutar-tl - alac-tutar-tl.
+    compute bakiye-dv  = borc-tutar-dv - alac-tutar-dv.
+******** 999 Yarina devir departmanidir..........
+         initialize onkasar-rec.
+             move i to onkasar-ref
+    move takvim-anah to onkasar-tarih.
+    move 999       to onkasar-dep.   
+    move bakiye-tl      to onkasar-tutar-tl.
+    move bakiye-dv      to onkasar-tutar-dv.
+
+    write onkasar-rec invalid 
+          rewrite onkasar-rec 
+          end-rewrite
+    end-write.
+****move rapor-bit-tarih to onkasa-tarih.
+****move 888             to onkasa-dep.   
+****move bakiye-tl       to onkasa-tutar-tl.
+****move bakiye-dv       to onkasa-tutar-dv.
+****write onkasa-rec invalid rewrite onkasa-rec end-write. 
+            go tarih-oku2.
+ tarih-kontrol-exit2.
+      exit.  
+ krkrkrk2.
+*         display message box "Devir Yapildi...Islem Tamam.".
+          move 27 to key-status go devir-yap-exit2.
+ son-12.
+          display message box "Devir Basarisiz.[ENTER].".
+
+ devir-yap-exit2.
+      exit.
+*
+ loga-yaz.
+********** PROGRAMA GIRIS LOGA GONDERILIYOR
+               initialize call-alan1
+                          call-alan2
+                          call-alan3
+                          call-alan4
+                          call-alan5
+                          call-alan6
+               perform log-no-al
+               move genelfis-log-no   to call-anah
+               move "Tarih: "         to call-alan1
+               move gun-tasi          to call-alan1(10:)
+               move "/"               to call-alan1(12:)
+               move ay-tasi           to call-alan1(13:)
+               move "/"               to call-alan1(15:)
+               move yil-tasi          to call-alan1(16:)
+               move "Tarihler Arasi Onkasa Devri Yapildi."    to call-alan2
+               move "Tarih Araligi:"      to call-alan3
+               move rapor-bas-gun     to call-alan3(16:)
+               move "/"               to call-alan3(18:)
+               move rapor-bas-ay      to call-alan3(19:)
+               move "/"               to call-alan3(21:)
+               move rapor-bas-yil     to call-alan3(22:)
+               move "<->"             to call-alan3(26:)
+
+               move rapor-bit-gun     to call-alan3(29:)
+               move "/"               to call-alan3(31:)
+               move rapor-bit-ay      to call-alan3(32:)
+               move "/"               to call-alan3(34:)
+               move rapor-bit-yil     to call-alan3(35:)
+
+               perform log-operation-calling               
+     .
+*
+ Form1-Pb-2-Link.
+*      stop " "
+      initialize xrez-rec
+      move "FIYATHESAP"            to islem-tipi
+*      move "12345678"                  to kolayrezdys-bilgi-rezno
+*      move "https://reservations.ams3.digitaloceanspaces.com/pdfs/133/6cd85ad5-de52-47ed-adef-a511fe1dbc63.pdf" to kolayrezdys-bilgi-filename
+      move "8481"                  to xrez-acenta
+      move "20240829"              to xrez-al-tar
+      move "20241004"              to xrez-gir-tar
+      move "20241010"              to xrez-cik-tar
+*      move 98                       to xrez-ozel-durum
+      move "01"                    to xrez-oda-konumu
+      move "01"                    to xrez-fiyat-konumu
+      move "UA"                    to xrez-pan-tipi
+      move "12"                    to xrez-odeme-tipi
+      move "002"                   to xrez-ulke
+*      move "01"                    to xrez-banka
+*      move "02"                    to xrez-doviz
+      move "02"                    to xrez-buyuk
+      move "01"                    to xrez-bebek
+      move "ASYA"                  to xrez-adi        
+      move "KOLAYREZ"              to xrez-soyadi
+      move "ASYA"                  to xrez-staf
+
+
+      move 51                      to xrez-cocuk-yas(1)
+      move 23                       to xrez-cocuk-yas(2)
+      move 0                       to xrez-cocuk-yas(3)
+
+        
+              
+
+
+
+**      move "123456789"             to xrez-voucher
+*      move "H"                     to xrez-fiyat-fix
+**      move "200"                   to xrez-fiyati
+*      move "ASYA$KOLAYREZ"         to donus-veri(1)
+*      move "19920421"              to donus-alttipi(1)
+**      move 10                      to xrez-nor-indirim
+*      move "KISI21313AD$KISI2SOY"  to donus-veri(2)
+*      move "20001121"              to donus-alttipi(2)
+**      move "KISI56563AD$KISI3SOY" to donus-veri(3)
+
+
+*      initialize kolayrezdys-bilgi
+      call "/asya/ytl/obj/otel/rezweb.asy" using islem-tipi islem-tipi2 xrez-rec donus kolayrezdys-bilgi
+*      call "/asya/ytl/obj/otel/rezweb2.asy" using kolayrezdys-bilgi 
+         on exception 
+         display message box "RezWeb cagirilamadi !!!" 
+            exit paragraph
+      not on exception
+      cancel "/asya/ytl/obj/otel/rezweb.asy"
+      end-call
+     .
+
+ 

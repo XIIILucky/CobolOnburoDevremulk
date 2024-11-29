@@ -1,0 +1,517 @@
+* uyruk.evt
+* uyruk.evt is generated from D:\asya\acugt.ytl\otel\uyruk.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ Form1-Lb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM listbox-eventlar
+        WHEN Cmd-Goto
+           PERFORM Listbox-Eventlar
+        WHEN Ntf-Selchange
+           PERFORM Listbox-Eventlar
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     .
+*
+ accept-0101-Bef-Procedure.
+     initialize uyruk-rec kbs-kod jandarma-kbs-kod.
+     display accept-0102,  accept-0102a accept-0102aa     .
+     modify button-0101,enabled = false
+     modify button-0102,enabled = false.
+     perform bef-procedure.
+     .
+*
+ accept-0101-Aft-Procedure.
+     if uyruk-kodu = spaces 
+        modify button-0101,enabled = false
+        modify button-0102,enabled = false
+     else 
+        modify button-0101,enabled = true
+        modify button-0102,enabled = true
+     end-if.
+     open input uyruk.
+    
+     read uyruk no lock invalid
+          initialize uyruk-adi
+     end-read
+     display  accept-0102 accept-0102a accept-0102aa .
+     close uyruk.
+
+     open i-o uyrukkbs.
+     initialize uyrukkbs-rec kbs-kod
+     move uyruk-kodu to uyrukkbs-kodu
+     read uyrukkbs no lock invalid
+        continue 
+     end-read  
+        move uyrukkbs-kbs-kodu          to kbs-kod
+        move uyrukkbs-jandarma-kbs-kodu to jandarma-kbs-kod
+        move uyrukkbs-inbox-kodu        to acc-ekodu
+     display  accept-0102aaa acc-1301 .
+     close uyrukkbs.
+
+     perform listbox-yer-bul.
+     if i > zeroes
+        modify form1-lb-1,
+               selection-index = i
+     end-if.
+     .
+*
+ exception-procedure.
+     evaluate key-status
+         when 17 
+             move uyruk-dosya         to link-logview-dosya-adi
+             set link-logview-pointer  to address of uyruk-rec
+             set link-logview-rec-size to size of uyruk-rec
+             perform logview-call
+             initialize key-status
+         when 1
+              if control-id = 5
+                 initialize uyruk-cagir
+                 call "/asya/ytl/obj/otel/uyrukara.asy" using uyruk-cagir
+                 on exception 
+                    perform callerr-proc
+                 not on exception
+                     cancel "/asya/ytl/obj/otel/uyrukara.asy" 
+                 end-call
+                 move uyruk-kodu-cagir     to uyruk-kodu
+                 display accept-0101
+                 move 4 to accept-control
+                 move 5 to control-id
+              end-if
+              if control-id = 11
+                 initialize ulke-cagir
+                 call "/asya/ytl/obj/otel/ulkeara.asy" using ulke-cagir
+                 on exception 
+                    perform callerr-proc
+                 not on exception
+                     cancel "/asya/ytl/obj/otel/ulkeara.asy" 
+                 end-call
+                 move ulke-cagir     to uyruk-ulke 
+                 display accept-0102aa
+                 move 4 to accept-control
+                 move 11 to control-id
+              end-if
+              if control-id = 28
+                 initialize useinbox-cagir
+                 call "/asya/ytl/obj/otel/inboxara.asy" using useinbox-cagir
+                      on exception perform callerr-proc
+                      not on exception
+                 cancel "/asya/ytl/obj/otel/inboxara.asy" 
+                 end-call
+                 move useinbox-kodu-cagir     to acc-ekodu
+                 
+                 display acc-1301
+                 move 4  to accept-control
+                 move 28 to control-id
+              end-if
+         when 7
+             perform uyrukweb-yaz
+         when 2 
+              open i-o uyruk
+            
+              write uyruk-rec invalid 
+                    rewrite uyruk-rec 
+                    end-rewrite 
+              end-write
+              perform log-operation-uyruk
+              close uyruk
+
+***              perform listbox-yer-bul
+              if i > zeroes
+                   initialize form1-lb-1-value
+                   modify form1-lb-1,
+                          item-to-delete(i)
+                   move uyruk-kodu to lb-1-col-1
+                   
+                   move uyruk-adi1  to lb-1-col-2
+                   modify form1-lb-1,
+                          item-to-add(form1-lb-1-value)
+              else
+                 initialize form1-lb-1-value
+                 move uyruk-kodu to lb-1-col-1
+                 move uyruk-adi1  to lb-1-col-2
+                 modify form1-lb-1,
+                        item-to-add(form1-lb-1-value)
+              end-if
+              move 4 to accept-control
+              move 5 to control-id
+              perform uyrukkbs-yaz
+              perform uyrukweb-yaz
+              
+         when 3
+              open i-o uyruk
+            
+              delete uyruk invalid continue 
+              end-delete
+              perform log-operation-uyruk
+              close uyruk
+*****              perform listbox-yer-bul
+              if i > zeroes
+                 modify form1-lb-1,
+                        item-to-delete(i)
+              end-if
+              move 4 to accept-control
+              move 5 to control-id
+        when 4
+              open input uyruk ulke acenta uyrukkbs
+              initialize uyruk-rec
+              start uyruk key not < uyruk-anah invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close uyruk ulke acenta uyrukkbs
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Uyruk Kodlari Raporu " to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Uyruk Kodlari Raporu " to det-filler
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  s
+     initialize dokumer-rec detay
+     move "D1"         to det-dokumer-20(1:2)
+     move "1"          to det-dokumer-20(10:1)
+     move "Kodu"       to det-1
+     move "Adi"        to det-2
+     move "W.UYRK"     to det-3
+     move "Ulke Kodu"  to det-4
+     move "-"          to det-5
+     move "Ulke Adi"   to det-6
+     move "Web Acenta" to det-7
+     move "Kbs Kodu"   to det-8
+     move "J.Kbs Kodu " to det-9
+
+     move "|" to fil-1 fil-2  fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"  to det-1 det-2 
+     write dokumer-rec from detay
+**************************
+
+              initialize fs-uyruk
+              perform with test after until fs-uyruk = "10"
+                    read uyruk next no lock end move "10" to fs-uyruk
+                    not at end
+                         initialize dokumer-rec detay
+                         move uyruk-kodu        to det-1
+                         move uyruk-adi1(1:32)  to det-2
+                         move uyruk-web-kodu    to det-3
+                         move uyruk-ulke        to det-4
+                         move "-"               to det-5
+                         
+                         initialize ulke-rec
+                         move uyruk-ulke to ULKE-ANAH1
+                         read ulke no lock invalid
+                                 continue
+                         end-read
+
+                          if ulke-adi not = spaces
+                                 MOVE ULKE-ANAH1 TO DET-6
+                                 MOVE "-"         TO DET-6(4:1)
+                                 move ulke-adi  to det-6(5:)
+                         end-if
+
+                         initialize acenta-rec
+                         move ulke-web-acenta to acenta-kodu
+                         read acenta no lock invalid
+                                 continue
+                         end-read
+                         if acenta-adi not = spaces
+                            MOVE ACENTA-KODU TO DET-7
+                            MOVE "-"         TO DET-7(5:1)
+                            move acenta-adi  to det-7(6:)
+                         end-if
+                         initialize uyrukkbs-rec
+                         move uyruk-anah  to uyrukkbs-anah
+                         read uyrukkbs no lock invalid 
+                              continue 
+                         end-read 
+                             if uyrukkbs-kbs-kodu > 0
+                               move uyrukkbs-kbs-kodu to det-8
+                             end-if 
+                             if uyrukkbs-jandarma-kbs-kodu not = spaces
+                               move uyrukkbs-jandarma-kbs-kodu to det-9
+                             end-if 
+
+                         move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8  fil-9
+                         write dokumer-rec from detay
+                    end-read
+              end-perform
+                  initialize dokumer-rec detay
+                  move "-"        to det-dokumer-20(5:1)
+                  move all "-"    to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8 det-9
+                  write dokumer-rec from detay
+
+              close dokumer   uyrukkbs
+              close uyruk ulke acenta
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer
+     end-evaluate.
+ bef-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 5
+              evaluate true
+                  when turkce
+                       move "Uyruk kodunu giriniz    " to mesaj
+                  when ingilizce
+                       move "Pazar kodunu giriniz    " to mesaj
+                  when almanca
+                       move "Pazar kodunu giriniz    " to mesaj
+              end-evaluate
+          when 8
+              evaluate true
+                  when turkce
+                       move "Uyruk aciklamasini giriniz       " to mesaj
+                  when ingilizce
+                       move "Pazar aciklamasini giriniz       " to mesaj
+                  when almanca
+                       move "Pazar aciklamasini giriniz       " to mesaj
+              end-evaluate
+          when 19
+              evaluate true
+                  when turkce
+                       move "Uyruk kodunu kaydetmek icin tiklayiniz" to mesaj
+                  when ingilizce
+                       move "Pazar kodunu kaydetmek icin tiklayiniz" to mesaj
+                  when almanca
+                       move "Pazar kodunu kaydetmek icin tiklayiniz" to mesaj
+              end-evaluate
+          when 20
+              evaluate true
+                  when turkce
+                       move "Uyruk kodunu silmek icin tiklayiniz" to mesaj
+                  when ingilizce
+                       move "Pazar kodunu silmek icin tiklayiniz" to mesaj
+                  when almanca
+                       move "Pazar kodunu silmek icin tiklayiniz" to mesaj
+              end-evaluate
+          when 21
+              evaluate true
+                  when turkce
+                       move "Rapor almak icin tiklayiniz      " to mesaj
+                  when ingilizce
+                       move "Rapor almak icin tiklayiniz      " to mesaj
+                  when almanca
+                       move "Rapor almak icin tiklayiniz      " to mesaj
+              end-evaluate
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 2 
+            panel-text = mesaj.
+
+ Form1-Aft-Initdata.
+     modify form1-lb-1,
+            reset-list  = 1
+            mass-update = 1
+     open input uyruk
+     initialize uyruk-rec
+     start uyruk key not < uyruk-anah invalid
+           continue
+     not invalid
+     move zeroes to fs-uyruk
+     
+     perform with test after until fs-uyruk = "10"
+          read uyruk next no lock end move "10" to fs-uyruk
+          not at end
+               initialize form1-lb-1-value
+             
+               move uyruk-kodu to lb-1-col-1
+               move uyruk-adi1  to lb-1-col-2
+               modify form1-lb-1,
+                      item-to-add(form1-lb-1-value)
+          end-read
+     end-perform
+     end-start
+     close uyruk.
+     initialize uyruk-rec
+     modify form1-lb-1,
+            mass-update = 0
+            selection-index = 1
+            thumb-position = 1.
+     .
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ listbox-eventlar.
+     evaluate event-type
+          when cmd-dblclick
+               inquire form1-lb-1,value in form1-lb-1-value
+               move lb-1-col-1 to uyruk-kodu
+               perform accept-0101-Aft-Procedure
+               move 4 to accept-control
+               move 8 to control-id
+               exit paragraph
+          when ntf-selchange
+          when cmd-goto
+               inquire form1-lb-1,value in form1-lb-1-value
+               move lb-1-col-1 to uyruk-kodu
+               display accept-0101,
+               perform accept-0101-Aft-Procedure
+     end-evaluate.
+     
+     .
+ listbox-yer-bul.
+     initialize durum tekrar
+     perform varying i from 1 by 1 until (durum = "E" or "H")
+             initialize euyruk-kodu
+             modify form1-lb-1,
+                    query-index = i
+             inquire form1-lb-1,
+                    item-value in euyruk-kodu
+             if euyruk-kodu <> spaces
+                if euyruk-kodu = tekrar
+                   move "E" to durum
+                   exit perform
+                else
+                   move euyruk-kodu to tekrar
+                end-if
+             end-if
+             if euyruk-kodu = spaces
+                move "H" to durum
+                initialize i 
+                exit perform
+             else
+                if euyruk-kodu = uyruk-kodu
+                   move "E" to durum
+                   exit perform
+                end-if
+             end-if
+    end-perform.
+*
+ Form1-Pb-2-Link.
+     
+     if uyruk-adi1 not = "9999"
+           exit paragraph
+     END-IF
+
+     move uyruk-ulke to x-ulke
+     display message box "Tum uYRUKLARA uLKE KODU Dil Kodu " x-ulke" olarak atanacaktir !" new-line
+     "Yapalim mi ? "
+     TYPE 2
+     returning return-code
+     if return-code <> 1
+            exit paragraph
+     end-if
+     open I-O uyruk 
+     initialize uyruk-rec
+     start uyruk key not < uyruk-anah invalid
+           continue
+     not invalid
+     move zeroes to fs-uyruk
+     perform with test after until fs-ulke = "10"
+          read uyruk next no lock end move "10" to fs-uyruk
+          not at end
+
+                      MOVE x-ulke TO uyruk-ulke
+                      REWRITE uyruk-REC
+                      END-REWRITE
+          end-read
+     end-perform
+     end-start
+     close uyruk.
+     display message box "Tamam!"
+     .
+*
+ uyrukweb-yaz.
+              open input uyruk 
+              initialize uyruk-rec
+              start uyruk key not < uyruk-anah invalid                   
+                    continue
+                    not invalid
+                    open output uyrukweb close uyrukweb
+                    open i-o uyrukweb
+                    perform until fs-uyruk = "10" 
+                           read uyruk next no lock end move "10" to fs-uyruk
+                              not end
+                                 move uyruk-rec to uyrukweb-rec
+                                 write uyrukweb-rec invalid rewrite uyrukweb-rec end-write
+                           end-read
+                    end-perform 
+                    close uyrukweb
+              end-start
+              close uyruk
+               display message box "Web motoruna yuklendi".
+*
+ uyrukkbs-yaz.
+    open i-o uyrukkbs
+    initialize uyrukkbs-rec
+    move uyruk-kodu to uyrukkbs-ANAH
+    read uyrukkbs no lock invalid 
+        continue 
+    end-read 
+    move uyruk-adi        to uyrukkbs-adi
+    move kbs-kod          to uyrukkbs-kbs-kodu
+    move jandarma-kbs-kod to uyrukkbs-jandarma-kbs-kodu
+    move acc-ekodu        to uyrukkbs-inbox-kodu
+    write uyrukkbs-rec invalid rewrite uyrukkbs-rec end-write
+    initialize acc-ekodu
+    display acc-1301
+    close uyrukkbs.
+
+
+ 

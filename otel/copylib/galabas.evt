@@ -1,0 +1,1159 @@
+* galabas.evt
+* galabas.evt is generated from D:\asya\acugt.ytl\otel\galabas.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ grd1-Event-Proc.
+     PERFORM grd1-Ev-Other
+     .
+
+ grd1-Exception-Proc.
+     PERFORM grd1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+        perform adresleri-tasi
+     
+      
+        open i-o genelfis
+                move 1 to genelfis-anahtar
+                read genelfis no lock invalid
+                        continue
+                not invalid
+                     add 1 to  EKRAN-FIS-1
+                     move EKRAN-FIS-1 to  takas-no  takastop-no
+                     rewrite genelfis-rec  invalid
+                             stop " "
+                     end-rewrite
+                end-read
+        close genelfis
+        move k-kodu-tasi to takastop-k takas-k
+        move tarih-tasi to ilk-tar
+        open i-o gala close gala 
+        open output takas  takastop
+        close takas takastop
+     .
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 1
+           if control-id = 29 then
+                    initialize depkod-cagir
+                    call "/asya/ytl/obj/otel/depara.asy" 
+                         using depkod-cagir
+                               on exception 
+                                  perform callerr-proc
+                               not on exception
+                    cancel "/asya/ytl/obj/otel/depara.asy"
+                    end-call
+                    if depkod-dep-kodu <> spaces
+                       move depkod-dep-kodu to  dep-kodu
+                    else
+                      initialize  dep-kodu
+                    end-if
+                    display Form1-Ef-1
+           end-if
+           if control-id = 13 then
+                      initialize pazar-cagir
+                      move "E"   to pazar-tipi-cagir
+                      call "/asya/ytl/obj/otel/pazarara.asy" using pazar-cagir
+                            on exception perform callerr-proc
+                               not on exception
+                               cancel "/asya/ytl/obj/otel/pazarara.asy" 
+                       end-call
+                       move pazar-kodu-cagir     to pazar-kodu
+                       display Form1-Ef-1a
+           end-if
+
+            if control-id = 22 then
+                       initialize doviz-cagir
+                      call "/asya/ytl/obj/otel/dovizara.asy" using doviz-cagir
+                            on exception perform callerr-proc
+                               not on exception
+                               cancel "/asya/ytl/obj/otel/dovizara.asy" 
+                       end-call
+                       move doviz-cagir     to doviz-kodux
+                       display Form1-Ef-1aa
+            end-if
+
+            if control-id = 23 then
+                      initialize acenta-cagir
+                      call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+                            on exception perform callerr-proc
+                               not on exception
+                               cancel "/asya/ytl/obj/otel/acenara.asy" 
+                       end-call
+                       move acenta-cagir     to acenta-kodu
+                       display Form1-Ef-1aaa
+*
+            end-if
+      when 4
+                  perform raporla
+      when 100
+                  initialize hata-var
+                  perform kontrol
+                  if hata-var = 1 then
+                        exit paragraph
+                  end-if
+
+                  modify Form1-Ef-1 , enabled = false
+                  modify acc-01a ,    enabled = false
+                  modify acc-01aa ,   enabled = false
+                  modify acc-01aaa ,  enabled = false
+
+                  perform gala-baslik-yukle
+                  perform gala-inhouse-yukle
+      when 101
+                  initialize hata-var
+                  perform kontrol
+                  if hata-var = 1 then
+                        exit paragraph
+                  end-if
+
+                  perform gala-kaydet
+
+                  perform gala-baslik-yukle
+                  perform gala-inhouse-yukle
+      when 102
+                 initialize hata-var
+                  perform kontrol
+                  if hata-var = 1 then
+                        exit paragraph
+                  end-if
+
+                 perform gala-posting-yap
+
+                 perform gala-baslik-yukle
+                 perform gala-inhouse-yukle
+      when 103
+                 initialize hata-var
+                  perform kontrol
+                  if hata-var = 1 then
+                        exit paragraph
+                  end-if
+
+                modify grd1, ,reset-grid = 1
+                open output takas close takas
+
+                modify Form1-Ef-1 , enabled = true
+                modify acc-01a ,    enabled = true
+                modify acc-01aa ,   enabled = true
+                modify acc-01aaa ,  enabled = true
+      end-evaluate
+     .
+
+*
+ kontrol.
+
+        ||||
+  
+          open input takvim 
+              if ilk-tar < tarih-tasi then
+                          display message box "Belirttiginiz Tarih Sistem Tarihinden Kucuk Olamaz ..."
+                          icon 3
+                          close takvim
+                          move 1 to hata-var   
+                          exit paragraph
+             else
+                    move ilk-tar to takvim-anah 
+                    read takvim no lock invalid
+                          display message box "Lutfen Gecerli Bir Tarih Giriniz! ..."
+                          close takvim                
+                          move 1 to hata-var   
+                          exit paragraph
+                    end-read
+             end-if
+          close takvim
+          open input depkod
+                   initialize depkod-rec
+                move dep-kodu to depkod-kodu
+                read depkod no lock invalid
+                           display message box "Lutfen Tanimli Bir Departman Seciniz ! ..."
+                           move 1 to hata-var   
+                                 close depkod
+                           exit paragraph
+                not invalid
+                        if depkod-ba = "A" then
+                            display message box "Bir Borc Departmani Secmelisiniz ! ..."
+                            icon 3
+                                move 1 to hata-var   
+                                 close depkod
+                           exit paragraph
+                        end-if
+                end-read
+
+          close depkod
+          .
+
+*
+ Form1-Ef-1-Aft-Procedure.
+    open input depkod
+    initialize depkod-rec
+    move dep-kodu    to depkod-kodu
+    read depkod no lock  invalid
+         modify lbl-dep-adi , title = "Tanimsiz..."
+    not invalid
+           modify lbl-dep-adi , title = depkod-adi
+    end-read
+    close depkod
+     .
+*
+ gala-baslik-yukle.
+         initialize grd1-record
+         modify grd1,reset-grid = 1 
+         move "Rez No "         to grd1-col-1
+         move "Rez Adi "        to grd1-col-2
+         move "Rez Soyadi"      to grd1-col-3
+         move "Giris Tar."      to grd1-col-4
+         move "Cikis Tar."      to grd1-col-5
+         move "Acenta."         to grd1-col-6
+         move "Buyuk"           to grd1-col-7
+         move "Kucuk"           to grd1-col-15
+         move "Free"            to grd1-col-16
+         move "Oda"            to grd1-col-17
+         move "Gala Tutar"      to grd1-col-8
+         move "Basilan Tut."    to grd1-col-9
+         Move "C-in"            to grd1-col-10
+         Move "Doviz"           to grd1-col-14
+         modify grd1 , record-to-add(grd1-record).
+
+* 
+ gala-inhouse-yukle.
+          open output takas takastop close takas takastop
+          open input rez cast gala depkod konuk doviz acenta yromhrk
+          open i-o takas  takastop
+              initialize cast-rec grid-sayisi takas-sayi
+              move 2 to xgrid-sayisi
+              move ilk-tar         to cast-tarih
+              start cast key not < cast-anah invalid
+                    continue
+              not invalid
+              perform with test after until fs-cast = "10"
+              read cast next no lock end move "10"  to fs-cast
+              not at end 
+
+                     if cast-tarih not = ilk-tar                         
+                         exit perform 
+                     end-if
+                       
+                     initialize rez-rec 
+                     move cast-rez-no   to rez-no
+                     read rez no lock invalid
+                          exit perform cycle
+                     end-read
+
+                     if cast-tarih >= rez-cik-tar
+                            exit perform cycle 
+                     end-if
+
+                     if rez-durumu not = "I"
+                          exit perform cycle 
+                     end-if
+         
+                                          
+                     if rez-pazar <> pazar-kodu and pazar-kodu <> spaces then
+                           exit perform cycle
+                     end-if
+
+                     if rez-doviz <> doviz-kodux and doviz-kodux <> zeroes  then
+                           exit perform cycle
+                     end-if
+
+                     if rez-acenta <> acenta-kodu and acenta-kodu <> spaces then
+                           exit perform cycle
+                     end-if
+
+                     initialize takas-rec
+                     move rez-no to takas-REZ-NO
+                     move rez-acenta to takas-acenta-kodu
+                     move REZ-BUYUK  to takas-pax                           
+                     move REZ-BEbEk  to takas-child
+                    
+                     move rez-doviz to takas-doviz-kodu
+                     write takas-rec invalid
+                             stop " " 
+                     end-write
+                     add 1 to takas-sayi
+              end-read
+              end-perform 
+              end-start
+              initialize toplam-basilacak toplam-basilan
+    
+              if takas-sayi not > 0 then
+                    close rez cast gala depkod konuk doviz acenta yromhrk takas takastop
+                    exit paragraph 
+              end-if
+              ||||mkmkmkmk
+              if cmb-sira(1:2) = "01" then
+                      initialize takas-rec fs-takas
+                      start takas key not < takas-anah1 invalid
+                              continue
+                      end-start
+              end-if
+              if cmb-sira(1:2) = "02" then
+                      initialize takas-rec fs-takas
+                      start takas key not < takas-anah2 invalid
+                              continue
+                      end-start
+              end-if
+              if cmb-sira(1:2) = "03" then
+                      initialize takas-rec fs-takas
+                      start takas key not < takas-anah3 invalid
+                              continue
+                      end-start
+              end-if
+              perform until fs-takas = "10"
+              read takas next no lock end move "10" to fs-takas
+              not end
+
+                     initialize rez-rec satir-renk 
+                     move takas-rez-no   to rez-no
+                     read rez no lock invalid
+                          exit perform cycle
+                     end-read
+
+                     if sat-tar <> zeroes and rez-al-tar  not <=  sat-tar 
+                           exit perform cycle 
+                     end-if
+
+                     initialize konuk-rec grd1-record hidden-gala
+                     move rez-folio           to konuk-folio
+                     read konuk no lock invalid
+                            continue
+                     not invalid
+                            move "Evet"     to grd1-col-10 
+                            MOVE rez-folio  to grd1-col-13
+                     end-read
+
+                  
+                     move rez-no       to grd1-col-1
+                     move rez-adi      to grd1-col-2
+                     move rez-soyadi   to grd1-col-3
+
+                     move rez-gir-gun  to xgun
+                     move rez-gir-ay   to xay
+                     move rez-gir-yil  to xyil
+                     move xtarih       to grd1-col-4
+
+                     move rez-cik-gun  to xgun
+                     move rez-cik-ay   to xay
+                     move rez-cik-yil  to xyil
+                     move xtarih       to grd1-col-5
+
+
+                     initialize doviz-rec
+                     move rez-doviz   to grd1-col-12 doviz-kodu
+                     read doviz no lock invalid
+                             continue
+                     end-read
+
+                     move D-KISA-ADI   to Grd1-col-14
+
+                     move dep-kodu        to grd1-col-11
+
+                     initialize gala-rec gala-var
+                     move rez-no     to gala-rez-no
+                     move ilk-tar    to gala-tarih
+                     move dep-kodu   to gala-dep-kod
+                     read gala no lock invalid
+                             if cmb-gala(1:1) <> gala-folio-islendi and cmb-gala(1:1) <> "H" then
+                                  exit perform cycle 
+                              end-if
+                     not invalid
+                                
+                           if cmb-gala(1:1) <> gala-folio-islendi and cmb-gala(1:1) <> "H" then
+                                  exit perform cycle 
+                           end-if
+
+                           if gala-var-mi = 1 and  GALA-BASILACAK-TUTAR > 0 then
+                                 exit perform cycle
+                           end-if
+
+                            move GALA-BASILACAK-TUTAR to ztutar
+                            move ztutar               to grd1-col-8
+
+                           | move GALA-BASILAN-TUTAR   to ztutar
+                           | move ztutar               to grd1-col-9
+                     end-read
+
+                     initialize yromhrk-rec hrk-gala-top-tutar hesapla
+                     move konuk-folio to yromhrk-folio
+                     start yromhrk key not < yROMHRK-ANAH1 invalid
+                             continue
+                     not invalid
+                     perform until fs-yromhrk = "10" 
+                     read yromhrk next no lock end move "10" to fs-yromhrk 
+                     not end
+                             if  yromhrk-folio <> konuk-folio then
+                                   exit perform 
+                             end-if
+                             if yromhrk-depkod <> dep-kodu then
+                                   exit perform cycle
+                             end-if
+                             if yromhrk-tarih <> ilk-tar then
+                                   exit perform cycle
+                             end-if
+
+                             compute hesapla  rounded =  yROMHRK-TL-TUTAR / konuk-kur-degeri
+                             add hesapla to hrk-gala-top-tutar 
+                             
+                             move 1 to gala-var
+                     end-read
+                     end-perform
+                     end-start
+
+                     move hrk-gala-top-tutar to ztutar
+                     move ztutar to grd1-col-9
+
+                     add hrk-gala-top-tutar   to toplam-basilan
+                     add GALA-BASILACAK-TUTAR to toplam-basilacak
+
+
+                     initialize takastop-rec
+                     move takas-doviz-kodu to takastop-doviz-kodu
+                     move takas-acenta-kodu to takastop-acenta-kodu
+                     read takastop no lock invalid continue
+                     end-read
+                     add   GALA-BASILACAK-TUTAR to takastop-tutar
+                     add   hrk-gala-top-tutar to takastop-basilan
+                     add  takas-pax    to takastop-pax
+                     add takas-child   to takastop-child
+                     add 1 to takastop-oda
+                     write takastop-rec invalid rewrite takastop-rec end-write
+
+                     initialize takastop-rec
+                     move takas-doviz-kodu to takastop-doviz-kodu
+                   
+                     read takastop no lock invalid continue
+                     end-read
+                     add   GALA-BASILACAK-TUTAR to takastop-tutar
+                     add   hrk-gala-top-tutar to takastop-basilan
+                     add  takas-pax    to takastop-pax
+                     add takas-child   to takastop-child
+                     add 1 to takastop-oda
+                     write takastop-rec invalid rewrite takastop-rec end-write
+
+
+
+                     if GALA-BASILACAK-TUTAR = hrk-gala-top-tutar and (GALA-BASILACAK-TUTAR <> zeroes or hrk-gala-top-tutar <> zeroes )  then
+                           move 112 to satir-renk
+                     end-if
+                     if GALA-BASILACAK-TUTAR <> hrk-gala-top-tutar and (GALA-BASILACAK-TUTAR <> zeroes or hrk-gala-top-tutar <> zeroes )  then
+                           move 171 to satir-renk
+                     end-if
+                     move rez-acenta to acenta-kodu
+                     read acenta no lock invalid        
+                             continue
+                     end-read  
+
+                      move acenta-kodu to acenta-kodux
+                      move acenta-adi  to acenta-adix 
+                      move acenta-bilgi to grd1-col-6
+
+
+                     move acenta-bilgi to grd1-col-6
+                     move rez-buyuk to z-kisi
+                     move z-kisi to grd1-col-7
+                     move rez-kucuk to z-kisi
+                     move z-kisi to grd1-col-15
+                     move rez-free to z-kisi
+                     move z-kisi to grd1-col-16
+
+                     move rez-odano to grd1-col-17
+                     add 1 to grid-sayisi 
+                     modify grd1,record-to-add(grd1-record)
+ 
+                     modify grd1(xgrid-sayisi,12),cell-color = satir-renk
+                     modify grd1(xgrid-sayisi,13),cell-color = satir-renk
+
+                     if GALA-FOLIO-ISLENDI  = 1 then
+                             |modify grd1(xgrid-sayisi,11),cell-color = 112
+                             |modify grd1(xgrid-sayisi,10),cell-color = 112
+                             |modify grd1(xgrid-sayisi,9),cell-color  = 112
+                             |modify grd1(xgrid-sayisi,8),cell-color  = 112
+                             continue 
+                     end-if  
+
+                     add 1 to xgrid-sayisi
+              end-read
+              end-perform
+               ||||
+
+               initialize grd1-record
+                  move "Toplam"     to grd1-col-1
+                  move grid-sayisi  to grd1-col-17
+
+                  move toplam-basilacak     to ztutar
+                  move ztutar               to grd1-col-8
+
+                  move toplam-basilan       to ztutar
+                  move ztutar               to grd1-col-9
+
+                  move "T.Rez"              to grd1-col-10
+          
+                  if  toplam-basilacak <> toplam-basilan then
+                         modify grd1(xgrid-sayisi,12),cell-color = 171
+                         modify grd1(xgrid-sayisi,13),cell-color = 171
+                  else
+                         modify grd1(xgrid-sayisi,12),cell-color = 112
+                         modify grd1(xgrid-sayisi,13),cell-color = 112
+                  end-if
+                  modify grd1,record-to-add(grd1-record)
+
+  
+              |||||
+              initialize takastop-rec
+              start takastop key > takastop-anah invalid continue
+                  not invalid 
+                     perform until fs-takastop = "10"
+                          read takastop next no lock end move "10" to fs-takastop
+                             not end
+                               initialize doviz-rec     initialize grd1-record
+                                  move takastop-doviz-kodu   to  doviz-kodu
+                                  read doviz no lock invalid
+                                           continue
+                                      end-read  
+                                      initialize acenta-rec
+                              move takastop-acenta-kodu to acenta-kodu
+                              read acenta no lock invalid  
+                                move D-KISA-ADI   to acenta-adi
+                                   move "-- TOPLAM --" to acenta-adi(5:)
+
+                                     move xgrid-sayisi to dimdim
+                                     add 1 to dimdim
+                                     modify grd1(dimdim,13),cell-color = 481
+                                     modify grd1(dimdim,12),cell-color = 481
+                                     modify grd1(dimdim,11),cell-color = 481
+                                     modify grd1(dimdim,10),cell-color = 481
+                                     modify grd1(dimdim,9),cell-color = 481
+                                     modify grd1(dimdim,8),cell-color = 481
+                                     modify grd1(dimdim,7),cell-color = 481
+                               end-read  
+                             move D-KISA-ADI   to Grd1-col-14
+
+                             move acenta-kodu to acenta-kodux
+                             move acenta-adi  to acenta-adix 
+
+                             move acenta-bilgi to grd1-col-6
+                             move takastop-pax to z-kisi
+                             move z-kisi to grd1-col-7
+                             move takastop-child to z-kisi
+                             move z-kisi to grd1-col-15
+
+
+                             move takastop-oda to z-kisi
+                             move z-kisi to grd1-col-10
+
+                             move takastop-tutar to ztutar
+                               move ztutar to grd1-col-8
+
+                              move takastop-basilan to ztutar
+                               move ztutar to grd1-col-9
+
+
+                             modify grd1,record-to-add(grd1-record)
+                             
+                                 add 1 to xgrid-sayisi
+                                modify grd1(xgrid-sayisi),row-color = 513
+                             
+                         end-read
+                     end-perform
+              end-start
+                  
+          close rez cast gala depkod konuk doviz takas takastop acenta yromhrk.
+*
+ gala-kaydet.
+   
+         open i-o gala
+         initialize gala-sayi
+         perform varying i from 2 by 1 until i > xgrid-sayisi
+
+            
+                initialize gala-rec
+                inquire grd1(i,1),cell-data   =  gala-rez-no
+                inquire grd1(i,15),cell-data  =  gala-dep-kod
+                move ilk-tar             to  gala-tarih
+                read gala no lock invalid
+                        continue
+                not invalid
+                        inquire grd1(i,12),cell-data  = gala-basilacak-tutar 
+                        if gala-sil = 1  and gala-basilacak-tutar = zeroes
+                             delete gala end-delete 
+                             exit perform cycle
+                        END-IF
+                end-read
+
+                inquire grd1(i,12),cell-data  = gala-basilacak-tutar 
+                inquire grd1(i,13),cell-data  = gala-basilan-tutar
+                inquire grd1(i,16),cell-data  = gala-doviz-kodu
+                                                
+                
+
+                write gala-rec invalid
+                        rewrite gala-rec invalid
+                                stop " "
+                        end-rewrite
+               end-write
+               add 1 to gala-sayi
+         end-perform
+         close gala
+         if gala-sayi > 0 then
+                display message box "Islem Tamamlandi !"
+         end-if
+        
+         .
+
+*
+ grd1-Ev-Other.
+      evaluate event-type
+         when msg-begin-entry
+             if event-data-1 not = 12
+                 move event-action-fail to event-action
+             end-if
+      end-evaluate .
+*
+ grd1-Ex-Other.
+      evaluate key-status
+         when 6
+             initialize link-fol-no
+              inquire grd1, cursor-y in  grid-satir
+              inquire grd1(grid-satir,17),cell-data  = link-fol-no
+              if link-fol-no <> zeroes then
+
+                       initialize dokcagir-tasi
+                       set dokcagir-tasi-call-folio1      to true
+                       move link-fol-no                   to dokcagir-konuk-folio
+                         call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+                                  on exception 
+                                     perform callerr-proc
+                                  not on exception
+                                     cancel "/asya/ytl/obj/otel/dokcagir.asy"
+                         end-call
+                else
+                       display message box "Rez C/in Olmamis !"
+               end-if
+             when 18
+                      initialize link-rez-no
+                      inquire grd1, cursor-y in  grid-satir
+                      inquire grd1(grid-satir,1),cell-data  = link-rez-no
+        
+                      initialize dokcagir-tasi
+                      set dokcagir-tasi-call-rez1   to true
+                      move link-rez-no              to dokcagir-rez-no
+                         call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+                                  on exception 
+                                     perform callerr-proc
+                                  not on exception
+                                     cancel "/asya/ytl/obj/otel/dokcagir.asy"
+                         end-call
+         
+        
+      end-evaluate.
+*
+ gala-posting-yap.
+        
+         open input gala rez konuk depkod yromhrk
+              initialize gala-rec posting-sayi  hrk-gala-top-tutar
+              move ilk-tar  to gala-tarih
+              move dep-kodu to gala-dep-kod
+              start gala key not < gala-anah1 invalid
+                      continue
+              not invalid
+              PERFORM until fs-gala = "10"
+              read gala next no lock end move "10" to fs-gala
+              not end
+
+                    if cmb-gala(1:1) <> gala-folio-islendi and cmb-gala(1:1) <> "H" then
+                                  exit perform cycle 
+                    end-if
+
+                    if gala-var-mi = 1 and  GALA-BASILACAK-TUTAR > 0 then
+                               exit perform cycle
+                    end-if
+
+              
+                    if ilk-tar <> gala-tarih then
+                         exit perform  cycle
+                    end-if
+
+                    if gala-dep-kod <> dep-kodu then
+                          exit perform  
+                    end-if
+             
+                    if GALA-FOLIO-ISLENDI = 1  and tekrar-bas = 0 then
+                          exit perform cycle
+                    end-if
+
+
+                     initialize rez-rec
+                     move gala-rez-no to rez-no
+                     read rez no lock invalid
+                             exit perform cycle 
+                     end-read
+
+                     if rez-k-g-b <> "K" then
+                               exit perform cycle 
+                     end-if
+                     
+                     if rez-durumu <> "I" then
+                               exit perform cycle 
+                     end-if
+
+                     
+                     if rez-pazar <> pazar-kodu and pazar-kodu <> spaces then
+                           exit perform cycle
+                     end-if
+
+                     if rez-doviz <> doviz-kodux and doviz-kodux <> zeroes then
+                           exit perform cycle
+                     end-if
+
+                     if rez-acenta <> acenta-kodu and acenta-kodu <> spaces then
+                           exit perform cycle
+                     end-if
+
+                     initialize depkod-rec
+                     move gala-dep-kod to depkod-kodu
+                     read depkod no lock invalid
+                             exit perform cycle
+                     end-read
+
+                     initialize konuk-rec
+                     move rez-folio to konuk-folio
+                     read konuk no lock invalid
+                             continue
+                     not invalid
+
+                        ||||||||||||||||||GALA KONTROL|||||||||||||||||||||||||||||||
+                                    if konuk-durumu not = "I" then 
+                             exit perform cycle
+                            end-if 
+
+                                  if gala-basilacak-tutar not > 0 then
+                                      exit perform cycle 
+                                  end-if
+                                  initialize yromhrk-rec hrk-gala-top-tutar 
+                                  move konuk-folio to yromhrk-folio
+                                  start yromhrk key not < yROMHRK-ANAH1 invalid
+                                          continue
+                                  not invalid
+                                  perform until fs-yromhrk = "10" 
+                                  read yromhrk next no lock end move "10" to fs-yromhrk 
+                                  not end
+                                          if  yromhrk-folio <> konuk-folio then
+                                                exit perform 
+                                          end-if
+                                          if yromhrk-depkod <> dep-kodu then
+                                                exit perform cycle
+                                          end-if
+                                          
+                                           if yromhrk-tarih <> ilk-tar then
+                                                 exit perform cycle
+                                           end-if
+
+
+                                          compute hesapla  rounded =  yROMHRK-TL-TUTAR / konuk-kur-degeri
+                                          add hesapla to hrk-gala-top-tutar 
+                                          
+                                  end-read
+                                  end-perform
+                                  end-start
+                                      
+                                  move gala-basilacak-tutar to ROMHRK-DV-TUTAR 
+
+                                  if ROMHRK-DV-TUTAR <= hrk-gala-top-tutar then
+                                           exit perform cycle
+                                  end-if
+                                
+                                
+                                  add 1 to posting-sayi
+                     end-read
+
+
+              end-read
+              end-perform
+              end-start
+
+         close gala  rez konuk depkod yromhrk  
+         if posting-sayi > 0 then
+         display message box posting-sayi " Odaya Gala Posting Yapilacak . Devam Etmek Istiyor musunuz ? "
+                 type 2
+                 default 2
+                 returning return-code 
+                 if return-code <> 1 then
+                       exit paraGRAPH
+                 end-if
+         else
+                       display message box "Posting Yapilacak Kayit Bulunamadi ! "
+                       exit paraGRAPH
+         end-if
+              
+         open i-o gala  depkod rez konuk genelfis romhrk yromhrk hrk2 kodlar02
+              initialize gala-rec posting-sayi 
+              move ilk-tar  to gala-tarih
+              move dep-kodu to gala-dep-kod
+              start gala key not < gala-anah1 invalid
+                      continue
+              not invalid
+              PERFORM until fs-gala = "10"
+              read gala next no lock end move "10" to fs-gala
+              not end
+
+                   if cmb-gala(1:1) <> gala-folio-islendi and cmb-gala(1:1) <> "H" then
+                           exit perform cycle 
+                   end-if
+
+                  if gala-var-mi = 1 and  GALA-BASILACAK-TUTAR > 0 then
+                                 exit perform cycle
+                   end-if
+                    if ilk-tar <> gala-tarih then
+                         exit perform  cycle
+                    end-if
+
+                    if gala-dep-kod <> dep-kodu then
+                          exit perform  
+                    end-if
+             
+                    if GALA-FOLIO-ISLENDI = 1 and tekrar-bas = 0 then
+                          exit perform cycle
+                    end-if
+
+
+                     initialize rez-rec
+                     move gala-rez-no to rez-no
+                     read rez no lock invalid
+                            exit perform cycle 
+                     end-read
+
+                     if rez-k-g-b <> "K" then
+                         exit perform cycle 
+                     end-if
+                     
+                     if rez-durumu <> "I" then
+                         exit perform cycle 
+                     end-if
+          
+                     if rez-pazar <> pazar-kodu and pazar-kodu <> spaces    then
+                           exit perform cycle
+                     end-if
+
+                     if rez-doviz <> doviz-kodux and  doviz-kodux <> zeroes  then
+                           exit perform cycle
+                     end-if
+
+                     if rez-acenta <> acenta-kodu and acenta-kodu <> spaces  then
+                           exit perform cycle
+                     end-if
+
+                     initialize depkod-rec
+                     move gala-dep-kod to depkod-kodu
+                     read depkod no lock invalid
+                             exit perform cycle
+                     end-read
+
+     
+                     initialize konuk-rec
+                     move rez-folio to konuk-folio
+                     read konuk no lock invalid
+                             continue
+                     not invalid
+                             if konuk-durumu not = "I" then 
+                             exit perform cycle
+                            end-if   
+                            ||||isleme baslaaaa
+                            initialize romhrk-rec yromhrk-rec
+                           move konuk-folio to  ROMHRK-FOLIO  
+   
+                           move 1 to genelfis-anahtar
+                           read genelfis no lock invalid
+                                   continue
+                           not invalid
+                                add 1 to  CEKGIR-OTO
+                                move CEKGIR-OTO to  ROMHRK-ISLEM
+                                rewrite genelfis-rec  invalid
+                                        stop " "
+                                end-rewrite
+                           end-read
+                          move "M" to ROMHRK-ISLEM-TIPI
+
+                  
+                          move gala-tarih   to ROMHRK-TARIH
+                          move gala-dep-kod to ROMHRK-DEPKOD
+                          move DEPKOD-BA    to ROMHRK-BA
+                         ||||||||||||||||||GALA KONTROL|||||||||||||||||||||||||||||||
+
+                                  if gala-basilacak-tutar not > 0 then
+                                      exit perform cycle 
+                                  end-if
+
+                                  initialize yromhrk-rec  hrk-gala-top-tutar
+                                  move konuk-folio to yromhrk-folio
+                                  start yromhrk key not < yROMHRK-ANAH1 invalid
+                                          continue
+                                  not invalid
+                                  perform until fs-yromhrk = "10" 
+                                  read yromhrk next no lock end move "10" to fs-yromhrk 
+                                  not end
+                                          if  yromhrk-folio <> konuk-folio then
+                                                exit perform 
+                                          end-if
+                                          if yromhrk-depkod <> dep-kodu then
+                                                exit perform cycle
+                                          end-if
+                
+                                          compute hesapla  rounded =  yROMHRK-TL-TUTAR / konuk-kur-degeri
+                                          add hesapla to hrk-gala-top-tutar 
+                                          
+                                  end-read
+                                  end-perform
+                                  end-start
+
+                                  move gala-basilacak-tutar to ROMHRK-DV-TUTAR 
+
+                                  if ROMHRK-DV-TUTAR <= hrk-gala-top-tutar and  fark-bas = 1 then
+                                           exit perform cycle
+                                  end-if
+                                
+                                  if fark-bas = 1
+                                      compute tl-gala-tutar rounded =   
+                                          ( ROMHRK-DV-TUTAR - hrk-gala-top-tutar ) * KONUK-KUR-DEGERI 
+                                  else
+                                       compute tl-gala-tutar rounded =   
+                                           ROMHRK-DV-TUTAR * KONUK-KUR-DEGERI 
+                                  end-if
+       
+                                  
+                                  move tl-gala-tutar to  ROMHRK-TL-TUTAR
+
+                          |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+                          accept ROMHRK-ZAMAN from time
+                          move k-kodu-tasi to romhrk-staf
+                          
+  
+                          |||pencere bull
+                         ||     initialize kodlar02-rec
+                         ||     move "B"               to kodlar02-tipi
+                          ||    move konu2-odeme-tipi  to kodlar02-kodu 
+                          ||    read kodlar02 no lock invalid
+                         ||           move 1 to route-no
+                             
+                         ||         not invalid
+                        ||             if ode-tipi  not =  "A"  | KREDI ISE
+                        ||                  if depkod-tipi = 2 then 
+                        ||                         move 1 to ROMHRK-ref
+                        ||                     else
+                        ||                         move 2 to ROMHRK-ref
+                        ||                  end-if
+                        ||              else
+                        |||                 move 1 to ROMHRK-ref
+                        |           end-if
+                        ||     end-read
+
+                          |||
+
+                          move 1 to ROMHRK-ref
+                          if ikinci-pencere = 1 
+                              move 2 to ROMHRK-ref
+                          end-if
+                          move romhrk-rec to yromhrk-rec
+                          write romhrk-rec invalid
+                                  stop "yromhrk-yazamadi"
+                          end-write
+                          
+                          |perform log-operation-romhrk
+                        
+                          move 1 to yromhrk-cin-kur
+                         | move KONUK-KUR-DEGERI to yromhrk-kur-degeri
+                          write yromhrk-rec invalid
+                                  stop "yromhrk-yazamadi"
+                          end-write
+
+
+                          move romhrk-anah       to  hrk2-ANAH
+                          move romhrk-folio      to  hrk2-kaynak-folio    
+                          move ROMHRK-DV-TUTAR   to  hrk2-ger-DV-TUTAR      
+                          move rez-banka         to  hrk2-ger-banka      
+                          move rez-doviz         to  hrk2-ger-doviz      
+                          move 1                 to  hrk2-cin-kuru        
+                          write hrk2-rec invalid
+                                  stop "hrk2-yazamadi"
+                          end-write
+
+                          |||||onkasa
+
+                          perform onkasa-artir
+
+                           if DEPKOD-BA = "B" then
+                                compute konuk-top-borc = konuk-top-borc + tl-gala-tutar
+                           end-if
+                           if DEPKOD-BA = "A" then
+                                compute konuk-top-alac = konuk-top-alac + tl-gala-tutar
+                           end-if
+
+                           rewrite konuk-rec invalid
+                                   stop " "
+                           end-rewrite
+                          ||||||
+
+                          move 1                    to GALA-FOLIO-ISLENDI
+                          move konuk-folio          to gala-basilan-folio
+                          move gala-basilacak-tutar to GALA-BASILAN-TUTAR
+                          rewrite gala-rec invalid
+                                  stop " "
+                          end-rewrite
+                          add 1 to posting-sayi
+                          move gala-rec(1:99) to gala-bosxx
+                          modify lbl-rec , title = gala-d
+
+                     end-read
+
+              end-read
+              end-perform
+              end-start
+         close  gala  depkod rez konuk romhrk yromhrk genelfis hrk2  kodlar02
+         display message box posting-sayi " Adet Odaya Gala Posting Yapildi ! "
+         .
+*
+ onkasa-artir.
+        open i-o onkasa 
+           move gala-tarih    to onkasa-tarih
+           move gala-dep-kod  to onkasa-dep
+           read onkasa no lock invalid 
+                   initialize onkasa-rec
+                   move gala-tarih           to onkasa-tarih
+                   move gala-dep-kod         to onkasa-dep
+                   move tl-gala-tutar        to onkasa-tutar-tl
+                   move gala-basilacak-tutar to onkasa-tutar-dv
+                   write onkasa-rec invalid 
+                         rewrite onkasa-rec 
+                         end-rewrite continue 
+                   end-write
+           not invalid
+                   compute onkasa-tutar-tl   = onkasa-tutar-tl + tl-gala-tutar
+                   compute onkasa-tutar-dv   = onkasa-tutar-dv + gala-basilacak-tutar
+                   rewrite onkasa-rec invalid 
+                           write onkasa-rec 
+                           end-write continue
+                   end-rewrite   
+           end-read
+
+      close onkasa.
+*
+ Form1-Ef-1a-Aft-Procedure.
+        open input kodlar02
+               initialize kodlar02-rec
+               move "E"                to kodlar02-tipi
+               move pazar-kodu         to kodlar02-kodu
+               read kodlar02         no lock invalid 
+                           modify bl-pazar , title = "Tanimsiz..." 
+               end-read
+                modify bl-pazar , title =  kodlar02-adi
+       close kodlar02
+     .
+
+*
+ raporla.
+
+               open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+              initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                         dokumer-dosya
+
+              set  dokumer-asya-set to true
+              move print-no         to dokumer-dosya-adi
+              open output dokumer
+*/WINDOW TITLE
+              initialize dokumer-rec detay
+              move "W"                    to det-dokumer-20(1:)
+              move "Gala Islemleri Raporu" to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR
+              initialize dokumer-rec detay
+              move "B"                  to det-dokumer-20(1:)
+              move "Gala Islemleri Raporu" to det-filler
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "B"                  to det-dokumer-20(1:)
+              write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+              initialize dokumer-rec detay
+              move "O"                        to det-dokumer-20(1:)
+              move "E" to dokumer-oto-sayfa-basi
+              move 56  to dokumer-oto-sayfa-satir
+              move "|" to dokumer-detay-kolon-ayirici
+              move "LLLLLLLLLLLRRRRRRRRLLLLL" to dokumer-align-occ
+              move dokumer-ozellikler-rec     to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR 
+              initialize dokumer-rec detay
+              move "D1"               to det-dokumer-20(1:)     
+              move "Rez.No"           to det-1
+              move "Oda"              to det-2
+              move "Rez.Adi"          to det-3
+              move "Rez.Soyadi"       to det-4
+              move "C/In Tar."        to det-5
+              move "C/Out Tar."       to det-6
+              move "C/In"             to det-7
+              move "Acenta"           to det-8
+              move "Buyuk"           to det-9
+              move "Kucuk"           to det-10
+              move "Free"            to det-11
+              move "Gala Tutar"           to det-12
+              move "Basilan Tut."           to det-13
+              move "Doviz"           to det-14
+              move all "|" to fil-1 fil-2 fil-3 fil-4  fil-5 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-14
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "D2"               to det-dokumer-20(1:)     
+              move "-"                to det-dokumer-20(5:1)
+              move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8 det-9 det-10 det-11 det-12 det-13 det-14
+              write dokumer-rec from detay
+          
+
+                 initialize gala-sayi
+                    perform varying i from 2 by 1 until i > xgrid-sayisi
+
+                          initialize detay
+                          inquire grd1(i,1),cell-data = det-1  
+                          inquire grd1(i,2),cell-data = det-2
+                          inquire grd1(i,3),cell-data = det-3 
+                          inquire grd1(i,4),cell-data = det-4 
+                          inquire grd1(i,5),cell-data = det-5 
+                          inquire grd1(i,6),cell-data = det-6 
+                          inquire grd1(i,7),cell-data = det-7 
+                          inquire grd1(i,8),cell-data = det-8 
+                          inquire grd1(i,9),cell-data = det-9 
+                          inquire grd1(i,10),cell-data = det-10 
+                          inquire grd1(i,11),cell-data = det-11 
+                          inquire grd1(i,12),cell-data = det-12 
+                          inquire grd1(i,13),cell-data = det-13                         
+                          inquire grd1(i,14),cell-data = det-14 
+
+                                  write dokumer-rec from detay
+                   end-perform
+
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+  
+              delete file dokumer.
+
+
+
+ 

@@ -1,0 +1,1801 @@
+* hstatus.evt
+* hstatus.evt is generated from D:\asya\acugt.ytl\otel\hstatus.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+
+ Form1-Gd-2-Event-Proc.
+     .
+
+ Form1-Gd-3-Event-Proc.
+     .
+
+ Form1-Gd-4-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM Form1-Gd-4-Ev-Msg-Begin-Entry
+     END-EVALUATE
+     .
+
+ Form1-Gd-4-Exception-Proc.
+     PERFORM Form1-Gd-4-Ev-Msg-Begin-Entry
+     .
+
+ cb-otel-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-otel-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+        perform adresleri-tasi
+        open input genel
+        initialize genel-rec
+        move 1        to genel-anahtar
+        read genel no lock invalid
+             continue
+        end-read
+        close genel
+        open input kllnc
+          initialize kllnc-rec 
+              move k-kodu-tasi     to k-kodu
+              read kllnc no lock invalid
+                  continue
+              end-read
+          close kllnc
+        if K-muh-SUP not  = 1  and  ( GENEL-TESIS-KODU = "55780" or   GENEL-TESIS-KODU = "26349" )  | lonicera otelleri
+              move 0 to vis-tut
+              else
+              move 1 to vis-tut
+
+        end-if
+                .
+*
+ Form1-Aft-Initdata.
+      if onkpara-referans-var = 1 then
+       modify cb-otel reset-list = 1 
+       move "0->Tum Komplex" to   ref-ekle
+        modify cb-otel item-to-add ref-ekle
+
+      perform varying ref from 1 by 1 until ref > max-ref
+          move ref to ref-ekle
+          move "->" to  ref-ekle(2:2)
+          move ref-adi(ref) to  ref-ekle(4:)
+         modify cb-otel item-to-add ref-ekle
+
+      end-perform 
+      modify cb-otel value 0
+       end-if
+       
+       move 0 to oda-ref fiyat-ref
+       display oda-ref-acc sat-ref-acc.
+       open i-o outof close outof
+         perform tum-form-doldur
+       delete file takas takas2  
+           .
+*
+ tum-form-doldur.
+       perform form-doldur
+       perform ulke-dagilim
+       perform pazar-dagilim
+       perform arizali-oda-dagilim
+       perform anlik-durum.
+
+*
+ form-doldur.
+     initialize status-deg
+     perform genelfis-oku
+     move ekran-fis-1        to takas-no takas2-no
+     open output takas close takas open i-o takas with mass-update.
+     open output takas2 close takas2 open i-o takas2 with mass-update.
+ 
+       perform satilabilir-bul
+       perform uzatilan-oda-bul
+       perform erken-cikis-bul
+       perform oda-degisim-bul
+       perform oda-durumu-bul
+       perform onbgelir-bul
+       perform onbgelir-silinen-bul
+       
+     open input konuk kodlar02 rez ozluk2 odalar cast kur
+     initialize konuk-rec
+     move "I" to konuk-durumu
+     start konuk key > konuk-oda 
+      invalid
+            continue
+      not invalid
+        perform until fs-konuk  = "10"
+         read konuk next no lock 
+            end 
+              move "10" to fs-konuk
+            not end 
+              if konuk-durumu not = "I" then 
+                  move "10" to fs-konuk
+              else
+               if konuk-duzeltme = 1 
+                 exit perform cycle
+              end-if
+                 move konuk-oda-konumu   to rez-oda-konumu 
+                 move konuk-fiyat-konumu to rez-fiyat-konumu          
+                 if onkpara-referans-var = 1 then 
+                    perform ref-filtre
+                    if  not ref-gecti then 
+                       exit perform cycle
+                  end-if
+                end-if 
+               if konuk-fol-kodu = "R" then
+                 if konuk-share  = 1 
+                  move 0 to ekoda
+                  else
+                  move 1 to ekoda
+                 end-if
+                    if konuk-gel-tar = konuk-git-tar
+                     
+                          add ekoda to v-gunluk
+                     
+                    end-if
+                    move konuk-rez-no to rez-no
+                    read rez no lock invalid
+                        continue
+                    end-read
+                    initialize ozluk2-rec
+                    move konuk-folio    to ozluk2-folio
+                    read ozluk2 no lock invalid
+                        continue
+                    not invalid
+                            if ozluk2-birles-folio > 0         
+                               add ekoda to v-boda                             
+                            end-if
+                    end-read
+                    move konuk-odano to odalar-no
+                    read odalar no lock invalid
+                       continue
+                    end-read
+                       if odalar-durumu = house-dt
+                      
+                          add ekoda to v-dt
+                       end-if
+                       if odalar-durumu = house-dk
+                          add ekoda to v-dk
+                       end-if
+                    initialize takas-rec
+                    move "A"        to takas-tip
+                    move konuk-ulke to takas-anah
+                    read takas no lock invalid
+                         initialize takas-rec
+                         move "A"         to takas-tip
+                         move konuk-ulke  to takas-anah
+                         move ekoda           to takas-oda-adet
+                         move konuk-buyuk to takas-pax-adet
+                         move konuk-kucuk to takas-chi-adet
+                         move konuk-free  to takas-fre-adet
+                         move konuk-bebek to takas-beb-adet
+                    not invalid
+                        add ekoda           to takas-oda-adet
+                        add konuk-buyuk to takas-pax-adet
+                        add konuk-kucuk to takas-chi-adet
+                        add konuk-free  to takas-fre-adet
+                        add konuk-bebek to takas-beb-adet
+                    end-read
+                    rewrite takas-rec invalid
+                      write takas-rec end-write 
+                    end-rewrite 
+
+                    initialize takas-rec
+                    move "B"         to takas-tip
+                    move konuk-pazar to takas-anah
+                    read takas no lock invalid
+                         initialize takas-rec
+                         move "B"        to takas-tip
+                         move konuk-pazar to takas-anah
+                         move ekoda           to takas-oda-adet
+                         move konuk-buyuk to takas-pax-adet
+                         move konuk-kucuk to takas-chi-adet
+                         move konuk-free  to takas-fre-adet
+                         move konuk-bebek to takas-beb-adet
+                    not invalid
+                        add ekoda           to takas-oda-adet
+                        add konuk-buyuk to takas-pax-adet
+                        add konuk-kucuk to takas-chi-adet
+                        add konuk-free  to takas-fre-adet
+                        add konuk-bebek to takas-beb-adet
+                    end-read
+                    rewrite takas-rec invalid
+                      write takas-rec end-write 
+                    end-rewrite 
+
+*/inhouse fiyat   
+              initialize   ydkv-ioda
+               if  konuk-git-tar > tarih-tasi then  
+                  
+                    initialize cast-rec ydkv-ioda
+                    move tarih-tasi           to cast-tarih
+                    move rez-no               to cast-rez-no
+                    read cast no lock invalid
+                         continue
+                    end-read
+                      
+*********************************08 06 2015****************
+                     move cast-oda-no to rez-odano
+                     if rez-odano not = spaces and dis-haric = 1 then 
+                             move rez-odano to odalar-anah
+                             read odalar no lock invalid continue
+                             not invalid
+                                      if ( dis-haric = 1 and odalar-dis = 1 )  then
+                                                 exit perform cycle
+                                      end-if 
+                             end-read
+                    end-if  
+***************************************************************
+                         initialize kur-rec
+                         move rez-banka       to kur-banka
+                         move rez-doviz       to kur-doviz
+
+                         move rez-gir-tar     to kur-tarih
+                         
+                         read kur no lock invalid
+                             continue
+                         end-read
+                        move  konuk-kur-degeri to  doviz-alis
+                         compute  ydkv-ioda rounded = cast-fiyati * doviz-alis
+                         add ydkv-ioda     to v-ioda                        
+                   
+               end-if
+*/inhouse fiyat
+                    add ekoda          to v-oda4
+                    add konuk-buyuk to v-pax4
+                    add konuk-kucuk to v-chi4
+                    add konuk-free  to v-fre4
+                    add konuk-bebek to v-beb4
+
+                    move "B" to KODLAR02-TIPI
+                    move konuk-odeme-tipi to kodlar02-kodu
+                    read kodlar02 no lock invalid initialize kodlar02-rec
+                    end-read
+                    if ode-tipi = "D" 
+                            move ydkv-ioda to   ydkv-icoda 
+                            add ydkv-icoda     to v-icoda                        
+                     
+                       add ekoda to v-coda4
+                       add konuk-buyuk to v-cpax4
+                       add konuk-kucuk to v-cchi4
+                       add konuk-free  to v-cfre4
+                       add konuk-bebek to v-cbeb4
+                    end-if 
+
+                    if ode-tipi = "F" 
+                       
+                                    move  konuk-kur-degeri to  doviz-alis
+                                     move ydkv-ioda to ydkv-ihoda 
+                               
+                       add ekoda to v-hoda4
+                       add konuk-buyuk to v-hpax4
+                       add konuk-kucuk to v-hchi4
+                       add konuk-free  to v-hfre4
+                       add konuk-bebek to v-hbeb4
+                    end-if 
+
+                  end-if   
+               end-if
+            end-read
+        end-perform
+     end-start 
+     close rez ozluk2 odalar
+
+     open input rez odalar   
+     initialize rez-rec v-blokt v-blokk v-blokg  sayac
+     move "I" to rez-durumu
+     move tarih-tasi to rez-gir-tar
+     start rez key >= rez-gir 
+        invalid continue
+        not invalid
+          perform  until fs-rez = "10"
+            read rez next no lock
+               end 
+                 move "10" to fs-rez
+               not end
+                 if rez-durumu not = "I" or
+                    rez-gir-tar not = tarih-tasi then
+                      move "10" to fs-rez
+                 else
+           
+                 if onkpara-referans-var = 1 then 
+                    perform ref-filtre
+                    if  not ref-gecti then 
+                       exit perform cycle
+                  end-if
+                end-if 
+                 if rez-share = 0  or spaces
+                    move 1 to ekoda
+                        else
+                     move 0 to ekoda
+                 end-if
+                      move "B" to KODLAR02-TIPI
+                      move rez-odeme-tipi to kodlar02-kodu
+                      read kodlar02 no lock invalid 
+                           initialize kodlar02-rec
+                      end-read
+                      add 1 to sayac
+                      if rez-folio > 0 then 
+*/fiyat bulunuyor girisler icin
+                             move "I" to konuk-durumu
+                             move rez-folio to konuk-folio
+                             read konuk no lock invalid 
+                               display message box rez-no " nolu rez de cin uyusmazligi " new-line
+                                                  " hata 25555511 "
+
+                             end-read
+                               if konuk-duzeltme = 1 
+                                 exit perform cycle
+                              end-if
+
+*                              open input cast kur
+*                              initialize cast-rec ydkv-goda
+*                              move rez-gir-tar          to cast-tarih
+*                              move rez-no               to cast-rez-no
+*                              read cast no lock invalid
+*                                   continue
+*                              end-read
+*                                   initialize kur-rec
+*                                   move rez-banka       to kur-banka
+*                                   move rez-doviz       to kur-doviz
+*                                   move rez-gir-tar     to kur-tarih
+*                                   read kur no lock invalid
+*                                       continue
+*                                   end-read
+*                                   compute  ydkv-goda rounded = cast-fiyati * doviz-alis
+*                                   add ydkv-goda     to v-goda                        
+*                              close cast kur      
+*/fiyat bulunuyor girisler icin
+                          add ekoda           to v-oda2
+                          add rez-buyuk to v-pax2
+                          add rez-kucuk to v-chi2
+                          add rez-free  to v-fre2
+                          add rez-bebek to v-beb2
+                          if ode-tipi = "D"   
+                            add ekoda           to v-coda2
+                            add rez-buyuk to v-cpax2
+                            add rez-kucuk to v-cchi2
+                            add rez-free  to v-cfre2
+                            add rez-bebek to v-cbeb2
+                          end-if
+                          if ode-tipi = "F"   
+                            add ekoda           to v-hoda2
+                            add rez-buyuk to v-hpax2
+                            add rez-kucuk to v-hchi2
+                            add rez-free  to v-hfre2
+                            add rez-bebek to v-hbeb2
+                          end-if
+
+                          initialize takas2-rec  
+                          move "A"           to takas2-tip
+                          move sayac         to takas2-islem-no
+                          read takas2 no lock invalid
+                             initialize takas2-rec
+                             move "A"           to takas2-tip
+                             move rez-gel-zaman to takas2-zaman
+                             move sayac          to takas2-islem-no                                              
+                             move rez-odano      to takas2-odano
+                             move rez-staf       to takas2-staf
+                             move rez-folio to takas2-folio
+                             move rez-acenta     to takas2-acenta
+                             move rez-firma      to takas2-firma
+
+                                  string takas2-adi-soy
+                                      rez-adi delimited by "  "
+                                      " "     delimited by size
+                                      rez-soyadi delimited by "  "
+                                  into takas2-adi-soy              
+                    
+                                   write takas2-rec end-write 
+                          end-read
+
+                      else
+
+
+
+
+                          if rez-odano = spaces
+                             add ekoda to v-blokg
+                          end-if
+                          initialize odalar-rec
+                          move rez-odano  to odalar-anah
+                          read odalar no lock invalid
+                             continue
+                          end-read 
+                              if odalar-durumu = house-bt 
+                                 add ekoda to v-blokt
+                                 subtract ekoda from v-bt
+                              end-if
+                              if odalar-durumu = house-bk or 
+                                 odalar-durumu = house-co
+                                 add ekoda to v-blokk
+                                 subtract ekoda from v-bk
+                              end-if
+
+                          add ekoda           to v-oda5
+                          add rez-buyuk to v-pax5
+                          add rez-kucuk to v-chi5
+                          add rez-free  to v-fre5
+                          add rez-bebek to v-beb5
+                          
+                              initialize cast-rec ydkv-goda
+                              move rez-gir-tar          to cast-tarih
+                              move rez-no               to cast-rez-no
+                              read cast no lock invalid
+                                   continue
+                              end-read
+*********************************08 06 2015****************
+                     move cast-oda-no to rez-odano
+                     if rez-odano not = spaces and dis-haric = 1 then 
+                             move rez-odano to odalar-anah
+                             read odalar no lock invalid continue
+                             not invalid
+                                      if ( dis-haric = 1 and odalar-dis = 1 )  then
+                                                 exit perform cycle
+                                      end-if 
+                             end-read
+                    end-if  
+***************************************************************
+
+                                   initialize kur-rec
+                                   move rez-banka       to kur-banka
+                                   move rez-doviz       to kur-doviz
+                                   move rez-gir-tar     to kur-tarih
+                                   read kur no lock invalid
+                                       continue
+                                   end-read
+                                   compute  ydkv-goda rounded = cast-fiyati * doviz-alis
+                                   add ydkv-goda     to v-goda                        
+                           
+                          if ode-tipi = "D" 
+                              
+                                    move ydkv-goda to  ydkv-icoda 
+                                    add ydkv-icoda     to v-icoda                        
+                                   
+                            add ekoda           to v-coda5
+                            add rez-buyuk to v-cpax5
+                            add rez-kucuk to v-cchi5
+                            add rez-free  to v-cfre5
+                            add rez-bebek to v-cbeb5
+                          end-if
+                          if ode-tipi = "F"  
+                              move ydkv-goda to  ydkv-ihoda
+                                   add ydkv-ihoda     to v-ihoda             
+                            add ekoda           to v-hoda5
+                            add rez-buyuk to v-hpax5
+                            add rez-kucuk to v-hchi5
+                            add rez-free  to v-hfre5
+                            add rez-bebek to v-hbeb5
+                               MOVE  ydkv-goda TO  ydkv-ihoda
+                             
+                                   add ydkv-ihoda     to v-ihoda       
+
+
+                          end-if
+                      end-if
+                 end-if
+             end-read
+          end-perform
+     end-start
+     close odalar cast kur
+     open input odalar cast
+     initialize rez-rec sayac
+     move "I" to rez-durumu
+     move tarih-tasi to rez-cik-tar
+     start rez key >= rez-cik 
+        invalid continue
+        not invalid
+          perform  until fs-rez = "10"
+            read rez next no lock
+               end 
+                 move "10" to fs-rez
+               not end
+                 if rez-durumu not = "I" or
+                    rez-cik-tar not = tarih-tasi then
+                      move "10" to fs-rez
+                    else 
+                  
+                 if onkpara-referans-var = 1 then 
+                    perform ref-filtre
+                    if  not ref-gecti then 
+                       exit perform cycle
+                  end-if
+                end-if 
+                       if rez-share = 0 or spaces
+                           move 1 to ekoda
+                           else
+                            move 0 to ekoda
+                         end-if
+                      add 1 to sayac
+                      move "B" to KODLAR02-TIPI
+                      move rez-odeme-tipi to kodlar02-kodu
+                      read kodlar02 no lock invalid initialize kodlar02-rec
+                      end-read
+                      move rez-folio to konuk-folio
+                      move "I"       to konuk-durumu
+                      read konuk no lock
+                        invalid
+                          continue
+*                         display message box "Hata 4532j" new-line
+*                            rez-no
+                       end-read
+
+
+                      
+*********************************08 06 2015****************
+                    initialize cast-rec 
+                    move tarih-tasi           to cast-tarih
+                    move rez-no               to cast-rez-no
+                    read cast no lock invalid
+                         continue
+                    end-read
+                     move cast-oda-no to rez-odano
+                     if rez-odano not = spaces and dis-haric = 1 then 
+                             move rez-odano to odalar-anah
+                             read odalar no lock invalid continue
+                             not invalid
+                                      if ( dis-haric = 1 and odalar-dis = 1 )  then
+                                                 exit perform cycle
+                                      end-if 
+                             end-read
+                    end-if  
+***************************************************************
+                        if konuk-durumu not  = "I"
+
+                          initialize takas2-rec  
+                          move "B"           to takas2-tip
+                          move sayac         to takas2-islem-no
+                          read takas2 no lock invalid
+                             initialize takas2-rec
+                             move "B"           to takas2-tip
+                             move konuk-git-zaman to takas2-zaman
+                             move sayac          to takas2-islem-no                                              
+                             move konuk-odano      to takas2-odano
+                             move konuk-staf       to takas2-staf
+                             move konuk-folio to takas2-folio
+                             move konuk-acenta     to takas2-acenta
+                             move konuk-firma      to takas2-firma
+                                  string takas2-adi-soy
+                                      konuk-adi delimited by "  "
+                                      " "     delimited by size
+                                      konuk-soyadi delimited by "  "
+                                  into takas2-adi-soy              
+                                   write takas2-rec end-write 
+                          end-read
+
+
+
+
+                          add ekoda           to v-oda3
+                          add rez-buyuk   to v-pax3
+                          add rez-kucuk   to v-chi3
+                          add rez-free    to v-fre3
+                          add rez-bebek  to v-beb3
+                          if ode-tipi = "D"   
+                            add ekoda           to v-coda3
+                            add rez-buyuk to v-cpax3
+                            add rez-kucuk to v-cchi3
+                            add rez-free  to v-cfre3
+                            add rez-bebek to v-cbeb3
+                          end-if
+                          if ode-tipi = "F"   
+                            add ekoda           to v-hoda3
+                            add rez-buyuk to v-hpax3
+                            add rez-kucuk to v-hchi3
+                            add rez-free  to v-hfre3
+                            add rez-bebek to v-hbeb3
+                          end-if
+                          else
+                          add ekoda           to v-oda6
+                          add rez-buyuk   to v-pax6
+                          add rez-kucuk   to v-chi6
+                          add rez-free    to v-fre6
+                          add rez-bebek   to v-beb6
+       
+                          if ode-tipi = "D"   
+                            add ekoda           to v-coda6
+                            add rez-buyuk to v-cpax6
+                            add rez-kucuk to v-cchi6
+                            add rez-free  to v-cfre6
+                            add rez-bebek to v-cbeb6
+                          end-if
+                          if ode-tipi = "F"   
+                            add ekoda           to v-hoda6
+                            add rez-buyuk to v-hpax6
+                            add rez-kucuk to v-hchi6
+                            add rez-free  to v-hfre6
+                            add rez-bebek to v-hbeb6
+                          end-if
+                      end-if
+                 end-if
+             end-read
+          end-perform
+     end-start
+     close rez konuk kodlar02 cast 
+
+     move v-oda2   to oda2   display l-oda2 
+     move v-pax2   to pax2   display l-pax2
+     move v-chi2   to chi2   display l-chi2
+     move v-fre2   to fre2   display l-fre2
+     move v-beb2   to beb2   display l-beb2
+
+     move v-coda2  to coda2  display l-coda2 
+     move v-cpax2  to cpax2  display l-cpax2
+     move v-cchi2  to cchi2  display l-cchi2
+     move v-cfre2  to cfre2  display l-cfre2
+     move v-cbeb2  to cbeb2  display l-cbeb2
+
+     move v-hoda2  to hoda2  display l-hoda2 
+     move v-hpax2  to hpax2  display l-hpax2
+     move v-hchi2  to hchi2  display l-hchi2
+     move v-hfre2  to hfre2  display l-hfre2
+     move v-hbeb2  to hbeb2  display l-hbeb2
+
+     move v-oda3   to oda3   display l-oda3 
+     move v-pax3   to pax3   display l-pax3
+     move v-chi3   to chi3   display l-chi3
+     move v-fre3   to fre3   display l-fre3
+     move v-beb3   to beb3   display l-beb3
+
+     move v-coda3  to coda3  display l-coda3 
+     move v-cpax3  to cpax3  display l-cpax3
+     move v-cchi3  to cchi3  display l-cchi3
+     move v-cfre3  to cfre3  display l-cfre3
+     move v-cbeb3  to cbeb3  display l-cbeb3
+
+     move v-hoda3  to hoda3  display l-hoda3 
+     move v-hpax3  to hpax3  display l-hpax3
+     move v-hchi3  to hchi3  display l-hchi3
+     move v-hfre3  to hfre3  display l-hfre3
+     move v-hbeb3  to hbeb3  display l-hbeb3
+
+     move v-oda4   to oda4   display l-oda4 
+     move v-pax4   to pax4   display l-pax4
+     move v-chi4   to chi4   display l-chi4
+     move v-fre4   to fre4   display l-fre4
+     move v-beb4   to beb4   display l-beb4
+
+     move v-coda4  to coda4  display l-coda4 
+     move v-cpax4  to cpax4  display l-cpax4
+     move v-cchi4  to cchi4  display l-cchi4
+     move v-cfre4  to cfre4  display l-cfre4
+     move v-cbeb4  to cbeb4  display l-cbeb4
+
+     move v-hoda4  to hoda4  display l-hoda4 
+     move v-hpax4  to hpax4  display l-hpax4
+     move v-hchi4  to hchi4  display l-hchi4
+     move v-hfre4  to hfre4  display l-hfre4
+     move v-hbeb4  to hbeb4  display l-hbeb4
+
+     move v-oda5   to oda5   display l-oda5 
+     move v-pax5   to pax5   display l-pax5
+     move v-chi5   to chi5   display l-chi5
+     move v-fre5   to fre5   display l-fre5
+     move v-beb5   to beb5   display l-beb5
+*/oda durum sayilari
+     move v-blokt     to blokt     display l-blokt
+     move v-blokk     to blokk     display l-blokk
+     move v-bt        to bt        display l-bt
+     move v-bk        to bk        display l-bk
+     move v-ariza-oda to ariza-oda display l-ariza
+     move v-blokg     to blokg     display l-blokg
+     move v-gunluk    to gunluk    display l-gunluk
+     move v-dk        to dk        display l-dk
+     move v-dt        to dt        display l-dt
+
+
+
+
+     move v-coda5  to coda5  display l-coda5 
+     move v-cpax5  to cpax5  display l-cpax5
+     move v-cchi5  to cchi5  display l-cchi5
+     move v-cfre5  to cfre5  display l-cfre5
+     move v-cbeb5  to cbeb5  display l-cbeb5
+
+     move v-hoda5  to hoda5  display l-hoda5 
+     move v-hpax5  to hpax5  display l-hpax5
+     move v-hchi5  to hchi5  display l-hchi5
+     move v-hfre5  to hfre5  display l-hfre5
+     move v-hbeb5  to hbeb5  display l-hbeb5
+
+     move v-oda6   to oda6   display l-oda6 
+     move v-pax6   to pax6   display l-pax6
+     move v-chi6   to chi6   display l-chi6
+     move v-fre6   to fre6   display l-fre6
+     move v-beb6   to beb6   display l-beb6
+
+     move v-coda6  to coda6  display l-coda6 
+     move v-cpax6  to cpax6  display l-cpax6
+     move v-cchi6  to cchi6  display l-cchi6
+     move v-cfre6  to cfre6  display l-cfre6
+     move v-cbeb6  to cbeb6  display l-cbeb6
+
+     move v-hoda6  to hoda6  display l-hoda6 
+     move v-hpax6  to hpax6  display l-hpax6
+     move v-hchi6  to hchi6  display l-hchi6
+     move v-hfre6  to hfre6  display l-hfre6
+     move v-hbeb6  to hbeb6  display l-hbeb6
+
+     compute v-oda1 = v-oda4 - v-oda2 + v-oda3 
+     compute v-pax1 = v-pax4 - v-pax2 + v-pax3 
+     compute v-chi1 = v-chi4 - v-chi2 + v-chi3 
+     compute v-fre1 = v-fre4 - v-fre2 + v-fre3 
+     compute v-beb1 = v-beb4 - v-beb2 + v-beb3 
+     compute v-dol1 rounded = (v-oda1 / satilabilir) * 100
+     compute v-dol4 rounded = (v-oda4 / satilabilir) * 100
+
+     compute v-coda1 = v-coda4 - v-coda2 + v-coda3 
+     compute v-cpax1 = v-cpax4 - v-cpax2 + v-cpax3 
+     compute v-cchi1 = v-cchi4 - v-cchi2 + v-cchi3 
+     compute v-cfre1 = v-cfre4 - v-cfre2 + v-cfre3 
+     compute v-cbeb1 = v-cbeb4 - v-cbeb2 + v-cbeb3 
+
+     compute v-hoda1 = v-hoda4 - v-hoda2 + v-hoda3 
+     compute v-hpax1 = v-hpax4 - v-hpax2 + v-hpax3 
+     compute v-hchi1 = v-hchi4 - v-hchi2 + v-hchi3 
+     compute v-hfre1 = v-hfre4 - v-hfre2 + v-hfre3 
+     compute v-hbeb1 = v-hbeb4 - v-hbeb2 + v-hbeb3 
+
+     compute v-oda7 = v-oda4 - v-oda6 + v-oda5 
+     compute v-pax7 = v-pax4 - v-pax6 + v-pax5 
+     compute v-chi7 = v-chi4 - v-chi6 + v-chi5 
+     compute v-fre7 = v-fre4 - v-fre6 + v-fre5 
+     compute v-beb7 = v-beb4 - v-beb6 + v-beb5 
+     compute v-dol7 rounded = (v-oda7 / satilabilir) * 100
+
+     compute v-coda7 = v-coda4 - v-coda6 + v-coda5 
+     compute v-cpax7 = v-cpax4 - v-cpax6 + v-cpax5 
+     compute v-cchi7 = v-cchi4 - v-cchi6 + v-cchi5 
+     compute v-cfre7 = v-cfre4 - v-cfre6 + v-cfre5 
+     compute v-cbeb7 = v-cbeb4 - v-cbeb6 + v-cbeb5 
+
+     compute v-hoda7 = v-hoda4 - v-hoda6 + v-hoda5 
+     compute v-hpax7 = v-hpax4 - v-hpax6 + v-hpax5 
+     compute v-hchi7 = v-hchi4 - v-hchi6 + v-hchi5 
+     compute v-hfre7 = v-hfre4 - v-hfre6 + v-hfre5 
+     compute v-hbeb7 = v-hbeb4 - v-hbeb6 + v-hbeb5 
+
+     compute v-uoda1 = v-oda1 - v-coda1 - v-hoda1
+     compute v-uoda2 = v-oda2 - v-coda2 - v-hoda2
+     compute v-uoda3 = v-oda3 - v-coda3 - v-hoda3
+     compute v-uoda4 = v-oda4 - v-coda4 - v-hoda4
+     compute v-uoda5 = v-oda5 - v-coda5 - v-hoda5
+     compute v-uoda6 = v-oda6 - v-coda6 - v-hoda6
+     compute v-uoda7 = v-oda7 - v-coda7 - v-hoda7
+
+     compute v-upax1 = v-pax1 - v-cpax1 - v-hpax1
+     compute v-upax2 = v-pax2 - v-cpax2 - v-hpax2
+     compute v-upax3 = v-pax3 - v-cpax3 - v-hpax3
+     compute v-upax4 = v-pax4 - v-cpax4 - v-hpax4
+     compute v-upax5 = v-pax5 - v-cpax5 - v-hpax5
+     compute v-upax6 = v-pax6 - v-cpax6 - v-hpax6
+     compute v-upax7 = v-pax7 - v-cpax7 - v-hpax7
+
+     compute v-uchi1 = v-chi1 - v-cchi1 - v-hchi1
+     compute v-uchi2 = v-chi2 - v-cchi2 - v-hchi2
+     compute v-uchi3 = v-chi3 - v-cchi3 - v-hchi3
+     compute v-uchi4 = v-chi4 - v-cchi4 - v-hchi4
+     compute v-uchi5 = v-chi5 - v-cchi5 - v-hchi5
+     compute v-uchi6 = v-chi6 - v-cchi6 - v-hchi6
+     compute v-uchi7 = v-chi7 - v-cchi7 - v-hchi7
+
+     compute v-ubeb1 = v-beb1 - v-cbeb1 - v-hbeb1
+     compute v-ubeb2 = v-beb2 - v-cbeb2 - v-hbeb2
+     compute v-ubeb3 = v-beb3 - v-cbeb3 - v-hbeb3
+     compute v-ubeb4 = v-beb4 - v-cbeb4 - v-hbeb4
+     compute v-ubeb5 = v-beb5 - v-cbeb5 - v-hbeb5
+     compute v-ubeb6 = v-beb6 - v-cbeb6 - v-hbeb6
+     compute v-ubeb7 = v-beb7 - v-cbeb7 - v-hbeb7
+
+     move v-uoda1  to uoda1
+     move v-uoda2  to uoda2
+     move v-uoda3  to uoda3
+     move v-uoda4  to uoda4
+     move v-uoda5  to uoda5
+     move v-uoda6  to uoda6
+     move v-uoda7  to uoda7
+
+     move v-upax1  to upax1
+     move v-upax2  to upax2
+     move v-upax3  to upax3
+     move v-upax4  to upax4
+     move v-upax5  to upax5
+     move v-upax6  to upax6
+     move v-upax7  to upax7
+
+     move v-uchi1  to uchi1
+     move v-uchi2  to uchi2
+     move v-uchi3  to uchi3
+     move v-uchi4  to uchi4
+     move v-uchi5  to uchi5
+     move v-uchi6  to uchi6
+     move v-uchi7  to uchi7
+
+     move v-ubeb1  to ubeb1
+     move v-ubeb2  to ubeb2
+     move v-ubeb3  to ubeb3
+     move v-ubeb4  to ubeb4
+     move v-ubeb5  to ubeb5
+     move v-ubeb6  to ubeb6
+     move v-ubeb7  to ubeb7
+
+     display l-uoda1 l-uoda2 l-uoda3 l-uoda4 l-uoda5 l-uoda6 l-uoda7
+             l-upax1 l-upax2 l-upax3 l-upax4 l-upax5 l-upax6 l-upax7 
+             l-uchi1 l-uchi2 l-uchi3 l-uchi4 l-uchi5 l-uchi6 l-uchi7
+             l-ubeb1 l-ubeb2 l-ubeb3 l-ubeb4 l-ubeb5 l-ubeb6 l-ubeb7
+     move v-oda1   to oda1   display l-oda1 
+     move v-pax1   to pax1   display l-pax1
+     move v-chi1   to chi1   display l-chi1
+     move v-fre1   to fre1   display l-fre1
+     move v-beb1   to beb1   display l-beb1
+
+     move v-coda1  to coda1  display l-coda1 
+     move v-cpax1  to cpax1  display l-cpax1
+     move v-cchi1  to cchi1  display l-cchi1
+     move v-cfre1  to cfre1  display l-cfre1
+     move v-cbeb1  to cbeb1  display l-cbeb1
+
+     move v-hoda1  to hoda1  display l-hoda1 
+     move v-hpax1  to hpax1  display l-hpax1
+     move v-hchi1  to hchi1  display l-hchi1
+     move v-hfre1  to hfre1  display l-hfre1
+     move v-hbeb1  to hbeb1  display l-hbeb1
+
+     move v-dol1   to dol1   display l-dol1
+     move v-dol4   to dol4   display l-dol4
+
+     move v-oda7   to oda7   display l-oda7 
+     move v-pax7   to pax7   display l-pax7
+     move v-chi7   to chi7   display l-chi7
+     move v-fre7   to fre7   display l-fre7
+     move v-beb7   to beb7   display l-beb7
+
+     move v-coda7  to coda7  display l-coda7 
+     move v-cpax7  to cpax7  display l-cpax7
+     move v-cchi7  to cchi7  display l-cchi7
+     move v-cfre7  to cfre7  display l-cfre7
+     move v-cbeb7  to cbeb7  display l-cbeb7
+
+     move v-hoda7  to hoda7  display l-hoda7 
+     move v-hpax7  to hpax7  display l-hpax7
+     move v-hchi7  to hchi7  display l-hchi7
+     move v-hfre7  to hfre7  display l-hfre7
+     move v-hbeb7  to hbeb7  display l-hbeb7
+
+
+     move satilabilir to v-tsoda
+     move v-tsoda  to tsoda display l-tsoda
+     move v-texts  to texts display l-texts
+     move v-early  to cearly display l-cearly
+     move v-rchange to rchange display l-rchange
+*/kalan oda sayisini buluyor
+     compute v-koda = v-tsoda - v-oda4
+     move v-koda  to koda
+     display l-koda
+*/gun sonu beklenen oda sayisi
+     compute v-bkoda = v-tsoda - v-oda7
+     move v-bkoda  to bkoda
+     display l-bkoda
+*/gelirler bulunuyor
+     compute v-ttoda = v-goda + v-ioda
+     move v-ttoda  to tgoda1
+     display l-tgoda1
+     
+     compute v-tgpax1 = v-ttoda / v-pax7
+     move v-tgpax1 to tgpax1
+     display l-tgpax1
+
+     compute v-tgort = v-ttoda / v-oda7
+     move v-tgort  to tgort
+     display l-tgort
+*/gelirler bulunuyor
+*/comp gelirler bulunuyor
+     move v-icoda to tgcoda1
+     display l-tgcoda1
+
+     compute v-tgcpax1 = v-icoda / v-cpax7
+     move v-tgcpax1 to tgcpax1
+     display l-tgcpax1
+     
+     compute v-tgcort = v-icoda / v-coda7
+     move v-tgcort  to tgcort
+     display l-tgcort
+*/comp gelirler bulunuyor
+*/house use gelir
+     move v-ihoda to tghoda1
+     display l-tghoda1
+
+     compute v-tghpax1 = v-ihoda / v-hpax7
+     display l-tghpax1
+
+     compute v-tghort = v-ihoda / v-hoda7
+     move v-tghort   to tghort
+     display l-tghort
+*/house use gelir
+*/ucretli kalanlar
+     compute v-tguoda = v-ttoda - v-icoda - v-ihoda
+     move v-tguoda      to tguoda1
+     display l-tguoda1
+
+     compute v-tgupax1 = v-tguoda / v-upax7
+     move v-tgupax1  to tgupax1
+     display l-tgupax1
+
+     compute v-tguort = v-tguoda / v-uoda7
+     move v-tguort  to tguort
+     display l-tguort
+*/ucretli kalanlar
+     move v-boda   to boda
+     display l-boda
+     move v-dol7   to dol7   display l-dol7
+     compute toda1 = v-pax1 + v-chi1 + v-fre1 + v-beb1
+     display l-oda1a
+     compute toda2 = v-pax2 + v-chi2 + v-fre2 + v-beb2
+     display l-oda2a
+     compute toda3 = v-pax3 + v-chi3 + v-fre3 + v-beb3
+     display l-oda3a
+     compute toda4 = v-pax4 + v-chi4 + v-fre4 + v-beb4
+     display l-oda4a
+     compute toda5 = v-pax5 + v-chi5 + v-fre5 + v-beb5
+     display l-oda5a
+     compute toda6 = v-pax6 + v-chi6 + v-fre6 + v-beb6
+     display l-oda6a
+     compute toda7 = v-pax7 + v-chi7 + v-fre7 + v-beb7
+     display l-oda7a
+     close takas takas2 odalar.
+*
+ pazar-dagilim.
+     perform baslik-yukle-pazar
+     perform grid-yukle-pazar.
+*
+ ulke-dagilim.
+     perform baslik-yukle-ulke
+     perform grid-yukle-ulke.
+*
+ arizali-oda-dagilim.
+     perform baslik-yukle-arizali
+     perform grid-yukle-arizali.
+
+ 
+*
+ grid-yukle-ulke.
+     open input takas ulke
+     initialize takas-rec
+     move "A"            to takas-tip
+     start takas key not < takas-anahtar invalid
+          continue
+     not invalid
+     perform with test after until fs-takas = "10"
+     read takas next no lock end move "10" to fs-takas
+     not at end
+             if takas-tip <> "A"
+                exit perform 
+             end-if
+            initialize form1-gd-1-record ulke-rec
+            move takas-anah         to ulke-anah
+            read ulke no lock invalid
+                 move "Tanimsiz Ulke.."  to gd-1-col-1
+            end-read
+              move ulke-adi              to gd-1-col-1
+              move takas-oda-adet        to zoda-adet
+              move zoda-adet             to gd-1-col-2
+
+              move takas-pax-adet        to zpax-adet
+              move zpax-adet             to gd-1-col-3
+
+              move takas-chi-adet        to zchi-adet
+              move zchi-adet             to gd-1-col-4
+
+              move takas-fre-adet        to zfre-adet
+              move zfre-adet             to gd-1-col-5
+
+              move takas-beb-adet        to zbeb-adet
+              move zbeb-adet             to gd-1-col-6
+
+              modify form1-gd-1,record-to-add(form1-gd-1-record)
+     end-read
+     end-perform
+     end-start
+     close takas ulke
+      .
+*
+ baslik-yukle-ulke.
+     modify form1-gd-1,
+            reset-grid = 1
+            mass-update = 1
+
+     initialize form1-gd-1-record
+     move "Ulke"                 to gd-1-col-1
+     move "Oda "                 to gd-1-col-2
+     move "Pax"                  to gd-1-col-3
+     move "Chi"                  to gd-1-col-4
+     move "Free"                 to gd-1-col-5
+     move "Beb"                  to gd-1-col-6
+     modify form1-gd-1,
+            record-to-add(form1-gd-1-record).
+   
+     modify form1-gd-1,
+            mass-update = 0.    
+*
+ baslik-yukle-arizali.
+     modify form1-gd-3,
+            reset-grid = 1
+            mass-update = 1
+
+     initialize form1-gd-3-record
+     move "Oda"                  to gd-3-col-1
+     move "Bas.Tarihi"           to gd-3-col-2
+     move "Bit.Tarihi"           to gd-3-col-3
+     move "Islm.Tarihi"          to gd-3-col-4
+     move "Staf"                 to gd-3-col-5
+     modify form1-gd-3,
+            record-to-add(form1-gd-3-record).
+   
+     modify form1-gd-3,
+            mass-update = 0.    
+       .
+*
+ baslik-yukle-pazar.
+     modify form1-gd-2,
+            reset-grid = 1
+            mass-update = 1
+
+     initialize form1-gd-2-record
+     move "Pazar"                to gd-2-col-1
+     move "Oda "                 to gd-2-col-2
+     move "Pax"                  to gd-2-col-3
+     move "Chi"                  to gd-2-col-4
+     move "Free"                 to gd-2-col-5
+     move "Beb"                  to gd-2-col-6
+     modify form1-gd-2,
+            record-to-add(form1-gd-2-record).
+   
+     modify form1-gd-2,
+            mass-update = 0.  
+*
+ grid-yukle-arizali. 
+     open input outof
+     initialize outof-rec
+     move tarih-tasi       to outof-bas-tarih
+     start outof key not < outof-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-outof = "10"
+     read outof next no lock end move "10"  to fs-outof
+     not at end
+             if outof-bit-tarih < tarih-tasi
+                exit perform cycle 
+             end-if
+             initialize form1-gd-3-record
+             move outof-odano          to gd-3-col-1
+             move outof-bas-gun        to egun
+             move outof-bas-ay         to eay
+             move outof-bas-yil        to eyil
+             move etarih               to gd-3-col-2
+             move outof-bit-gun        to egun
+             move outof-bit-ay         to eay
+             move outof-bit-yil        to eyil
+             move etarih               to gd-3-col-3
+             move outof-isl-gun        to egun
+             move outof-isl-ay         to eay
+             move outof-isl-yil        to eyil
+             move etarih               to gd-3-col-4
+
+             move outof-staf           to gd-3-col-5
+             modify Form1-Gd-3,record-to-add(form1-gd-3-record) 
+     end-read
+     end-perform
+     end-start
+     close outof
+      .
+*
+ grid-yukle-pazar.
+     open input takas kodlar02
+     initialize takas-rec
+     move "B"            to takas-tip
+     start takas key not < takas-anahtar invalid
+          continue
+     not invalid
+     perform with test after until fs-takas = "10"
+     read takas next no lock end move "10" to fs-takas
+     not at end
+             if takas-tip <> "B"
+                exit perform 
+             end-if
+            initialize form1-gd-2-record kodlar02-rec
+            move takas-anah         to kodlar02-kodu
+            move "E"                to kodlar02-tipi
+            read kodlar02 no lock invalid
+                 move "Tanimsiz Ulke.."  to gd-2-col-1
+            end-read
+              move kodlar02-adi          to gd-2-col-1
+              move takas-oda-adet        to zoda-adet
+              move zoda-adet             to gd-2-col-2
+
+              move takas-pax-adet        to zpax-adet
+              move zpax-adet             to gd-2-col-3
+
+              move takas-chi-adet        to zchi-adet
+              move zchi-adet             to gd-2-col-4
+
+              move takas-fre-adet        to zfre-adet
+              move zfre-adet             to gd-2-col-5
+
+              move takas-beb-adet        to zbeb-adet
+              move zbeb-adet             to gd-2-col-6
+
+              modify form1-gd-2,record-to-add(form1-gd-2-record)
+     end-read
+     end-perform
+     end-start
+     close takas kodlar02. 
+
+*
+ satilabilir-bul.
+    open input takvim.
+    move tarih-tasi         to takvim-anah
+    read takvim no lock invalid
+         display message box 
+                 "Tarih bulunamadi ...."
+                 icon mb_Error_icon
+                 title "Hata",
+                 initialize takvim-rec
+    end-read
+    close takvim.
+    if onkpara-referans-var = 1
+       if oda-ref(1:1) not = 0
+          move takvim-ref-hazir-oda2(oda-ref) to satilabilir
+       else
+          move takvim-hazir-oda     to satilabilir
+       end-if 
+    else
+       move takvim-hazir-oda        to satilabilir
+    end-if.
+*
+ uzatilan-oda-bul.
+    open input uzatma konuk odalar
+    initialize uzatma-rec sayac  ydktakas2-aciklama
+    move tarih-tasi to uzatma-tarih 
+    start uzatma key >= uzatma-anah
+    invalid continue
+    not invalid
+    perform until fs-uzatma = "10"
+    read uzatma next no lock end move "10" to fs-uzatma
+    not end
+      initialize konuk-rec
+      move uzatma-folio to konuk-folio
+      read konuk  no lock invalid 
+          continue
+      not invalid
+         move konuk-oda-konumu   to rez-oda-konumu 
+         move konuk-fiyat-konumu to rez-fiyat-konumu          
+         if onkpara-referans-var = 1 then 
+            perform ref-filtre
+            if  not ref-gecti then 
+               exit perform cycle
+          end-if
+        end-if          
+          if konuk-fol-kodu = "R"
+          if konuk-share = 1 then 
+             move 0 to ekoda
+          else
+             move 1 to ekoda
+          end-if
+             if uzatma-tarih = tarih-tasi
+                add ekoda to  v-texts
+             end-if   
+               add 1 to sayac
+               initialize takas2-rec ydktakas2-aciklama takas2-adi-soy
+               move "D"           to takas2-tip
+               move sayac         to takas2-islem-no
+               read takas2 no lock invalid
+                  initialize takas2-rec
+                  move "D"           to takas2-tip
+                  move uzatma-zaman  to takas2-zaman
+                  move sayac         to takas2-islem-no                                              
+                  move konuk-odano   to takas2-odano
+                  move uzatma-staf   to takas2-staf
+                  move konuk-folio   to takas2-folio
+                  move konuk-acenta  to takas2-acenta
+                  move konuk-firma   to takas2-firma
+                  
+                  string takas2-adi-soy
+                      konuk-adi delimited by "  "
+                      " "     delimited by size
+                      konuk-soyadi delimited by "  "
+                  into takas2-adi-soy              
+
+                     inspect ydktakas2-aciklama replacing trailing spaces by low-values
+                     
+                     string ydktakas2-aciklama
+                         "Eski Tarih :" delimited by low-values
+                         uzatma-eski-gun delimited by low-values
+                         "/" delimited by low-values
+                         uzatma-eski-ay delimited by low-values
+                         "/" delimited by low-values
+                         uzatma-eski-yil delimited by low-values
+                         " "     delimited by low-values
+                         "Yeni Tarih :" delimited by low-values 
+                         uzatma-yeni-gun delimited by low-values
+                         "/" delimited by low-values
+                         uzatma-yeni-ay delimited by low-values
+                         "/" delimited by low-values
+                         uzatma-yeni-yil delimited by low-values
+                     into ydktakas2-aciklama              
+                     inspect ydktakas2-aciklama replacing all low-values by spaces                      
+                     move ydktakas2-aciklama to takas2-aciklama
+
+                        write takas2-rec end-write 
+               end-read
+
+          end-if      
+      end-read
+    end-read
+    end-perform
+    end-start
+    close uzatma konuk odalar.
+*
+ erken-cikis-bul.
+       open input konuk odalar cast      
+       initialize konuk-rec sayac ydktakas2-aciklama
+       move "H" to konuk-durumu
+       move tarih-tasi    to konuk-git-tar
+       start konuk key > konuk-git invalid continue
+          not invalid
+          perform until fs-konuk ="10"
+               read konuk next no lock end move "10" to fs-konuk
+                 not end
+                  if konuk-durumu <> "H"
+                     move "10" to fs-konuk
+                     exit perform 
+                  end-if 
+                  if konuk-git-tar > tarih-tasi then
+                     move "10" to fs-konuk 
+                     exit perform
+                  end-if 
+                  if konuk-fol-kodu not ="R" then
+                     exit perform cycle
+                  end-if
+                 move konuk-oda-konumu   to rez-oda-konumu 
+                 move konuk-fiyat-konumu to rez-fiyat-konumu          
+                 if onkpara-referans-var = 1 then 
+                    perform ref-filtre
+                    if  not ref-gecti then 
+                       exit perform cycle
+                  end-if
+                end-if 
+                  if konuk-durumu not = "H"  or 
+                     konuk-git-tar > tarih-tasi then
+                            move "10" to fs-konuk
+                  else
+                   if konuk-share = 1 then 
+                     move 0 to ekoda
+                   else
+                     move 1 to ekoda
+                   end-if
+                      
+*********************************08 06 2015****************
+                    initialize cast-rec 
+                    move tarih-tasi           to cast-tarih
+                    move konuk-rez-no         to cast-rez-no
+                    read cast no lock invalid
+                         continue
+                    end-read
+                    move cast-oda-no to rez-odano
+                    if rez-odano not = spaces and dis-haric = 1 then 
+                             move rez-odano to odalar-anah
+                             read odalar no lock invalid continue
+                             not invalid
+                                      if ( dis-haric = 1 and odalar-dis = 1 )  then
+                                                 exit perform cycle
+                                      end-if 
+                             end-read
+                    end-if  
+***************************************************************
+
+                     if konuk-erken-cik = "E" then
+                        if konuk-git-tar = tarih-tasi
+                             add ekoda to  v-Early
+                             add 1 to sayac
+                             initialize takas2-rec takas2-adi-soy  
+                             move "E"           to takas2-tip
+                             move sayac         to takas2-islem-no
+                             read takas2 no lock invalid
+                                initialize takas2-rec
+                                move "E"           to takas2-tip
+                                move konuk-git-zaman to takas2-zaman
+                                move sayac          to takas2-islem-no                                              
+                                move konuk-odano      to takas2-odano
+                                move konuk-staf       to takas2-staf
+                                move konuk-folio to takas2-folio
+                                move konuk-acenta     to takas2-acenta
+                                move konuk-firma      to takas2-firma
+                                  string takas2-adi-soy
+                                      konuk-adi delimited by "  "
+                                      " "     delimited by size
+                                      konuk-soyadi delimited by "  "
+                                  into takas2-adi-soy              
+                        
+                                   inspect ydktakas2-aciklama replacing trailing spaces by low-values
+                                   
+                                   string ydktakas2-aciklama
+                                       "Konuk C/Out Tarihi :" delimited by low-values
+                                       konuk-git-gun delimited by low-values
+                                       "/" delimited by low-values
+                                       konuk-git-ay delimited by low-values
+                                       "/" delimited by low-values
+                                       konuk-git-yil delimited by low-values
+                                       " "     delimited by low-values
+                                       "C/Out Tarihi :" delimited by low-values 
+                                       gun-tasi delimited by low-values
+                                       "/" delimited by low-values
+                                       ay-tasi delimited by low-values
+                                       "/" delimited by low-values
+                                       yil-tasi delimited by low-values
+                                   into ydktakas2-aciklama              
+                                   inspect ydktakas2-aciklama replacing all low-values by spaces                      
+                                   move ydktakas2-aciklama to takas2-aciklama
+                        
+                                      write takas2-rec end-write 
+                             end-read
+
+                        end-if
+                     end-if   
+                  end-if
+                end-read
+          end-perform
+      end-start
+      close konuk odalar cast.
+*
+ oda-degisim-bul.
+      open input odadegis konuk odalar
+      initialize odadegis-rec sayac ydktakas2-aciklama
+      move tarih-tasi to odadegis-tarih 
+       start odadegis key >= odadegis-anah
+         invalid continue
+         not invalid
+         perform until fs-odadegis = "10"
+            read odadegis next no lock end move "10" to fs-odadegis
+              not end
+              move odadegis-folio to konuk-folio
+              read konuk  no lock invalid continue
+                not invalid
+                         move konuk-oda-konumu   to rez-oda-konumu 
+                         move konuk-fiyat-konumu to rez-fiyat-konumu          
+                         if onkpara-referans-var = 1 then 
+                            perform ref-filtre
+                            if  not ref-gecti then 
+                               exit perform cycle
+                          end-if
+                        end-if 
+                 if konuk-fol-kodu = "R" then
+                        if konuk-share = 1 then 
+                             move 0 to ekoda
+                             else
+                             move 1 to ekoda
+                          end-if
+                       if odadegis-tarih = tarih-tasi
+                                add ekoda to  v-rchange
+                       end-if 
+                          add 1 to sayac
+                          initialize takas2-rec takas2-adi-soy ydktakas2-aciklama 
+                          move "C"           to takas2-tip
+                          move sayac         to takas2-islem-no
+                          read takas2 no lock invalid
+                             initialize takas2-rec
+                             move "C"           to takas2-tip
+                             move odadegis-zaman to takas2-zaman
+                             move sayac          to takas2-islem-no                                              
+                             move konuk-odano      to takas2-odano
+                             move konuk-folio to takas2-folio
+                             move konuk-staf       to takas2-staf
+                             move konuk-acenta     to takas2-acenta
+                             move konuk-firma      to takas2-firma
+                             
+                                  string takas2-adi-soy
+                                      konuk-adi delimited by "  "
+                                      " "     delimited by size
+                                      konuk-soyadi delimited by "  "
+                                  into takas2-adi-soy              
+                  
+
+                             inspect ydktakas2-aciklama replacing trailing spaces by low-values
+
+                                string ydktakas2-aciklama
+                                    "Eski Odano :" delimited by low-values 
+                                    odadegis-eski-oda delimited by low-values
+                                    " "     delimited by low-values
+                                    "Yeni Odano :" delimited by low-values 
+                                    odadegis-yeni-oda delimited by low-values
+                                into ydktakas2-aciklama              
+                                inspect ydktakas2-aciklama replacing all low-values by spaces                      
+                                move ydktakas2-aciklama to takas2-aciklama
+
+                                   write takas2-rec end-write 
+                          end-read
+
+                 end-if
+              end-read
+            end-read
+         end-perform
+      end-start
+      close odadegis konuk odalar.
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 5
+         perform tum-form-doldur 
+      when 6
+                         call "/asya/ytl/obj/otel/pocketrp.asy"   
+                              on exception perform callerr-proc
+                              not on exception
+                         cancel "/asya/ytl/obj/otel/pocketrp.asy" 
+                         end-call
+         
+      end-evaluate
+     
+     .
+*
+ genelfis-oku.
+    open i-o genelfis.
+    initialize genelfis-rec
+    move 1 to genelfis-anahtar
+    read genelfis no lock invalid
+         accept ekran-fis-1 from time
+    end-read
+    add 1 to ekran-fis-1
+    rewrite genelfis-rec invalid
+            write genelfis-rec end-write
+    end-rewrite
+    close genelfis.
+*
+ oda-durumu-bul.
+    open input odalar 
+    initialize odalar-rec v-bt v-bk v-ariza-oda
+    start odalar key not < odalar-anah invalid
+          continue
+    not invalid
+    perform with test after until fs-odalar = "10"
+    read odalar next no lock end move "10" to fs-odalar
+    not at end
+            if odalar-hayali = "H"
+               exit perform cycle
+            end-if
+            move odalar-konumu   to rez-oda-konumu 
+            if onkpara-referans-var = 1 then 
+               perform ref-filtre
+               if  not ref-gecti then 
+                  exit perform cycle
+             end-if
+            end-if 
+            if odalar-durumu = house-bt 
+               add 1 to v-bt
+            end-if
+            if odalar-durumu = house-bk or house-co           |firat c-out odalar ekleme
+               add 1 to v-bk
+            end-if
+            if odalar-durumu = house-ao
+               add 1 to v-ariza-oda
+            end-if
+            
+    end-read
+    end-perform
+    end-start
+    close odalar 
+
+      .
+*
+ anlik-durum.
+    perform baslik-yukle-anlik
+    perform grid-yukle-anlik
+      .
+*
+ baslik-yukle-anlik.
+     modify form1-gd-4,
+            reset-grid = 1
+            mass-update = 1
+
+     initialize form1-gd-4-record
+     move "Saat"                 to gd-4-col-1
+     move "Tip"                  to gd-4-col-2
+     move "Oda"                  to gd-4-col-3
+     move "Adi Soyadi"           to gd-4-col-4
+     move "Acenta"               to gd-4-col-5
+     move "Firma"                to gd-4-col-6
+     move "Staf"                 to gd-4-col-7
+     move "Aciklama"             to gd-4-col-8
+     modify form1-gd-4,
+            record-to-add(form1-gd-4-record).
+   
+     modify form1-gd-4,
+            mass-update = 0. 
+*
+ grid-yukle-anlik.
+      open i-o odalar2. 
+     open input takas2 acenta firma kllnc 
+     initialize toplam-kayit acenta-rec firma-rec 
+                kllnc-rec 
+     move 1 to silinen-kayit
+     move high-values to takas2-rec
+     start takas2 key < takas2-alt-1 invalid
+          continue
+     not invalid
+     perform with test after until fs-takas2 = "10"
+     read takas2 backward no lock end move "10"  to fs-takas2
+     not at end
+              if toplam-kayit = max
+                 exit perform
+              end-if
+              add   1 to toplam-kayit
+              initialize form1-gd-4-record
+              move takas2-saat       to esaat
+              move takas2-dakika     to edakika
+              move ezaman            to gd-4-col-1
+
+              evaluate takas2-tip
+              when "A"
+                 move "C/In"         to gd-4-col-2
+              when "B"
+                 move "C/Out"        to gd-4-col-2
+              when "C"
+                 move "R/Change"     to gd-4-col-2
+              when "D"
+                 move "Uzatma"       to gd-4-col-2
+              when "E"
+                 move "E/Cout"       to gd-4-col-2
+              when "F"
+                 move "Post"         to gd-4-col-2
+              when "G"
+                 move "S-Post"       to gd-4-col-2
+              end-evaluate
+              add 1               to silinen-kayit
+              move takas2-odano              to o-kisa 
+            perform oda-uzat
+            move o-uzun to  gd-4-col-3
+              move takas2-adi-soy            to gd-4-col-4
+              initialize acenta-rec
+              move takas2-acenta             to acenta-kodu
+              read acenta no lock invalid
+                  move "Tanimsiz Acenta..."  to gd-4-col-5
+              end-read
+                  move acenta-adi            to gd-4-col-5
+              initialize firma-rec
+              move takas2-firma    to firma-kodu
+              read firma no lock invalid
+                  move "Tanimsiz Acenta..."  to gd-4-col-6
+              end-read
+                  move firma-adi             to gd-4-col-6
+
+              initialize kllnc-rec ydk-adi-soy
+              move takas2-staf      to k-kodu
+              read kllnc no lock invalid
+                   move "Tanimsiz Kullanici..."  to gd-4-col-7
+              end-read
+
+              move all low-values to ydk-adi-soy
+              inspect k-adi replacing
+                               trailing spaces by low-values
+                string ydk-adi-soy
+                k-adi delimited by low-values
+                " "      delimited by low-values
+                k-soyadi delimited by low-values
+                into ydk-adi-soy
+
+              move ydk-adi-soy      to gd-4-col-7
+              move takas2-aciklama  to gd-4-col-8
+              modify form1-gd-4,record-to-add(form1-gd-4-record)
+              modify form1-gd-4(silinen-kayit,1) hidden-data = takas2-folio 
+              if takas2-tip = "G"
+                 modify form1-gd-4(silinen-kayit),row-color = 416
+              end-if
+     end-read
+     end-perform
+     end-start
+     close takas2 acenta firma kllnc odalar2.
+*
+ onbgelir-bul.
+    open input yromhrk konuk depkod  odalar
+    initialize yromhrk-rec  konuk-rec sayac takas2-adi-soy ydktakas2-aciklama
+    move tarih-tasi      to yromhrk-tarih
+    start yromhrk key not < yromhrk-anah2 invalid
+         continue
+    not invalid
+    perform with test after until fs-yromhrk = "10"
+    read yromhrk next no lock end move "10" to fs-yromhrk
+    not at end 
+            if yromhrk-tarih <> tarih-tasi
+               exit perform 
+            end-if
+            initialize konuk-rec 
+            move yromhrk-folio        to konuk-folio
+            read konuk no lock invalid
+                 continue
+            end-read
+                 move konuk-oda-konumu   to rez-oda-konumu 
+                 move konuk-fiyat-konumu to rez-fiyat-konumu          
+                 if onkpara-referans-var = 1 then 
+                    perform ref-filtre
+                    if  not ref-gecti then 
+                       exit perform cycle
+                  end-if
+                end-if 
+            add 1 to sayac
+            initialize konuk-rec 
+            move yromhrk-folio        to konuk-folio
+            read konuk no lock invalid
+                 continue
+            end-read
+
+            initialize depkod-rec
+            move yromhrk-depkod to depkod-kodu
+            read depkod no lock invalid
+                continue
+            end-read
+
+            initialize takas2-rec takas2-adi-soy ydktakas2-aciklama
+            move "F"           to takas2-tip
+            move sayac         to takas2-islem-no
+            read takas2 no lock invalid
+               initialize takas2-rec
+               move "F"            to takas2-tip
+               move yromhrk-zaman  to takas2-zaman
+               move sayac          to takas2-islem-no                                              
+               move konuk-odano    to takas2-odano
+               move yromhrk-staf   to takas2-staf
+               move yromhrk-folio  to takas2-folio
+               move konuk-acenta   to takas2-acenta
+               move konuk-firma    to takas2-firma               
+
+                  string takas2-adi-soy
+                      konuk-adi delimited by "  "
+                      " "     delimited by size
+                      konuk-soyadi delimited by "  "
+                  into takas2-adi-soy              
+
+                   move yromhrk-tl-tutar  to zyromhrk-tl-tutar
+
+                     inspect ydktakas2-aciklama replacing trailing spaces by low-values                     
+                     string ydktakas2-aciklama
+                         "Departman :" delimited by low-values
+                          depkod-adi delimited by low-values
+                         " "     delimited by low-values
+                         "Tutar :" delimited by low-values 
+                         zyromhrk-tl-tutar delimited by low-values
+                         " "     delimited by low-values
+                         "TL" delimited by low-values
+                     into ydktakas2-aciklama              
+                     inspect ydktakas2-aciklama replacing all low-values by spaces                      
+                     move ydktakas2-aciklama to takas2-aciklama
+                     write takas2-rec end-write 
+            end-read
+
+    end-read
+    end-perform
+    end-start
+    close yromhrk konuk  depkod odalar.
+*
+ onbgelir-silinen-bul.
+    open input silhrk konuk depkod odalar
+    initialize silhrk-rec  konuk-rec sayac takas2-adi-soy ydktakas2-aciklama
+    move tarih-tasi      to silhrk-tarih
+    start silhrk key not < silhrk-anah2 invalid
+         continue
+    not invalid
+    perform with test after until fs-silhrk = "10"
+    read silhrk next no lock end move "10" to fs-silhrk
+    not at end 
+            if silhrk-tarih <> tarih-tasi
+               exit perform 
+            end-if
+
+            initialize konuk-rec 
+            move silhrk-folio        to konuk-folio
+            read konuk no lock invalid
+                 continue
+            end-read
+
+            move konuk-oda-konumu   to rez-oda-konumu 
+            move konuk-fiyat-konumu to rez-fiyat-konumu          
+            if onkpara-referans-var = 1 then 
+               perform ref-filtre
+               if  not ref-gecti then 
+                  exit perform cycle
+             end-if
+            end-if 
+
+            add 1 to sayac
+            initialize konuk-rec 
+            move silhrk-folio        to konuk-folio
+            read konuk no lock invalid
+                 continue
+            end-read
+
+            initialize depkod-rec
+            move silhrk-depkod to depkod-kodu
+            read depkod no lock invalid
+                continue
+            end-read
+
+            initialize takas2-rec takas2-adi-soy ydktakas2-aciklama
+            move "G"           to takas2-tip
+            move sayac         to takas2-islem-no
+            read takas2 no lock invalid
+               initialize takas2-rec
+               move "G"            to takas2-tip
+               move silhrk-zaman  to takas2-zaman
+               move sayac          to takas2-islem-no                                              
+               move konuk-odano    to takas2-odano
+               move silhrk-staf   to takas2-staf
+               move silhrk-folio to takas2-folio
+               move konuk-acenta   to takas2-acenta
+               move konuk-firma    to takas2-firma               
+
+                  string takas2-adi-soy
+                      konuk-adi delimited by "  "
+                      " "     delimited by size
+                      konuk-soyadi delimited by "  "
+                  into takas2-adi-soy              
+
+                   move silhrk-tl-tutar  to zyromhrk-tl-tutar
+
+                     inspect ydktakas2-aciklama replacing trailing spaces by low-values                     
+                     string ydktakas2-aciklama
+                         "Departman :" delimited by low-values
+                          depkod-adi delimited by low-values
+                         " "     delimited by low-values
+                         "Tutar :" delimited by low-values 
+                         zyromhrk-tl-tutar delimited by low-values
+                         " "     delimited by low-values
+                         "TL" delimited by low-values
+                     into ydktakas2-aciklama              
+                     inspect ydktakas2-aciklama replacing all low-values by spaces                      
+                     move ydktakas2-aciklama to takas2-aciklama
+                     write takas2-rec end-write 
+            end-read
+
+    end-read
+    end-perform
+    end-start
+    close silhrk konuk  depkod odalar.
+*
+
+ Form1-Gd-4-Ev-Msg-Begin-Entry.
+       move event-action-fail to event-action
+       inquire Form1-Gd-4, cursor-y in i  cursor-x in  ii
+       initialize folx
+       inquire Form1-Gd-4(i,1) hidden-data in  folx
+       move function numval(folx) to konuk-folio
+     evaluate key-status
+       when 6
+               call "/asya/ytl/obj/otel/folio.asy"
+                      using konuk-folio
+                      on exception 
+                        perform callerr-proc
+                      not on exception
+                        cancel "/asya/ytl/obj/otel/folio.asy"
+               end-call 
+     end-evaluate.
+*
+ cb-otel-Ex-Ntf-Selchange.
+       open i-o outof close outof
+         perform tum-form-doldur
+       delete file takas takas2      
+     .
+
+ 

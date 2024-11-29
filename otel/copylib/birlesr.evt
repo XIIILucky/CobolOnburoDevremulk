@@ -1,0 +1,314 @@
+* birlesr.evt
+* birlesr.evt is generated from D:\asya\acugt.ytl\otel\birlesr.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+     .
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+      continue
+     .
+*
+ takas-olus.
+          
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid move 1 to ekran-fis-1
+              end-read
+              add 1 to ekran-fis-1
+
+              move ekran-fis-1(2:) to takas-no 
+              rewrite genelfis-rec invalid write genelfis-rec end-rewrite
+              close genelfis
+                 
+
+              open output takas close takas open i-o takas with mass-update
+
+              initialize konuk-rec 
+              move ilk-acn to konuk-acenta
+              move "I" to konuk-durumu
+              start konuk key not < konuk-oda invalid
+                      continue
+                      not invalid
+                 perform until fs-konuk = "10"
+                    read konuk next no lock
+                       end move "10" to fs-konuk
+                       not end
+                        move konuk-folio to ozluk2-folio
+                        if konuk-acenta = ilk-acn or ilk-acn = spaces then 
+                        read ozluk2 no lock invalid
+                          continue
+                          not invalid
+                           if ozluk2-birles-folio > 0 then
+                            
+                              move ozluk2-birles-folio to takas-gercek-folio
+                              move konuk-folio         to takas-hayali-folio
+                              move konuk-odano           to takas-hayali-oda
+                              write takas-rec invalid 
+                                  display message box "Bir odaya 2 den fazla rez birlesmesi var"
+                              end-write
+                           end-if
+                        end-read
+                        end-if
+                     end-read
+                 end-perform
+              end-start
+              
+
+               initialize fs-takas takas-rec
+              perform with test after until fs-takas = "10"
+                   read takas next no lock end move "10" to fs-takas
+                        not at end
+                        move takas-gercek-folio to konuk-folio
+                        move konuk-odano to takas-gercek-oda
+                        rewrite  takas-rec  invalid stop " "
+                        end-rewrite
+                    end-read
+              end-perform .
+
+
+              .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 33
+       
+      when 1
+        evaluate control-id
+        when 14
+        when 17
+             initialize acenta-cagir
+             call "/asya/ytl/obj/otel/acenara.asy" 
+                  using acenta-cagir  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     if acenta-cagir <> spaces
+                        move acenta-cagir to ilk-acn
+                        display acc-01
+                     end-if
+             end-call
+             move 4 to accept-control
+             move 14 to control-id
+        end-evaluate
+      when 2
+              open input konuk ulke kodlar02 acenta kllnc ozluk2 odalar
+              perform takas-olus
+               perform dokumer-yolla
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close konuk ulke acenta kllnc ozluk2   kodlar02 odalar takas
+              delete file dokumer takas
+    end-evaluate.
+     .
+*
+ dokumer-yolla.
+                      
+            open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Birlesmis Odalar Raporu  " to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Birlesmis Odalar Raporu  " to det-filler
+     move "   Acenta:"  to det-filler(41:11)
+     move ilk-acn        to det-filler(55:04)
+     
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+    
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLRRRRLLRRLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+     initialize dokumer-rec detay
+     move "D1"         to det-dokumer-20(1:2)     
+     move "1"          to det-dokumer-20(10:1)
+     move "Oda "               to det-1
+     move "Adi       "         to det-2
+     move "Soyadi    "         to det-3
+     move "HS"                 to det-33
+     move "Px"                 to det-4
+     move "Ch"                 to det-5
+     move "Fr"                 to det-6
+     move "Be"                 to det-66
+     move "Check/In  "         to det-7
+     move "Check/Out "         to det-8
+ 
+     move "Folio   "           to det-10
+     move "Acenta    "         to det-11
+     move "Ulke      "         to det-12
+     move "Staf      "         to det-13
+     move "Oda"         to det-14
+     move "Adi"      to det-15
+     move "Soyadi"         to det-16
+     move "Bir.Folio"      to det-17
+    
+      move "NOTLAR"      to det-18 
+    
+     move "|" to fil-1 fil-2 fil-33 fil-3 fil-4 fil-5 fil-6
+                 fil-66 fil-7 fil-8  fil-10 fil-11
+                 fil-12 fil-13 fil-14 fil-15 fil-16 fil-17 fil-18
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"  to det-1 det-2 det-3 det-33 det-4 det-5 det-6 det-66 det-7 det-8
+                       det-10 det-11 det-12 det-13 det-14 det-15 det-16 det-17 det-18
+     write dokumer-rec from detay
+
+     initialize fs-takas takas-rec
+     start takas key > takas-gercek-oda invalid
+        continue
+        not invalid
+
+     perform with test after until fs-takas = "10"
+        read takas next no lock end move "10" to fs-takas
+                    not at end
+                     perform detay-ata
+         end-read
+     end-perform
+     end-start        
+
+              close dokumer.          
+
+
+
+
+*
+ detay-ata.
+    initialize dokumer-rec detay.
+     move "|" to fil-1 fil-2 fil-33 fil-3 fil-4 fil-5 fil-6
+                 fil-66 fil-7 fil-8  fil-10 fil-11
+                 fil-12 fil-13 fil-14 fil-15 fil-16 fil-17 fil-18
+    
+      move takas-gercek-folio to konuk-folio
+      read konuk no lock invalid continue end-read
+    move konuk-odano   to det-1.
+    move konuk-adi     to det-2.
+    move konuk-soyadi  to det-3.
+    move konuk-buyuk   to z-goster.
+    move z-goster      to det-4.
+    move konuk-kucuk   to z-goster.
+    move z-goster      to det-5.
+    move konuk-free    to z-goster.
+    move z-goster      to det-6.
+    move konuk-bebek   to z-goster.
+    move z-goster      to det-66.
+    move konuk-gel-gun to xgun
+    move konuk-gel-ay  to xay
+    move konuk-gel-yil to xyil
+    move xtarih to det-7.
+    move konuk-git-gun to xgun
+    move konuk-git-ay  to xay
+    move konuk-git-yil to xyil
+    move xtarih to det-8.
+   
+    move konuk-folio   to det-10.
+    move konuk-acenta  to acenta-kodu.
+    read acenta no lock invalid move all "*" to acenta-adi.
+    move acenta-adi    to det-11.
+    move konuk-ulke    to ulke-anah1.
+    read ulke no lock invalid move all "*" to ulke-adi.
+    move ulke-adi      to det-12.
+    
+    move takas-hayali-folio to konuk-folio
+    read konuk no lock invalid initialize konuk-rec end-read
+    move konuk-odano to det-14.
+    move konuk-adi to det-15.
+    move konuk-soyadi to det-16.
+    move konuk-folio to det-17.
+    move konuk-staf    to k-kodu.
+    read kllnc no lock invalid key 
+         move space to k-soyadi
+         move k-kodu to k-soyadi.
+    move k-soyadi       to det-13.
+      string konuk-acik-1 delimited by  "   "
+             konuk-acik-2 delimited by "   "
+             into det-18 .
+             write dokumer-rec from detay
+             .
+      
+
+    
+*
+ acc-01-Aft-Procedure.
+    if ilk-acn = spaces
+       move "Tum acentalar ..." to acenta-adi
+       display lb-ilk-acenta
+       exit paragraph
+    end-if
+    open input acenta
+    move ilk-acn    to acenta-kodu
+    read acenta no lock invalid
+         move "Tanimsiz ..." to acenta-adi
+    end-read
+    close acenta.
+    display lb-ilk-acenta.
+     .
+
+ 

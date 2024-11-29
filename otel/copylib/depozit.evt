@@ -1,0 +1,603 @@
+* depozit.evt
+* depozit.evt is generated from D:\asya\acugt.ytl\otel\depozit.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ accept-dovizkodu-Exception-Proc.
+     PERFORM accept-dovizkodu-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+      call "c$narg" using link-var
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid continue
+          not invalid
+          move calis-yil    to yil
+          move calis-ay     to  ay
+          move calis-gun    to gun
+     end-read
+     close genel.
+     open i-o depozit odalar2.
+     initialize ac-kapa gec-gecme.
+     .
+*
+ accept-odano-Bef-Procedure.
+     initialize depozit-rec.
+     initialize konuk-adi    of konuk
+                konuk-soyadi of konuk
+                depkod-adi of depkod
+                
+                d-adi-1 of doviz
+                kayit-var-yok.
+                
+     if after-yok not = 1 then
+        display form1
+     end-if.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     perform bef-procedure.
+     .
+*
+ exception-procedure.
+     move control-id to gidis-id
+     evaluate key-status
+         when 17 
+             move depozit-dosya         to link-logview-dosya-adi
+             set link-logview-pointer  to address of depozit-rec
+             set link-logview-rec-size to size of depozit-rec
+             perform logview-call
+             initialize key-status
+
+         when 1 
+            evaluate control-id
+              when  1003 
+               perform depkod-ara
+                when 1001
+                  perform Accept-Odano-Ex-Other
+            end-evaluate
+
+         when 2 
+              perform kontroller
+              if gecmez
+                 move 4        to accept-control
+                 move gidis-id to control-id
+                 exit paragraph
+              end-if
+              perform kaydet
+                      
+                if link-var > 0 then  
+                  set  exit-pushed to true
+                  else
+                    move 1 to after-yok
+                    move 4    to accept-control
+                    move 1004 to control-id
+                    
+                 end-if
+
+         when 3 
+              if kayit-var 
+                 move "S"         to  depozit-durumu
+                 move k-kodu-tasi to  depozit-staf
+                 move tarih       to  depozit-sil-tarih
+                 rewrite depozit-rec invalid 
+                     continue
+                 end-rewrite
+                 
+                 perform log-operation-depozit
+                
+                 if link-var > 0 then  
+                   set exit-pushed to true
+                   else
+                     move 4    to accept-control
+                     move 1001 to control-id
+                 end-if
+              end-if 
+
+
+     end-evaluate.
+*
+ kaydet.
+      move "I"         to  depozit-durumu      
+      move k-kodu-tasi to  depozit-staf
+      initialize  depozit-sil-tarih
+      rewrite depozit-rec invalid
+          move tarih       to  depozit-tarih
+          write depozit-rec end-write 
+      end-rewrite         
+*      write depozit-rec invalid 
+*              rewrite depozit-rec 
+*              end-rewrite
+*      end-write
+      perform log-operation-depozit.
+      initialize depozit-tutar
+      display accept-tutar
+              .
+*
+ bef-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 1001
+              evaluate true
+                  when turkce
+                       move "Oda Numarasi Giriniz F1->Oda Ara..." to mesaj
+                  when almanca
+                       move "Oda Numarasi Giriniz F1->Oda Ara..." to mesaj
+                  when ingilizce
+                       move "Oda Numarasi Giriniz F1->Oda Ara..." to mesaj
+              end-evaluate
+          when 1003
+              evaluate true
+                  when turkce
+                       move "Departman kodu giriniz F1->Departman kodlari yardimi" to mesaj
+                  when almanca
+                       move "Departman kodu giriniz F1->Departman kodlari yardimi" to mesaj
+                  when ingilizce
+                       move "Departman kodu giriniz F1->Departman kodlari yardimi" to mesaj
+              end-evaluate
+          when 1004
+              evaluate true
+                  when turkce
+                       move "Fis No Giriniz..[ Fis No Bos Gecilemez ]   " to mesaj
+                  when ingilizce
+                       move "Fis No Giriniz..[ Fis No Bos Gecilemez ]   " to mesaj
+                  when almanca
+                       move "Fis No Giriniz..[ Fis No Bos Gecilemez ]   " to mesaj
+              end-evaluate
+          when 1005
+              evaluate true
+                  when turkce
+                       move "Depozit Numarasi Giriniz.........   " to mesaj
+                  when ingilizce
+                       move "Depozit Numarasi Giriniz.........   " to mesaj
+                  when almanca
+                       move "Depozit Numarasi Giriniz.........   " to mesaj
+              end-evaluate
+          when 1006
+              evaluate true
+                  when turkce
+                       move "Doviz kodu giriniz F1->Doviz kodlari yardimi" to mesaj
+                  when ingilizce
+                       move "Doviz kodu giriniz F1->Doviz kodlari yardimi" to mesaj
+                  when almanca
+                       move "Doviz kodu giriniz F1->Doviz kodlari yardimi" to mesaj
+              end-evaluate
+          when 1007
+              evaluate true
+                  when turkce
+                       move "Tutar Giriniz [Tutar Bos Gecilemez]..  " to mesaj
+                  when ingilizce
+                       move "Tutar Giriniz [Tutar Bos Gecilemez]..  " to mesaj
+                  when almanca
+                       move "Tutar Giriniz [Tutar Bos Gecilemez]..  " to mesaj
+              end-evaluate
+          when 1008
+              evaluate true
+                  when turkce
+                       move "Girilen Bilgileri Kaydet " to mesaj
+                  when ingilizce
+                       move "Girilen Bilgileri Kaydet " to mesaj
+                  when almanca
+                       move "Girilen Bilgileri Kaydet " to mesaj
+              end-evaluate
+          when 1009
+              evaluate true
+                  when turkce
+                       move "Kaydi Sil " to mesaj
+                  when ingilizce
+                       move "Kaydi Sil " to mesaj
+                  when almanca
+                       move "Kaydi Sil " to mesaj
+              end-evaluate
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 2 
+            panel-text = mesaj.
+*
+ Form1-Aft-Routine.
+      close depozit odalar2.
+     
+     .
+*
+ Aft-Procedure.
+      move control-id to gidis-id.
+      evaluate control-id
+       when 1001
+         
+         open input odalar
+         move depozit-oda to o-uzun 
+         perform oda-kisalt
+         move o-kisa      to      odalar-anah
+         read odalar no lock invalid 
+              move 4         to accept-control
+              move gidis-id  to control-id
+              close odalar
+              exit paragraph
+              not invalid 
+              continue 
+         end-read
+         close odalar
+              if depozit-folio = 0
+              initialize folara-cagir depozit-folio
+              move "I"    to folara-cagri-tipi
+              move depozit-oda  to  o-uzun 
+                 perform oda-kisalt
+              move o-kisa to       folara-odano
+                   call "/asya/ytl/obj/otel/folara.asy" using folara-cagir
+                         on exception perform callerr-proc
+                         not on exception
+                   cancel "/asya/ytl/obj/otel/folara.asy" 
+                   end-call
+                   move folara-no-cagir    to depozit-folio
+                   display accept-foliono
+              end-if 
+
+              open input konuk
+              move depozit-folio to konuk-folio     
+              read konuk no lock invalid 
+                   move 4         to accept-control
+                   move gidis-id  to control-id
+                   close konuk
+                   exit paragraph
+                   not invalid continue 
+                   if konuk-durumu not = "I"
+                      move 4         to accept-control
+                      move gidis-id  to control-id
+                      close konuk
+                      exit paragraph
+                   end-if
+              end-read
+              close konuk
+               display accept-foliono
+               modify lb-mus-adi,    title = konuk-adi    of konuk
+               modify lb-mus-soyadi, title = konuk-soyadi of konuk
+
+       when 1003
+         open input depkod
+         move depozit-depkod to depkod-kodu
+         read depkod no lock invalid 
+               move 4         to accept-control
+               move gidis-id  to control-id
+               close depkod 
+               exit paragraph
+              not invalid continue 
+         end-read
+         close depkod
+               modify lb-dep-adi, title = depkod-adi of depkod
+
+       when 1004
+            if depozit-fisno = 0
+               move 4         to accept-control
+               move gidis-id  to control-id
+               exit paragraph
+            end-if
+            read depozit no lock invalid continue
+                 not invalid 
+                 move 1 to kayit-var-yok
+                 if depozit-durumu not = "I"
+                    display message box "Silinmis Kayit Uzerinde Degisiklik Yapamazsiniz.."
+                    move 4         to accept-control
+                    move 1001      to control-id
+                    exit paragraph
+                 end-if
+            end-read
+            display accept-numara accept-aciklama
+            display accept-dovizkodu
+            move depozit-tutar      to z-tutar
+            modify accept-tutar, value = z-tutar
+            perform doviz-oku
+            modify lb-doviz-adi, title = d-adi-1 of doviz
+       when 1005
+            continue
+            
+       when 1006
+         open input doviz
+         move depozit-doviz to doviz-kodu
+         read doviz no lock invalid 
+               move 4         to accept-control
+               move gidis-id  to control-id
+               close doviz
+               exit paragraph
+              not invalid continue 
+         end-read
+         close doviz
+               modify lb-doviz-adi, title = d-adi-1 of doviz
+
+       when 1007
+          move depozit-tutar      to z-tutar
+          modify accept-tutar, value = z-tutar
+*
+*         if depozit-tutar = 0
+*            move 4         to accept-control
+*            move gidis-id  to control-id
+*            exit paragraph
+*         end-if
+         
+      end-evaluate.
+
+     .
+*
+ kontroller.
+        initialize gec-gecme.
+*       when 1001
+         open input odalar
+         move depozit-oda to o-uzun 
+         perform oda-kisalt
+         move o-kisa      to odalar-anah
+         read odalar no lock invalid 
+              display message box "Oda Numarasi Tanimsiz.. Lutfen Tanimlayiniz"
+                      move 1001 to gidis-id
+                      close odalar
+                      move 1 to gec-gecme
+                      exit paragraph
+              not invalid continue
+         end-read
+         close odalar
+
+              open input konuk
+              move depozit-folio to konuk-folio     
+              read konuk no lock invalid 
+              display message box "Bu Folioya ait iceride Oda Bulunamadi.. "
+                      move 1001 to gidis-id
+                      close konuk
+                      move 1 to gec-gecme
+                      exit paragraph
+                   not invalid continue 
+                   if konuk-durumu not = "I"
+                      display message box "Islem Yapmak Istediginiz Folio History'de Islem Yapilamaz"
+                      move 1001 to gidis-id
+                      close konuk
+                      move 1 to gec-gecme
+                      exit paragraph
+                   end-if
+              end-read
+              close konuk
+
+
+*       when 1003
+         open input depkod
+         move depozit-depkod to depkod-kodu
+         read depkod no lock invalid 
+              display message box "Departman Kodu Tanimsiz ..Lutfen Tanimlayiniz.."
+                      move 1003 to gidis-id
+                      close depkod
+                      move 1 to gec-gecme
+                      exit paragraph
+              not invalid continue
+         end-read
+         close depkod
+*       when 1004
+            if depozit-fisno = 0
+               display message box "Fis Numarasi Bos Gecilemez.."
+                       move 1004 to gidis-id
+                       move 1 to gec-gecme
+                       exit paragraph
+            end-if
+*       when 1006
+         open input doviz
+         move depozit-doviz to doviz-kodu
+         read doviz no lock invalid 
+              display message box "Doviz Kodu Tanimsiz,,,"
+                      move 1006 to gidis-id
+                      close doviz
+                      move 1 to gec-gecme
+                      exit paragraph
+              not invalid continue
+         end-read
+         close doviz
+*       when 1007
+*         if depozit-tutar = 0
+*            display message box "Tutar Bos Gecilemez.."
+*                    move 1007 to gidis-id
+*                    move 1 to gec-gecme
+*                    exit paragraph
+*         end-if
+         .
+
+*
+ doviz-oku.
+         open input doviz
+         move depozit-doviz to doviz-kodu
+         read doviz no lock invalid continue
+              not invalid continue 
+         end-read
+         close doviz.
+
+
+
+
+
+
+*
+*
+ Form1-Pb-1-Link.
+     
+     .
+*
+ depkod-ara.
+      initialize depkod-cagir.
+      call "/asya/ytl/obj/otel/depara.asy" using depkod-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/depara.asy" 
+       end-call
+       move depkod-dep-kodu  to depozit-depkod
+       open input depkod
+       move depozit-depkod to depkod-kodu
+       read depkod no lock invalid 
+            not invalid continue 
+       end-read
+       close depkod
+       modify lb-dep-adi, title = depkod-adi of depkod
+       display accept-depkodu.
+     
+     .
+*
+ dovizkod-ara.
+      initialize doviz-cagir.
+      call "/asya/ytl/obj/otel/dovizara.asy" using doviz-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/dovizara.asy" 
+       end-call
+       move doviz-cagir  to depozit-doviz
+       open input doviz
+       move depozit-doviz to doviz-kodu
+       read doviz no lock invalid 
+            not invalid continue 
+       end-read
+       close doviz
+       modify lb-doviz-adi, title = d-adi-1 of doviz
+       display accept-dovizkodu.
+     .
+     
+*
+ accept-dovizkodu-Ex-Other.
+     evaluate key-status
+       when 1
+       end-evaluate
+         evaluate control-id
+           when 1006
+             initialize doviz-cagir.
+              call "/asya/ytl/obj/otel/dovizara.asy" using doviz-cagir
+               on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/dovizara.asy" 
+              end-call
+               move doviz-cagir  to depozit-doviz
+               open input doviz
+               move depozit-doviz to doviz-kodu
+               read doviz no lock invalid 
+                    not invalid continue 
+               end-read
+               close doviz
+               modify lb-doviz-adi, title = d-adi-1 of doviz
+               display accept-dovizkodu.    
+              
+     
+     .
+*
+ accept-odano-Ex-Other.
+      evaluate key-status
+       when 1
+               initialize oda-cagir.
+               move "D"   to oda-db-cagir
+                  call "/asya/ytl/obj/otel/odaara.asy" using oda-cagir
+                     on exception perform callerr-proc
+                     not on exception
+                  cancel "/asya/ytl/obj/otel/odaara.asy" 
+                  end-call.
+                  move odano-cagir     to o-kisa 
+                 perform oda-uzat
+                 move o-uzun      to depozit-oda.
+                  open input odalar.
+                     initialize odalar-rec.
+                     move depozit-oda     to o-uzun 
+         perform oda-kisalt
+         move o-kisa      to odalar-anah
+                  read odalar no lock invalid 
+                     initialize depozit-oda
+                         not invalid continue 
+                  end-read
+                  close odalar
+                  display accept-odano.
+*
+ Form1-Aft-Initdata.
+         if link-var > 0 then 
+            initialize depozit-rec
+             initialize konuk-adi    of konuk
+                konuk-soyadi of konuk
+                depkod-adi of depkod
+                
+                d-adi-1 of doviz
+                kayit-var-yok
+             initialize       z-tutar
+            modify accept-tutar, value = z-tutar
+               
+            move link-fol to    depozit-folio 
+             move 1 to after-yok
+            if depozit-folio = 0
+               move dokcagir-konuk-folio to depozit-folio
+            end-if
+           open input konuk
+              move depozit-folio to konuk-folio     
+              read konuk no lock invalid 
+                continue
+                set exit-pushed to true
+              end-read
+              move konuk-odano to o-kisa 
+                 perform oda-uzat
+                 move o-uzun      to depozit-oda
+
+           close konuk
+           move  ONKPARA-DEPOZIT to DEPOZIT-DEPKOD
+           display accept-foliono  accept-depkodu
+          display accept-odano
+             move 0 to after-yok
+             move 4 to accept-control
+             move 1003 to control-id
+         end-if 
+          if link-var = 2 then 
+            if link-anah(1:3) = "Sil" then 
+              move 2 to bitti
+             
+                 initialize depozit-rec
+                 move link-fol to    depozit-folio 
+                 start depozit key >= depozit-anahtar invalid  move 1 to bitti
+                    not invalid
+                     perform until bitti= 1
+                      read depozit next no lock end move 1 to bitti
+                        not end 
+                         if   link-fol not =     depozit-folio   
+                           move 1 to bitti
+                           else
+                             if "S"         =  depozit-durumu
+                               exit perform cycle
+                             end-if
+                             display accept-fisno  accept-depkodu
+                            
+                           
+                                move "S"         to  depozit-durumu
+                                 move k-kodu-tasi to  depozit-staf
+                                 move tarih       to  depozit-sil-tarih
+                                 rewrite  depozit-rec invalid 
+                                     continue
+                                 end-rewrite
+                                  perform log-operation-depozit
+                                 display message box DEPOZIT-TUTAR " tutarinda Depozit Otomatik olarak Silindi! " title "Uyari"                              
+
+                       end-if
+                      end-read
+                       end-perform 
+                   end-start
+              
+               set exit-pushed to true
+            else
+              move link-anah to depozit-anahtar
+              display accept-fisno  accept-depkodu
+              move 1004 to control-id
+              perform aft-procedure
+              move 17  to control-id
+            end-if
+          end-if
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+
+ 

@@ -1,0 +1,438 @@
+* bilbord.evt
+* bilbord.evt is generated from D:\asya\acugt.ytl\otel\bilbord.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     EVALUATE Event-Control-Id
+     WHEN 2
+        PERFORM Form1-Gd-1-Ev-Other
+     END-EVALUATE
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input takvim.   
+    open i-o   bilbord.
+     .
+*
+ acc-01-Aft-Procedure.
+    open input acenta.
+    initialize acenta-rec.
+    move acn-kod to acenta-kodu.
+    read acenta no lock invalid 
+        display message box "Tanimsiz acenta kodu..."
+        move 4  to accept-control
+        move 12 to control-id
+    not invalid 
+        modify lb-acenadi, title = acenta-adi of acenta 
+        if acenta-master = spaces 
+           display message box "Acentanin bilboard acenta tanimlamasi bulunamadi..." new-line
+                               "Acenta kodlari tanimlamadan kodlamasini yapabilirsiniz.."
+           move 4  to accept-control
+           move 12 to control-id
+        end-if
+    end-read 
+    close acenta.
+     .
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to tarih.
+    display acc-02 acc-03.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+    open input konum
+     .
+*
+ button-acenara-Link.
+    initialize acen-cagir.
+    call "/asya/ytl/obj/otel/acenara.asy" using acen-cagir
+        on exception perform callerr-proc
+           not on exception
+           cancel "/asya/ytl/obj/otel/acenara.asy" 
+    end-call.
+    move acen-cagir  to acn-kod.
+    perform acc-01-Aft-Procedure.
+     .
+
+*
+ Form1-Gd-1-Bef-Procedure.
+    perform grid-goster thru grid-goster-exit.
+     .
+ grid-goster.
+    modify form1-gd-1, reset-grid  = 1 mass-update = 1.
+    move "Tarih"       to gd-1-col-1
+    move "Re.T."       to gd-1-col-2
+    perform varying xx from 1 by 1 until xx > 40,
+       move xx to konum-anahtar,
+       read konum no lock invalid 
+            move spaces to konum-adi,            
+       not invalid
+       compute kyer = 2 * xx - 1
+      move konum-adi to gd-1-col-3(kyer)
+      compute kyer = 2 * xx 
+      move "Sat."     to gd-1-col-3(kyer)
+      end-read,
+    end-perform
+   
+    move "Toplam"   to gd-1-col-4
+    move "Sat."     to gd-1-col-5
+
+    modify form1-gd-1,record-to-add(form1-gd-1-record)
+    move 1 to kayit-sayi.
+
+    initialize takvim-rec.
+    move ay  to takvim-ay.
+    move yil to takvim-yil.
+    start takvim key not < takvim-anah invalid continue
+      not invalid
+      perform with test after until fs-takvim = "10"
+        read takvim next no lock end move "10" to fs-takvim
+          not end
+            if takvim-ay not = ay 
+               move "10" to fs-takvim
+              else
+               move takvim-gun  to xgun
+               move takvim-ay   to xay 
+               move takvim-yil  to xyil
+               move xtarih      to gd-1-col-1
+                 move SPACES    to gd-1-col-2
+               initialize bilbord-rec  TOP-ODA top-sat isaret
+               move acn-kod     to bilbord-acenta
+               move takvim-anah to bilbord-tarih
+
+                perform varying xx from 1 by 1 until xx > 40,
+               move xx     to bilbord-oda-tip
+               read bilbord no lock invalid
+                    if xx = 1 then 
+                       move spaces           to gd-1-col-2
+                    end-if
+                   compute kyer = 2 * xx - 1
+                   move spaces           to gd-1-col-3(kyer)
+                    compute kyer = 2 * xx 
+                  
+                   move spaces          to gd-1-col-3(kyer)
+                 not invalid 
+                   if xx = 1 then 
+                       move bilbord-release           to z-1
+                       move z-1           to gd-1-col-2
+                       if bilbord-rson-tarih < tarih-tasi and 
+                          bilbord-rson-tarih > "20000000" then 
+                          move "E" to isaret(20:1)
+                       end-if                    
+                   
+                 
+                    end-if
+                   if bilbord-oda  < bilbord-sat-oda
+                     move "E" to isaret(xx:1)
+                     end-if
+                   move bilbord-oda   to z-1
+                   compute kyer = 2 * xx - 1
+                   move z-1           to gd-1-col-3(kyer)
+                    compute kyer = 2 * xx 
+                   move bilbord-sat-oda to z-1
+                   move z-1           to gd-1-col-3(kyer)
+                   ADD  bilbord-oda TO TOP-ODA
+                    ADD  bilbord-SAT-oda TO TOP-SAT
+               end-read
+               end-perform
+                   move TOP-oda   to z-1
+                 
+                   move z-1           to gd-1-col-4
+                   
+                   move TOP-SAT to z-1
+                   move z-1           to gd-1-col-5
+                  
+                  if top-sat > top-oda then
+                      move "E" to isaret(41:1)
+                  end-if
+               add 1 to kayit-sayi
+               modify form1-gd-1,record-to-add(form1-gd-1-record)
+               modify form1-gd-1,
+                      y = kayit-sayi
+                      x = 1
+                      hidden-data = takvim-anah
+              perform varying xx from 1 by 1 until xx > 45
+               if isaret(xx:1) = "E"
+                  modify Form1-Gd-1(kayit-sayi, xx * 2 + 2 ), cell-color = 501 
+               end-if
+              end-perform
+              if  isaret(41:1) = "E" then 
+                  modify  Form1-Gd-1(kayit-sayi,2)  cell-color = 171
+              end-if
+            end-if
+        end-read
+      end-perform 
+    end-start.
+    modify form1-gd-1, mass-update = 0.
+ grid-goster-exit.
+    exit.
+ 
+
+*
+ Form1-Gd-1-Ev-Other.
+    perform kullandi.
+    evaluate event-type 
+         when msg-begin-entry
+           inquire Form1-Gd-1, x in i y in ii
+          EVALUATE I
+            WHEN  1
+            move event-action-fail to event-action,
+            WHEN 4 WHEN 6 WHEN 8 WHEN 10  WHEN 12 WHEN 14 WHEN 16 WHEN 18 WHEN 20
+            WHEN 22 WHEN 24 WHEN 26 WHEN 28  WHEN 30 WHEN 32 WHEN 34 WHEN 36 WHEN 38
+            WHEN 40 WHEN 42 WHEN 44 WHEN 46  WHEN 48 WHEN 50 WHEN 52 WHEN 54 WHEN 56
+            WHEN 58 WHEN 60 WHEN 62 WHEN 64 when 66 when 68 when 70 when 72 when 74 when 76 when 78 when 80 when 82 
+                display message box "Satilanlari duzenlemek icin On Rez Yeniden duzenleyi Calistiriniz "
+                  move event-action-fail to event-action,
+
+            WHEN 83
+            WHEN  84 
+              display message box "Sayfayi Tazelediginizde Kendisi Otomatik Toplam Alacaktir "
+                
+              move event-action-fail to event-action,
+*           when other
+*                inquire Form1-Gd-1(ii, 2 ), cell-data in eski-oda
+            
+           end-evaluate 
+                
+
+         when msg-finish-entry
+             initialize bilbord-rec
+             inquire Form1-Gd-1, x in i y in ii
+             if i = 2 then                       
+                     inquire Form1-Gd-1(ii,1)    hidden-data in takvim-anah
+                     inquire Form1-Gd-1(ii,2), cell-data in new-oda
+                     
+                     move acn-kod     to bilbord-acenta
+                     move takvim-anah to bilbord-tarih
+                     move 1    to bilbord-oda-tip
+                     read bilbord no lock invalid 
+                          move acn-kod     to bilbord-acenta
+                          move takvim-anah to bilbord-tarih
+                          move 1   to bilbord-oda-tip
+                     end-read
+                     move new-oda     to bilbord-release
+                     start takvim key = takvim-anah
+                         invalid display message box "tanimsiz Tarih"
+                         not invalid
+                          read takvim previous end-read
+                          perform bilbord-release times
+                             read takvim previous 
+                             end
+
+                               display message box "tanimsiz Tarih"
+                               exit perform 
+                             end-read
+                          end-perform 
+                     end-start 
+                     move takvim-anah to BILBORD-rson-tarih 
+                     write bilbord-rec invalid 
+                           rewrite bilbord-rec, invalid continue
+                           end-rewrite 
+                     end-write
+                     perform log-operation-bilbord
+                     modify Form1-Gd-1(ii, 2 ), cell-data = bilbord-release
+                                       hidden-data = BILBORD-rson-tarih 
+                     
+                    if bilbord-rson-tarih < tarih-tasi then 
+                       
+                        modify  Form1-Gd-1(ii,2)  cell-color = 171
+                      else
+                         modify  Form1-Gd-1(ii,2)  cell-color = 0
+                    
+                    end-if
+                 
+                 
+             else
+             compute xx = (i - 1) / 2
+             inquire Form1-Gd-1(ii,1) hidden-data in takvim-anah
+             inquire Form1-Gd-1(ii, xx * 2 + 1 ), cell-data in new-oda
+             inquire Form1-Gd-1(ii, xx * 2 + 2 ), cell-data in new-pax
+             
+             move acn-kod     to bilbord-acenta
+             move takvim-anah to bilbord-tarih
+             move xx     to bilbord-oda-tip
+             read bilbord no lock invalid 
+                  move acn-kod     to bilbord-acenta
+                  move takvim-anah to bilbord-tarih
+                  move xx    to bilbord-oda-tip
+             end-read
+                  inquire Form1-Gd-1(ii, 83 ), cell-data in top-oda
+                  inquire Form1-Gd-1(ii, 84 ), cell-data in top-sat
+                  compute top-oda = top-oda + new-oda - bilbord-oda
+                  move TOP-oda   to z-1
+                 
+                  modify Form1-Gd-1(ii, 83 ), cell-data = z-1
+
+                if top-oda < top-sat
+                 modify Form1-Gd-1(ii, 84 ), cell-color  = 501
+                 else
+                 modify Form1-Gd-1(ii, 84 ), cell-color  = 0
+               end-if
+
+             move new-oda     to bilbord-oda
+             move new-pax     to bilbord-sat-oda
+            
+             write bilbord-rec invalid 
+                   rewrite bilbord-rec, invalid continue
+                   end-rewrite 
+             end-write
+             perform log-operation-bilbord
+             
+             modify Form1-Gd-1(ii, xx * 2 + 1 ), cell-data = bilbord-oda
+             if bilbord-oda <  bilbord-sat-oda
+             modify Form1-Gd-1(ii, xx * 2 + 2 ), cell-color = 501
+             else 
+              modify Form1-Gd-1(ii, xx * 2 + 2 ), cell-color = 0
+             end-if
+            end-if 
+           
+    end-evaluate.
+     .
+*
+ Form1-Aft-Routine.
+      close bilbord konum takvim.
+     
+     .
+
+
+ Form1-Ex-Other.
+      evaluate key-status
+      when 4
+           perform dokumere-yolla
+
+      when 1
+        evaluate control-id
+        when 4
+
+        when 12
+        when 16
+             initialize acenta-cagir
+             call "/asya/ytl/obj/otel/acenara.asy" 
+                  using acenta-cagir  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     if acenta-cagir <> spaces
+                        move acenta-cagir to acn-kod
+                        display acc-01
+                     end-if
+             end-call
+             move 4 to accept-control
+             move 12 to control-id
+        end-evaluate
+      end-evaluate.
+dokumere-yolla.
+           
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+              initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                         dokumer-dosya
+
+              set  dokumer-asya-set to true
+              move print-no         to dokumer-dosya-adi
+
+              open output dokumer
+*/WINDOW TITLE
+              initialize dokumer-rec detay
+              move "W"                    to det-dokumer-20(1:)
+              move "On Rezervasyon Listesi" to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR
+              initialize dokumer-rec detay
+              move "B"                    to det-dokumer-20(1:1)
+              move "1"          to det-dokumer-20(10:1)
+              move "On Rezervasyon Listesi" to det-filler(20:)
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "B"                    to det-dokumer-20(1:)
+              write dokumer-rec from detay
+               initialize dokumer-rec detay
+              move "B"                    to det-dokumer-20(1:1)
+              move "1"          to det-dokumer-20(10:1)
+              move acenta-adi to det-filler(10:)
+              move ay  to det-filler(1:2)
+              move "-" to det-filler(3:1)
+              move yil to det-filler(4:4)
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "B"                    to det-dokumer-20(1:)
+              write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+              initialize dokumer-rec detay
+              move "O"                    to det-dokumer-20(1:)
+              move "E" to dokumer-oto-sayfa-basi
+              move 56  to dokumer-oto-sayfa-satir
+              move "|" to dokumer-detay-kolon-ayirici
+              move "LLLLLLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+              move dokumer-ozellikler-rec     to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR 
+              initialize dokumer-rec detay
+              move "D1"         to det-dokumer-20(1:2)
+              move "1"          to det-dokumer-20(10:1)
+*              move "Tarih"          to det-1
+*              move "Release"        to det-2
+              perform varying i from 1 by 1 until i > 10
+               continue
+*              move "Subesi"     to det-3
+*              move "Adresi-1"   to det-4
+              end-perform 
+*              move "Adresi-2"   to det-5
+*              move "Telefon"    to det-6
+*              move all "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6
+              write dokumer-rec from detay
+
+              initialize dokumer-rec detay
+              move "D2"               to det-dokumer-20(1:2)     
+              move "-"                to det-dokumer-20(5:1)
+*              move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+              write dokumer-rec from detay
+
+              initialize fs-banka
+*              perform with test after until fs-banka = "10"
+*                    read banka next no lock end move "10" to fs-banka
+*                    not at end
+*                         initialize detay
+* *                        move banka-kodu      to det-1
+* *                        move banka-adi       to det-2
+*                         move banka-subesi    to det-3
+*                         move banka-adres-1   to det-4
+*                         move banka-adres-2   to det-5
+*                         move banka-telefon   to det-6
+*                         add 1 to dokumer-anah
+                         write dokumer-rec from detay
+*                    end-read
+*              end-perform
+
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+*              close banka
+              delete file dokumer
+
+
+          .
+      
+
+ 

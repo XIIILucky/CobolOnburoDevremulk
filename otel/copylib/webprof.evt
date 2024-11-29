@@ -1,0 +1,275 @@
+* webprof.evt
+* webprof.evt is generated from D:\asya\acugt.ytl\otel\webprof.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.    
+     call "c$narg" using link-var.
+     perform adresleri-tasi.
+*     move tus-yetkileri to tus-kodlari.
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid continue
+          not invalid continue
+     end-read
+     close genel.
+     move CALISMA-TARIHI to tarih-tasi
+
+     open extend wlog
+     initialize wlog-rec
+      accept wlog-tarih  from century-date 
+      accept wlog-zaman  from time 
+      move "Form1-bef-create"  to wlog-data
+     write wlog-rec end-write.
+*
+ Form1-Aft-Initdata.   
+     if link-var >= 1 then      
+     initialize wlog-rec
+     accept wlog-tarih  from century-date 
+     accept wlog-zaman  from time 
+     move "Form1-Aft-Initdata"  to wlog-data
+     write wlog-rec end-write              
+          move sorgugweb-gelen-profil to sorguweb-gelen-profil
+          initialize tum-teller
+          if sorguweb-gelen-tel-no = "HEPSI"             
+             move 1 to tum-teller
+          end-if 
+          perform islem 
+          move sorguweb-gelen-profil to sorgugweb-gelen-profil
+
+          set exit-pushed  to true
+     end-if .             
+*
+ Exception-Procedure.
+        evaluate key-status 
+          when 2
+        
+            move tel-no        to sorguweb-gelen-tel-no  
+            move sira-no       to sorguweb-gelen-hangi-sira
+             call "/asya/ytl/obj/otel/webprof.asy" 
+                        using   sorguweb
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                   cancel "/asya/ytl/obj/otel/webprof.asy"
+            end-call
+              perform grid-yukle
+                perform varying i from 1 by 1 until i > 50
+                   if sorguweb-giden-profil-no(i) <> 0
+                      initialize form1-gd-1-record
+                      move sorguweb-giden-profil-no(i)       to gd-1-col-1              
+                      move sorguweb-giden-profil-sirket(i)   to gd-1-col-2 
+                      move sorguweb-giden-profil-adi(i)      to gd-1-col-3 
+                      move sorguweb-giden-profil-soyadi(i)   to gd-1-col-4 
+                      move sorguweb-giden-tel-no(i)          to gd-1-col-5
+                      move sorguweb-giden-uyruk-kodu(i)      to gd-1-col-6
+                      move sorguweb-giden-uyruk-adi(i)       to gd-1-col-7
+                      move sorguweb-giden-dog-tar(i)         to gd-1-col-8
+                      move sorguweb-giden-misafir-iceride(i) to gd-1-col-9
+                      move sorguweb-giden-cout-tar(i)        to gd-1-col-10
+                      move sorguweb-giden-cin-tar(i)         to gd-1-col-11
+                      modify form1-gd-1,record-to-add(form1-gd-1-record)
+                   end-if 
+              end-perform 
+                modify form1-gd-1,mass-update = 0
+        end-evaluate.
+* 
+ grid-yukle.  
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "P.No"          to gd-1-col-1
+     move "P.Sir"         to gd-1-col-2
+     move "Adi"           to gd-1-col-3
+     move "Soyadi"        to gd-1-col-4
+     move "Telefon"       to gd-1-col-5
+     move "Uyruk"         to gd-1-col-6
+     move "Uyruk Adi"     to gd-1-col-7
+     move "D.Tarihi"      to gd-1-col-8
+     move "Inhouse"       to gd-1-col-9
+     move "C-out Tar"     to gd-1-col-10
+     move "C-in Tar"      to gd-1-col-11
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+    .
+*
+ islem.             
+     open input musteri prohrk uyruk rez konuk
+     initialize musteri-rec tel-buldum i ik iz
+     if tum-teller not = 1
+        move sorguweb-gelen-tel-no       to musteri-tel1
+     else
+        if sorguweb-gelen-hangi-sira > 50
+           compute iz = sorguweb-gelen-hangi-sira - 50
+        else
+           move 50 to sorguweb-gelen-hangi-sira iz
+        end-if 
+     end-if 
+     start musteri key not < musteri-tel1 invalid 
+          continue 
+     not invalid 
+     perform until fs-musteri = "10"
+     read musteri next no lock end move "10" to fs-musteri
+     not at end
+          if tum-teller not = 1
+            if musteri-tel1 <> sorguweb-gelen-tel-no
+               exit perform 
+            end-if 
+          end-if 
+          if musteri-uygulama-dahil not = 1
+               exit perform cycle 
+          end-if 
+          if musteri-tel1 = spaces
+             exit perform cycle 
+          end-if 
+          if tum-teller = 1
+            add 1             to i
+            if sorguweb-gelen-hangi-sira > 50
+              if i <= iz
+                 exit perform cycle 
+              end-if
+              if iz > sorguweb-gelen-hangi-sira
+                 exit perform     
+              end-if
+              add 1              to iz
+            else
+              if i > iz
+                 exit perform  
+              end-if 
+            end-if
+            add  1               to ik
+          else
+             move 1              to ik
+          end-if 
+           
+          if ik > 50
+             exit perform 
+          end-if 
+
+          move 1                to tel-buldum            
+          move musteri-no       to sorguweb-giden-profil-no(ik)         
+          move musteri-sirket   to sorguweb-giden-profil-sirket(ik)    
+          move musteri-adi      to sorguweb-giden-profil-adi(ik)       
+          move musteri-soyadi   to sorguweb-giden-profil-soyadi(ik) 
+          move musteri-tel1     to sorguweb-giden-tel-no(ik)
+          move musteri-kim-uyruk to sorguweb-giden-uyruk-kodu(ik)
+          initialize uyruk-rec
+          move musteri-kim-uyruk   to uyruk-anah
+          read uyruk no lock invalid 
+               move "Uyruk Bulunamad..." to uyruk-adi1
+          end-read 
+              move uyruk-adi1   to sorguweb-giden-uyruk-adi(ik)
+
+          move musteri-dyil     to eyil
+          move musteri-day      to eay
+          move musteri-dgun     to egun
+          move etarih           to sorguweb-giden-dog-tar(ik)
+
+          perform prohrk-bul
+          
+          if tum-teller not = 1
+             move "10"  to fs-musteri
+             exit perform 
+          end-if 
+     end-read 
+     end-perform
+     end-start
+     if tel-buldum = 0
+         initialize sorgugweb-gelen-profil
+         move "tel-yok"  to sorguweb-giden-profil-adi(1)
+     end-if 
+     close musteri prohrk uyruk rez konuk.
+*
+ prohrk-bul.
+     initialize prohrk-rec misafir-iceride
+     move m-profil      to prohrk-profil-anah
+     move 999999999     to prohrk-profil-no
+     start prohrk key not > prohrk-ANAH invalid 
+           perform konuk-icerde-degil                       
+     not invalid 
+     perform until fs-prohrk = "10"
+     read prohrk backward no lock end move "10" to fs-prohrk
+     not at end 
+          if prohrk-profil-anah <> m-profil
+              if misafir-iceride <> "E" 
+                 perform konuk-icerde-degil
+              end-if 
+              exit perform
+          end-if 
+          initialize misafir-iceride
+          move isyeri-adres-tasi  to rez-dosya-adres konuk-dosya-adres
+          if isyeri-adres-tasi <> prohrk-rez-sirket
+             move prohrk-rez-sirket  to rez-dosya-adres konuk-dosya-adres
+             open input rez konuk
+          end-if
+          
+          initialize rez-rec
+          move prohrk-rez-no   to rez-no
+          read rez no lock invalid 
+               perform konuk-icerde-degil              
+          end-read 
+             if rez-folio > 0
+                initialize konuk-folio
+                move rez-folio   to konuk-folio
+                read konuk no lock invalid 
+                    perform konuk-icerde-degil                   
+                not invalid 
+                   if konuk-durumu = "I"
+                      move "E"   to sorguweb-giden-misafir-iceride(ik)                                            
+                      move konuk-git-yil     to eyil
+                      move konuk-git-ay      to eay
+                      move konuk-git-gun     to egun
+                      move etarih            to sorguweb-giden-cout-tar(ik)
+
+                      move konuk-gel-yil     to eyil
+                      move konuk-gel-ay      to eay
+                      move konuk-gel-gun     to egun
+                      move etarih            to sorguweb-giden-cin-tar(ik)
+
+                      move "10"              to fs-konuk
+                      exit perform 
+                   else
+                     perform konuk-icerde-degil
+                   end-if 
+                end-read 
+             else
+                perform konuk-icerde-degil
+             end-if 
+          if isyeri-adres-tasi <> prohrk-rez-sirket
+             close rez konuk
+          end-if
+
+          move "10"  to fs-prohrk
+          exit perform 
+     end-read 
+     end-perform
+     end-start. 
+*
+ konuk-icerde-degil.
+     move "H"    to sorguweb-giden-misafir-iceride(ik)                                            
+     move 0000   to eyil
+     move 00     to eay
+     move 00     to egun
+     move etarih to sorguweb-giden-cout-tar(ik)
+
+     initialize etarih
+     move 0000   to eyil
+     move 00     to eay
+     move 00     to egun
+     move etarih to sorguweb-giden-cin-tar(ik).
+*
+ Form1-Aft-Routine.
+     close wlog.
+
+ 

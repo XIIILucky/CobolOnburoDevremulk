@@ -1,0 +1,455 @@
+* yilfatu.evt
+* yilfatu.evt is generated from D:\asya\acugt.ytl\otel\yilfatu.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form5-Exception-Proc.
+     PERFORM Form5-Ex-Other
+     .
+
+ accept-0101-Event-Proc.
+     PERFORM pen-gd-Ev-Other
+     .
+
+ pen-gd-Exception-Proc.
+     PERFORM pen-gd-Ex-Other
+     .
+***   start event editor code   ***
+
+ 
+*
+ Form5-Bef-Create.
+       perform adresleri-tasi.
+
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid continue
+          not invalid continue
+     end-read
+     close genel.
+       open input takvim
+     move tarih-tasi to takvim-anah 
+     start takvim key > takvim-anah invalid stop " "
+        not invalid
+        read takvim next no lock end stop " " end-read
+     end-start
+     close takvim
+        move takvim-anah to sonraki-tar
+        open i-o konuk rez romhrk exthrk onkasa   yanrez yromhrk
+                 hrk2 folref acenta firma nt
+       open input depkod kodlar02
+        move ekran-fis-1(2:) to takas-no.
+            open i-o genelfis.
+            move 1 to genelfis-anahtar.
+            read genelfis no lock invalid move 1 to ekran-fis-1.
+              
+              add 1 to ekran-fis-1.
+              move k-kodu-tasi to takas-k.
+           
+      rewrite genelfis-rec invalid write genelfis-rec.
+      close genelfis.
+       move k-kodu-tasi to takas-k
+       open output takas close takas open i-o takas.
+      .
+
+*
+ Form5-Ex-Other.
+          initialize depkod-cagir
+        evaluate  key-status 
+           
+           when  2  
+           
+             
+               perform acu-form6-routine
+                
+                
+                   set exit-pushed to true
+            
+             
+        end-evaluate     .
+
+
+      
+      
+      
+                 
+
+
+       
+       
+
+*
+ fisno-bul.
+    open i-o genelfis.
+    move 1 to genelfis-anahtar.
+    read genelfis no lock invalid
+         initialize genelfis-rec 
+         move 1 to genelfis-anahtar.
+    add 1 to cekgir-oto.
+    move cekgir-oto to hrkgir-islem.
+    rewrite genelfis-rec invalid 
+            write genelfis-rec invalid continue
+            end-write
+    end-rewrite.
+    close genelfis.
+
+     
+
+        
+ bar-ekle.
+     move yuzde to EYUZDE.
+     modify Form1-Fr-2b, FILL-PERCENT = YUZDE,
+            TITLE = YUZDELE-BASLIK.
+     .
+*
+ Form6-Aft-Initdata.
+      
+         
+            
+           perform konuk-kapat
+           
+     .
+
+
+*
+ form5-after.
+       initialize gecer
+       evaluate control-id
+           when 2
+
+
+       end-evaluate
+        
+     .
+
+*
+ Form5-Aft-Initdata.
+
+    
+      move tarih-tasi to rapor-tarih
+      display ef-rapor-yil ef-rapor-ay ef-rapor-gun
+     .
+
+    
+     .
+
+     .
+*
+ 
+
+*
+     .
+ Pen-Kont.
+    
+    initialize pencere-toplamlar romhrk-rec exthrk-rec
+     
+    
+     
+    move konuk-folio to romhrk-folio exthrk-folio  
+
+     if konuk-fol-kodu = "R"  then
+             start romhrk key > romhrk-anah invalid
+                continue
+                not invalid
+                perform until fs-romhrk = "10"
+                read romhrk next no lock 
+                   end move "10" to fs-romhrk
+                   not end
+                     if romhrk-folio not = konuk-folio 
+                        move "10" to fs-romhrk
+                        else
+                        move romhrk-rec to hrkgir-rec
+                        perform topla
+                       
+                    end-if
+                end-read
+                end-perform
+             end-start
+
+          else
+            start exthrk key > exthrk-anah invalid
+                continue
+                not invalid
+                  perform until fs-exthrk = "10"
+                read exthrk next no lock 
+                   end move "10" to fs-exthrk
+                   not end
+                     if exthrk-folio not = konuk-folio 
+                        move "10" to fs-exthrk
+                        else
+                         
+                        move exthrk-rec to hrkgir-rec
+                        perform topla 
+                      
+                    end-if
+                end-read
+                end-perform
+             end-start
+
+      end-if
+* *    perform pen-yukle
+* *    perform dep-yukle
+   
+     
+      .
+topla.
+    if hrkgir-tarih > rapor-tarih then
+         exit paragraph
+    end-if
+    move 1 to p-var(hrkgir-ref)
+    
+    if hrkgir-fatura-no > 0 then
+      continue
+      else
+      move hrkgir-depkod to depkod-kodu
+      read depkod no lock invalid stop " "
+        not invalid
+        if DEPKOD-FATURA-TAKIP = "E" and
+          hrkgir-tl-tutar > 0 
+          if hrkgir-ba= "B"
+                 add hrkgir-tl-tutar to p-bakiye(hrkgir-ref)
+                  else
+                 subtract hrkgir-tl-tutar from p-bakiye(hrkgir-ref)
+           end-if
+           move 1 to p-fatura(hrkgir-ref)
+           
+        end-if
+      end-read
+    end-if
+    
+     .
+
+ 
+
+*
+ konuk-kapat.
+       initialize konuk-rec
+       start konuk key > konuk-anah invalid
+          continue
+          not invalid 
+          perform until fs-konuk = "10"
+            read konuk next no lock end move "10" to fs-konuk
+                not end
+                if konuk-gel-tar <= rapor-tarih and 
+                   konuk-git-tar >= rapor-tarih
+                      
+                      move "B"               to kodlar02-tipi
+                      move konuk-odeme-tipi  to kodlar02-kodu 
+                      read kodlar02 no lock invalid
+                           move "Tanimsiz"   to kodlar02-adi
+                      end-read
+                      move ode-tipi to fol-pes
+
+                     
+                       perform pen-kont 
+                       initialize takas-rec  yanrez-rec
+                         if konuk-rez-no > 0
+                            move 1 to yanrez-sirano
+                            move konuk-rez-no to yanrez-rezno
+
+                           read yanrez no lock invalid continue end-read
+                         end-if
+                       
+                      move konuk-acenta to acenta-kodu
+                      read acenta no lock invalid
+                          continue
+                      end-read
+                       move konuk-firma to firma-kodu
+                       read firma no lock invalid
+                          continue
+                      end-read
+                      MOVE KONUK-FOLio to  takas-folio  folref-folio
+                              
+                    move konuk-odano to  takas-oda          
+                    string konuk-adi delimited by "  "
+                         " " delimited by size
+                          konuk-soyadi delimited by "  "
+                          into takas-adi             
+                     move konuk-odeme-tipi  to  takas-odeme-tipi         
+                  perform varying i from 1 by 1 until i > 8
+                         if p-var(i)   > 0 then
+                              
+* if konuk-folio =  53363 and i = 6 then  stop " " end-if
+                                     initialize folref-rec
+                                    move konuk-folio to folref-folio
+                                     compute folref-ref =  i
+                                     read folref no lock invalid 
+                                      initialize folref-data
+                                             if  i = 5 or i = 1 then
+                                               if fol-pes not = "A" 
+                                                   move 1 to folref-ode
+                                                 else
+                                                   move 0 to folref-ode
+                                                 end-if
+                                               
+                                               else
+                                                move 0 to folref-ode
+                                            end-if
+                                              if CINPARA-EXT-FOL-AC = 1 then 
+                                                 if fol-pes not = "A" and konuk-fol-kodu = "R" then 
+                                                   move 1 to folref-ode
+                                                end-if
+                                              end-if
+                                     not invalid 
+                                              if CINPARA-EXT-FOL-AC = 1 then 
+                                                 if fol-pes not = "A" and konuk-fol-kodu = "R" then 
+                                                   move 1 to folref-ode
+                                                 end-if
+                                              end-if
+                                     end-read
+                          end-if
+                            
+                          move  p-no(i)           to takas-pen(i)            
+                          move  p-bakiye(i)       to takas-p-bakiye(i)        
+                          move  p-fatura(i)       to takas-p-fatura(i)        
+                          move  folref-ode        to takas-p-odeme(i)         
+                          move  p-profil-anah(i)  to takas-p-profil-anah(i)   
+                          move  p-var(i)          to takas-p-var(i)           
+                         
+                             
+
+
+                    end-perform  
+                    
+                        write takas-rec invalid 
+                        set exit-pushed to true
+                        exit paragraph
+                        
+                        end-write
+                      
+                      
+                end-if
+            end-read
+          end-perform
+        end-start.
+           perform pen-yukle
+
+*
+      .
+*
+ pen-yukle.
+      
+     
+      modify pen-gd, reset-grid  = 1
+                         mass-update = 1.
+      initialize pen-record
+      move "ODA"          to          prec-odano  
+      move "Folio No "    to     prec-folio       
+      move "Misafir Adi"  to      prec-adi        
+      move "Pen "         to prec1
+      move "Odeme "       to prec2
+      move "Cari Adi "    to prec3
+      move "[TL] Tutar "  to prec4
+      move "Fat "         to prec5
+      
+      modify pen-gd, record-to-add (pen-record) 
+       move 1 to kayit-sayi   
+       initialize takas-rec
+       start takas key > takas-oda invalid continue
+          not invalid
+          perform until fs-takas = "10" 
+            read takas next no lock end move "10" to fs-takas
+              not end
+                
+      
+                      perform varying ii from 1 by 1 until ii > 9
+                              if takas-p-fatura(ii) = 1 and  takas-p-odeme(ii) = 0  then
+                               add 1 to kayit-sayi
+                              
+                               initialize pen-record  
+                                 move takas-folio to prec-folio   
+                                move takas-oda to prec-odano    
+                                move takas-adi to    prec-adi 
+                
+                                  move ii to zz 
+                                  
+                                   move zz to prec1
+                                
+                                   move  takas-p-bakiye(ii)  to z-bakiye
+                                    move  z-bakiye     to           prec4
+                                 if takas-p-fatura(ii) = 1 then
+                                   move "FAT" to prec5
+                                   else
+                                   move "   " to prec5
+                                 end-if
+                                 modify pen-gd, record-to-add (pen-record) 
+                                 modify pen-gd(kayit-sayi,1) hidden-data = takas-folio
+                             end-if
+                       end-perform
+                  end-read
+               end-perform
+           end-start
+          modify pen-gd, 
+                         mass-update = 0.
+        
+                   
+*
+ pen-gd-Ev-Other.
+        evaluate event-type 
+         when msg-begin-entry
+                inquire pen-gd x in px
+                     y in py
+       inquire pen-gd(py,1) hidden-data in konuk-folio
+       inquire pen-gd(py,4) cell-data in  p-no(10)
+       if p-no(10) > 0 and < 10 then
+         evaluate px
+           when 8 
+             
+                      inquire pen-gd(py,1) cell-data in konuk-odano
+                     call "/asya/ytl/obj/otel/folfaty.asy" 
+                         using  konuk-folio, konuk-odano, p-no(10)
+                      on exception 
+                          perform callerr-proc
+                          exit paragraph
+                      not on exception 
+                          cancel "/asya/ytl/obj/otel/folfaty.asy"
+                    end-call
+                     perform Pen-Kont
+             
+             
+
+         
+              
+         end-evaluate
+       end-if
+             move event-action-fail to event-action,
+    end-evaluate.
+
+   
+*
+ Form5-Aft-Routine.
+
+         close konuk rez romhrk exthrk onkasa acenta firma
+           close depkod takas  yanrez yromhrk nt
+                 hrk2 folref kodlar02.
+           delete file takas.
+     .
+     .
+*
+ pen-gd-Ex-Other.
+     evaluate key-status
+        when 6
+                 inquire pen-gd cursor-x in px
+                     cursor-y in py
+       inquire pen-gd(py,1) hidden-data in konuk-folio
+         if konuk-folio > 0 then 
+           call "/asya/ytl/obj/otel/folio.asy" 
+            using  konuk-folio
+            on exception 
+             perform callerr-proc
+             exit paragraph
+            not on exception 
+             cancel "/asya/ytl/obj/otel/folio.asy"
+          end-call
+          end-if
+
+     end-evaluate
+     .
+*
+ Form6-Aft-Routine.
+
+            
+       
+     .
+
+ 

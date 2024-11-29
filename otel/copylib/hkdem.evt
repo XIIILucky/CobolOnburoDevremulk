@@ -1,0 +1,574 @@
+* hkdem.evt
+* hkdem.evt is generated from D:\asya\acugt.ytl\otel\hkdem.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM form1-gd-1-Ev-Other
+     .
+***   start event editor code   ***
+* okundu ve uyari icin eh olayi dusunulecek 
+* vazgec-yeni de problem var ustteki grid sifirlanmiyor ...
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+
+*
+ grid-goster.
+    modify form1-gd-1, reset-grid = 1 mass-update = 1.
+    move "Oda"          to gd-1-col-1                        
+    move "Sr."          to gd-1-col-2
+    move "Kodu"         to gd-1-col-3
+    move "Adet"         to gd-1-col-4
+    move "Adi"          to gd-1-col-5
+    move " "   to gd-1-col-6
+    move " "     to gd-1-col-7
+    modify form1-gd-1,
+           record-to-add(form1-gd-1-record)
+    move 1 to kayit-sayi              
+    initialize demihk-rec kayit-var dip-top  sira
+    
+    open input demihk demihktan
+    move oda           to demihk-oda
+    move 0             to demihk-sira
+    start demihk key not < demihk-anahtar invalid continue
+      not invalid
+        perform with test after until fs-demihk = "10"
+          read demihk next no lock end move "10" to fs-demihk
+            not end
+                 if demihk-oda <> oda
+                    exit perform cycle
+                 end-if
+                 initialize form1-gd-1-record
+                 move demihk-oda            to gd-1-col-1
+                 move demihk-sira           to gd-1-col-2
+                 move demihk-demikod        to gd-1-col-3
+                 move demihk-adet           to z-4
+                 move z-4                  to gd-1-col-4
+
+                 move demihk-demikod        to demihktan-kodu
+                 read demihktan no lock invalid
+                      continue
+                 not invalid
+                      move demihktan-adi         to gd-1-col-5
+                 end-read
+
+                | compute top-tutar = demihktan-tl-satis-kdvli * demihk-adet
+                | add top-tutar to dip-top
+                | move top-tutar            to z-16
+                | move z-16                 to gd-1-col-7
+********************* MALIYET OKU ************************
+
+                 move 1                    to kayit-var
+                 add 1 to kayit-sayi 
+                 move demihk-sira to sira
+                 modify form1-gd-1,
+                        record-to-add(form1-gd-1-record)
+             
+*                 modify form1-gd-1(kayit-sayi + 1), 
+*                        x = 1 
+*                        hidden-data = "E"
+*                        x = 2 
+*                        hidden-data = demihk-rec  
+          end-read
+        end-perform
+    end-start
+    move dip-top                to z-15
+    move z-15                   to toplam
+    add 1 to sira
+    display   acc-2 
+    close demihk demihktan
+    modify form1-gd-1, 
+           mass-update = 0
+           cursor-y = kayit-sayi
+           cursor-x = 2.
+
+*
+ Form1-Gd-1-Ev-Other.  
+    evaluate event-type  
+         when msg-goto-cell
+         when msg-goto-cell-mouse
+           inquire Form1-Gd-1, x in i y in ii
+           inquire Form1-Gd-1(ii,1) cell-data in sir-oda
+           inquire Form1-Gd-1(ii,2) cell-data in sir-sira
+            accept omitted before time 1
+           open input demihk
+           move sir-oda       to demihk-oda
+           move sir-sira      to demihk-sira
+           read demihk no lock invalid 
+               continue
+           not invalid
+ 
+               move demihk-oda             to oda
+               move demihk-sira            to sira
+               move demihk-demikod         to kod
+               move demihk-adet            to adet
+
+           end-read
+           close demihk
+           perform demihktan-oku
+          move event-action-fail to event-action
+         when msg-begin-entry
+           move event-action-fail to event-action
+    end-evaluate
+    display acc-1 acc-2 acc-3 acc-4 acc-5 acc-6 acc-7 .
+   | perform ACC-1-AFT-PROCEDURE
+   | perform demihktan-oku.
+   
+
+
+     
+*
+ Form1-Ex-Other.
+     evaluate key-status
+       when 1
+         evaluate control-id
+           when 5
+             perform oda-ara
+           when 7
+                     initialize demihktan-cagir                 
+                     call "/asya/ytl/obj/otel/hkdemara.asy"
+                          using demihktan-cagir
+                     on exception
+                          perform callerr-proc
+                     not on exception
+                          cancel "/asya/ytl/obj/otel/hkdemara.asy" 
+                     end-call
+                     move demihktan-cagir  to kod
+                     display acc-3
+         end-evaluate
+       when 2
+          open input demihktan
+          initialize demihktan-rec
+          move kod          to demihktan-kodu
+          read demihktan no lock invalid              
+                 display message box "Tanimsiz Kod "
+                 close  demihktan
+                 exit paragraph
+          not invalid
+                 continue
+          end-read
+         close  demihktan
+         perform kaydet
+         initialize kod adi adet
+         display acc-3 acc-4 acc-5
+
+        move 4 to accept-control
+        move 7 to control-id
+       when 3
+      
+         perform sil
+       when 4
+             open input demihk demihktan 
+             initialize demihk-rec
+             move oda        to demihk-oda
+             move 0          to demihk-sira
+             start demihk key not < demihk-anahtar invalid
+                   initialize mesaj-link
+                   move 04 to mesaj-no
+                   perform mesaj-ver
+                   close demihk demihktan 
+                   exit paragraph
+             end-start
+         
+             open i-o genelfis
+             move 1 to genelfis-anahtar
+             read genelfis no lock invalid
+                  accept print-no from time
+             not invalid
+                  add 1 to print-no
+                  rewrite genelfis-rec end-rewrite
+             end-read
+             close genelfis
+**************************
+             initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                        dokumer-dosya
+         
+             set  dokumer-asya-set to true
+             move print-no         to dokumer-dosya-adi
+             open output dokumer
+*/WINDOW TITLE
+             initialize dokumer-rec detay
+             move "W"                  to det-dokumer-20(1:)
+             move "Demirbas Raporu " to det-filler
+             write dokumer-rec from detay
+*/ BASLIKLAR
+             initialize dokumer-rec detay
+             move "B"                  to det-dokumer-20(1:1)
+             move "1"          to det-dokumer-20(10:1)
+             move oda                to det-filler(1:4)
+             move " Nolu Oda Demirbas Raporu"   to det-filler(6:)
+ 
+             write dokumer-rec from detay
+         
+             initialize dokumer-rec detay
+             move "B"                  to det-dokumer-20(1:1)
+             write dokumer-rec from detay
+         
+*/ DOKUMER OZELLIKLER-REC
+             initialize dokumer-rec detay
+             move "O" to det-dokumer-20(1:)
+             move "E" to dokumer-oto-sayfa-basi
+             move 56  to dokumer-oto-sayfa-satir
+             move "|" to dokumer-detay-kolon-ayirici
+             move "LLLLRRLLLLLL" to dokumer-align-occ
+             move dokumer-ozellikler-rec     to det-filler
+             write dokumer-rec from detay
+*/ BASLIKLAR  s
+             initialize dokumer-rec detay
+             move "D1"           to det-dokumer-20(1:2)
+             move "1"            to det-dokumer-20(10:1)
+             move "Oda "         to det-1
+             move "Adet"         to det-2
+             move "S.Kodu"       to det-3
+             move "Demirbas Adi" to det-4
+             move "Birim Tut"    to det-5
+             move "Top. Tut"     to det-6
+             move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 
+             write dokumer-rec from detay
+         
+             initialize dokumer-rec detay
+             move "D2"           to det-dokumer-20(1:2)
+             move "-"            to det-dokumer-20(5:1)
+             move all "-"  to det-1 det-2 det-3 det-4 det-5 det-6 
+             write dokumer-rec from detay
+
+            initialize demihk-rec detay det-filler  dok-adet
+             move oda           to demihk-oda
+             move 0             to demihk-sira
+             start demihk key not < demihk-anahtar invalid continue
+             not invalid
+             perform with test after until fs-demihk = "10"
+             read demihk next no lock end move "10" to fs-demihk
+                  not at end 
+                       if demihk-oda <> oda then
+                             exit perform
+                       end-if
+                       move demihk-oda         to det-1
+                       move demihk-adet        to det-2     
+                       move demihk-demikod     to det-3
+                       initialize demihktan-rec
+                       move demihk-demikod  to demihktan-kodu
+                       read demihktan no lock invalid
+                          move "Tanimsiz.." to satkod-adi
+                       not invalid
+                          continue
+                       end-read
+                       move demihktan-adi      to det-4
+                       
+                       move det-filler-red  to det-filler
+                       write dokumer-rec from detay
+                       add 1 to dok-adet
+             end-read
+             end-perform
+             end-start
+              
+             initialize detay
+             move "TOP"    to det-1
+             move dok-adet to det-2
+             write dokumer-rec from detay
+ 
+             close dokumer
+             call dokumer-prog on exception
+                  perform callerr-proc
+             not on exception
+                  cancel dokumer-prog
+             end-call
+             close demihk demihktan 
+             delete file dokumer
+
+     end-evaluate
+     .
+*
+ kaydet.
+    if sira = zeroes
+       move 4  to accept-control
+       move 13 to control-id
+       exit paragraph
+    end-if
+    if kod = spaces
+       move 4 to accept-control
+       move 7 to control-id
+       exit paragraph
+    end-if
+    if adet = zeroes
+       move 4  to accept-control
+       move 11 to control-id
+       exit paragraph
+    end-if
+    open i-o demihk
+    initialize demihk-rec
+    move oda          to demihk-oda
+    move sira         to demihk-sira
+    move kod          to demihk-demikod
+    move adet         to demihk-adet
+    move konuk-folio  to demihk-folio
+    move maliyet-fat  to demihk-fat-maliyet
+    write demihk-rec invalid rewrite demihk-rec
+    end-rewrite end-write
+    close demihk
+    perform grid-goster
+    display acc-2
+    move 4 to accept-control
+    move 7 to accept-control .
+
+
+*
+ sil.
+    display message box "Secili Olan Kayit Silinecektir. Emin misiniz ?"
+    type 2
+    default 2
+    returning return-code 
+    if return-code <> 1
+          exit paragraph
+    end-if
+    open i-o demihk
+    move oda        to demihk-oda
+    move sira       to demihk-sira
+    delete demihk invalid continue
+    end-delete
+    initialize sira kod adi adet
+    display acc-2 acc-3 acc-4 acc-5
+    
+    close demihk
+    perform grid-goster.
+
+*
+ Form1-Aft-Initdata.
+     
+     
+
+     
+     open i-o demihk
+     close demihk
+     move "005"            to departman
+     move "01"             to ambar
+     move "90"             to dep-kodu
+     move 1 to sira
+     display acc-2.
+    
+
+*
+ acc-3-Aft-Procedure.
+     perform demihktan-oku
+     MOVE 1 TO adet
+     display acc-5
+     .
+
+*
+ demihktan-oku.
+ 
+    open input demihktan
+    initialize demihktan-rec
+    move kod          to demihktan-kodu
+    read demihktan no lock invalid
+         move "Tanimsiz..."        to demihktan-adi
+         |move 4 to accept-control
+        | move 7 to control-id
+    not invalid
+         continue
+    end-read
+    move demihktan-adi                to adi
+    close demihktan
+    display acc-4.
+
+*
+*
+ oda-ara.
+      initialize oda-cagir.
+      call "/asya/ytl/obj/otel/odaara.asy" using oda-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/odaara.asy" 
+       end-call.
+       move odano-cagir      to oda
+       perform oda-oku.
+*
+ oda-oku.
+       open input odalar konum  kodlar02
+            initialize odalar-rec konum-rec
+            move oda to odalar-no
+            read odalar no lock invalid
+                    continue
+            end-read
+            move odalar-konumu to konum-anahtar
+            read konum no lock invalid
+                    continue
+            end-read
+            move konum-adi to tkonum-adi
+         
+            initialize kodlar02-rec
+            move "G" to kodlar02-tipi
+            move odalar-tipi to kodlar02-kodu
+            read kodlar02 no lock
+              invalid
+                initialize kodlar02-rec
+            end-read
+            move kodlar02-adi to ttip-1
+
+            initialize kodlar02-rec
+            move "H" to kodlar02-tipi
+            move odalar-tipi2 to kodlar02-kodu
+            read kodlar02 no lock
+              invalid
+                initialize kodlar02-rec
+            end-read
+            move kodlar02-adi to ttip-2
+
+            initialize kodlar02-rec
+            move "I" to kodlar02-tipi
+            move odalar-tipi3 to kodlar02-kodu
+            read kodlar02 no lock
+              invalid
+                initialize kodlar02-rec
+            end-read
+            move kodlar02-adi to ttip-3
+ 
+       close odalar konum  kodlar02
+
+       display acc-6 acc-7 acc-7a acc-7aa acc-1.
+
+
+*
+ acc-1-Aft-Procedure.
+     perform oda-oku
+     perform GRID-GOSTER.
+
+*
+ raporla.
+             open input demihk demihktan
+             initialize demihk-rec
+             move oda        to demihk-oda
+             move 0          to demihk-sira
+             start demihk key not < demihk-anahtar invalid
+                   initialize mesaj-link
+                   move 04 to mesaj-no
+                   perform mesaj-ver
+                   close demihk
+                   exit paragraph
+             end-start
+         
+             open i-o genelfis
+             move 1 to genelfis-anahtar
+             read genelfis no lock invalid
+                  accept print-no from time
+             not invalid
+                  add 1 to print-no
+                  rewrite genelfis-rec end-rewrite
+             end-read
+             close genelfis
+**************************
+             initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                        dokumer-dosya
+         
+             set  dokumer-asya-set to true
+             move print-no         to dokumer-dosya-adi
+             open output dokumer
+*/WINDOW TITLE
+             initialize dokumer-rec detay
+             move "W"                  to det-dokumer-20(1:)
+             move "Oda Tipleri Raporu " to det-filler
+             write dokumer-rec from detay
+*/ BASLIKLAR
+             initialize dokumer-rec detay
+             move "B"                  to det-dokumer-20(1:1)
+             move "1"          to det-dokumer-20(10:1)
+             move "Oda Tipleri Raporu " to det-filler
+             write dokumer-rec from detay
+         
+             initialize dokumer-rec detay
+             move "B"                  to det-dokumer-20(1:1)
+             write dokumer-rec from detay
+         
+*/ DOKUMER OZELLIKLER-REC
+             initialize dokumer-rec detay
+             move "O" to det-dokumer-20(1:)
+             move "E" to dokumer-oto-sayfa-basi
+             move 56  to dokumer-oto-sayfa-satir
+             move "|" to dokumer-detay-kolon-ayirici
+             move "LLLLLLLLLLLL" to dokumer-align-occ
+             move dokumer-ozellikler-rec     to det-filler
+             write dokumer-rec from detay
+*/ BASLIKLAR  s
+             initialize dokumer-rec detay
+             move "D1"           to det-dokumer-20(1:2)
+             move "1"            to det-dokumer-20(10:1)
+             move "Oda "         to det-1
+             move "Adet"         to det-2
+             move "S.Kodu"       to det-3
+             move "Demirbas Adi" to det-4
+             move "|" to fil-1 fil-2 fil-3 fil-4 
+             write dokumer-rec from detay
+         
+             initialize dokumer-rec detay
+             move "D2"           to det-dokumer-20(1:2)
+             move "-"            to det-dokumer-20(5:1)
+             move all "-"  to det-1 det-2 det-3 det-4 
+             write dokumer-rec from detay
+             initialize demihk-rec detay det-filler
+             move oda              to demihk-oda
+             move 0                to demihk-sira
+             start demihk key not < demihk-anahtar invalid continue
+             not invalid
+             perform with test after until fs-demihk = "10"
+             read demihk next no lock end move "10" to fs-demihk
+                  not at end 
+                       if oda = zeroes or oda = spaces
+                         continue
+                       else
+                         if oda <> demihk-oda
+                            exit perform cycle
+                         end-if
+                       end-if
+                       move demihk-oda        to det-1
+                       move demihk-adet       to det-2     
+                       move demihk-demikod     to det-3
+                       initialize demihktan-rec
+                       move demihk-demikod  to demihktan-kodu
+                       read demihktan no lock invalid
+                          move "Tanimsiz.." to demihktan-adi
+                       not invalid
+                          continue
+                       end-read
+                       move demihktan-adi      to det-4
+                       
+                       move det-filler-red  to det-filler
+                       write dokumer-rec from detay
+             end-read
+             end-perform
+             end-start
+             close dokumer
+             call dokumer-prog on exception
+                  perform callerr-proc
+             not on exception
+                  cancel dokumer-prog
+             end-call
+             close demihk demihktan
+             delete file dokumer.
+  
+*
+ acc-2-Aft-Procedure.
+     open input demihk
+     initialize demihk-rec
+     move oda        to demihk-oda   sir-oda
+     move sira       to demihk-sira  sir-sira
+     read demihk no lock invalid
+          initialize kod adi adet
+          display acc-3 acc-4 acc-5
+          continue
+     not invalid
+          move demihk-demikod        to kod
+          perform demihktan-oku
+          move demihk-adet          to adet
+     end-read  
+     display acc-2 acc-3 acc-4 acc-5
+
+     
+     close demihk.
+
+
+ 

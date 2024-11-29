@@ -1,0 +1,511 @@
+* potobirl.evt
+* potobirl.evt is generated from D:\asya\acugt.ytl\otel\potobirl.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi
+     
+     .
+*
+ sirketbul.
+             open i-o baglanti 
+              initialize baglanti-rec
+              start baglanti key not < baglanti-kodu invalid
+                  continue
+              not invalid
+              perform with test after until fs-baglanti = "10"
+              read baglanti next no lock end move "10" to fs-baglanti
+              not at end
+                      if baglanti-ana not = space and
+                         baglanti-alt not = space
+                           if isyeri-adres-tasi = baglanti-adi(1:8)
+                              move baglanti-ana to kendi-sube
+                              exit perform
+                           end-if
+                      end-if
+                      
+              end-read
+              end-perform
+              end-start
+              if kendi-sube = spaces then
+                 display message box "Kendi subemi bulamadim"
+                 exit paragraph
+              end-if
+
+            close baglanti
+
+
+      .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+    when 2
+        perform sirketbul
+        perform takas-dosya-ac
+        perform takas-kaydet
+        display message box "Olustu"
+    when 3 
+
+         perform kayit-rapor
+    
+    end-evaluate 
+    
+     .
+ takas-dosya-ac.
+    open i-o genelfis.
+    move 1 to genelfis-anahtar.
+    read genelfis no lock invalid move 1 to ekran-fis-1.
+
+    add 1 to ekran-fis-1.
+ 
+    move ekran-fis-1(2:) to takas-no takasad-no.
+    move k-kodu-tasi     to takas-kllnc  takasad-kllnc
+    rewrite genelfis-rec invalid write genelfis-rec.
+    close genelfis.
+    set environment "V-version" to 5
+    open output takas takasad close takas takasad
+    set environment "V-version" to 3
+    open i-o takas with mass-update.
+     open i-o takasad with mass-update.
+
+*
+ takas-kaydet.
+      move 0 to toplam-tarihsiz toplam-birles birlesmeyen-tarihsiz  sayac
+     open i-o  prohrk baglanti musteri takvim mass-update
+        
+     initialize boy deg-boyu sira  soy-boy soy-deg-boyu
+           
+     initialize musteri-rec musteri-adi musteri-soyadi
+
+        inspect bas-adi tallying deg-boyu for trailing spaces
+        compute boy = 20 - deg-boyu 
+
+
+        initialize soy-boy soy-deg-boyu
+        inspect bas-sadi tallying soy-deg-boyu for trailing spaces
+        compute soy-boy = 20 - soy-deg-boyu 
+                
+      
+       
+               move 3 to kac-adet
+               initialize  musteri-rec   sira  sayac
+               move bas-adi(1:kac-adet)    to musteri-adi(1:kac-adet)
+               move bas-sadi(1:soy-boy)     to musteri-soyadi(1:soy-boy)
+                move high-values to musteri-d-tarihi
+               start musteri key  < musteri-d-tarihi invalid
+                     continue
+               not invalid
+               perform with test after until fs-musteri = "10"
+               read musteri previous no lock end move "10" to fs-musteri
+               not at end
+                       add 1 to sayac
+                       if  eski-d-tar(1:4) not = musteri-d-tarihi(1:4)
+                         move   musteri-d-tarihi to eski-d-tar(1:8)
+                         move "yili dogumlu misafirler toplam " to  eski-d-tar(10:)
+                         move sayac to  eski-d-tar(50:)
+
+                          display Form1-Fr-1a
+                       end-if
+                       if musteri-d-tarihi not > "19000000" 
+                           initialize takasad-rec
+                            add 1 to toplam-tarihsiz
+                              move musteri-adi to takasad-adiu
+                             move musteri-soyadi to takasad-soyadiu
+                    
+                     
+                        read takasad no lock key takasad-adsoyad invalid
+                                 add 1 to birlesmeyen-tarihsiz
+                                     
+
+
+
+
+
+                                not invalid 
+                                   
+                                 
+                                   add 1 to toplam-birles
+                               
+                                    initialize takas-rec
+                                          move m-profil          to takas-anah
+                                     
+                                         move musteri-adi             to takas-adi
+                                         move musteri-soyadi          to takas-soyadi                  
+                                      
+                                         move musteri-d-tarihi        to takas-musteri-d-tarihi
+                                         move musteri-e-tarihi        to takas-musteri-e-tarihi
+                                       
+                                         move takasad-gercek-adi       to takas-musteri-e-mail(1:20)
+                                         move takasad-gercek-soyadi    to takas-musteri-e-mail(25:20)
+                                         move takasad-d-tar            to takas-musteri-e-mail(50:08)
+                                         move takasad-birles-prof(1:)  to takas-musteri-e-mail(60:16)
+                                      
+                                         write takas-rec invalid 
+                                             continue
+                                         end-write
+                                   
+                             end-read
+
+                            exit perform cycle 
+                     else
+                     
+                     initialize takasad-rec       
+                     move musteri-adi to takasad-adi
+                     move musteri-soyadi to takasad-soyadi
+                    
+                      move musteri-d-tarihi to  takasad-d-tar
+                     read takasad no lock invalid
+                         
+                         move 1 to takasad-birles-adet
+                         move  musteri-seri-no   to  takasad-pasno
+                         move musteri-kim-tcno  to  takasad-tcno
+                         move musteri-adi to takasad-gercek-adi
+                         move musteri-soyadi to takasad-gercek-soyadi
+                         move musteri-adi to takasad-adiu
+                         move musteri-soyadi to takasad-soyadiu
+                         move m-profil to  takasad-birles-prof
+                        write takasad-rec invalid continue
+                        end-write
+                      not invalid
+                               if  musteri-kim-tcno  > 0 and    takasad-tcno > 0 and
+                                   musteri-kim-tcno not =  takasad-tcno
+                                      exit perform cycle
+                                end-if
+                          
+                       
+                              add 1 to toplam-birles
+                               
+                                    initialize takas-rec
+                                          move m-profil          to takas-anah
+                                     
+                                         move musteri-adi             to takas-adi
+                                         move musteri-soyadi          to takas-soyadi                  
+                                      
+                                         move musteri-d-tarihi        to takas-musteri-d-tarihi
+                                         move musteri-e-tarihi        to takas-musteri-e-tarihi
+                                       
+                                         move takasad-gercek-adi       to takas-musteri-e-mail(1:20)
+                                         move takasad-gercek-soyadi   to takas-musteri-e-mail(25:20)
+                                         move takasad-d-tar       to takas-musteri-e-mail(50:08)
+                                         move takasad-birles-prof(1:)         to takas-musteri-e-mail(60:16)
+                                       
+                                         write takas-rec invalid 
+                                             continue
+                                         end-write
+                                   
+                                    
+
+
+
+                     end-read
+                    
+                 end-if
+               end-read
+               end-perform
+               end-start
+        
+     
+*********************************************************************************
+         close prohrk takas baglanti musteri takvim.
+
+         display message box " Toplam birles : " toplam-birles new-line
+                             "toplam tarihsiz:" toplam-tarihsiz   new-line
+                              "birlesmeyen-tarihsiz "                   birlesmeyen-tarihsiz
+                             .
+
+
+      .
+
+*
+ kayit-rapor.
+     open i-o  takas prohrk musteri baglanti 
+     open i-o  musteri2 prohrk22
+     initialize takas-rec
+     evaluate cb-sira(1:1)
+     when "S"
+             start takas key not < takas-sirket-toplam invalid
+                   display message box "Raporlacak Bilgi Bulunamadi..."
+                    close takas prohrk musteri baglanti  musteri2 prohrk22
+                    delete file takas 
+                    exit paragraph 
+             end-start
+     when "T"
+             start takas key not < takas-anah1 invalid
+                   display message box "Raporlacak Bilgi Bulunamadi..."
+                    close takas prohrk musteri baglanti  musteri2 prohrk22
+                    delete file takas
+                    exit paragraph 
+             end-start
+     when "Z"
+             start takas key not < takas-anah2 invalid
+                   display message box "Raporlacak Bilgi Bulunamadi..."
+                    close takas prohrk musteri baglanti   musteri2 prohrk22
+                    delete file takas
+                    exit paragraph 
+             end-start
+     end-evaluate
+
+ 
+
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Grup Otel Tekrar Gelen Misafir Raporu" to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Grup Otel Tekrar Gelen Misafir Raporu" to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Acenta.:"     to det-filler(01:10)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLL"                    to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"                    to det-dokumer-20(1:2)     
+     move "Sira"                  to det-1
+     move "Adi"                   to det-2
+     move "Soyadi"                to det-3
+     move "Dogum Tar"             to det-dog
+     move "P.No"                  to det-4
+     move "Sirket"                to det-4-4
+     move "      "                to det-5
+     move "        "          to det-5-5
+     move "Adi "               to det-5-6
+     move "Soyadi"              to det-6
+     move "Dogum tar"           to det-7
+     move "Birles no"            to det-8
+     initialize baglanti-rec 
+    
+    
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-4-4 fil-5 fil-5-5 fil-5-6 fil-dog
+                 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12
+                 
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-4-4 det-5 det-5-5 det-5-6 det-dog
+                     det-6 det-7 det-8 det-9 det-10 det-11 det-12
+     write dokumer-rec from detay
+**************************
+
+              initialize fs-takas sira sirket-adet yedek-profil yedek-adet  sayac
+                   var-prohrk birles-prohrk olamayan-prohrk yazilan-prohrk
+              perform with test after until fs-takas = "10"
+                read takas next no lock end move "10" to fs-takas
+                  not at end
+                  
+
+                          add 1 to sira  sayac
+                         
+                          initialize dokumer-rec detay baglanti-rec
+                          move sira                       to zsira
+                          move zsira                      to det-1
+                          move takas-adi                  to det-2
+                          move takas-soyadi               to det-3
+                          move takas-anah-profil-no       to det-4
+                          move takas-anah-profil-sirket   to det-4-4     
+                          move takas-sirket-toplam        to zsira
+                          move zsira                      to det-5
+                          move takas-musteri-day          to e-ay
+                          move takas-musteri-dgun         to e-gun
+                          move takas-musteri-dyil         to e-yil
+                          move etarih                     to det-dog
+                          move takas-sirket-adet1         to zsira
+                          move zsira                      to det-6
+                          move takas-sirket-adet2         to zsira
+                          move zsira                      to det-7
+                          move takas-sirket-adet3         to zsira 
+                          move zsira                      to det-8
+                          move takas-sirket-adet4         to zsira
+                          move zsira                      to det-9
+                          move takas-sirket-adet5         to zsira 
+                          move zsira                      to det-10
+                          move takas-sirket-adet6         to zsira 
+                          move zsira                      to det-11
+
+
+                          move takas-musteri-e-mail(1:20)       to det-5-6
+
+                          move takas-musteri-e-mail(25:20)       to det-6
+                          move takas-musteri-e-mail(50:4)       to   e-yil
+                          move takas-musteri-e-mail(54:2)        to e-ay
+                          move takas-musteri-e-mail(56:2)        to e-gun
+                          move etarih                     to det-7
+
+                          move takas-musteri-e-mail(60:16)       to det-8
+
+
+
+                           move sayac to  eski-d-tar(50:)
+
+                          display Form1-Fr-1a
+                       perform birles
+
+                  move "|" to fil-1 fil-2 fil-3 fil-4 fil-4-4 fil-5 fil-5-5 fil-5-6 fil-dog
+                              fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12
+                  write dokumer-rec from detay
+                end-read
+              end-perform
+              display message box "var-prohrk       "     var-prohrk        new-line
+                                  "birles-prohrk    "     birles-prohrk     new-line
+                                  "olamayan-prohrk  "     olamayan-prohrk   new-line
+                                  "yazilan-prohrk   "     yazilan-prohrk    new-line
+              initialize dokumer-rec detay
+              move "-"            to det-dokumer-20(5:1)
+              move all "-" to det-1 det-2 det-3 det-4 det-4-4 det-5  det-5-5 det-5-6 det-dog
+                              det-6 det-7 det-8 det-9 det-10 det-11 det-12
+              write dokumer-rec from detay
+
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close takas  baglanti  prohrk musteri  musteri2 prohrk22
+*              delete file takas 
+              delete file dokumer.
+
+
+
+
+* 
+ birles.
+
+     
+       initialize musteri-rec
+        move takas-anah to m-profil
+        read musteri no lock invalid 
+           stop " "       
+        end-read
+        delete musteri invalid continue end-delete
+
+        initialize musteri-rec
+        move  takas-musteri-e-mail(60:16) to m-profil
+        read musteri no lock invalid 
+           stop " "       
+        end-read
+
+        initialize prohrk-rec
+        move takas-anah to prohrk-profil-anah
+       start prohrk key = prohrk-profil-anah invalid
+          continue
+             not invalid
+             perform with test after until fs-prohrk = "10"
+                     read prohrk next no lock end move "10"   to fs-prohrk
+                     not at end
+                             if prohrk-profil-anah not = takas-anah
+                                move "10"   to fs-prohrk
+                             else 
+                                        move prohrk-rec        to prohrk22-rec
+                                        move m-profil          to prohrk22-profil-anah   
+                                        accept prohrk22-duz-tarih from century-date
+                                        move "01"  to prohrk22-duz-gun
+                                        write prohrk22-rec invalid
+                                             add 1 to var-prohrk
+                                              rewrite prohrk22-rec invalid continue end-rewrite
+                                        end-write 
+                                        delete prohrk invalid 
+                                                display message box "Birlesme Yapilamadi...delete prohrk" 
+                                                                title "Uyari"
+                                                                icon 1
+                                        end-delete
+                                         perform yan-at
+                             end-if
+                     end-read
+             end-perform
+       end-start
+
+               .
+*
+ yan-at.
+       add 1 to birles-prohrk
+        initialize baglanti-rec
+        move  prohrk-rez-sirket to baglanti-ADI
+        read baglanti no lock key baglanti-ADI  invalid
+            continue
+           not invalid
+           if baglanti-ana = kendi-sube
+               move prohrk-rez-sirket to  yanrez-dosya-adres 
+                 open i-o yanrez
+                        initialize yanrez-rec
+                   move  prohrk-rez-no    to yanrez-rezno
+                    move  prohrk-rez-sira  to yanrez-sirano
+                    read yanrez no lock invalid
+                             add 1 to olamayan-prohrk
+                             continue
+                        not invalid
+                              move    m-profil to   yanrez-profil-anah
+                              add 1 to yazilan-prohrk
+                               rewrite yanrez-rec invalid continue end-rewrite 
+                     end-read
+                  close yanrez
+            end-if
+         end-read.
+
+
+
+
+       
+            
+
+
+
+   
+               .                 
+
+
+
+
+ 

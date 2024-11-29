@@ -1,0 +1,375 @@
+* proguns2.evt
+* proguns2.evt is generated from D:\asya\acugt.ytl\otel\proguns2.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    accept arg from command-line
+    UNSTRING arg
+               delimited by  "--"  
+               into par4 par1
+                  par2
+                  par3
+                    
+              end-unstring
+     move par4 to isyeri-adres-tasi genel-dosya-adres
+*genel-oku.
+    open i-o genel
+    move 1 to genel-anahtar
+    read genel no lock invalid 
+         continue
+    end-read
+    close genel.
+*********DIL OLAYI
+    move rezpara-ortak-profil  to ext-ortak-profil
+     move function numval(par1) to gun
+    perform adresleri-tasi.   
+*
+ Form1-Ex-Other.
+      accept yedek-tarih from century-date
+      open input takvim
+      initialize takvim-rec 
+      move yedek-tarih        to takvim-anah trans-bit
+      start takvim key not > takvim-anah invalid
+            continue
+      not invalid
+           read takvim backward no lock end move "10" to fs-takvim
+              not at end   continue
+              end-read
+          read takvim backward no lock end move "10" to fs-takvim
+              not at end   continue
+              end-read 
+          move takvim-anah to trans-bit              
+          perform varying i from 1 by 1 until i > gun - 1  or fs-takvim = "10"
+              read takvim backward no lock end move "10" to fs-takvim
+              not at end   continue
+              end-read
+         end-perform
+      end-start
+       
+      close takvim
+      if key-status = 5 then move 1 to takvim-gun takvim-ay 
+      end-if
+         move takvim-anah to trans-bas
+       perform merkez-ip-bul
+       
+        .
+*
+ merkez-ip-bul.
+     open input baglanti
+      initialize baglanti-rec ip-no
+      accept bas-tarih from century-date
+       accept bas-zaman from time 
+       
+      start baglanti key not < baglanti-kodu invalid
+            continue
+               not invalid
+    perform with test after until fs-baglanti = "10"
+    read baglanti next no lock end move "10" to fs-baglanti
+        not at end
+          if baglanti-adi  = isyeri-adres-tasi
+             move baglanti-ana to sube
+             move 0   to ybaglanti-merkezi
+          end-if
+           if baglanti-merkezi = 1
+              move baglanti-aciklama-1        to ip-no
+             move 1   to ybaglanti-merkezi
+           end-if
+       end-read
+    end-perform
+    end-start
+      accept system-information   from system-info
+        accept terminal-abilities   from terminal-info
+         inspect ip-no 
+            replacing trailing spaces by low-values
+              move all low-values to yip-no
+
+            string 
+              "@"   delimited by low-values
+              ip-no delimited by low-values
+              ":"   delimited by low-values
+           into yip-no
+         if operating-system = "Unix"  and
+            ybaglanti-merkezi = 0
+                 string yip-no delimited by low-values
+                    "/asya/ytl/prof/log/prolog" delimited by size 
+                    into prolog-dosya
+          else  
+               string 
+                    "/asya/ytl/prof/log/prolog" delimited by size 
+                    into prolog-dosya   
+          end-if,
+         open i-o prolog
+
+
+         initialize baglanti-rec max-sirket
+         move sube to baglanti-ana
+          start baglanti key not < baglanti-kodu invalid
+            continue
+               not invalid
+            perform with test after until fs-baglanti = "10"
+            read baglanti next no lock end move "10" to fs-baglanti
+                not at end
+                  if baglanti-ana  = sube and 
+                     baglanti-alt not = spaces and 
+                     baglanti-adi not = spaces and max-sirket < 30
+                       add 1 to max-sirket
+                       move  baglanti-adi  to  sirketler(max-sirket)
+                  end-if
+                  
+               end-read
+            end-perform
+         end-start
+          
+      initialize prolog-rec
+      move sube to prolog-sube
+      move trans-bas to prolog-tarih
+      start prolog key >= prolog-anah invalid continue
+        not invalid
+         perform until fs-prolog = "10"
+            read prolog next no lock end move "10" to fs-prolog
+               not end
+                 if prolog-sube not = sube or 
+                   prolog-tarih > trans-bit
+                     move "10" to fs-prolog
+                     exit perform
+                 end-if
+                 move prolog-tarih to otel-adi
+                 display l-otel
+               perform varying i from 1 by 1 until i > 12
+                   perform varying ii from 1 by 1 until ii > 3
+                    if prolog-alma-tarihi(ii,i)  > "20100101"and 
+                       prolog-alma-tarihi(ii,i)  > "20100101" 
+                            perform dosya-birlestir
+                       accept prolog-dagitma-tarihi(ii,i) from century-date
+                       accept prolog-dagitma-zamani(ii,i) from time
+                        rewrite prolog-rec invalid write prolog-rec end-rewrite
+                    end-if
+                   end-perform 
+               end-perform
+            end-read
+       end-perform
+     end-start  .
+     close baglanti prolog.
+
+
+
+*
+ dosya-birlestir.
+        initialize baglanti-rec
+        move i to takasadi-sirket baglanti-ana
+        start baglanti key not < baglanti-kodu invalid 
+             continue 
+        not invalid 
+        perform with test after until fs-baglanti = "10"
+        read baglanti next no lock end move "10"  to fs-baglanti 
+        not at end 
+              if  baglanti-ana <> takasadi-sirket
+                    exit perform 
+              end-if
+              if baglanti-alt = spaces
+                  exit perform cycle
+              end-if 
+              move prolog-tarih to takasadi-tarih 
+              evaluate ii 
+                 when 1
+                   move  "tmusteri" to takasadi-dosya
+                    string takas-dosya2 delimited by spaces
+                           baglanti-adi delimited by spaces
+                      into takasa-dosya
+                      perform musteri-salla
+                 when 2
+                    move "tgprohrk" to   takasadi-dosya
+                    string takas-dosya2 delimited by spaces
+                           baglanti-adi delimited by spaces
+                      into takasb-dosya
+                    perform prohrk-salla
+        
+                 when 3
+                    move "tsprohrk" to takasadi-dosya
+                     string takas-dosya2 delimited by spaces
+                           baglanti-adi delimited by spaces
+                      into takasc-dosya
+                     perform sprohrk-salla
+              end-evaluate
+
+        end-read 
+        end-perform
+        end-start.
+
+
+     
+*
+ Form1-Aft-Initdata.
+     if gun > 0 then
+        move gkey to key-status
+        if function numval(par3) > 0 then
+           move function numval(par3) to otel-kodu
+        end-if
+        
+        perform form1-ex-other
+        set exit-pushed to true
+        
+      end-if.
+     .
+*
+
+ musteri-salla.          
+    open input takasa
+    if fs-takasa = 35 
+    exit  paragraph
+    end-if
+    open i-o musteri
+    initialize takasa-rec sayac     
+    move trans-bas        to takasa-g-tarih
+    start takasa key not < takasa-g-tarih invalid
+         continue
+    not invalid
+    perform with test after until fs-takasa = "10"
+    read takasa next no lock end move "10"   to fs-takasa
+    not at end 
+          
+
+            initialize musteri-rec
+            move takasa-rec to musteri-rec
+                 read musteri no lock invalid
+                    initialize musteri-rec
+                 end-read
+               
+                 if  musteri-g-tarih < takasa-g-tarih 
+                    move takasa-rec to musteri-rec
+                   write musteri-rec invalid 
+                      rewrite musteri-rec end-rewrite  
+                   end-write
+                 end-if
+     end-read 
+    end-perform
+    end-start
+    close musteri close takasa .
+
+    .    
+*
+ prohrk-salla.         
+    open input takasb
+   
+    if fs-takasb = 35
+      
+       exit  paragraph
+    end-if
+     open i-o prohrk 
+    initialize takasb-rec sayac     
+    move trans-bas        to takasb-duz-tarih
+    start takasb key not < takasb-duz-tarih invalid
+         continue
+    not invalid
+    perform with test after until fs-takasb = "10"
+    read takasb next no lock end move "10"   to fs-takasb
+    not at end 
+          
+               move takasb-rec to prohrk-rec
+              read prohrk no lock invalid
+                 initialize prohrk-rec
+                 end-read
+                 if  takasb-duz-tarih > prohrk-duz-tarih 
+                     move takasb-rec to prohrk-rec
+                     write prohrk-rec invalid 
+                        rewrite prohrk-rec end-rewrite  
+                     end-write
+                   perform varying iii from 1 by 1 until iii > max-sirket
+                         
+                    if  sirketler(iii) =   prohrk-rez-sirket
+                       move prohrk-rez-sirket to yanrez-dosya-adres
+                       open i-o  yanrez
+                       move  prohrk-rez-no       to yanrez-rezno
+                       move  prohrk-rez-sira     to yanrez-sirano    
+                       read yanrez no lock invalid 
+                                continue
+                                not invalid 
+                                if prohrk-profil-sirket not = yanrez-profil-sirket or 
+                                   prohrk-profil-no     not =  yanrez-profil-no
+                                        move prohrk-profil-sirket     to yanrez-profil-sirket
+                                        move prohrk-profil-no         to yanrez-profil-no
+                                        
+                                        rewrite yanrez-rec invalid continue end-rewrite
+                                end-if
+                         end-read
+                         close yanrez
+                    end-if
+                 end-perform
+             end-if
+       end-read
+    end-perform
+    end-start
+    close prohrk close takasb  
+   
+    .
+
+*
+ sprohrk-salla.          
+    open input takasc
+    if fs-takasc = 35 
+    exit  paragraph
+    end-if
+    open i-o sprohrk  prohrk
+    initialize takasc-rec sayac 
+    move trans-bas        to takasc-duz-tarih
+    start takasc key not < takasc-duz-tarih invalid
+         continue
+    not invalid
+    perform with test after until fs-takasc = "10"
+    read takasc next no lock end move "10"   to fs-takasc
+    not at end                                     
+        move takasc-rec to sprohrk-rec
+            read sprohrk no lock invalid
+                 initialize sprohrk-rec
+       end-read
+       if  takasc-duz-tarih > sprohrk-duz-tarih 
+         move takasc-rec to sprohrk-rec
+        
+         write sprohrk-rec invalid 
+            rewrite sprohrk-rec end-rewrite  
+         end-write
+         move sprohrk-rec to prohrk-rec
+         read prohrk no lock 
+            invalid continue
+            not invalid 
+            if prohrk-duz-tarih < sprohrk-duz-tarih
+                delete prohrk invalid continue end-delete
+                 perform varying iii from 1 by 1 until iii > max-sirket
+                          if  sirketler(iii) =   prohrk-rez-sirket
+                             move prohrk-rez-sirket to yanrez-dosya-adres
+                             open i-o  yanrez
+                             move  prohrk-rez-no        to yanrez-rezno
+                             move  prohrk-rez-sira      to yanrez-sirano    
+                             read yanrez no lock invalid 
+                                      continue
+                             not invalid 
+                                      if prohrk-profil-sirket  = yanrez-profil-sirket and 
+                                         prohrk-profil-no      =  yanrez-profil-no
+                                              initialize yanrez-profil-sirket
+                                              initialize yanrez-profil-no
+                                                
+                                              rewrite yanrez-rec invalid continue end-rewrite
+                                      end-if
+                               end-read
+                               close yanrez
+                          end-if
+                    end-perform
+          end-if
+         end-read
+       end-if
+      end-read
+    end-perform
+    end-start
+    close sprohrk close takasc  prohrk .
+    
+
+ 

@@ -1,0 +1,383 @@
+* break.evt
+* break.evt is generated from D:\asya\acugt.ytl\otel\break.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+
+ Form1-Gd-1-Exception-Proc.
+     PERFORM Form1-Gd-1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      call "c$narg" using link-var 
+     .
+*
+ Form1-Aft-Initdata.
+      evaluate link-var 
+      when 1
+          modify accept-0102,enabled = false 
+          move gelen-break          to break-kodu of break 
+          move gelen-doviz          to break-doviz-kodu of break
+          display accept-0101 accept-0102 
+      when other
+          continue 
+      end-evaluate 
+     open i-o break close break
+     modify cb-1, VALUE = "S"
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 1
+        evaluate control-id
+        when 9
+        when 18
+              initialize doviz-cagir
+              call "/asya/ytl/obj/otel/dovizara.asy" using doviz-cagir
+                    on exception perform callerr-proc
+                       not on exception
+                       cancel "/asya/ytl/obj/otel/dovizara.asy" 
+               end-call
+               move doviz-cagir     to break-doviz-kodu
+               display accept-0101
+               move 4 to accept-control
+               move 9 to control-id
+               
+               perform doviz-oku
+        end-evaluate
+     when 2
+         perform form-kaydet
+     when 3   
+         perform form-sil
+     end-evaluate     
+     .
+*
+ form-kaydet.
+     if break-doviz-kodu = spaces or 
+        break-doviz-kodu = zeroes or
+        break-doviz-kodu = 0
+           display message box "Breakdown doviz kodu bos gecilemez."
+                           title "[ Uyari ]"
+                           icon 1
+         exit paragraph 
+     end-if 
+     if break-kodu = spaces or 
+        break-kodu = zeroes or
+        break-kodu = 0
+           display message box "Breakdown kodu bos gecilemez."
+                           title "[ Uyari ]"
+                           icon 1
+         exit paragraph 
+     end-if 
+
+     display message box "Breakdown Kodu Kaydedilecek."new-line
+                         "Eminmisiniz.?"
+                     title "[ Uyari ]"
+                     icon 1
+                     type 2 
+                     default 1
+                     returning return-code 
+     if return-code = 2
+         exit paragraph 
+     end-if
+
+     open i-o break malzeme
+     initialize k i 
+     perform varying k
+             from 2
+             by 1
+             until k > 16
+                if i > 16
+                   exit perform 
+                end-if 
+                 add 1 to i
+                 inquire form1-gd-1(k),
+                     record-data in form1-gd-1-record
+                 
+                 move gd-1-col-2                  to break-mlz-kodu(i)
+                 move function numval(gd-1-col-4) to break-tutar(i)
+                 move gd-1-col-5                  to break-hes-tipi(i)
+
+                 write break-rec invalid 
+                    rewrite break-rec end-rewrite 
+                 end-write
+     end-perform
+     close break malzeme
+
+     evaluate link-var 
+     when 1
+        set exit-pushed to true
+     when other
+             perform bos-grid-yukle
+             initialize break-rec dv-adi
+             display accept-0101 accept-0102 accept-0103 lb-adi-goster
+             modify form1-gd-1,mass-update = 0
+             move 4 to accept-control
+             move 9 to control-id
+
+     end-evaluate                .
+
+*
+ accept-0102-Aft-Procedure.
+     open input break malzeme
+     initialize k i kayit-toplam
+     read break no lock invalid
+          initialize break-adi 
+          display accept-0101
+          modify cb-1, 
+              VALUE = "S-Sabit"
+          perform bos-grid-yukle
+     not invalid 
+          modify form1-gd-1,reset-grid = 1
+                            mass-update = 1
+          initialize form1-gd-1-record
+          move "Sr"        to gd-1-col-1
+          move "M.K"         to gd-1-col-2
+          move "Malzeme Adi" to gd-1-col-3
+          move "Tutar"       to gd-1-col-4
+          move "T" to  gd-1-col-5
+          modify form1-gd-1,record-to-add(form1-gd-1-record)
+          perform varying k 
+                   from 2
+                   by 1
+                   until k > 16
+                      if i > 16
+                          exit perform 
+                      end-if
+                      add 1 to i
+                       
+                        initialize form1-gd-1-record
+                        move i                 to gd-1-col-1
+                        move break-mlz-kodu(i) to gd-1-col-2
+                        initialize malzeme-rec 
+                        move break-mlz-kodu(i) to malzeme-kodu
+                        move break-doviz-kodu  to malzeme-doviz-kodu
+                        read malzeme no lock invalid 
+                            continue 
+                        not invalid
+                             move malzeme-adi  to gd-1-col-3
+                        end-read 
+                        move break-tutar(i)    to etut
+                        move etut              to gd-1-col-4
+                              move break-hes-tipi(i)  to gd-1-col-5
+                        compute kayit-toplam = kayit-toplam + break-tutar(i)
+                        modify form1-gd-1,
+                              record-to-add(form1-gd-1-record)
+          end-perform
+          display cb-1
+     end-read
+
+
+     close break malzeme
+     modify form1-gd-1,mass-update = 0
+     display accept-0103 .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+          evaluate event-data-1
+          when 2 
+             if event-data-2 > 16
+                move event-action-fail to event-action
+             end-if 
+          end-evaluate
+     when msg-finish-entry
+          evaluate event-data-1
+          when 2 
+             if event-data-2 <= 16
+              inquire form1-gd-1(event-data-2,event-data-1),
+                      cell-data in malzeme-kodu
+              move break-doviz-kodu to malzeme-doviz-kodu             
+              perform malzeme-oku             
+             end-if         
+          end-evaluate 
+     end-evaluate
+     
+     .
+*
+ malzeme-oku.
+     open input malzeme
+     read malzeme no lock invalid
+         modify form1-gd-1(event-data-2,event-data-1    ),cell-data "  "
+         modify form1-gd-1(event-data-2,event-data-1 + 1),cell-data "  "
+         modify form1-gd-1(event-data-2,event-data-1 + 2),cell-data "  "
+         modify form1-gd-1(event-data-2,event-data-1 + 3),cell-data "  "
+     not invalid 
+         modify form1-gd-1(event-data-2,event-data-1 + 1),cell-data malzeme-adi
+         modify form1-gd-1(event-data-2,event-data-1 + 2),cell-data malzeme-tutar
+                  modify form1-gd-1(event-data-2,event-data-1 + 3),cell-data malzeme-hes-tipi
+     end-read 
+     close malzeme
+     .
+*
+ bos-grid-yukle.
+     initialize k i
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "Sr"        to gd-1-col-1
+     move "M.K"         to gd-1-col-2
+     move "Malzeme Adi" to gd-1-col-3
+     move "Tutar"       to gd-1-col-4
+         move "T"       to gd-1-col-5
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+     perform varying k
+               from 2
+               by 1
+               until k > 16
+                  if i > 16
+                       exit perform
+                  end-if
+                     add   1      to i
+                  initialize form1-gd-1-record
+                  move i          to gd-1-col-1
+                  move spaces     to gd-1-col-2 gd-1-col-3 gd-1-col-4 gd-1-col-5
+                  modify form1-gd-1,record-to-add(form1-gd-1-record)
+     end-perform
+     modify form1-gd-1,mass-update = 0.
+*
+ doviz-oku.
+     if malzeme-doviz-kodu not = 0     
+      open input doviz
+      initialize doviz-rec 
+      move break-doviz-kodu   to doviz-kodu
+      read doviz no lock invalid 
+           display message box "Doviz Kodu Bulunamadi..."
+                           title "[ Uyari ]"
+                           icon 1
+           move 4  to accept-control
+           move 5  to control-id 
+           initialize dv-adi
+      not invalid 
+          move D-KISA-ADI     to dv-adi
+      end-read 
+      close doviz
+      display lb-adi-goster
+     end-if.
+*
+ accept-0101-Aft-Procedure.
+     perform  doviz-oku
+     evaluate link-var 
+     when 1
+         perform accept-0102-Aft-Procedure
+     end-evaluate 
+     
+     .
+*
+ form-sil.
+     if break-doviz-kodu = spaces or 
+        break-doviz-kodu = zeroes or
+        break-doviz-kodu = 0
+           display message box "Breakdown doviz kodu bos gecilemez."
+                           title "[ Uyari ]"
+                           icon 1
+         exit paragraph 
+     end-if 
+     if break-kodu = spaces or 
+        break-kodu = zeroes or
+        break-kodu = 0
+           display message box "Breakdown kodu bos gecilemez."
+                           title "[ Uyari ]"
+                           icon 1
+         exit paragraph 
+     end-if 
+
+     display message box "Breakdown Kodu Silinecektir..."new-line
+                         "Eminmisiniz.?"
+                     title "[ Uyari ]"
+                     icon 1
+                     type 2 
+                     default 2
+                     returning return-code 
+     if return-code = 2
+         exit paragraph 
+     end-if
+
+     open i-o break
+     read break no lock invalid
+         display message box "Silinecek Kayit Bulunamadi.."
+                         title "[ Uyari ]"
+                         icon 1
+           close break
+           exit paragraph 
+     not invalid 
+          delete break end-delete
+     end-read 
+     close break
+     evaluate link-var 
+     when 1
+        set exit-pushed to true 
+     when other
+         perform bos-grid-yukle
+         initialize break-rec dv-adi
+         display accept-0101 accept-0102 accept-0103 lb-adi-goster
+         modify form1-gd-1,mass-update = 0
+         move 4 to accept-control
+         move 9 to control-id
+     end-evaluate 
+     .
+*
+ Form1-Gd-1-Ex-Other.
+     evaluate key-status
+     when 1
+            inquire form1-gd-1,
+                    cursor-y in sayac
+            inquire form1-gd-1,
+                    cursor-x in hangi-kolon
+
+         perform mlz-ara
+         if  link-malzeme-kodu-cagir not = spaces 
+            modify form1-gd-1(sayac,hangi-kolon),
+                   cell-data link-malzeme-kodu-cagir
+
+            open input malzeme
+            initialize malzeme-rec 
+            move link-malzeme-kodu-cagir    to malzeme-kodu
+            move break-doviz-kodu of break  to malzeme-doviz-kodu
+            read malzeme no lock invalid 
+                    modify form1-gd-1(sayac,hangi-kolon),
+                           cell-data "     "
+                    modify form1-gd-1(sayac,hangi-kolon + 1),
+                           cell-data "     "
+                    modify form1-gd-1(sayac,hangi-kolon + 2),
+                           cell-data "     "
+                    modify form1-gd-1(sayac,hangi-kolon + 3),
+                           cell-data "     "
+
+            not invalid 
+                    modify form1-gd-1(sayac,hangi-kolon + 1),
+                           cell-data malzeme-adi
+                    modify form1-gd-1(sayac,hangi-kolon + 2),
+                           cell-data malzeme-tutar
+                    modify form1-gd-1(sayac,hangi-kolon + 3),
+                           cell-data malzeme-hes-tipi
+
+            end-read 
+            close malzeme 
+            end-if
+     end-evaluate
+     
+     .
+*
+ mlz-ara.
+      initialize link-mlz-cagir
+      move break-doviz-kodu of break  to link-doviz-cagir
+      call "/asya/ytl/obj/otel/malzara.asy"   using link-mlz-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/malzara.asy" 
+       end-call.
+
+ 

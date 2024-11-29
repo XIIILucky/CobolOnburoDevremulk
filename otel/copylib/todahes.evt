@@ -1,0 +1,207 @@
+* todahes.evt
+* todahes.evt is generated from D:\asya\acugt.ytl\otel\todahes.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    move tarih-tasi to tarih.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+    open input genel2
+    move 1 to genel2-anah 
+    read genel2 no lock invalid continue
+         not invalid continue
+    end-read
+    close genel2              
+
+         
+    move  GENEL-OTO-PERYOT to  g-peryot    
+
+*/ otomatik peryot deðiþþimi
+    call "c$narg" using num-param.
+    if otomatik-peryot 
+      move 0 to vis-1
+    else
+      move 1 to vis-1
+    end-if
+     .
+*
+ fiyat-hesapla2.
+   
+     open input fiyat aceanlas fiyatana   kodlar02 aksiyhrk takvim formul konuk  grupfiy. 
+     open i-o fiyatind hesayr cast rez  acenta
+      
+       initialize rez-rec
+       move "I" to rez-durumu
+       move acen-no to rez-acenta
+       start rez key >= rez-acen invalid continue
+          not invalid 
+          perform until fs-rez = "10"
+            read rez next no lock end move "10" to fs-rez
+                not end 
+                  if ( rez-acenta  not = acen-no and (acen-no not = spaces)) or 
+                       rez-durumu not = "I" 
+                    exit perform 
+                  end-if
+                  if rez-folio > 0 then
+                    move rez-folio to konuk-folio
+                    read konuk no lock invalid continue
+                       not invalid
+                        if konuk-gec-giris = 1 then
+                          move 1 to rez-gec
+
+                                accept rez-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+                                accept rez-edit-zaman from time          |                           
+                
+                          rewrite rez-rec end-rewrite
+                        end-if
+                    end-read
+                  end-if
+                  display rez-acenta rez-no
+                  
+                      move rez-rec to xrez-rec
+*                       perform hes-gonder
+                        initialize tum-wrk
+                          initialize linkh-odahes
+                        move rez-no to  linkh-rez-no     
+                         move 8 to linkh-nereden  
+                         move 1 to linkh-anl-yaz
+                         move 1  to linkh-cast-yaz
+                       
+                       perform fiyat
+
+
+
+                      
+                     
+                  
+           end-read
+         end-perform
+      end-start
+
+       close  acenta fiyat aceanlas fiyatind fiyatana kodlar02 aksiyhrk takvim formul rez konuk  grupfiy
+     hesayr cast
+
+       .
+
+*
+
+ hes-gonder.
+        initialize linkh-odahes
+        move xrez-no to  linkh-rez-no     
+         move 8 to linkh-nereden  
+         move 1 to linkh-anl-yaz
+         move  1  to linkh-cast-yaz
+
+          call "/asya/ytl/obj/otel/odahes.asy" 
+                        using  xrez-rec   linkh-odahes
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                   cancel "/asya/ytl/obj/otel/odahes.asy"
+         end-call
+            
+       .
+
+*
+ Form1-Aft-Initdata.
+    
+    move tarih-tasi to tarih. 
+   
+   
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ before-procedue.
+    continue.
+*
+ exception-procedure.
+     move control-id to gidis-id
+     evaluate key-status
+         when 1 
+            evaluate control-id
+              when  1001
+                    perform acenta-ara thru acenta-ara-exit
+            end-evaluate
+         when 2222 
+               perform acenta-oku  thru acenta-oku-exit
+               if gecmez exit paragraph end-if
+               perform fiyat-hesapla2
+        
+          
+     end-evaluate.
+*
+ after-procedure.
+      move control-value    to onceki-kontrol
+      move control-id       to onceki-id
+      move control-id       to gidis-id.
+      initialize gec-gecme.
+      evaluate control-id
+       when 1001
+            if key-status = 52
+               exit paragraph
+            end-if 
+            modify button-acenara enabled = false
+            initialize gec-gecme
+            perform acenta-oku thru acenta-oku-exit
+            if gecmez
+               exit paragraph
+            end-if
+      end-evaluate.
+
+*
+ acenta-ara.
+      initialize acenta-cagir.
+      call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/acenara.asy" 
+       end-call.
+       move acenta-cagir     to acen-no.
+ acenta-oku.
+       open input acenta.
+       initialize acenta-rec.
+       move acen-no   to acenta-kodu
+       if acenta-kodu = spaces
+          move "Tum Acentalar"     to adi-goster
+          modify lb-acenta-e, title = adi-goster
+          initialize adi-goster
+          display accept-acenta
+          close acenta
+          go acenta-oku-exit
+       end-if.
+
+       read acenta        no lock invalid 
+            display message box "Girdiginiz Acenta Tanimsiz.."
+            move 1        to gec-gecme
+            not invalid continue 
+       end-read
+       close acenta.
+       move acenta-adi     to adi-goster.
+       modify lb-acenta-e, title = adi-goster.
+       initialize adi-goster
+       display accept-acenta.
+
+ acenta-oku-exit.
+       exit.
+ acenta-ara-exit.
+       exit.
+*******************Hadi Bakalim Kolay Gelsin...........
+ 
+
+
+ 

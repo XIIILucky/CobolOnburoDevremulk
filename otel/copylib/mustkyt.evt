@@ -1,0 +1,1510 @@
+* mustkyt.evt
+* mustkyt.evt is generated from D:\asya\acugt.ytl\otel\mustkyt.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     EVALUATE Event-Control-Id
+     WHEN 21
+        PERFORM Form1-Gd-1-Ev-Other
+     WHEN 17
+        PERFORM Form1-Gd-2-Ev-Other
+     END-EVALUATE
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ cb-0201-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-0201-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ cb-0202-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-0202-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form2-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+///////////////////////////////////////////////////DATA-START-TÝPLERÝ//////////////////////////////////////////////////////////////////////
+* A1------------------> Grid-Yukle-i
+* A2------------------> Son-Kayit
+///////////////////////////////////////////////////TEMÝZLEME-TÝPLERÝ///////////////////////////////////////////////////////////////////////
+* T1------------------> Full-temizleme
+* T2------------------> Kayitsiz-temizleme
+
+*
+ Form1-Bef-Initdata.
+     perform adresleri-tasi
+     initialize kayit-oku
+     .
+*                                
+ Form1-Aft-Initdata.
+     initialize islem-secim-yapildi
+     open i-o onrezhrk close onrezhrk
+     perform gridler-yukle
+     move 1 to r-gec-gecme
+     .
+*
+ gridler-yukle.
+     perform Grid-Yukle-I
+     modify Form1-Gd-2, MASS-UPDATE = 1
+                       reset-grid  = 1
+      initialize form1-gd-2-record
+      move "No"          to gd-2-col-1
+      move "I.No"        to gd-2-col-2
+      move "Adi"         to gd-2-col-3
+      move "Soyadi"      to gd-2-col-4
+      move "C-in"        to gd-2-col-5
+      move "C-out"       to gd-2-col-6
+      move "Fiyat"       to gd-2-col-7
+      move "Doviz"       to gd-2-col-8
+      move "Fiyat-II"    to gd-2-col-9
+      move "Doviz-II"    to gd-2-col-10
+      move "Konum"       to gd-2-col-11
+      move "Sure"        to gd-2-col-12
+      move "P+C+F+B"     to gd-2-col-13
+      move "E-Mail"      to gd-2-col-14
+      move "K.Tarihi"    to gd-2-col-15
+      move "Kullanici"   to gd-2-col-16
+      move "S.D."        to gd-2-col-17
+      modify Form1-Gd-2, RECORD-TO-ADD (form1-gd-2-record)
+      modify Form1-Gd-2, MASS-UPDATE = 0.
+*
+ Form1-Ex-Other.
+      evaluate key-status   
+        when 1002
+           open input onrezhrk
+           initialize onrezhrk-rec
+           inquire Form1-Gd-2,cursor-y in cy
+           inquire form1-gd-2(cy,1),hidden-data in onrezhrk-anahtar
+           read onrezhrk no lock invalid 
+                 display message box "Secim Yapilmadi"
+                                 title "Uyari"
+                                 icon 1
+                        close onrezhrk
+                        exit paragraph
+           end-read 
+           close onrezhrk
+             initialize mailsend-link 
+                        ek-dosya
+             perform varying k from 1 by 1 until k > 10                 
+               if onrezhrk-dosya-ek-adi(k) not = spaces 
+                   move onrezhrk-dosya-ek-adi(k) to csvyap-link-nereye-cek                           
+                   perform mail-send-add-mail-attach
+               end-if 
+             end-perform
+           move onrezhrk-email-i   to e-posta-i
+           move onrezhrk-email-ii  to e-posta-ii
+           move onrezhrk-email-iii to e-posta-iii
+           perform mail-gonder
+       when 2
+         set islem-tip-yeni-kayit to true
+         move 0 to kayit-oku
+         perform Acu-Form2-Routine
+       when 8         
+         if islem-secim-yapildi = 1
+            move 0 to kayit-oku
+            perform satis-kontrol
+            if satis-durumu = "S"
+               display message box "Satis tamamlandi..." new-line
+                                   "Yeni kayit butonunu kullanabilirisiniz.."
+                             title "Uyari"
+                              icon 1
+               exit paragraph
+            end-if
+            if satis-durumu = "I"
+               display message box "Satis iptal edildi..." new-line
+                                   "Yeni kayit butonunu kullanabilirisiniz.."
+                             title "Uyari"
+                              icon 1
+               exit paragraph
+            end-if
+            set islem-tip-yeni-islem to true
+            perform Acu-Form2-Routine
+         end-if
+         if islem-secim-yapildi = 0
+            display message box "Secim Yapilmadi..."
+                          title "Uyari"
+                           icon 1
+         end-if 
+       when 5
+         perform gridler-yukle
+     end-evaluate.
+*
+ satis-kontrol.
+     open i-o onrezhrk
+     initialize onrezhrk-rec
+     move hidden-onrezhrk-no to onrezhrk-no
+     move "1"                to onrezhrk-islem-no
+     start onrezhrk key not < onrezhrk-anahtar invalid
+           continue 
+     not invalid
+     perform with test after until fs-onrezhrk = "10"
+     read onrezhrk next no lock end move "10" to fs-onrezhrk
+     not at end
+
+       if eski-kayit-no <> onrezhrk-no
+          exit perform
+       end-if
+
+       move onrezhrk-no           to eski-kayit-no
+       move onrezhrk-satis-durumu to satis-durumu
+     
+     end-read
+     end-perform
+     end-start
+     close onrezhrk
+     .
+*
+ kaydet.
+     open i-o onrezhrk
+     initialize onrezhrk-rec  k
+       move kayit-no                to onrezhrk-no
+       move islem-no                to onrezhrk-islem-no
+     read onrezhrk no lock invalid 
+          continue 
+     end-read
+       accept onrezhrk-kayit-tarih from century-date
+       move adi                        to onrezhrk-adi
+       move soyadi                     to onrezhrk-soyadi
+       move telefon-i                  to onrezhrk-telefon-i
+       move telefon-ii                 to onrezhrk-telefon-ii
+       move telefon-iii                to onrezhrk-telefon-iii
+       move e-posta-i                  to onrezhrk-email-i
+       move e-posta-ii                 to onrezhrk-email-ii
+       move e-posta-iii                to onrezhrk-email-iii
+       move giris-yil                  to onrezhrk-giris-yil
+       move giris-ay                   to onrezhrk-giris-ay
+       move giris-gun                  to onrezhrk-giris-gun
+       move cikis-yil                  to onrezhrk-cikis-yil
+       move cikis-ay                   to onrezhrk-cikis-ay
+       move cikis-gun                  to onrezhrk-cikis-gun
+       move fiyat                      to onrezhrk-fiyat
+       move doviz-val(1:2)             to onrezhrk-doviz
+       move fiyat-ii                   to onrezhrk-fiyat-ii
+       move doviz-ii-val(1:2)          to onrezhrk-doviz-ii
+       move form-adres                 to onrezhrk-teklif-form-adres
+       move aciklama-i                 to onrezhrk-aciklama-i
+       move aciklama-ii                to onrezhrk-aciklama-ii
+       move aciklama-iii               to onrezhrk-aciklama-iii
+       move staff-notu                 to onrezhrk-staff-not
+       move musteri-notu               to onrezhrk-misafir-not
+       move cb-konumu(1:2)             to onrezhrk-oda-konum
+       move gecerlilik-gun             to onrezhrk-gecerlilik-suresi
+       move pax                        to onrezhrk-buyuk
+       move child                      to onrezhrk-kucuk
+       move free                       to onrezhrk-free
+       move baby                       to onrezhrk-bebek
+       move k-kodu-tasi                to onrezhrk-staff
+       move mail-aciklama              to onrezhrk-mail-aciklama
+       move satis-durumu               to onrezhrk-satis-durumu
+       perform varying k from 1 by 1 until k > 10
+           inquire form2-gd-1(k,1),cell-data  in temp-sayi
+           if temp-sayi > 0
+              inquire form2-gd-1(k,2),cell-data in 
+               onrezhrk-dosya-ek-adi(temp-sayi)
+           end-if 
+       end-perform
+       initialize cb-entry-ayir
+       move cb-alternatif   to cb-entry-ayir
+       if cb-entry-kod = xiii
+          write onrezhrk-rec invalid 
+              rewrite onrezhrk-rec end-rewrite
+          end-write
+          close onrezhrk
+          display message box "Form Kaydedildi..."
+          set full-temizle-tip      to true
+          perform form2-temizle
+          perform gridler-yukle
+          exit paragraph
+       end-if
+       move cb-alternatif(1:2)      to onrezhrk-alternatif-konum
+     write onrezhrk-rec invalid 
+        rewrite onrezhrk-rec end-rewrite
+     end-write
+     close onrezhrk
+
+     display message box "Form Kaydedildi..."
+     set full-temizle-tip to true
+     perform form2-temizle
+     perform gridler-yukle
+     set exit-pushed to true
+     .
+*
+ Form2-Ex-Other.
+     evaluate key-status 
+       when 1001
+           initialize gir-tar
+           move giris-gun  to gir-gun
+           move giris-ay   to gir-ay
+           move giris-yil  to gir-yil
+
+           initialize cik-tar
+           move cikis-gun  to cik-gun
+           move cikis-ay   to cik-ay
+           move cikis-yil  to cik-yil
+
+           perform resim-yukle 
+
+       when 1002
+           if dosya-yolu = spaces
+              display message box "Dosya Secimi yapiniz..."
+                              title "Uyari"
+                              icon 1
+               exit paragraph 
+           end-if 
+           perform resim-grid-ekle
+           initialize dosya-yolu
+           display accept-0245
+       when 2
+         if kayit-oku = 1
+            exit paragraph
+         end-if
+         move kayit-gun to gun-x
+         move kayit-ay  to ay-x
+         move kayit-yil to yil-x
+         move giris-gun to gun-y
+         move giris-ay  to ay-y
+         move giris-yil to yil-y
+         if tarih-x > tarih-y
+            display message box "Gecmis tarihe rezervasyon girilemez.."
+            move 4 to accept-control
+            move 7 to control-id
+            exit paragraph
+         end-if
+
+         initialize zor-alan-eksik
+         perform zor-alan-kontrol
+         perform c-in-kontrol
+         perform c-out-kontrol
+         perform Tarih-Kontrol
+         perform Varsa-Tarihe-Hata-Ver                                
+         if zor-alan-eksik = 1 or 
+           (tanimsiz-tarih not = 0 and tanimsiz-tarih not = 4)
+            exit paragraph
+         end-if
+         perform kaydet-soru
+         if soru-donus = 2
+            exit paragraph
+         end-if
+         perform kaydet
+       when 3
+         if kayit-oku = 1
+            exit paragraph
+         end-if
+         perform kayit-sil  
+       when 7
+         initialize mailsend-link 
+                    ek-dosya
+         perform varying k from 1 by 1 until k > 10
+           inquire form2-gd-1(k,1),cell-data  in temp-sayi
+           if temp-sayi > 0
+               inquire form2-gd-1(k,2),cell-data in 
+                       csvyap-link-nereye-cek
+               perform mail-send-add-mail-attach
+           end-if 
+         end-perform
+         perform mail-gonder
+       when 1312
+         perform sat
+       when 1313
+         perform devam
+       when 1213
+         perform iptal
+     end-evaluate.
+*
+ sat. 
+    modify lb-islem-durumu, TITLE "Satis yapildi..."
+    modify lb-islem-durumu, COLOR = 291
+    set satis-durumu-sat    to true
+    .
+*
+ devam.
+    modify lb-islem-durumu, TITLE "Devam ediyor..."
+    modify lb-islem-durumu, COLOR = 257
+    set satis-durumu-devam  to true
+    .
+*
+ iptal.
+    modify lb-islem-durumu, TITLE "Iptal edildi..."
+    modify lb-islem-durumu, COLOR = 293
+    set satis-durumu-iptal  to true
+    .
+*
+ resim-grid-ekle.
+     add 1 to ii
+     initialize form2-gd-1-record
+     move ii                     to z1
+     move z1                     to gd-3-col-1
+     move birles-uzak-dosya-adi  to gd-3-col-2
+     modify form2-gd-1,record-to-add(form2-gd-1-record)
+     modify form2-gd-1,mass-update = 0.
+*
+ kayit-sil.
+     display message box "Kayit Pasif Yapilacaktir.." new-line
+                         "Emin Misiniz?"
+                     title "Uyari"
+                     icon 1
+                     type 2 
+                     default 2
+                     returning return-code 
+     if return-code = 2
+         exit paragraph 
+     end-if 
+     open i-o onrezhrk
+     initialize onrezhrk-rec
+     move kayit-no  to onrezhrk-no
+     move islem-no  to onrezhrk-islem-no
+     read onrezhrk no lock invalid 
+           move 1           to onrezhrk-pasif
+           rewrite onrezhrk-rec end-rewrite 
+     not invalid 
+           display message box "Pasif Yapilacak Kayit Bulunamadi...."
+                           title "Uyari"
+                           icon 1
+              close onrezhrk
+              exit paragraph 
+     end-read 
+     close onrezhrk
+     set exit-pushed to true 
+     .
+*
+ islem-no-getir.
+     open i-o onrezhrk
+       move kayit-no to onrezhrk-no
+     start onrezhrk key not < onrezhrk-anahtar invalid
+           continue
+     not invalid
+     perform with test after until fs-onrezhrk = "10"
+     read onrezhrk next no lock end move "10" to fs-onrezhrk
+          not at end
+       move onrezhrk-islem-no   to islem-no-sayac
+     end-read
+     end-perform
+     end-start
+       add 1 to islem-no-sayac
+     close onrezhrk      
+     .
+*
+ form2-oku.
+     open i-o onrezhrk doviz
+     move kayit-no             to onrezhrk-no
+     move islem-no             to onrezhrk-islem-no
+     if islem-tip = "K1"
+        move "1"               to islem-no
+        display accept-0205
+        perform devam
+     end-if
+     read onrezhrk no lock invalid
+       move son-kayit-no to kayit-no
+       display accept-0202 accept-0203 accept-0204 
+               accept-0205 accept-0206 accept-0207
+       close onrezhrk doviz
+       exit paragraph
+     end-read       
+       move onrezhrk-adi               to adi
+       move onrezhrk-soyadi            to soyadi
+       move onrezhrk-kayit-gun         to kayit-gun
+       move onrezhrk-kayit-ay          to kayit-ay
+       move onrezhrk-kayit-yil         to kayit-yil
+       move onrezhrk-telefon-i         to telefon-i
+       move onrezhrk-telefon-ii        to telefon-ii
+       move onrezhrk-telefon-iii       to telefon-iii
+       move onrezhrk-email-i           to e-posta-i
+       move onrezhrk-email-ii          to e-posta-ii
+       move onrezhrk-email-iii         to e-posta-iii
+       move onrezhrk-giris-gun         to giris-gun
+       move onrezhrk-giris-ay          to giris-ay
+       move onrezhrk-giris-yil         to giris-yil
+       move onrezhrk-cikis-gun         to cikis-gun
+       move onrezhrk-cikis-ay          to cikis-ay
+       move onrezhrk-cikis-yil         to cikis-yil
+       move onrezhrk-fiyat             to fiyat
+       move onrezhrk-fiyat-ii          to fiyat-ii
+       move onrezhrk-doviz             to doviz-val(1:2)
+       move onrezhrk-doviz-ii          to doviz-ii-val(1:2)
+       move onrezhrk-oda-konum         to cb-konumu(1:2)
+       move onrezhrk-alternatif-konum  to cb-alternatif(1:2)
+       move onrezhrk-aciklama-i        to aciklama-i
+       move onrezhrk-aciklama-ii       to aciklama-ii
+       move onrezhrk-aciklama-iii      to aciklama-iii
+       move onrezhrk-staff-not         to staff-notu
+       move onrezhrk-misafir-not       to musteri-notu
+       move onrezhrk-gecerlilik-suresi to gecerlilik-gun
+       move onrezhrk-buyuk             to pax                    
+       move onrezhrk-kucuk             to child                  
+       move onrezhrk-free              to free                   
+       move onrezhrk-bebek             to baby                   
+       move onrezhrk-mail-aciklama     to mail-aciklama
+       move onrezhrk-satis-durumu      to satis-durumu
+       if satis-durumu = "S"
+          perform sat
+       end-if
+       if satis-durumu = "D"
+          perform devam
+       end-if
+       if satis-durumu = "I"
+          perform iptal
+       end-if
+     if islem-tip = "K1"
+       move gun-x to kayit-gun
+       move ay-x  to kayit-ay
+       move yil-x to kayit-yil
+     end-if      
+     display accept-0201  accept-0202  accept-0203 accept-0204 accept-0205
+             accept-0206  accept-0207  accept-0208 accept-0209 accept-0210
+             accept-0211  accept-0212  accept-0213 accept-0214 accept-0215
+             accept-0216  accept-0217  accept-0218 accept-0219 accept-0220
+             cb-0203      accept-0223  accept-0224 accept-0225 accept-0232 
+             accept-0226  accept-0227  cb-0201     cb-0202     accept-0228 
+             accept-0229  accept-02230 accept-0231 accept-0246 cb-0204
+             accept-0230 
+     close onrezhrk doviz
+     if kayit-oku = 1          
+        modify accept-0201,    enabled = false
+        modify accept-0202,    enabled = false
+        modify accept-0203,    enabled = false
+        modify accept-0204,    enabled = false
+        modify accept-0205,    enabled = false
+        modify accept-0206,    enabled = false
+        modify accept-0207,    enabled = false
+        modify accept-0208,    enabled = false
+        modify accept-0209,    enabled = false
+        modify accept-0210,    enabled = false
+        modify accept-0211,    enabled = false
+        modify accept-0212,    enabled = false
+        modify accept-0213,    enabled = false
+        modify accept-0214,    enabled = false
+        modify accept-0215,    enabled = false
+        modify accept-0216,    enabled = false
+        modify accept-0217,    enabled = false
+        modify accept-0218,    enabled = false
+        modify accept-0219,    enabled = false
+        modify accept-0220,    enabled = false
+        modify accept-0246,    enabled = false
+        modify cb-0203,        enabled = false
+        modify cb-0204,        enabled = false
+        modify accept-0223,    enabled = false
+        modify accept-0224,    enabled = false
+        modify accept-0225,    enabled = false
+        modify accept-0226,    enabled = false
+        modify accept-0227,    enabled = false
+        modify accept-0228,    enabled = false
+        modify accept-0229,    enabled = false
+        modify accept-0231,    enabled = false
+        modify accept-0232,    enabled = false
+        modify accept-02230,   enabled = false
+        modify cb-0201,        enabled = false
+        modify cb-0202,        enabled = false
+        modify Form2-Pb-1,     enabled = false    
+        modify Form2-Pb-1a,    enabled = false    
+        modify Form2-Pb-2,     enabled = false
+        modify Form2-Pb-2b,    enabled = false
+        modify accept-0230,    enabled = false
+        modify Form2-Pb-devam, enabled = false 
+        modify Form2-Pb-sat,   enabled = false 
+        modify Form2-Pb-iptal, enabled = false 
+     end-if 
+     .
+
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+       when msg-begin-entry
+         move event-action-fail  to event-action
+         inquire form1-gd-1(event-data-2,1),
+                 hidden-data in hidden-onrezhrk-rec
+         perform islem-grid-yukle
+     end-evaluate
+
+*
+ Form1-Gd-2-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+         move event-action-fail  to event-action
+         move onrezhrk-no        to kayit-no
+         move onrezhrk-islem-no  to islem-no
+         move 1 to kayit-oku
+         perform Acu-Form2-Routine
+     when msg-goto-cell
+     when msg-goto-cell-mouse
+         inquire form1-gd-2(event-data-2,1),
+                 hidden-data in hidden-onrezhrk-rec 
+            inquire form1-gd-2,y in yeni-y
+             if yeni-y < 2
+                move 2 to yeni-y eski-y
+             end-if
+             modify form1-gd-2,
+                    y = yeni-y,
+                    start-x = 1
+                    start-y = yeni-y
+                    x = 21,
+                    region-color = 176
+                    cursor-color = 176
+             move yeni-y to eski-y
+             move 1 to islem-secim-yapildi
+     end-evaluate
+     .
+*
+ onrezhrk-start.
+     move 2 to i
+     open i-o onrezhrk
+     initialize onrezhrk-rec kayit-no ydk-kayit-no
+     move high-values to onrezhrk-kayit-tarih onrezhrk-islem-no
+     start onrezhrk key not > onrezhrk-islem-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-onrezhrk = "10"
+     read onrezhrk backward no lock end move "10" to fs-onrezhrk
+     not at end
+         if filt-kayit-no not = zeroes 
+            if onrezhrk-no <> filt-kayit-no
+              exit perform cycle 
+            end-if 
+         end-if 
+        if filt-adi <> spaces       
+             move function upper-case(onrezhrk-adi)          to kelime
+             move filt-adi      to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0              
+                exit perform cycle  
+             end-if
+        end-if
+        if filt-soyadi <> spaces       
+             move function upper-case(onrezhrk-soyadi)          to kelime
+             move filt-soyadi      to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0              
+                exit perform cycle  
+             end-if
+        end-if
+        if filt-telefon <> spaces       
+             move function upper-case(onrezhrk-telefon-i)          to kelime
+             move filt-telefon      to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0              
+                exit perform cycle  
+             end-if
+        end-if          
+        if filt-mail <> spaces       
+             move function upper-case(onrezhrk-email-i)          to kelime
+             move filt-mail      to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0              
+                exit perform cycle  
+             end-if
+        end-if         
+         if onrezhrk-no <> ydk-kayit-no
+            initialize form1-gd-1-record
+            move onrezhrk-no            to gd-1-col-1
+            move onrezhrk-adi           to gd-1-col-2
+            move onrezhrk-soyadi        to gd-1-col-3
+            move onrezhrk-telefon-i     to gd-1-col-4
+            modify Form1-gd-1, 
+                   record-to-add (form1-gd-1-record)
+            modify form1-gd-1(i,1),
+                   hidden-data = onrezhrk-anahtar
+            add 1 to i
+         end-if
+         move onrezhrk-no        to ydk-kayit-no
+     end-read
+     end-perform
+     end-start
+     close onrezhrk
+     initialize start-tip.
+*
+ grid-yukle-i.
+     initialize form1-gd-1-record
+     modify Form1-Gd-1, MASS-UPDATE = 1
+                        reset-grid  = 1
+     move "No"        to gd-1-col-1
+     move "Adi"       to gd-1-col-2
+     move "Soyadi"    to gd-1-col-3
+     move "Telefon"   to gd-1-col-4
+     modify form1-gd-1, record-to-add (form1-gd-1-record)
+     move 2 to i
+     perform onrezhrk-start
+     modify Form1-Gd-1, MASS-UPDATE = 0.
+*
+ Form2-Aft-Initdata.
+     perform devam
+     perform odakonum-yukle
+     perform doviz-yukle
+     if kayit-oku = 1
+        move hidden-onrezhrk-no to kayit-no
+        move hidden-onrezhrk-islem-no to islem-no 
+        display accept-0201 accept-0205 
+        perform Form2-Oku
+     else
+       
+       modify form2-gd-1,reset-grid = 1
+                         mass-update = 1
+       initialize form2-gd-1-record
+       move "S"           to gd-3-col-1
+       move "Dosya Adi"   to gd-3-col-2
+       modify form2-gd-1,record-to-add(form2-gd-1-record)
+       
+       if islem-tip = "K1"
+          accept tarih-x from century-date
+            move gun-x   to kayit-gun
+            move ay-x    to kayit-ay
+            move yil-x   to kayit-yil
+            open i-o genelfis
+            initialize genelfis-rec
+            move 1   to genelfis-anahtar
+            read genelfis no lock invalid 
+                 continue 
+            not invalid 
+                add 1 to fihrist-oto
+                move fihrist-oto(5:) to kayit-no
+                rewrite genelfis-rec end-rewrite 
+            end-read 
+            close genelfis
+            display accept-0201
+          perform Form2-Oku
+       end-if
+       
+       if islem-tip = "K2"
+          accept tarih-x from century-date
+            move gun-x   to kayit-gun
+            move ay-x    to kayit-ay
+            move yil-x   to kayit-yil
+            display accept-0202 accept-0203 accept-0204
+          open i-o onrezhrk
+          initialize onrezhrk-rec eski-kayit-no son-islem-no
+            move hidden-onrezhrk-no to onrezhrk-no eski-kayit-no
+          start onrezhrk key not < onrezhrk-anahtar invalid
+            continue
+          not invalid
+          perform with test after until fs-onrezhrk = "10"
+          read onrezhrk next no lock end move "10" to fs-onrezhrk
+          not at end
+            if onrezhrk-no <> eski-kayit-no 
+               exit perform cycle
+            end-if
+            move onrezhrk-no       to eski-kayit-no
+            move onrezhrk-islem-no to islem-no-sayac son-islem-no
+          end-read
+          end-perform
+          end-start
+          close onrezhrk     
+       
+            move eski-kayit-no     to kayit-no
+            move islem-no-sayac    to islem-no
+            perform form2-oku
+            add 1                  to islem-no-sayac
+            move islem-no-sayac    to islem-no
+            display accept-0205 accept-0201 accept-0202 accept-0203 accept-0204
+       end-if
+     end-if
+     
+             .
+*
+ odakonum-yukle.
+     modify cb-0201, reset-list = 1
+                    mass-update = 1
+     modify cb-0202, reset-list = 1
+                    mass-update = 1
+     initialize cb-entry
+     move "Konum Yok..          XIII" to cb-entry
+     modify cb-0202,item-to-add(cb-entry)
+     open input konum
+     initialize konum-rec
+     start konum key not < konum-anahtar invalid
+          continue 
+     not invalid 
+     perform until fs-konum = "10"
+     read konum next no lock end move "10"  to fs-konum
+     not at end 
+           if konum-satis <> 1
+              exit perform cycle 
+           end-if 
+            initialize cb-kon cb-altf-kon
+            move konum-anahtar   to cb-kon-kodu 
+            move konum-adi       to cb-kon-adi
+            move konum-anahtar   to cb-altf-kon-kodu
+            move konum-adi       to cb-altf-kon-adi
+            modify cb-0201,item-to-add(cb-kon)
+            modify cb-0202,item-to-add(cb-altf-kon)
+     end-read
+     end-perform
+     end-start
+     close konum
+     modify cb-0201,mass-update = 0
+     modify cb-0202,mass-update = 0.
+
+
+
+*
+ doviz-yukle.
+     modify cb-0203,reset-list  = 1
+                    mass-update = 1
+     modify cb-0204,reset-list  = 1
+                    mass-update = 1
+     open input doviz
+     initialize doviz-rec
+     start doviz key not < doviz-kodu invalid
+          continue 
+     not invalid 
+     perform until fs-doviz = "10"
+     read doviz next no lock end move "10"  to fs-doviz
+     not at end 
+          
+            initialize cb-dov
+            move doviz-kodu       to cb-dov-kodu 
+            move D-KISA-ADI       to cb-dov-adi
+            modify cb-0203,item-to-add(cb-dov)
+            modify cb-0204,item-to-add(cb-dov)
+     end-read
+     end-perform
+     end-start
+     close doviz
+     modify cb-0203,mass-update = 0
+     modify cb-0204,mass-update = 0.
+*
+ accept-0216-Aft-Procedure.
+     perform c-in-kontrol
+     .
+*
+ c-in-kontrol.
+     initialize tarih-x
+       move giris-gun to gun-x
+       move giris-ay  to ay-x
+       move giris-yil to yil-x
+     open i-o takvim
+     initialize takvim-rec
+       move tarih-x   to takvim-anah
+     read takvim no lock invalid
+       move 1 to tanimsiz-tarih
+     not invalid
+       move 0 to tanimsiz-tarih
+     end-read      
+     close takvim
+       move kayit-gun to gun-y
+       move kayit-ay  to ay-y
+       move kayit-yil to yil-y
+     .
+*
+ accept-0219-Aft-Procedure.
+      perform c-out-kontrol
+      .
+*
+ c-out-kontrol.
+     initialize tarih-y
+       move cikis-gun to gun-y
+       move cikis-ay  to ay-y
+       move cikis-yil to yil-y
+     open i-o takvim
+     initialize takvim-rec
+       move tarih-y to takvim-anah
+     read takvim no lock invalid
+       if tanimsiz-tarih = 0
+          move 2 to tanimsiz-tarih
+       end-if
+     end-read
+     close takvim 
+*     perform tarih-kontrol
+*     perform varsa-tarihe-hata-ver
+     .
+*
+ varsa-tarihe-hata-ver.
+     evaluate tanimsiz-tarih
+       when 1
+         display message box "Girilen C-in tarihi gecerli degil kontrol ediniz.."
+         move 4 to accept-control
+         move 7 to control-id
+       when 2 
+         display message box "Girilen C-out tarihi gecerli degil kontrol ediniz.."
+         move 4  to accept-control
+         move 10 to control-id
+       when 3
+         display message box "C-in tarihi C-out tarihinden buyuk olamaz.."
+         move 4 to accept-control
+         move 7 to control-id
+       when 4 
+         display message box "Dikkat C-in C-out tarihi esit!.."  new-line
+                             "Geceleme (SIFIR) olacaktir."
+                       title "Uyari!."
+                        icon mb-warning-icon 
+     end-evaluate
+
+     .
+*
+ form2-temizle.
+     if temizle-tip = "T1"
+        initialize kayit-no     islem-no     adi         soyadi       telefon-i 
+                   telefon-ii   telefon-iii  e-posta-i   e-posta-ii   e-posta-iii 
+                   giris-gun    giris-ay     giris-yil   cikis-gun    cikis-ay     
+                   cikis-yil    fiyat        fiyat-ii    form-adres   aciklama-i  
+                   aciklama-ii  aciklama-iii staff-notu 
+                   musteri-notu
+        display accept-0201 accept-0202 accept-0203 accept-0204 accept-0205 
+                accept-0206 accept-0207 accept-0208 accept-0209 accept-0210
+                accept-0211 accept-0212 accept-0213 accept-0214 accept-0215
+                accept-0216 accept-0217 accept-0218 accept-0219 accept-0220
+                accept-0223 accept-0224 accept-0225 accept-0246 accept-0227
+                accept-0226 
+     end-if
+     if temizle-tip = "T2"
+        initialize islem-no    adi          soyadi      telefon-i    e-posta-iii
+                   telefon-ii  telefon-iii  e-posta-i   e-posta-ii   cikis-ay   
+                   giris-gun   giris-ay     giris-yil   cikis-gun    aciklama-i 
+                   cikis-yil   fiyat        fiyat-ii    form-adres   musteri-notu 
+                   aciklama-ii aciklama-iii staff-notu 
+        display accept-0202 accept-0203 accept-0204 accept-0205 accept-0206 
+                accept-0207 accept-0208 accept-0209 accept-0210 accept-0211 
+                accept-0213 accept-0214 accept-0215 accept-0216 accept-0227
+                accept-0217 accept-0218 accept-0219 accept-0220 accept-0246
+                accept-0223 accept-0224 accept-0225 accept-0226  
+                     
+    end-if.
+*
+ islem-grid-yukle.
+    modify Form1-Gd-2, MASS-UPDATE = 1
+                       reset-grid  = 1
+    initialize form1-gd-2-record
+    move "No"          to gd-2-col-1
+    move "I.No"        to gd-2-col-2
+    move "Adi"         to gd-2-col-3
+    move "Soyadi"      to gd-2-col-4
+    move "C-in"        to gd-2-col-5
+    move "C-out"       to gd-2-col-6
+    move "Fiyat"       to gd-2-col-7
+    move "Doviz"       to gd-2-col-8
+    move "Fiyat-II"    to gd-2-col-9
+    move "Doviz-II"    to gd-2-col-10
+    move "Konum"       to gd-2-col-11
+    move "Sure"        to gd-2-col-12
+    move "P+C+F+B"     to gd-2-col-13
+    move "E-Mail"      to gd-2-col-14
+    move "K.Tarihi"    to gd-2-col-15
+    move "Kullanici"   to gd-2-col-16
+    move "S.D."        to gd-2-col-17
+    modify Form1-Gd-2, RECORD-TO-ADD (form1-gd-2-record)
+    move 2 to i
+    open i-o onrezhrk
+    open input doviz konum kllnc
+    initialize onrezhrk-rec
+    move hidden-onrezhrk-no       to onrezhrk-no
+    move high-values to onrezhrk-islem-no
+    start onrezhrk key not > onrezhrk-anahtar invalid
+          continue
+    not invalid 
+    perform with test after until fs-onrezhrk = "10"
+    read onrezhrk backward no lock end move "10" to fs-onrezhrk
+    not at end
+    if onrezhrk-no <> hidden-onrezhrk-no
+       exit perform
+    end-if
+        initialize form1-gd-2-record
+        move onrezhrk-no          to gd-2-col-1
+        move onrezhrk-islem-no    to gd-2-col-2
+        move onrezhrk-adi         to gd-2-col-3
+        move onrezhrk-soyadi      to gd-2-col-4
+        move onrezhrk-giris-gun   to gun
+        move onrezhrk-giris-ay    to ay
+        move onrezhrk-giris-yil   to yil
+        move tarih                to gd-2-col-5
+        move onrezhrk-cikis-gun   to gun
+        move onrezhrk-cikis-ay    to ay
+        move onrezhrk-cikis-yil   to yil
+        move tarih                to gd-2-col-6
+        move onrezhrk-fiyat       to zfiy
+        move zfiy                 to gd-2-col-7
+        initialize doviz-rec
+        move onrezhrk-doviz  to doviz-kodu
+        read doviz no lock invalid 
+             continue 
+        end-read 
+           move d-kisa-adi        to gd-2-col-8
+        move onrezhrk-fiyat-ii    to zfiy 
+        move zfiy                 to gd-2-col-9
+        initialize doviz-rec
+        move onrezhrk-doviz-ii    to doviz-kodu
+        read doviz no lock invalid
+             continue
+        end-read
+        move d-kisa-adi           to gd-2-col-10
+        initialize konum-rec
+        move onrezhrk-oda-konum   to konum-anahtar
+        read konum no lock invalid 
+             continue 
+        end-read 
+        move konum-adi            to gd-2-col-11
+
+        move onrezhrk-gecerlilik-suresi  to z1
+        move z1                          to gd-2-col-12
+
+        move onrezhrk-buyuk to z11
+        move onrezhrk-kucuk to z12
+        move onrezhrk-free  to z13
+        move onrezhrk-bebek to z14
+
+        string gd-2-col-13
+               z11 delimited by "    "
+               "+" delimited by size 
+               z12 delimited by "    "
+               "+" delimited by size 
+               z13  delimited by "     "
+               "+" delimited by size 
+               z14 delimited by size 
+        into gd-2-col-13
+       
+        move onrezhrk-email-i  to gd-2-col-14
+
+        move onrezhrk-kayit-gun   to gun
+        move onrezhrk-kayit-ay    to ay
+        move onrezhrk-kayit-yil   to yil
+        move tarih                to gd-2-col-15
+
+        initialize kllnc-rec
+        move onrezhrk-staff   to k-kodu
+        read kllnc no lock invalid 
+             continue 
+        end-read 
+           string gd-2-col-16 
+                  k-adi delimited by "         "
+                  " " delimited by size 
+                  k-soyadi delimited by size 
+           into gd-2-col-16
+        move onrezhrk-satis-durumu to gd-2-col-17 
+
+        modify form1-gd-2, record-to-add(form1-gd-2-record)
+
+        modify form1-gd-2(i,1),
+               hidden-data = onrezhrk-anahtar
+           add 1 to i
+        if onrezhrk-pasif = 1
+           modify form1-gd-2(i),cell-color = 480
+        end-if 
+    end-read
+    end-perform 
+    end-start
+    modify Form1-Gd-2, MASS-UPDATE = 0
+    close onrezhrk doviz konum kllnc.
+*
+ Form2-Mn-1-MI-Sil-Link.
+    initialize satir
+    inquire form2-gd-1,cursor-y in satir
+    modify form2-gd-1(satir,1),cell-data spaces      
+    modify form2-gd-1(satir,2),cell-data spaces.
+*
+ geceleme-bul.
+    initialize takvim-rec geceleme
+    move gir-tar   to takvim-anah 
+    start takvim key not < takvim-anah invalid 
+         continue 
+    not invalid                             
+    perform with test after until fs-takvim = "10"
+    read takvim next no lock end move "10"  to fs-takvim
+    not at end 
+           if takvim-anah >= cik-tar
+               exit perform 
+           end-if 
+           add 1 to geceleme
+    end-read 
+    end-perform
+    end-start.
+*
+ Form2-Bef-Create.
+    initialize adi soyadi telefon-i telefon-ii telefon-iii e-posta-i e-posta-ii e-posta-iii
+               giris-gun giris-ay giris-yil cikis-gun cikis-ay cikis-yil cb-konumu cb-alternatif
+               pax child free baby gecerlilik-gun fiyat doviz-val fiyat-ii doviz-ii-val aciklama-i aciklama-ii aciklama-iii
+               staff-notu musteri-notu.
+*
+ Form1-Mn-1-MI-GenelTeklifRaporu-Link.
+    call "/asya/ytl/obj/otel/mustrap.asy"
+      using 1
+      on exception
+         perform callerr-proc
+      not on exception
+         cancel "/asya/ytl/obj/otel/mustrap.asy" 
+    end-call.
+*
+ cb-0201-Ex-Ntf-Selchange.
+     move cb-konumu      to cb-kon
+     open i-o konumek
+     initialize konumek-rec
+     move cb-kon-kodu    to konumek-anahtar
+     read konumek no lock invalid 
+          continue
+     end-read
+     modify lb-1301, TITLE konumek-adi
+     close konumek.
+*
+ cb-0202-Ex-Ntf-Selchange.
+     move cb-alternatif  to cb-kon
+     open i-o konumek
+     initialize konumek-rec
+     move cb-kon-kodu    to konumek-anahtar
+     read konumek no lock invalid 
+          continue
+     end-read
+     modify lb-1302, TITLE konumek-adi
+     close konumek.     
+     .
+*
+ zor-alan-kontrol.
+     if kayit-no = zero or kayit-no = zeroes
+        initialize zor-alan-eksik
+        move 1 to zor-alan-eksik
+        set exit-pushed to true
+     end-if
+     if islem-no = zero or islem-no = zeroes
+        initialize zor-alan-eksik
+        move 1 to zor-alan-eksik
+        set exit-pushed to true
+     end-if
+     if adi = spaces 
+        initialize zor-alan-eksik
+        move 1 to zor-alan-eksik
+        display message box "Misafir Adi bos gecilemez.."
+                      title "Uyari!!.."
+        move 4  to accept-control
+        move 27 to control-id
+        exit paragraph
+     end-if
+     if soyadi = spaces
+        initialize zor-alan-eksik
+        move 1 to zor-alan-eksik
+        display message box "Misafir Soyadi bos gecilemez.."
+                      title "Uyari!!.."
+        move 4  to accept-control
+        move 3  to control-id
+        exit paragraph
+     end-if
+     if telefon-i = spaces or telefon-i = "Bos.."
+        initialize zor-alan-eksik
+        move 1 to zor-alan-eksik
+        display message box "Telefon numarasi girilmesi zorunludur.."
+                      title "Uyari!!.."
+        move 4  to accept-control
+        move 17 to control-id
+        exit paragraph
+     end-if
+     if e-posta-i = spaces or e-posta-i = "Bos.."
+        initialize zor-alan-eksik
+        move 1 to zor-alan-eksik
+        display message box "E-mail girilmesi zorunludur.."
+                      title "Uyari!!.."
+        move 4  to accept-control
+        move 23 to control-id
+        exit paragraph
+     end-if
+     if gecerlilik-gun = zeroes or gecerlilik-gun = zero
+        initialize zor-alan-eksik
+        move 1 to zor-alan-eksik
+        display message box "Gecerlilik gun sifir olamaz.."
+                      title "Uyari!!.."
+        move 4  to accept-control
+        move 39 to control-id
+        exit paragraph
+     end-if
+     .
+*
+ tarih-kontrol.
+     if tarih-x not < tarih-y
+        if tanimsiz-tarih = 0
+           move 3 to tanimsiz-tarih
+        end-if
+     end-if
+     if tarih-x = tarih-y
+        if tanimsiz-tarih = 3
+           move 4 to tanimsiz-tarih
+        end-if
+     end-if
+     .
+**********BOS*YAPMACA*******************************
+
+*
+ accept-0208-Aft-Procedure.
+*     if telefon-i = spaces
+*        move "Bos.."      to telefon-i
+*        display accept-0208
+*     end-if
+     .
+*
+ accept-0209-Aft-Procedure.
+*     if telefon-ii = spaces
+*        move "Bos.."      to telefon-ii
+*        display accept-0209
+*     end-if
+     .
+*
+ accept-0210-Aft-Procedure.
+*     if telefon-iii = spaces
+*        move "Bos.."      to telefon-iii
+*        display accept-0210
+*     end-if
+     .
+*
+ accept-0211-Aft-Procedure.
+*     if e-posta-i = spaces
+*        move "Bos.."      to e-posta-i
+*        display accept-0211
+*     end-if
+     .
+*
+ accept-0212-Aft-Procedure.
+*    if e-posta-ii = spaces
+*       move "Bos.."      to e-posta-ii
+*       display accept-0212
+*    end-if
+     .
+*
+ accept-0213-Aft-Procedure.
+*     if e-posta-iii = spaces
+*        move "Bos.."      to e-posta-iii
+*        display accept-0213
+*     end-if
+     .
+*
+ accept-0223-Aft-Procedure.
+*     if aciklama-i = spaces
+*        move "Yok.."      to aciklama-i
+*        display accept-0223
+*     end-if
+     .                                                                
+*
+ accept-0224-Aft-Procedure.
+*     if aciklama-ii = spaces
+*        move "Yok.."      to aciklama-ii
+*        display accept-0224
+*     end-if
+     .
+*
+ accept-0225-Aft-Procedure.
+*     if aciklama-iii = spaces
+*        move "Yok.."      to aciklama-iii
+*        display accept-0225
+*     end-if
+     .
+*
+ accept-0226-Aft-Procedure.
+*     if staff-notu = spaces
+*        move "Yok.."      to staff-notu
+*        display accept-0226
+*     end-if
+     .
+*
+ accept-0227-Aft-Procedure.
+*     if musteri-notu = spaces
+*        move "Yok.."      to musteri-notu
+*        display accept-0227
+*     end-if
+     .
+***********************MAIL****GONDERMECE*****************************
+
+*
+ mail-send-call-mail.
+     move "Fiyat Teklifimiz..."         to mailsend-link-konu 
+     move mail-aciklama                 to mailsend-link-aciklama(1)
+
+     initialize birles-kayit-no
+     string birles-kayit-no
+            "System ID :" delimited by "    "
+            " " delimited by size
+            kayit-no delimited by size 
+     into birles-kayit-no
+     inspect birles-kayit-no replacing trailing spaces by low-values
+     move birles-kayit-no               to mailsend-link-aciklama(2) 
+     move 0                             to mailsend-link-konu(99:1) |otomatik mail ---mail ekranýnýn açýlmamasý için
+**     if e-posta-i not = spaces
+**        move e-posta-i                  to mailsend-link-to
+                string mailsend-link-to
+                       e-posta-i delimited by "     "
+                       ";" delimited by size 
+                       e-posta-ii delimited by "     "
+                       ";" delimited by size 
+                       e-posta-iii delimited by "    "
+                  into mailsend-link-to
+**     end-if    
+     call "/asya/ytl/obj/otel/mailsend.asy" using mailsend-link
+          on exception 
+             perform callerr-proc
+     not on exception
+          cancel "/asya/ytl/otel/otel/mailsend.asy"
+     end-call.     
+*
+ mail-send-add-mail-attach.
+     initialize server-yol local-adres
+     string server-yol
+           base-dir delimited by "            "
+           csvyap-link-nereye-cek delimited by size
+     into server-yol
+
+     string local-adres
+          "@[DISPLAY]:C:\acucorp\acucbl701\acugt\pdf_temp\" delimited by "   "
+           csvyap-link-nereye-cek delimited by size             
+     into local-adres
+     inspect server-yol replacing trailing spaces by low-values
+     inspect local-adres replacing trailing spaces by low-values
+     call "c$copy" using server-yol,local-adres
+    
+     add  1                       to ek-dosya
+     move local-adres(12:)        to mailsend-link-dosya(ek-dosya) 
+     move local-adres(48:)        to mailsend-link-dosya-aciklama(ek-dosya)
+     inspect mailsend-link-dosya(ek-dosya) replacing trailing spaces by low-values
+     inspect mailsend-link-dosya-aciklama(ek-dosya) replacing trailing spaces by low-values.    
+*
+ mail-gonder.   
+     open input onbkodlar10
+     initialize onbkodlar10-rec
+     move "MM"                 to onbkodlar10-tipi
+     start onbkodlar10 key not < onbkodlar10-anahtar invalid
+                continue 
+     not invalid 
+     perform with test after until fs-onbkodlar10 = "10"
+     read onbkodlar10 next no lock end move "10" to fs-onbkodlar10
+     not at end 
+             if onbkodlar10-tipi <> "MM"
+                 exit perform 
+             end-if
+             if onbkodlar10-teklif-mail-gitsin not = 1 
+                exit perform cycle 
+             end-if 
+                string mailsend-link-bilgi
+                      onbkodlar10-adi delimited by "     "
+                      ";" delimited by size 
+                into mailsend-link-bilgi
+     end-read 
+     end-perform
+     end-start         
+     close onbkodlar10
+     perform mail-send-call-mail.
+*
+ resim-yukle.
+    move "Tum dosyalar (*.*)|*.*" to 
+          opnsav-filters
+    call "c$opensavebox" using opensave-open-box,
+                               opensave-data,
+                         giving opensave-return.
+                   
+    if opensave-return > 0
+       perform resim-upload
+       open input takvim
+       perform dosya-oku
+       close takvim
+    end-if.
+*
+ resim-upload.
+    move low-values           to komut1 komut2
+    inspect opnsav-filename 
+            replacing trailing spaces by low-values
+    inspect opnsav-basename 
+            replacing trailing spaces by low-values
+    inspect opnsav-basename,
+            replacing all spaces by "_"
+    if is-remote
+       string komut1,
+              "@[DISPLAY]:"      delimited by low-values,
+              opnsav-filename    delimited by low-values,
+              into komut1
+       
+       initialize birles-uzak-dosya-adi
+       string birles-uzak-dosya-adi
+              kayit-no           delimited by "         "
+              islem-no           delimited by "         "
+              opnsav-basename    delimited by low-values          
+       into birles-uzak-dosya-adi
+
+       inspect  birles-uzak-dosya-adi replacing trailing spaces by low-values
+       string komut2,
+              base-dir           delimited by low-values
+              birles-uzak-dosya-adi delimited by low-values
+       into komut2
+    end-if.
+    call "c$copy" using komut1
+                        komut2
+                  giving copy-status.
+    move komut2               to dosya-yolu
+    display accept-0245
+    if copy-status <> 0
+       display message box 
+               opnsav-filename, " dosyasi",x"0a0d",
+               base-dir," klasorune kopyalanamadi ..."
+               icon mb_error_icon
+               title "Hata"
+    end-if.
+*
+ dosya-oku.
+       perform geceleme-bul
+       move kayit-no       to text-oku-kayit-no text2-oku-kayit-no
+       move islem-no       to text-oku-islem-no text2-oku-islem-no 
+       move all low-values to text2-oku-dosya-adi
+       move opnsav-basename           to text-oku-dosya-adi 
+       
+       unstring opnsav-basename delimited by ".rtf"
+       into text2-oku-dosya-adi-ana   
+       inspect text2-oku-dosya-adi-ana replacing trailing spaces by low-values
+       inspect text-oku-adres          replacing trailing spaces by low-values 
+       inspect text2-oku-adres         replacing trailing spaces by low-values 
+               
+       open input text-oku
+       open output text2-oku
+       initialize  text-oku-rec  
+       perform with test after until fs-text-oku = "10"
+       initialize text-oku-rec
+       read text-oku next no lock end move "10" to fs-text-oku
+       not end
+             move all low-values to adi-soyadi
+             inspect adi    replacing trailing spaces by low-values
+             inspect soyadi replacing trailing spaces by low-values
+             string adi-soyadi
+                      adi    delimited by low-values
+                      " "    delimited by low-values 
+                      soyadi delimited by low-values 
+             into adi-soyadi
+             inspect adi-soyadi replacing all low-values by spaces
+             inspect soyadi     replacing all low-values by spaces
+             inspect adi        replacing all low-values by spaces
+             inspect text-oku-1 replacing all "MISAFIRADI_?????????????????????????????" 
+                  by adi-soyadi          
+ 
+             initialize etar
+             move giris-gun   to egun
+             move giris-ay    to eay
+             move giris-yil   to eyil            
+             inspect text-oku-1 replacing all "YY/YY/YYYY" by etar
+             
+             initialize etar
+             move cikis-gun   to egun
+             move cikis-ay    to eay
+             move cikis-yil   to eyil            
+             inspect text-oku-1 replacing all "XX/XX/XXXX" by etar
+
+             move geceleme               to z1
+             inspect text-oku-1 replacing all "G?" by z1 
+             inspect text-oku-1 replacing all "KONUM_?????????" by cb-konumu(3:15)
+             inspect text-oku-1 replacing all "ALTERNATIF_????" by cb-alternatif(3:15)
+             move cb-konumu    to cb-kon
+
+             open i-o konumek
+             initialize konumek-rec
+             move cb-kon-kodu to konumek-anahtar
+             read konumek no lock invalid
+                  continue
+             end-read
+             move konumek-adi to dosya-oku-konum-adi
+             close konumek
+
+             inspect text-oku-1 replacing all "KONUMADI_???????????????????????????????" 
+                  by dosya-oku-konum-adi
+
+             move cb-alternatif    to cb-kon
+             open i-o konumek
+             initialize konumek-rec
+             move cb-kon-kodu to konumek-anahtar
+             read konumek no lock invalid
+                  continue
+             end-read
+             move konumek-adi to dosya-oku-konum-adi
+             close konumek
+
+             inspect text-oku-1 replacing all "KONUMADI2_??????????????????????????????" 
+                  by dosya-oku-konum-adi
+
+             move pax                     to z1
+             inspect text-oku-1 replacing all "B?" by z1
+           
+             move child                   to z1
+             inspect text-oku-1 replacing all "K?" by z1
+          
+             move free                    to z1
+             inspect text-oku-1 replacing all "F?" by z1
+         
+             move baby                    to z1
+             inspect text-oku-1 replacing all "E?" by z1
+
+             move gecerlilik-gun                   to z1
+             inspect text-oku-1 replacing all "S?" by z1
+
+             move fiyat                  to zfiy
+             inspect text-oku-1 replacing all "FIY_??????" by zfiy
+             move fiyat-ii               to zfiy
+
+             inspect text-oku-1 replacing all "FIY2_?????" by zfiy
+             inspect text-oku-1 replacing all "DVZ_??" by doviz-val(4:6) 
+             inspect text-oku-1 replacing all "DVZ2_?" by doviz-ii-val (4:6)
+             
+***********************************************************************************
+             initialize text2-oku-rec
+             move text-oku-1     to text2-oku-1
+             write text2-oku-rec end-write 
+
+       end-read
+       end-perform,
+       close text-oku text2-oku
+       delete file text-oku
+       
+       call "RENAME" using text2-oku-adres,text-oku-adres.    
+*
+ bos-start.
+      open i-o onrezhrk
+      move low-values to onrezhrk-islem-no onrezhrk-no
+      start onrezhrk key not > onrezhrk-anah invalid
+            continue
+      not invalid 
+      perform with test after until fs-onrezhrk = "10"
+      read onrezhrk next no lock end move "10" to fs-onrezhrk
+      not at end
+             continue
+
+      end-read
+      end-perform 
+      end-start
+      close onrezhrk
+
+
+      .
+
+
+ 

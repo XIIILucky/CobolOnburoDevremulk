@@ -1,0 +1,454 @@
+* hesgir.evt
+* hesgir.evt is generated from D:\asya\acugt.ytl\otel\hesgir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ cmb-1301-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cmb-1301-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     call "c$narg" using link-var
+     open i-o genel genel2 
+     initialize genel-rec 
+                genel2-rec 
+     move 1 to genel-anahtar 
+               genel2-anah
+     read genel  no lock invalid continue end-read 
+     read genel2 no lock invalid continue end-read
+     close genel genel2 
+    
+     .
+*
+ Form1-Aft-Initdata.
+     if link-var = 1 
+        accept simdi-zaman from time
+        accept simdi-tarih from century-date
+        move hes-cagir-giden-rez to acc-rez 
+        move simdi-tarih(7:2)    to acc-gun
+        move simdi-tarih(5:2)    to acc-ay
+        move simdi-tarih(1:4)    to acc-yil
+        move simdi-zaman(1:2)    to acc-zaman(1:)
+        move ":"                 to acc-zaman(3:)
+        move simdi-zaman(3:2)    to acc-zaman(4:)
+        display acc-1301 acc-1302 acc-1303-1 acc-1303-2 acc-1303-3 
+                acc-1304 acc-1305  
+        perform yanrez-grid-doldur
+     end-if
+     .
+*
+ yanrez-grid-doldur.
+     modify form1-gd-1, mass-update = 1 
+     modify form1-gd-1, reset-grid  = 1
+
+     initialize form1-gd-1-record 
+     move "Adi"      to gd-1-col-1 
+     move "Soyadi"   to gd-1-col-2
+     move "D.Tarihi" to gd-1-col-3
+     move "Hes Kodu" to gd-1-col-4
+     move "Durumu"   to gd-1-col-5
+     modify form1-gd-1, record-to-add(form1-gd-1-record)
+
+     open i-o yanrez musteri
+     perform varying i from 1 by 1 until i > 9
+
+        compute ii = i + 1 
+        if spaces = hes-cagir-giden-adi(i) and 
+                    hes-cagir-giden-soyadi(i)  
+           exit perform 
+        end-if
+
+        initialize yanrez-rec 
+        move acc-rez                 to yanrez-rezno
+        move i                       to yanrez-sirano
+        read yanrez no lock invalid continue end-read
+
+        initialize form1-gd-1-record 
+        move i                              to gd-1-col-0
+        move hes-cagir-giden-adi(i)         to gd-1-col-1 
+        move hes-cagir-giden-soyadi(i)      to gd-1-col-2
+        move hes-cagir-giden-dogtar(i)(7:2) to gd-1-col-3(1:)
+        move "/"                            to gd-1-col-3(3:)
+        move hes-cagir-giden-dogtar(i)(5:2) to gd-1-col-3(4:)
+        move "/"                            to gd-1-col-3(6:)
+        move hes-cagir-giden-dogtar(i)(1:4) to gd-1-col-3(7:)
+        move yanrez-hes-kodu                to gd-1-col-4
+        evaluate yanrez-hes-durum               
+            when 1 
+                 move "Risksiz"             to gd-1-col-5
+            when 2 
+                 move "Riskli"              to gd-1-col-5
+            when 3 
+                 move "Hes Kodu Gecersiz"   to gd-1-col-5
+            when 4 
+                 move "Hes Tarihi Gecersiz" to gd-1-col-5
+            when 5 
+                 move "Hatali Sorgulama"    to gd-1-col-5
+            when other
+                 move "Sorgu Yok"           to gd-1-col-5
+        end-evaluate
+        if yanrez-hes-durum = spaces 
+           move 1 to yanrez-hes-durum
+        end-if
+
+        if yanrez-hes-kodu = spaces 
+           initialize musteri-rec                               ||| geçmiþte var ise kaydedecek
+           move yanrez-profil-sirket    to musteri-sirket 
+           move yanrez-profil-no        to musteri-no 
+           read musteri no lock invalid
+                continue
+           not invalid
+               if musteri-hes-kodu <> spaces  
+                  move musteri-hes-kodu to yanrez-hes-kodu
+                  move yanrez-hes-kodu  to gd-1-col-4
+                  rewrite yanrez-rec invalid
+                     stop " " 
+                  end-rewrite 
+               end-if
+           end-read 
+        end-if
+
+        modify form1-gd-1(ii,2), hidden-data = yanrez-hes-durum
+        modify form1-gd-1, record-to-add(form1-gd-1-record)
+
+
+     end-perform 
+     close yanrez musteri
+
+     modify form1-gd-1, mass-update = 0
+     .
+*
+ Form1-Gd-1-Ev-Other.
+     inquire form1-gd-1,
+             cursor-x in x-i
+             cursor-y in y-i
+     compute acc-sira = y-i - 1 
+     display acc-1302
+     
+     evaluate event-type
+         when msg-begin-entry
+
+              if x-i not = 5
+                 move event-action-fail to event-action
+              end-if
+              open input yanrez   
+              initialize yanrez-rec
+              move acc-rez  to yanrez-rezno 
+              move acc-sira to yanrez-sirano
+              read yanrez no lock invalid
+                   move hes-cagir-donus-hes-kodlari-kodu(acc-sira)   to acc-hes
+                   move hes-cagir-donus-hes-kodlari-durumu(acc-sira) to cmb-hes-durum
+                   if cmb-hes-durum(1:1) = space
+                      move "1"           to cmb-hes-durum
+                   end-if
+              not invalid
+                  move yanrez-hes-kodu  to acc-hes
+                  move yanrez-hes-durum to cmb-hes-durum 
+                  if cmb-hes-durum(1:1) = space
+                     move "1"           to cmb-hes-durum
+                  end-if
+              end-read 
+              display acc-1305 cmb-1301 
+
+              close yanrez
+
+         when msg-finish-entry
+              inquire form1-gd-1(y-i,5), 
+                      cell-data in hes-cagir-donus-hes-kodlari-kodu(acc-sira) 
+              inquire form1-gd-1(y-i,2), 
+                      hidden-data in hes-cagir-donus-hes-kodlari-durumu(acc-sira) 
+              open i-o yanrez musteri
+              initialize yanrez-rec
+              move acc-rez  to yanrez-rezno 
+              move acc-sira to yanrez-sirano
+              read yanrez no lock invalid
+                   continue
+              not invalid
+                  move hes-cagir-donus-hes-kodlari-kodu(yanrez-sirano) 
+                       to yanrez-hes-kodu 
+                  move hes-cagir-donus-hes-kodlari-durumu(yanrez-sirano) 
+                       to yanrez-hes-durum
+                  rewrite yanrez-rec invalid stop " " end-rewrite 
+
+                  perform log-operation-yanrez
+
+                  initialize musteri-rec 
+                  move yanrez-profil-sirket to musteri-sirket
+                  move yanrez-profil-no     to musteri-no 
+                  read musteri no lock invalid
+                       continue 
+                  not invalid
+                      move yanrez-hes-kodu(1:12) to musteri-hes-kodu
+                      rewrite musteri-rec invalid
+                         stop " "
+                      end-rewrite                     
+                  end-read 
+              end-read 
+              close yanrez musteri
+
+     end-evaluate 
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+         when 2
+              move 27 to key-status 
+         when 4
+*              if k-kodu-tasi not = "ASYA"
+*                 display message box "Test butonudur.."
+*                 exit paragraph
+*              end-if
+              perform hes-sorgula 
+              perform yanrez-grid-doldur
+
+     end-evaluate     
+     .
+*
+ cmb-1301-Ex-Ntf-Selchange.
+     compute i = acc-sira + 1 
+     modify form1-gd-1(i,2), hidden-data = cmb-hes-durum(1:1) 
+     open i-o yanrez
+     initialize yanrez-rec 
+     move acc-rez  to yanrez-rezno 
+     move acc-sira to yanrez-sirano
+     read yanrez no lock invalid
+          continue
+     not invalid
+         move cmb-hes-durum(1:1) to yanrez-hes-durum
+         rewrite yanrez-rec invalid stop " " end-rewrite 
+
+         perform log-operation-yanrez
+     end-read 
+     close yanrez
+     .
+*
+ acc-1305-Aft-Procedure.
+     if acc-hes = spaces 
+        exit paragraph
+     end-if
+     open i-o yanrez musteri
+     initialize yanrez-rec 
+     move acc-rez  to yanrez-rezno 
+     move acc-sira to yanrez-sirano
+     read yanrez no lock invalid
+          continue
+     not invalid
+          move acc-hes       to yanrez-hes-kodu   
+          rewrite yanrez-rec invalid stop " " end-rewrite 
+
+          perform log-operation-yanrez
+
+          initialize musteri-rec 
+          move yanrez-profil-sirket to musteri-sirket
+          move yanrez-profil-no     to musteri-no 
+          read musteri no lock invalid
+               continue 
+          not invalid
+              move acc-hes(1:12) to musteri-hes-kodu
+              rewrite musteri-rec invalid
+                 stop " "
+              end-rewrite                     
+          end-read 
+
+          compute i = acc-sira + 1
+          modify form1-gd-1(i,5), cell-data = acc-hes
+     end-read 
+     close yanrez musteri
+     .
+*
+ hes-sorgula.
+     open i-o yanrez 
+     initialize yanrez-rec 
+     move acc-rez to yanrez-rezno
+     start yanrez key not < yanrez-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-yanrez = "10" 
+     read yanrez next no lock end move "10" to fs-yanrez 
+     not at end 
+         if acc-rez <> yanrez-rezno
+            exit perform 
+         end-if
+         if yanrez-hes-kodu = spaces 
+            exit perform cycle
+         end-if
+
+         move yanrez-hes-kodu to sorgu-hes
+
+         perform kisi-sor
+
+     end-read 
+     end-perform 
+     end-start
+     close yanrez
+     display message box "Risk Durumlari Alindi.."
+     .
+*
+ kisi-sor.
+     initialize exe-param-gonder don-adres
+
+     accept isl-tarih from century-date
+     accept isl-saat  from time
+
+     move isl-tarih   to islem-anahtar
+     move isl-saat    to islem-anahtar(9:6)
+     move k-kodu-tasi to islem-anahtar(15:)            
+
+     move all low-values to exe-param-gonder don-adres
+
+     inspect sorgu-hes     replacing trailing spaces by low-values
+     inspect islem-anahtar replacing trailing spaces by low-values
+     inspect genel2-hes-kk replacing trailing spaces by low-values
+     inspect genel2-hes-pw replacing trailing spaces by low-values
+          inspect isyeri-adres-tasi replacing trailing spaces by low-values
+
+     string don-adres
+            "@[DISPLAY]:C:\acucorp\acucbl701\acugt\bin\hes\" delimited by low-values
+            islem-anahtar                                    delimited by low-values
+            ".txt"                                           delimited by low-values
+       into don-adres
+
+     string exe-param-gonder
+            "@[DISPLAY]:C:\acucorp\acucbl701\acugt\bin\HesSorgu.exe"  delimited by low-values
+            " "                                                       delimited by low-values
+            genel2-hes-kk                                             delimited by low-values
+            " "                                                       delimited by low-values
+            genel2-hes-pw                                             delimited by low-values
+            " "                                                       delimited by low-values
+            sorgu-hes                                                 delimited by low-values
+            " "                                                       delimited by low-values
+            islem-anahtar                                             delimited by low-values
+            " 1"                                                      delimited by low-values
+            " "                                                       delimited by low-values
+            isyeri-adres-tasi                                         delimited by low-values
+       into exe-param-gonder
+
+     call "c$copy" using "/asya/ytl/exe/HesSorgu.exe",
+          "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\HesSorgu.exe"
+     call "c$copy" using "/asya/ytl/exe/RestSharp.dll",
+          "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\RestSharp.dll"
+     call "c$copy" using "/asya/ytl/exe/Newtonsoft.Json.dll",
+          "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\Newtonsoft.Json.dll"
+
+     call "c$system" using exe-param-gonder, 384 
+                
+     initialize donus-hedef  
+     inspect file-zaman replacing trailing spaces by low-values
+     accept file-zaman from time
+     string "/asya/ytl/liste/" delimited by size
+            file-zaman delimited by low-values
+            ".txt" delimited by size
+       into donus-hedef                 
+           
+     call "c$copy" using don-adres , donus-hedef 
+           giving donus 
+       if donus = 0
+          perform dosya-donus-oku 
+          delete file fidetext
+
+          evaluate sorgu-don-durum 
+              when "RISKY"
+                   move 2 to yanrez-hes-durum 
+              when "RISKLESS" 
+                   move 1 to yanrez-hes-durum 
+              when other 
+                   evaluate sorgu-don-kod
+                       when 400
+                            evaluate sorgu-don-msg 
+                                when "hescodenotfound" 
+                                     move 3 to yanrez-hes-durum
+                                when "hescodehasbeenexpired" 
+                                     move 4 to yanrez-hes-durum
+                            end-evaluate
+                       when 500
+                       when 900
+                            move 5 to yanrez-hes-durum
+                   end-evaluate 
+          end-evaluate
+          rewrite yanrez-rec invalid stop " " end-rewrite
+
+          perform log-operation-yanrez
+
+          perform hes-hareket-yaz
+       else
+          display message box "Dosya kopyalanamadi.."
+       end-if 
+     .
+*
+ dosya-donus-oku.
+     initialize fidetext-adi satir-okundu sorgu-don
+     string file-zaman delimited by low-values
+            ".txt" delimited by size                                                       
+     into fidetext-adi
+     open input fidetext               
+     perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+     read fidetext next no lock end move "10" to fs-fidetext
+     not end     
+         if satir-okundu = 1 
+            exit perform
+         end-if
+
+         unstring fidetext-rec 
+                  delimited by "|"
+         into val-1  val-2  val-3  val-4  val-5                                                 
+              val-6  val-7  val-8  val-9 
+
+          move val-1                        to sorgu-don-hes 
+          move function numval(val-2)       to sorgu-don-kod
+          move val-3                        to sorgu-don-msg
+          move val-4                        to sorgu-don-durum                
+
+     end-read 
+     end-perform        
+     close fidetext .
+* 
+ hes-hareket-yaz.
+     open i-o hessorgu
+
+     initialize hessorgu-rec 
+     move sorgu-don-hes to hessorgu-hes-kodu
+     move tarih-tasi    to hessorgu-tarih
+
+     accept hessorgu-zaman from time
+
+     read hessorgu no lock invalid
+          continue
+     end-read 
+
+     move sorgu-don-kod    to hessorgu-donus-kodu
+     move sorgu-don-msg    to hessorgu-donus-mesaj
+     move yanrez-hes-durum to hessorgu-donus-durum
+     move yanrez-anah      to hessorgu-yrez-anah
+     move k-kodu-tasi      to hessorgu-staff
+
+     write hessorgu-rec invalid
+           rewrite hessorgu-rec end-rewrite 
+     end-write 
+
+     close hessorgu
+     .
+
+
+
+
+
+
+
+ 

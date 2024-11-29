@@ -1,0 +1,335 @@
+* mailgrup.evt
+* mailgrup.evt is generated from D:\asya\acugt.ytl\otel\mailgrup.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     open i-o genel2
+     initialize genel2-rec 
+     move 1 to genel2-anah 
+     read genel2 no lock invalid
+          continue
+     end-read 
+     close genel2
+     .
+*
+ accept-0101-Aft-Procedure.
+     open i-o useinbox
+     initialize useinbox-rec 
+     move acc-kodu to useinbox-kodu
+     read useinbox no lock invalid
+          initialize acc-adi acc-ekodu
+     not invalid
+         move useinbox-adi   to acc-adi 
+         move useinbox-ekodu to acc-ekodu
+     end-read 
+     display accept-0102 accept-0103
+
+     close useinbox
+     .
+*
+ exception-procedure.
+     evaluate key-status
+         when 1 
+              if control-id = 5
+                 initialize useinbox-cagir
+                 call "/asya/ytl/obj/otel/inboxara.asy" using useinbox-cagir
+                      on exception perform callerr-proc
+                      not on exception
+                 cancel "/asya/ytl/obj/otel/inboxara.asy" 
+                 end-call
+                 move useinbox-kodu-cagir     to acc-kodu
+                 
+                 display accept-0101
+                 move 4 to accept-control
+                 move 5 to control-id
+              end-if
+                       
+         when 2 
+              perform kaydet
+         when 3
+              perform sil
+         when 4
+              display message box "Rapor Ozelligi Henuz Yapim Asamasindadir.."
+              exit paragraph 
+              perform raporla
+         when 1313
+              perform liste-guncelle
+     end-evaluate
+     .
+* 
+ liste-guncelle.
+     move genel2-useinbox-mail to inbox-kk
+     move genel2-useinbox-pw   to inbox-pw
+
+     initialize exe-param-gonder  
+     move all low-values to exe-param-gonder  
+     inspect inbox-kk     replacing trailing spaces by low-values 
+     inspect inbox-pw     replacing trailing spaces by low-values 
+
+     string exe-param-gonder
+            "@[DISPLAY]:C:\acucorp\acucbl701\acugt\bin\useinbox.exe " delimited by low-values
+            inbox-kk       delimited by low-values
+            " "            delimited by low-values
+            inbox-pw       delimited by low-values
+            " 13 13 13 13" delimited by low-values
+     into exe-param-gonder
+    
+     inspect exe-param-gonder replacing trailing low-values by spaces 
+
+     call "c$copy" using "/asya/ytl/exe/useinbox/useinbox.exe",
+        "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\useinbox.exe"
+
+     call "c$copy" using "/asya/ytl/exe/useinbox/useinbox.exe.config",
+        "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\useinbox.exe.config"
+
+     call "c$copy" using "/asya/ytl/exe/useinbox/RestSharp.xml",
+        "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\RestSharp.xml"
+
+     call "c$copy" using "/asya/ytl/exe/useinbox/RestSharp.dll",
+        "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\RestSharp.dll"
+
+     call "c$copy" using "/asya/ytl/exe/useinbox/Newtonsoft.Json.xml",
+        "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\Newtonsoft.Json.xml"
+
+     call "c$copy" using "/asya/ytl/exe/useinbox/Newtonsoft.Json.dll",
+        "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\Newtonsoft.Json.dll"
+
+     call "c$copy" using "/asya/ytl/exe/useinbox/mapping.xml",
+        "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\mapping.xml"
+
+     call "c$system" using exe-param-gonder, 384       |384 sayýsý kalacak siyah ekran çýkmasýný engelliyor.          
+
+     initialize don-adres
+
+     move all low-values to don-adres   
+
+     string don-adres
+         "@[DISPLAY]:\acucorp\acucbl701\acugt\bin\contactlist.txt" delimited by low-values
+     into don-adres
+
+     initialize donus-hedef  
+     inspect file-zaman replacing trailing spaces by low-values
+     accept file-zaman from time
+     string "/asya/ytl/liste/" delimited by size
+            file-zaman delimited by low-values
+            ".txt" delimited by size
+       into donus-hedef                 
+         
+     call "c$copy" using don-adres , donus-hedef 
+         giving donus 
+     if donus = 0
+        perform dosya-donus-oku 
+        perform inbox-data-al
+     end-if 
+     .
+*
+ dosya-donus-oku.
+     initialize fidetext-adi xiii ana-dizi txt-valuess
+     string file-zaman delimited by low-values
+            ".txt" delimited by size                                                       
+     into fidetext-adi
+     open input fidetext               
+     perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+     read fidetext next no lock end move "10" to fs-fidetext
+     not end          
+         unstring fidetext-rec 
+                  delimited by "|"
+         into val-1  val-2  val-3  
+         
+         add 1            to xiii
+         move xiii        to alt-kodu(xiii)                
+         move val-3       to alt-adi(xiii)                
+         move val-1       to alt-ekodu(xiii)                
+
+     end-read 
+     end-perform        
+     close fidetext
+     delete file fidetext
+     .
+*
+ inbox-data-al.
+       open i-o useinbox
+       perform varying xiii
+       from 1
+       by 1 
+       until xiii > 98
+          if alt-kodu(xiii) = spaces and
+             alt-adi(xiii) = spaces and
+             alt-ekodu(xiii) = spaces 
+             exit perform 
+          end-if
+          initialize useinbox-rec 
+          move alt-kodu(xiii)  to useinbox-kodu
+          read useinbox no lock invalid
+               continue
+          end-read 
+          move alt-adi(xiii)   to useinbox-adi 
+          move alt-ekodu(xiii) to useinbox-ekodu
+          write useinbox-rec invalid
+                rewrite useinbox-rec end-rewrite
+          end-write 
+       end-perform 
+       close useinbox
+       .  
+
+
+*
+ kaydet.
+     if acc-kodu not > 0
+        display message box "Grup kodu sifir olamaz." new-line 
+                            "Kayit islemi iptal edilmistir."
+     end-if
+     open i-o useinbox
+     initialize useinbox-rec 
+     move acc-kodu    to useinbox-kodu
+     read useinbox no lock invalid
+          continue
+     end-read 
+     move acc-adi     to useinbox-adi 
+     move acc-ekodu   to useinbox-ekodu
+     write useinbox-rec invalid
+           rewrite useinbox-rec end-rewrite 
+     end-write 
+     close useinbox
+     initialize acc-kodu acc-adi acc-ekodu
+     display accept-0101 accept-0102 accept-0103
+     move 4           to accept-control
+     move 5           to control-id
+     display message box "Kayit islemi tamamlandi."
+     .
+*
+ sil.
+     if acc-kodu not > 0
+        display message box "Grup kodu sifir olamaz." new-line 
+                            "Silme islemi iptal edilmistir."
+     end-if
+     open i-o useinbox
+     initialize useinbox-rec 
+     move acc-kodu    to useinbox-kodu
+     read useinbox no lock invalid
+          continue
+     end-read 
+     move acc-adi     to useinbox-adi 
+     move acc-ekodu   to useinbox-ekodu
+     delete useinbox end-delete
+     close useinbox
+     initialize acc-kodu acc-adi acc-ekodu
+     display accept-0101 accept-0102 accept-0103
+     move 4           to accept-control
+     move 5           to control-id
+     display message box "Silme islemi tamamlandi."
+     .
+*
+ raporla.
+     open input useinbox
+     initialize useinbox-rec 
+     start useinbox key not < useinbox-anah invalid
+           initialize mesaj-link
+           move 04 to mesaj-no 
+           perform mesaj-ver
+           close useinbox 
+           exit paragraph
+     end-start 
+
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Use Inbox Mail Grup Raporu " to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Use Inbox Mail Grup Raporu " to det-filler
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  s
+     initialize dokumer-rec detay
+     move "D1"               to det-dokumer-20(1:2)
+     move "1"                to det-dokumer-20(10:1)
+     move "Kodu"             to det-1
+     move "Adi"              to det-2
+     move "Entegrasyon Kodu" to det-3
+     move "|" to fil-1 fil-2 fil-3
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"  to det-1 det-2 det-3
+     write dokumer-rec from detay
+**************************
+
+     initialize fs-useinbox
+     perform with test after until fs-useinbox = "10"
+     read useinbox next no lock end move "10" to fs-useinbox 
+     not at end 
+
+         initialize dokumer-rec detay 
+         move useinbox-kodu  to det-1
+         move useinbox-adi   to det-2
+         move useinbox-ekodu to det-3
+         write dokumer-rec from detay
+     end-read 
+     end-perform
+
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"  to det-1 det-2 det-3
+     write dokumer-rec from detay
+
+     close dokumer
+     close useinbox
+     call dokumer-prog on exception
+          perform callerr-proc
+     not on exception
+          cancel dokumer-prog
+     end-call
+     delete file dokumer.
+*
+ Form1-Aft-Initdata.
+
+
+     .
+
+
+ 

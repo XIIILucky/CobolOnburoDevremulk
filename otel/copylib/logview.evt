@@ -1,0 +1,655 @@
+* logview.evt
+* logview.evt is generated from D:\asya\acugt.ytl\otel\logview.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM Form1-Gd-1-Ev-Msg-Begin-Entry
+     WHEN Msg-Heading-Dblclick
+        PERFORM Form1-Gd-1-Ev-Msg-Heading-Dblclick
+     END-EVALUATE
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ Form2-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+
+*
+ init-degiskenler.
+     initialize degisen-alanlar-ana.
+     perform parse-file-name.
+     perform parse-log-index-file-name.
+     perform load-xfd.
+     if return-code = 0
+        display message box 
+                "Xfd yuklenemedi", new-line,
+                "Yuklenemeyen dosya :",log-dir-file
+                icon mb_error_icon
+                title "Bilginize ...."
+                perform destroy-window-proc
+                goback.
+     perform xfd-get-key-info.
+     perform xfd-get-fields.
+     if logview-pointer = null
+        move spaces to my-data-area
+        perform acu-form2-routine
+     else
+        perform get-primary-key
+     end-if.
+
+*
+ parse-file-name.
+     move logview-dosya-adi    to log-dir-file
+     perform log-file-parse.
+
+*
+ get-primary-key.
+     move all low-values       to log-file my-data-area
+     set my-data-area-pointer  to address of my-data-area
+     call "m$copy" using my-data-area-pointer,
+                         logview-pointer
+                         logview-rec-size.
+
+*
+ parse-log-index-file-name.
+     move all low-values to log-data-adres log-index-adres.
+     string log-data-adres,
+             "/asya/ytl/log/"       delimited by low-values,
+             program-modul          delimited by low-values,
+             "/"                    delimited by low-values,
+             isyeri-adres-tasi      delimited by low-values,
+             "/"                    delimited by low-values,
+             log-file               delimited by low-values,
+             ".log"                 delimited by low-values
+             into log-data-adres.
+     string log-index-adres,
+             "/asya/ytl/log/"       delimited by low-values,
+             program-modul          delimited by low-values,
+             "/"                    delimited by low-values,
+             isyeri-adres-tasi      delimited by low-values,
+             "/"                    delimited by low-values,
+             log-file               delimited by low-values,
+             into log-index-adres.
+    
+    inspect log-data-adres replacing trailing spaces 
+                              by low-values.
+    inspect log-index-adres replacing trailing spaces 
+                              by low-values.
+
+
+*
+ load-xfd.
+     move low-values         to xfd-dir
+     string xfd-dir,
+            "/asya/ytl/xfd/"   delimited by low-values,
+            program-modul      delimited by low-values
+            "/"                delimited by low-values,
+            log-file           delimited by low-values,
+            ".xfd"             delimited by low-values 
+            into xfd-dir
+     inspect xfd-dir,
+            replacing trailing spaces by low-values
+     call "c$parsexfd" using parsexfd-parse
+                             xfd-dir,
+                             null,
+                             parsexfd-flag-include-999,
+                             parsexfd-description.
+     if return-code <> 0
+        move return-code     to parsexfd-handle.
+
+*
+ xfd-get-key-info.
+    call "c$parsexfd" using parsexfd-get-key-info, 
+                            parsexfd-handle
+                            0,
+                            parsexfd-key-description. 
+*
+ xfd-get-fields.
+    perform xfd-mem-point-sifirla.
+    perform data-point-mem-sifirla
+    perform index-point-mem-sifirla
+    perform varying xfd-key-i
+            from 1
+            by 1
+            until xfd-key-i > (parsexfd-number-fields)
+                  compute dummy-999 = xfd-key-i - 1
+                  call "c$parsexfd" using parsexfd-get-field-info
+                                          parsexfd-handle,
+                                          dummy-999,
+                                          parsexfd-field-description
+                  end-call
+                  perform xfd-alloc-mem
+                  perform xfd-put-mem
+    end-perform.
+*
+ xfd-mem-point-sifirla.
+    perform varying xfd-key-i
+                    from 1
+                    by 1
+                    until xfd-key-i > max-field
+                    move null to xfd-field-pointer(xfd-key-i)
+    end-perform.
+
+*
+ xfd-alloc-mem.
+    call "m$alloc" using function length(parsexfd-field-description), 
+                         xfd-field-pointer(xfd-key-i).
+         
+*
+ xfd-get-mem.
+    call "m$get" using xfd-field-pointer(xfd-key-i),
+                       parsexfd-field-description,
+                       function length(parsexfd-field-description)
+                       1.
+*
+ xfd-put-mem.
+    call "m$put" using xfd-field-pointer(xfd-key-i),
+                       parsexfd-field-description,
+                       function length(parsexfd-field-description)
+                       1.
+*
+ xfd-destroy-mem.
+    perform varying xfd-key-i
+                    from 1
+                    by 1
+                    until xfd-key-i > max-field
+                    if xfd-field-pointer(xfd-key-i) <> null
+                       call "m$free" using xfd-field-pointer(xfd-key-i)
+                    end-if
+    end-perform.
+*
+ release-all-mem.
+    perform xfd-destroy-mem.
+    perform parse-xfd-release-mem.
+    perform data-pointer-release.
+    perform index-pointer-release.
+
+*
+ data-pointer-release.
+    perform varying data-pointer-i 
+            from 1
+            by 1
+            until data-pointer-i > max-data-pointer
+            if data-pointer(data-pointer-i) <> null
+               call "m$free" using data-pointer(data-pointer-i)
+            end-if
+    end-perform.
+*
+ index-pointer-release.
+    perform varying data-pointer-i 
+            from 1
+            by 1
+            until data-pointer-i > max-data-pointer
+            if index-pointer(data-pointer-i) <> null
+               call "m$free" using index-pointer(data-pointer-i)
+            end-if
+    end-perform.
+
+ index-point-mem-sifirla.
+    perform varying data-pointer-i
+                    from 1
+                    by 1
+                    until data-pointer-i > max-data-pointer
+                    move null to index-pointer(data-pointer-i)
+    end-perform.
+
+*
+ parse-xfd-release-mem.
+    call "c$parsexfd" using parsexfd-release, 
+                            parsexfd-handle.
+     
+*
+ Form1-Aft-Initdata.
+    perform init-degiskenler.
+    perform load-log-file.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ load-log-file.
+    perform open-log-file.
+    if f-errno = 0
+       open input log-index kllnc
+       perform start-log-file
+       if f-errno = 0 
+          perform get-log-records
+          perform set-grid-options
+       end-if
+       perform close-log-file
+       close log-index kllnc
+    end-if.
+    perform release-all-mem.
+
+*
+ start-log-file.
+    initialize data-pointer-sayi
+    move my-data-area  to log-data-area
+    move "9999999999"  to log-data-area(parsexfd-max-rec-size + 1:)
+    inspect log-data-area replacing
+                         trailing spaces by low-values
+    set start-function          to true
+    set f-less                  to true
+    call "i$io" using io-function,
+                      log-data-handle,
+                      log-data-area,
+                      by value 1,
+                      by value 0,
+                      start-mode.
+*    if return-code = 0 ise startlayamadý demektir
+*    yeni kayýt iþlemi görecek
+*
+ data-point-mem-sifirla.
+    perform varying data-pointer-i
+                    from 1
+                    by 1
+                    until data-pointer-i > max-data-pointer
+                    move null to data-pointer(data-pointer-i)
+    end-perform.
+
+ get-log-records.
+    initialize data-pointer-i okunan-kayit
+    move all low-values to compare-data-area
+    perform with test after until f_errno <> 0 or 
+                                  data-pointer-sayi >= max-data-pointer
+            perform read-log-previous
+            perform compare-primary-key
+            if f-errno = 0 and i <> 999
+* Ilyas hoca dup tis dup tis ilyaz hoca ....
+               if compare-data-area = low-values 
+                  move log-data-area  to compare-data-area
+               else
+                  if log-data-area(1:parsexfd-max-rec-size) = 
+                     compare-data-area(1:parsexfd-max-rec-size)
+*                        exit perform cycle
+                        continue
+                  else
+                     move log-data-area to compare-data-area 
+                  end-if
+               end-if
+               add 1 to data-pointer-sayi data-pointer-i
+               perform alloc-data-pointer
+               perform put-data-pointer
+               perform find-index-record
+            else
+               if i = 999
+                  exit perform
+               end-if
+            end-if
+    end-perform.
+
+
+  
+
+*
+ alloc-data-pointer.
+    compute dummy-999 = parsexfd-max-rec-size + 10
+    call "m$alloc" using dummy-999,
+                         data-pointer(data-pointer-i).
+
+*
+ put-data-pointer.
+    compute dummy-999 = parsexfd-max-rec-size + 10
+    call "m$put" using data-pointer(data-pointer-i),
+                       log-data-area,
+                       dummy-999,
+                       1.
+*
+ get-data-pointer.
+    compute dummy-999 = parsexfd-max-rec-size + 10
+    call "m$get" using data-pointer(data-pointer-i),
+                       log-data-area,
+                       dummy-999,
+                       1.
+
+ alloc-index-pointer.
+    call "m$alloc" using function length(log-index-rec),
+                         index-pointer(data-pointer-i).
+
+*
+ put-index-pointer.
+    call "m$put" using index-pointer(data-pointer-i),
+                       log-index-rec,
+                       function length(log-index-rec),
+                       1.
+*
+ get-index-pointer.
+    if index-pointer(data-pointer-i) = null
+       initialize log-index-rec
+    else
+       call "m$get" using index-pointer(data-pointer-i),
+                          log-index-rec,
+                          function length(log-index-rec),
+                          1
+    end-if.
+
+
+* 
+ read-log-previous.
+    set previous-function       to true
+    call "i$io" using io-function,
+                      log-data-handle,
+                      log-data-area.
+
+*
+ compare-primary-key.
+    perform varying i
+            from 1
+            by 1
+            until i > parsexfd-number-segments
+                  if my-data-area(parsexfd-segment-offset(i) + 1:
+                                  parsexfd-segment-length(i)) <>
+                     log-data-area(parsexfd-segment-offset(i) + 1:
+                                  parsexfd-segment-length(i))
+                                  move 999 to i
+                                  exit perform 
+*/ anahtar ayný degil bu kayit bizi ilgilendirmiyor
+                  end-if
+    end-perform.
+    
+*
+ open-log-file.
+    move null         to log-data-handle.
+    set Finput        to true
+    set open-function to true
+    call "i$io" using io-function,
+                      log-data-adres,
+                      open-mode,
+                      filesys-logical-info
+    end-call.
+    if return-code = 0
+       display message box
+               log-data-adres," dosyasi acilamiyor ...",new-line,
+               "Error code : ", f-errno
+               icon mb_error_icon
+               title "Hata"
+    else
+       move return-code     to log-data-handle
+    end-if.
+*
+ close-log-file.
+    set close-function to true
+    call "i$io" using io-function,
+                      log-data-handle.
+
+*
+ set-grid-options.
+    modify Form1-Gd-1, 
+           reset-grid = 1
+           mass-update = 1
+           num-rows = parsexfd-number-fields + 5
+           num-col-headings = 5
+           display-columns(1)
+           data-columns(1)
+           y = 1
+           x = 1
+           cell-data = "------Veri Etiketleri------"
+           y = 2
+           x = 1
+           cell-data = "Sistem Tarihi"
+           y = 3
+           x = 1
+           cell-data = "Calisma Tarihi"
+           y = 4
+           x = 1
+           cell-data = "Islem Turu"
+           y = 5
+           x = 1
+           cell-data = "Kullanici"
+    
+    move 1        to data-col disp-col
+    perform varying i
+            from 1
+            by 1
+            until i > data-pointer-sayi
+                  add 20 to disp-col
+                  add 40 to data-col
+                  modify form1-gd-1,
+                         display-columns(disp-col),
+                         data-columns(data-col)
+    end-perform
+
+    perform varying xfd-key-i
+            from 1
+            by 1
+            until xfd-key-i > parsexfd-number-fields
+                  perform xfd-get-mem
+                  modify form1-gd-1,
+                         y = 5 + xfd-key-i
+                         x = 1
+                         cell-data = parsexfd-field-name
+                  move all high-values        to kiyas-x80
+                  perform varying data-pointer-i 
+                          from data-pointer-sayi
+                          by -1
+                          until data-pointer-i = 0
+                          perform get-data-pointer
+                          call "C$LCONVERT" using x-80, 
+                                            data-pointer(data-pointer-i)
+                                            parsexfd-field-offset,
+                                            parsexfd-field-length,
+                                            parsexfd-field-type, 
+                                            parsexfd-field-digits, 
+                                            parsexfd-field-scale
+                          end-call
+                          move 0 to cell-renk
+                          if kiyas-x80 <> high-values
+                             if kiyas-x80 <> x-80
+                                move 712     to cell-renk
+                                move "E"     to degisen-alan(xfd-key-i)
+                             end-if
+                          end-if
+                          move x-80            to kiyas-x80
+                          modify form1-gd-1,
+                                 y = 5 + xfd-key-i
+                                 x = 1 + data-pointer-i
+                                 cell-data = x-80
+                                 cell-color = cell-renk
+                  end-perform
+    end-perform.
+    perform varying data-pointer-i
+            from 1
+            by 1
+            until data-pointer-i > data-pointer-sayi
+                  perform get-index-pointer
+                  perform modify-headers
+    end-perform.
+
+            
+    modify Form1-Gd-1, 
+           virtual-width(data-col - 20)
+           mass-update = 0.
+*
+ modify-headers.
+    move log-index-sys-gun                     to egun
+    move log-index-sys-ay                      to eay
+    move log-index-sys-yil                     to eyil
+    modify form1-gd-1,
+           y = 2
+           x = 1 + data-pointer-i
+           cell-data = etarih.
+    move log-index-cal-gun                     to egun
+    move log-index-cal-ay                      to eay.
+    move log-index-cal-yil                     to eyil.
+    modify form1-gd-1,
+           y = 3
+           x = 1 + data-pointer-i
+           cell-data = etarih.
+
+    evaluate true
+    when log-index-islem-write 
+         move "Yazma"             to x-80
+         move 12 to bmp-no
+    when log-index-islem-rewrite 
+         move "Duzeltme"             to x-80
+         move 11 to bmp-no
+    when log-index-islem-delete 
+         move "Silme"             to x-80
+         move 13 to bmp-no
+    end-evaluate
+    modify form1-gd-1,
+           y = 4
+           x = 1 + data-pointer-i
+           cell-data = x-80
+           bitmap = barra08-bmp
+           bitmap-width = 16
+           bitmap-number = bmp-no
+
+    move all low-values to x-80
+    move log-index-kullanici          to k-kodu
+    read kllnc no lock invalid
+         move "Tanimsiz Kod"          to k-adi
+         move k-kodu                  to k-soyadi
+    end-read
+    inspect k-adi replacing trailing spaces by low-values
+    inspect k-soyadi replacing trailing spaces by low-values
+    string x-80,
+           k-adi(1:12) delimited by low-values
+           " " delimited by low-values
+           k-soyadi delimited by low-values 
+           into x-80.
+    modify form1-gd-1,
+           y = 5
+           x = 1 + data-pointer-i
+           cell-data = x-80
+    
+    modify form1-gd-1,
+           y = 5
+           x = 1 + data-pointer-i
+           hidden-data = log-index-rec.
+
+*
+ find-index-record.
+    initialize log-index-rec
+    perform get-data-pointer
+    move log-data-area(parsexfd-max-rec-size + 1:10) to log-index-islem-no.
+    start log-index key not < log-index-islem-no 
+          invalid
+              continue
+    not invalid
+    read log-index next no lock end move "10" to fs-log-index
+    not at end
+         if log-index-islem-no = 
+            log-data-area(parsexfd-max-rec-size + 1:10)
+                perform alloc-index-pointer
+                perform put-index-pointer 
+         end-if
+    end-read
+    end-start.
+     
+*
+ Form1-Gd-1-Ev-Msg-Heading-Dblclick.
+    inquire form1-gd-1,
+            y in i
+            x in ii.
+    inquire form1-gd-1(5,ii), 
+            hidden-data in log-index-rec.
+
+    display message box
+            "Zaman : ",log-index-sys-saat,":",
+                       log-index-sys-dakika,":",
+                       log-index-sys-saniye,new-line,
+            "User Id : ",log-index-user-id,new-line,
+            "Station Id : ", log-index-station-id,new-line,
+            "Terminal Name : ", log-index-terminal-name,new-line,
+            "Client Machine Name : ", log-index-client-machine-name,new-line
+            "Program Name : ", log-index-program-name,new-line
+            title "Detay Bilgi".
+     .
+*
+ Form1-Gd-1-Ev-Msg-Begin-Entry.
+    move event-action-fail        to event-action.
+     
+     .
+*
+ Form2-Aft-Initdata.
+    modify Form2-Gd-1, 
+           reset-grid = 1
+           mass-update = 1
+    initialize form2-gd-1-record
+    move "Degisken"          to gd-1-col-1
+    move "Deger   "          to gd-1-col-2
+    modify form2-gd-1,
+           record-to-add(Form2-gd-1-record)
+
+    perform varying form2-i
+                    from 1
+                    by 1
+                    until form2-i > parsexfd-number-key-fields
+                    move parsexfd-key-field-num(form2-i) to xfd-key-i
+                    add 1 to xfd-key-i
+                    perform xfd-get-mem
+                    initialize form2-gd-1-record
+                    move parsexfd-field-name   to gd-1-col-1
+                    modify form2-gd-1,
+                           record-to-add(form2-gd-1-record)
+
+    end-perform.
+    modify form2-gd-1,
+           mass-update = 0.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Form2-Ex-Other.
+    if key-status <> 2
+       exit paragraph.
+
+    perform varying form2-i
+            from 1
+            by 1
+            until form2-i > parsexfd-number-key-fields
+            inquire form2-gd-1(form2-i + 1,2),
+                    cell-data in x-80
+            move parsexfd-key-field-num(form2-i) to xfd-key-i
+            add 1 to xfd-key-i
+            perform xfd-get-mem
+            move x-80(1:parsexfd-field-length)   to 
+                 my-data-area(parsexfd-field-offset + 1:parsexfd-field-length)
+    end-perform.
+    set exit-pushed to true.
+     
+     .
+*
+ Form1-Ex-Other.
+    if key-status <> 2
+       exit paragraph.
+    modify form1-gd-1,
+           mass-update = 1
+    initialize i
+    perform varying xfd-key-i
+            from 1
+            by 1
+            until xfd-key-i > max-field
+                  if degisen-alan(xfd-key-i) = space
+                     modify Form1-Gd-1, 
+                            record-to-delete(5 + xfd-key-i - i)
+                     move "E" to degisen-alan(xfd-key-i)
+                     add 1 to i
+                  end-if
+    end-perform.
+    modify form1-gd-1,
+           num-rows = i + 5
+           mass-update = 0.
+
+ 

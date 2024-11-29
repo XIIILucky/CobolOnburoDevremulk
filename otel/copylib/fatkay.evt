@@ -1,0 +1,293 @@
+* fatkay.evt
+* fatkay.evt is generated from D:\asya\acugt.ytl\otel\fatkay.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM exception-procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     open i-o takvim
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid 
+          initialize mesaj-link
+          move 3 to mesaj-no
+          perform mesaj-ver
+       not invalid
+           continue
+     end-read
+     close genel.
+
+*
+ exception-procedure.
+     evaluate key-status
+         when 2
+              perform kayit-yaz thru kayit-yaz-exit
+*                      perform loga-yaz
+                      display message box "Islem Tamamdir...."
+                      move 27 to key-status
+       
+     end-evaluate.
+ kayit-sil.
+    open i-o fatura.
+    perform varying sayac from 0 by 1 until sayac >= eklenecek-adet,
+        initialize fatura-rec
+        compute tmp-sayi = baslangic-no + sayac
+        move seri-alan    to fatura-seri 
+        move tmp-sayi     to fatura-no
+        move 0            to fatura-sira
+        read fatura no lock invalid 
+             continue
+             not invalid 
+             delete fatura end-delete
+             start fatura key > fatura-anah invalid continue
+               not invalid
+                perform until fs-fatura = "10" 
+                  read fatura next no lock 
+                  end move "10" to fs-fatura
+                  not end
+                     if  seri-alan    not =  fatura-seri  or 
+                        fatura-no not = tmp-sayi 
+                        move "10" to fs-fatura
+                        else
+                        delete fatura end-delete
+                     end-if
+                  end-read
+                end-perform
+              end-start
+        end-read,
+    end-perform.
+    close fatura.
+    display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+    perform dil-ayarla-proc
+*/-----------------------------\*         
+    exit paragraph.
+
+
+ kayit-yaz.
+              initialize mesaj-link
+              move 10 to mesaj-no
+              perform mesaj-ver
+              if mesaj-hayir
+                 move 4 to accept-control
+                 move 4 to control-id
+                 exit paragraph
+              end-if
+    initialize  sayac tmp-sayi
+    open i-o fatura   fatura2 konuk exthrk romhrk fatdetay2 fatdetay.
+     perform varying sayac from 0 by 1 until sayac >= eklenecek-adet
+                 compute tmp-sayi = KAY-NO + sayac
+                    move seri-alan    to fatura-seri 
+                        move tmp-sayi     to fatura-no eski-fat
+                        move 0            to fatura-sira
+                        read fatura no lock invalid  continue
+                          not invalid
+                          display message box fatura-no "nolu fatura dolu " new-line 
+                            "islem iptal edildi"
+                          close fatura   fatura2 konuk exthrk romhrk fatdetay2 fatdetay
+                          exit paragraph
+                      END-READ
+    end-perform
+     initialize fatura-rec
+     start fatura key > fatura-anah
+       invalid continue
+       not invalid
+       perform until fs-fatura = "10"
+         read fatura next end move "10" to fs-fatura
+            not end
+                   if fatura-no  >=  baslangic-no  and                     
+                     fatura-no  < baslangic-no + eklenecek-adet
+                      delete fatura invalid stop " " 
+                        not invalid
+                       move fatura-rec to fatura2-rec
+                       compute fatura2-no = fatura-no - baslangic-no + kay-no
+                         write fatura2-rec invalid stop " "
+                         end-write
+                       end-delete
+                    end-if
+          end-read
+       end-perform
+    end-start
+   
+
+           perform fatdetay-kaydir
+             perform romhrk-kaydir
+             perform exthrk-kaydir
+    close fatura fatura2 konuk exthrk romhrk fatdetay2 fatdetay.
+    display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+    perform dil-ayarla-proc
+*/-----------------------------\*         
+    exit paragraph.
+ kayit-yaz-exit.
+       exit.
+*
+ bos.
+*
+*
+ fatdetay-kaydir.
+    initialize fatdetay-rec
+    start fatdetay key > fatdetay-anah
+         invalid continue
+         not invalid
+         perform until fs-fatdetay = "10"
+            read fatdetay next no lock 
+              end move "10" to fs-fatdetay
+              not end
+                 if function numval(fatdetay-fat-no)  >=  baslangic-no  and                     
+                    function numval(fatdetay-fat-no)  < baslangic-no + eklenecek-adet
+                       compute sayac =     function numval(fatdetay-fat-no) - baslangic-no
+                      compute tmp-fat =  kay-no + baslangic-no
+                      delete fatdetay invalid continue
+                        not invalid
+                        move fatdetay-rec to fatdetay2-rec
+                        move tmp-fat to fatdetay2-fat-no 
+                        write fatdetay-rec invalid stop " " end-write
+                      end-delete
+                 end-if
+             end-read
+         end-perform
+    end-start
+
+           .
+*
+ romhrk-kaydir. 
+     initialize romhrk-rec
+    start romhrk key > romhrk-anah
+         invalid continue
+         not invalid
+         perform until fs-romhrk = "10"
+            read romhrk next no lock 
+              end move "10" to fs-romhrk
+              not end
+                 if ROMHRK-FATURA-NO  >=  baslangic-no  and                     
+                     ROMHRK-FATURA-NO  < baslangic-no + eklenecek-adet
+                       compute sayac =    ROMHRK-FATURA-NO - baslangic-no
+                      compute tmp-fat =  kay-no + baslangic-no
+                      
+                        move tmp-fat to ROMHRK-FATURA-NO 
+                        rewrite romhrk-rec invalid stop " "
+                        perform log-operation-romhrk
+                      end-rewrite
+                 end-if
+               end-read
+         end-perform
+    end-start
+
+          .
+* 
+ exthrk-kaydir.
+       initialize exthrk-rec
+    start exthrk key > exthrk-anah
+         invalid continue
+         not invalid
+         perform until fs-exthrk = "10"
+            read exthrk next no lock 
+              end move "10" to fs-exthrk
+              not end
+                 if  extHRK-FATURA-NO  >=  baslangic-no  and                     
+                     extHRK-FATURA-NO  < baslangic-no + eklenecek-adet
+                       compute sayac =      extHRK-FATURA-No - baslangic-no
+                      compute tmp-fat =  kay-no + baslangic-no
+                      
+                        move tmp-fat to extHRK-FATURA-NO 
+                        rewrite exthrk-rec invalid stop " " end-rewrite
+                        perform log-operation-exthrk
+                 end-if
+               end-read
+         end-perform
+    end-start
+
+
+          .
+*
+           .
+* 
+ konuk-kaydir.
+       initialize konuk-rec
+      start konuk key > konuk-anah
+         invalid continue
+         not invalid
+         perform until fs-konuk = "10"
+            read konuk next no lock 
+              end move "10" to fs-konuk
+              not end
+                 if KONUK-FAT-NO  >=  baslangic-no  and                     
+                    KONUK-FAT-NO  < baslangic-no + eklenecek-adet
+                       compute sayac =     kONUK-FAT-NO - baslangic-no
+                       compute tmp-fat =  kay-no + baslangic-no
+                      
+                        move tmp-fat to KONUK-FAT-NO 
+                        rewrite konuk-rec invalid stop " " end-rewrite
+                
+                 end-if
+                 end-read
+         end-perform
+    end-start
+
+
+          .
+*
+ before-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 16
+              evaluate true
+                  when turkce
+                       move "Islemi Baslat  "   to mesaj
+                  when ingilizce
+                       move "Islemi Baslat  "   to mesaj
+                  when almanca
+                       move "Islemi Baslat  "   to mesaj
+              end-evaluate
+     end-evaluate.
+
+     
+*
+ Form1-Aft-Routine.
+*
+ loga-yaz.
+********** PROGRAMA GIRIS LOGA GONDERILIYOR
+               initialize call-alan1
+                          call-alan2
+                          call-alan3
+                          call-alan4
+                          call-alan5
+                          call-alan6
+               perform log-no-al
+               move genelfis-log-no   to call-anah
+               move "Tarih: "         to call-alan1
+               move gun-tasi          to call-alan1(10:)
+               move "/"               to call-alan1(12:)
+               move ay-tasi           to call-alan1(13:)
+               move "/"               to call-alan1(15:)
+               move yil-tasi          to call-alan1(16:)
+               move "Fatura Kocan Tanimlamasi Yapildi....."    to call-alan2
+               move "Baslangic No.:"      to call-alan3
+               move baslangic-no      to call-alan3(16:)
+               move "Eklenen Adet.:"  to call-alan3(25:)
+               move eklenecek-adet    to call-alan3(40:)
+               perform log-operation-calling               
+     .
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+
+ 

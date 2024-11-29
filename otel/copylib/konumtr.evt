@@ -1,0 +1,558 @@
+* konumtr.evt
+* konumtr.evt is generated from D:\asya\acugt.ytl\otel\konumtr.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM grd1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+          perform adresleri-tasi
+     .
+*
+ Form1-Aft-Initdata.
+      initialize grd1-record
+      move "Kodu" to gd-1-col-1
+      move "Kaynak Konum" to gd-1-col-2
+      move "Kodu" to gd-1-col-3
+      move "Hedef Konum" to gd-1-col-4
+      modify grd1 ,record-to-add(grd1-record)
+     .
+*
+ grd1-Ev-Other.
+      evaluate event-type
+           when msg-finish-entry
+                   inquire grd1 , x in sutun y in satir
+
+                   open input konum
+                      initialize konum-rec
+                       inquire grd1(satir,sutun), cell-data = KONUM-ANAHTAR
+                       read konum no lock invalid
+                              | display message box "Hatali Konum Belirttiniz !"
+                               modify  grd1(satir,sutun + 1),cell-data = "Tanimsizz"
+                       not invalid
+                               modify  grd1(Satir , sutun + 1),cell-data = konum-adi
+                       end-read
+
+                       if sutun = 4 then
+                               inquire grd1(satir,2), cell-data = KONUM-ANAHTAR
+                               read konum no lock invalid
+                                       display message box "Once Kaynak Konumu Belirtiniz"
+                                       modify  grd1(satir,sutun),cell-data = spaces
+                                       modify  grd1(satir,sutun + 1 ),cell-data = spaces
+                               end-read
+                       end-if
+                   close konum
+      end-evaluate
+     .
+
+*
+ Form1-Ex-Other.
+      evaluate key-status
+            when 2002
+            modify Form1-Pb-1 , enabled = false 
+********************Haydi bismillahhh s.y
+            open i-o rez konuk cast fiyatana odalar kontrat fiyatind aksiyon aksiyon2 HESAYR BILBORD blok
+            open input konum
+                  initialize transfer-iptal
+                  perform varying i from 1 by 1 until i > 40
+
+                       initialize konum-rec ilk-bos
+                       inquire grd1(i + 1 ,2), cell-data = KONUM-ANAHTAR
+
+                       if KONUM-ANAHTAR = zeroes then
+                             exit perform cycle
+                       end-if
+
+                       read konum no lock invalid
+                              | display message box "Hatali Konum Belirttiniz ! Transfer Durdurulacaktir !!!!"
+                              | initialize konum-dizi
+                              | move 1 to transfer-iptal
+                              | exit perform
+                       not invalid
+                              CONTINUE 
+                       end-read
+
+                       move konum-anahtar  to konum-kaynak(i) 
+                       initialize konum-rec
+                       inquire grd1(i + 1,4), cell-data = KONUM-ANAHTAR
+                       read konum no lock invalid
+                              | display message box "Hatali Konum Belirttiniz ! Transfer Durdurulacaktir !!!!"
+                              | initialize konum-dizi
+                              | move 1 to transfer-iptal
+                              | exit perform
+                       not invalid
+                              CONTINUE 
+                       end-read
+
+                       move konum-anahtar  to konum-hedef(i) 
+
+                  end-perform 
+                  
+                  if transfer-iptal = 1 then
+                        close rez konuk cast fiyatana konum odalar
+                        modify Form1-Pb-1 , enabled = true
+                        exit paragraph
+                  end-if
+                  display message box "Transfer Islemi Basliyor Luften Programi Kapatmayiniz ! ... "
+                  title "Asya-Soft Yazilim"
+
+                   perform varying i from 1 by 1 until i > 40
+                   
+                         if ( konum-kaynak(i) = zeroes or spaces ) or  ( konum-hedef(i) = zeroes or spaces )
+                               exit perform cycle
+                         end-if
+              
+*                        REZ UPDATEEE
+                         initialize rez-rec
+                         start rez key not < rez-anah invalid
+                                 continue
+                         not invalid
+                         perform until fs-rez = "10"
+                         read rez next no lock end move "10" to fs-rez
+                         not end
+                               if rez-oda-konumu = konum-kaynak(i)  then
+                                     move konum-hedef(i)  to rez-oda-konumu 
+                               end-if
+
+                               if rez-fiyat-konumu = konum-kaynak(i)  then
+                                      move konum-hedef(i) to rez-fiyat-konumu
+                               end-if
+
+
+                               accept rez-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+                               accept rez-edit-zaman from time          |                           
+
+                               rewrite rez-rec invalid
+                                       stop " "
+                               end-rewrite
+                               modify Form1-St-1-Handle, panel-index = 1  panel-text = rez-rec 
+                         end-read
+                         end-perform
+                         end-start
+*0                       KONUK UPDATE
+                         initialize konuk-rec
+                         start konuk key not < konuk-anah invalid
+                                 continue
+                         not invalid
+                         perform until fs-konuk = "10"
+                         read konuk next no lock end move "10" to fs-konuk
+                         not end
+                               if konuk-oda-konumu = konum-kaynak(i)  then
+                                     move konum-hedef(i)  to konuk-oda-konumu 
+                               end-if
+
+                               if konuk-fiyat-konumu = konum-kaynak(i)  then
+                                      move konum-hedef(i) to konuk-fiyat-konumu
+                               end-if
+
+                               rewrite konuk-rec invalid
+                                       stop " "
+                               end-rewrite
+                               modify Form1-St-1-Handle, panel-index = 1  panel-text = konuk-rec 
+                         end-read
+                         end-perform
+                         end-start
+*0                       CAST UPDATE
+                         initialize cast-rec
+                         start cast key not < cast-anah invalid
+                                 continue
+                         not invalid
+                         perform until fs-cast = "10"
+                         read cast next no lock end move "10" to fs-cast
+                         not end
+                               if CAST-ODA-KONUMU = konum-kaynak(i)  then
+                                     move konum-hedef(i)  to CAST-ODA-KONUMU 
+                               end-if
+
+                               if CAST-FIYAT-KONUMU = konum-kaynak(i)  then
+                                      move konum-hedef(i) to CAST-FIYAT-KONUMU
+                               end-if
+
+                               rewrite cast-rec invalid
+                                       stop " "
+                               end-rewrite
+                               modify Form1-St-1-Handle, panel-index = 1  panel-text = cast-rec 
+                         end-read
+                         end-perform
+                         end-start
+*0                       ODALAR UPDATE
+                         initialize odalar-rec
+                         start odalar key not < odalar-anah invalid
+                                 continue
+                         not invalid
+                         perform until fs-odalar = "10"
+                         read odalar next no lock end move "10" to fs-odalar
+                         not end
+
+                               if odalar-konumu = konum-kaynak(i)  then
+                                      move konum-hedef(i)  to odalar-konumu
+                               end-if
+
+                               rewrite odalar-rec invalid
+                                       stop " "
+                               end-rewrite
+                               modify Form1-St-1-Handle, panel-index = 1  panel-text = odalar-rec 
+                         end-read
+                         end-perform
+                         end-start
+
+
+*0                 HESAYR UPDATE
+                           initialize HESAYR-rec
+                           start HESAYR key not < HESAYR-anah invalid
+                                   continue
+                           not invalid
+                           perform until fs-HESAYR = "10"
+                           read HESAYR next no lock end move "10" to fs-HESAYR
+                           not end
+        
+        
+                                      if  hesayr-konum = konum-kaynak(i)  then
+                                              move konum-hedef(i)  to hesayr-konum
+                                       end-if
+        
+                           
+                                       rewrite HESAYR-rec invalid
+                                            stop " "
+                                       end-rewrite
+        
+                                       modify Form1-St-1-Handle, panel-index = 1  panel-text = HESAYR-rec 
+                                
+                           end-read
+                           end-perform
+                           end-start
+        
+                           
+*0                 BILBORD UPDATE
+                           initialize BILBORD-rec
+                           start BILBORD key not < BILBORD-anah invalid
+                                   continue
+                           not invalid
+                           perform until fs-BILBORD = "10"
+                           read BILBORD next no lock end move "10" to fs-BILBORD
+                           not end
+        
+        
+                                      if  BILBORD-ODA-TIP = konum-kaynak(i)  then
+                                              DELETE BILBORD END-DELETE
+                                              move konum-hedef(i)  to BILBORD-ODA-TIP
+        
+                                               write BILBORD-REC invalid
+                                                    stop " "
+                                               end-write
+                                               modify Form1-St-1-Handle, panel-index = 1  panel-text = BILBORD-REC 
+                                       end-if
+        
+                           
+                                     
+                                
+                           end-read
+                           end-perform
+                           end-start 
+        
+        
+                           initialize aksiyon-rec
+                           move "S" to AKSIYON-TIPI
+                           start aksiyon key not < aksiyon-anah invalid
+                                   continue
+                           not invalid
+                           perform until fs-aksiyon = "10"
+                           read aksiyon next no lock end move "10" to fs-aksiyon
+                           not end
+                                      if AKSIYON-TIPI <> "S"
+                                            exit perform
+                                      end-if
+                                      if  AKSIYON-PAN-TIPI = konum-kaynak(i)  then
+                                              DELETE aksiyon END-DELETE
+                                              move konum-hedef(i)  to AKSIYON-PAN-TIPI
+        
+                                               write  aksiyon-rec invalid
+                                                    stop " "
+                                               end-write
+                                               modify Form1-St-1-Handle, panel-index = 1  panel-text = aksiyon-rec 
+                                       end-if
+        
+                           end-read
+                           end-perform
+                           end-start
+        
+                           initialize aksiyon2-rec
+                           move "S" to AKSIYON2-TIPI
+                           start aksiyon2 key not < aksiyon2-anah invalid
+                                   continue
+                           not invalid
+                           perform until fs-aksiyon2 = "10"
+                           read aksiyon2 next no lock end move "10" to fs-aksiyon2
+                           not end
+                                      if AKSIYON2-TIPI <> "S"
+                                            exit perform
+                                      end-if
+                                      if  AKSIYON2-PAN-TIPI = konum-kaynak(i)  then
+                                              DELETE aksiyon2 END-DELETE
+                                              move konum-hedef(i)  to AKSIYON2-PAN-TIPI
+        
+                                               write  aksiyon2-rec invalid
+                                                    stop " "
+                                               end-write
+                                               modify Form1-St-1-Handle, panel-index = 1  panel-text = aksiyon2-rec 
+                                       end-if
+        
+                           end-read
+                           end-perform
+                           end-start
+
+                           initialize blok-rec
+                           start blok key not < blok-ANAHTAR invalid
+                                   continue
+                           not invalid
+                           perform until fs-blok = "10"
+                           read blok next no lock end move "10" to fs-blok
+                           not end
+                         
+                                      if  blok-konum = konum-kaynak(i)  then
+                                              DELETE blok END-DELETE
+                                              move konum-hedef(i)  to blok-konum
+        
+                                               write blok-rec invalid
+                                                    stop " "
+                                               end-write
+                                               modify Form1-St-1-Handle, panel-index = 1  panel-text = blok-rec 
+                                       end-if
+        
+                           end-read
+                           end-perform
+                           end-start
+
+                       |  display message box konum-kaynak(i) " Nolu Konumundaki Tum Kayitlar " konum-hedef(i) " Nolu Konum ile Degistirildi !"
+                      |   title "Asya-Soft Yazilim"
+                       
+                   end-perform
+
+                  
+
+*0                 KONTRAT UPDATE
+                   initialize kontrat-rec
+                   start kontrat key not < kontrat-anah invalid
+                           continue
+                   not invalid
+                   perform until fs-kontrat = "10"
+                   read kontrat next no lock end move "10" to fs-kontrat
+                   not end
+
+                           |move KONTRAT-ODA-ATA to tak-kontrat-dizi  
+                           
+                           |initialize KONTRAT-ODA-ATA
+
+                           perform varying k from 1 by 1 until k > 40
+                                 if ( konum-kaynak(k) = zeroes or spaces )
+                                 or  ( konum-hedef(k) = zeroes or spaces )
+                                       exit perform cycle
+                                 end-if
+                                 move konum-kaynak(k) to kaynak-sira
+                                 move konum-hedef(k)  to hedef-sira
+                                 move KONTRAT-ODA(kaynak-sira) to KONTRAT-ODA(hedef-sira)
+                                 if kaynak-sira <> hedef-sira
+                                         initialize KONTRAT-ODA(kaynak-sira)
+                                 end-if
+                           end-perform
+
+
+                           rewrite  kontrat-rec invalid
+                                   stop " "
+                           end-rewrite
+
+                           modify Form1-St-1-Handle, panel-index = 1  panel-text = kontrat-rec 
+                        
+                   end-read
+                   end-perform
+                   end-start
+
+
+*0                       FIYATANA UPDATE
+                         initialize fiyatana-rec
+                         start fiyatana key not < fiyatana-anah invalid
+                                 continue
+                         not invalid
+                         perform until fs-fiyatana = "10"
+                         read fiyatana next no lock end move "10" to fs-fiyatana
+                         not end
+
+                               |move FIYATANA-ODA-DIZI to tak-FIYATANA-DIZI
+                               
+                               |initialize FIYATANA-ODA-DIZI                               
+
+                               perform varying k from 1 by 1 until k > 40
+                                     if ( konum-kaynak(k) = zeroes or spaces )
+                                     or  ( konum-hedef(k) = zeroes or spaces )
+                                           exit perform cycle
+                                     end-if
+
+                                     move konum-kaynak(k) to kaynak-sira
+                                     move konum-hedef(k)  to hedef-sira
+                                     move FIYATANA-ODA-FIYATI(kaynak-sira) to FIYATANA-ODA-FIYATI(hedef-sira)
+                                     if kaynak-sira <> hedef-sira
+                                             initialize FIYATANA-ODA-FIYATI(kaynak-sira)
+                                     end-if
+                               end-perform
+                                           
+
+                               rewrite fiyatana-rec invalid
+                                        stop " "
+                               end-rewrite
+
+                               modify Form1-St-1-Handle, panel-index = 1  panel-text = fiyatana-rec 
+                         end-read
+                         end-perform
+                         end-start
+
+*0                 FIYANIND UPDATE
+                   initialize kontrat-rec
+                   start fiyatind key not < fiyatind-anah invalid
+                           continue
+                   not invalid
+                   perform until fs-fiyatind = "10"
+                   read fiyatind next no lock end move "10" to fs-fiyatind
+                   not end
+
+
+                               |move FIYATIND-ODA-DIZI to tak-fiyatind-ODA-DIZI
+
+                               |initialize FIYATIND-ODA-DIZI
+
+                               perform varying k from 1 by 1 until k > 40
+                                     if ( konum-kaynak(k) = zeroes or spaces )
+                                     or  ( konum-hedef(k) = zeroes or spaces )
+                                           exit perform cycle
+                                     end-if
+                                     move konum-kaynak(k) to kaynak-sira
+                                     move konum-hedef(k)  to hedef-sira
+                                     move fiyatind-dizi-ODA-FIYATI(kaynak-sira) to fiyatind-dizi-ODA-FIYATI(hedef-sira)
+
+                                     move fiyatind-dizi-eb-oran(kaynak-sira)    to fiyatind-dizi-eb-oran(hedef-sira)
+
+                                     move fiyatind-dizi-kkp(kaynak-sira)        to fiyatind-dizi-kkp(hedef-sira)
+
+                                     move fiyatind-dizi-kb(kaynak-sira)         to fiyatind-dizi-kb(hedef-sira)
+
+                                     move fiyatind-bos-dizi(kaynak-sira)        to fiyatind-bos-dizi(hedef-sira)
+                                     if kaynak-sira <> hedef-sira
+                                             initialize fiyatind-dizi-ODA-FIYATI(kaynak-sira)
+                                                fiyatind-dizi-eb-oran(kaynak-sira) 
+                                                fiyatind-dizi-kkp(kaynak-sira)  
+                                                fiyatind-dizi-kb(kaynak-sira) 
+                                                fiyatind-bos-dizi(kaynak-sira) 
+                                      end-if          
+                               end-perform
+
+                               rewrite FIYATIND-rec invalid
+                                        stop " "
+                               end-rewrite
+
+                               modify Form1-St-1-Handle, panel-index = 1  panel-text = FIYATIND-REC 
+                        
+                   end-read
+                   end-perform
+                   end-start
+
+*0                 FIYANIND UPDATE
+                   initialize aksiyon-rec
+                   start aksiyon key not < aksiyon-anah invalid
+                           continue
+                   not invalid
+                   perform until fs-aksiyon = "10"
+                   read aksiyon next no lock end move "10" to fs-aksiyon
+                   not end
+
+
+                               |move aksiyon-konumlar to tak-aksiyon-konumlar
+
+                               
+                               |initialize aksiyon-konumlar
+
+                               perform varying k from 1 by 1 until k > 40
+                                     if ( konum-kaynak(k) = zeroes or spaces ) 
+                                     or  ( konum-hedef(k) = zeroes or spaces )
+                                           exit perform cycle
+                                     end-if
+                                     move konum-kaynak(k) to kaynak-sira
+                                     move konum-hedef(k)  to hedef-sira
+                                     move aksiyon-konum-ind(kaynak-sira) to aksiyon-konum-ind(hedef-sira)
+                                     if kaynak-sira <> hedef-sira
+                                             initialize aksiyon-konum-ind(kaynak-sira)
+                                     end-if
+                               end-perform
+
+                               rewrite aksiyon-rec invalid
+                                    stop " "
+                               end-rewrite
+
+                               modify Form1-St-1-Handle, panel-index = 1  panel-text = aksiyon-rec 
+                        
+                   end-read
+                   end-perform
+                   end-start
+
+
+
+           
+            display message box "Transfer Islemi Bitti "
+            title "Asya-Soft Yazilim"
+            close rez konuk cast fiyatana konum odalar kontrat fiyatind aksiyon HESAYR BILBORD  aksiyon2  blok
+            modify Form1-Pb-1 , enabled = true
+      end-evaluate
+     .
+*
+ Form1-Pb-2-Link.
+         stop " "
+      open i-o cast odalar rez
+      initialize cast-rec
+      |move tarih-tasi to cast-tarih
+      start cast key not < CAST-ANAH3 invalid
+              continue
+      not invalid
+      perform until fs-cast = "10" 
+      read cast next no lock end move "10" to fs-cast
+      not end
+               if cast-tarih < tarih-tasi  then
+                   |   exit perform cycle
+                           continue
+               end-if
+               
+               move cast-rez-no to rez-no
+               read rez no lock invalid
+                       continue
+               not invalid
+                       if rez-durumu <> "I" then
+                             exit perform cycle
+                       end-if
+               end-read
+
+              
+               move cast-oda-no to ODALAR-NO
+               read odalar no lock invalid
+                 if cast-oda-no <> spaces then
+                               display message box cast-rez-no " odaaa : " cast-oda-no
+                 end-if
+               not invalid
+                      move ODALAR-KONUMU to CAST-ODA-KONUMU
+               end-read
+
+              rewrite cast-rec invalid
+                       stop " "
+              end-rewrite
+      end-read
+      end-perform
+      end-start
+      display message box "bitti"
+
+      close cast odalar rez
+     .
+
+ 

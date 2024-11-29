@@ -1,0 +1,554 @@
+* ziyhrk.evt
+* ziyhrk.evt is generated from C:\asya\acugt.ets\otel_ziyaretci_takipli\ziyhrk.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ Form2-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM Form2-Gd-1-Ev-Msg-Begin-Entry
+     END-EVALUATE
+     .
+
+ splash-Event-Proc.
+     .
+***   start event editor code   ***
+********************* FORM UN EXCEPTÝONLARI  ****************
+
+Form1-Ex-Other.
+     evaluate key-status
+       when 4
+         call "/asya/ytl/obj/otel/aracgrid.asy"
+     end-evaluate.
+
+*********** SIRA NO VE KART NO YA GÖRE EKRANA BÝLGÝLERÝ GETÝREN YER ***********
+
+*
+ Form2-Aft-Initdata.
+      perform tazele.
+
+
+*
+ Form2-Ex-Other.
+     evaluate key-status
+        when 6
+*           perform pdks
+        when 5
+           perform tazele
+        when 2 
+           perform kayit-giris
+        when 3
+          call "/asya/ytl/obj/otel/aracgrid.asy"
+        when 8
+          perform raporla
+     end-evaluate
+     .
+*
+ tazele.
+         modify Form2-Gd-1, reset-grid = 1
+         move "Sira"              to gd-1-col-1.
+         move "Kart No"           to gd-1-col-2.
+         move "Adi"               to gd-1-col-3.
+         move "Soyadi"            to gd-1-col-4.
+         move "K.S"               to gd-1-col-5.
+         move "Z.Yeri"            to gd-1-col-6.
+         move "Gor.Kisi"          to gd-1-col-7.
+         move "Z.Sebebi"          to gd-1-col-8.
+         move "G.Tarihi"          to gd-1-col-9.
+         move "G.Saati"           to gd-1-col-10.
+         move "Giris Yeri"        to gd-1-col-11.
+         move "Arac Plaka"        to gd-1-col-12.
+         move "Firma"             to gd-1-col-13.
+         move "C.Tarihi"          to gd-1-col-14.
+         move "C.Saati"           to gd-1-col-15.
+         move "Aciklama"          to gd-1-col-16.
+         modify form2-gd-1,
+             record-to-add(Form2-Gd-1-Record).
+
+
+
+         open input zyrt.
+         initialize zyrt-rec Form2-Gd-1-Record
+         move 1 to satir
+         move 0 to iceri disari
+         
+         start zyrt key not < zyrt-kod invalid
+               continue
+         not invalid
+         perform with test after until fs-zyrt = "10"
+         read zyrt next no lock end move "10"   to fs-zyrt
+         not at end
+
+         if gir-tar < raptar1 or 
+            gir-tar > raptar2
+            exit perform cycle
+         end-if
+
+         if cb1-value(1:1) not = "H" and
+            cb1-value(1:1) not = zyrt-ktip
+            exit perform cycle
+         end-if
+
+         if cb2-zdepart(1:2) not = "00" and
+            cb2-zdepart(1:2) not = zyrt-zyer
+            exit perform cycle
+         end-if
+
+         if cb3-giryer(1:1) not = "H" and
+            cb3-giryer(1:1) not = zyrt-giryer
+            exit perform cycle
+         end-if
+         evaluate durum(1:1)
+         when "G" 
+               if zyrt-giris = "G" and
+                  zyrt-cikis <> "C"
+                  
+                  continue
+               else
+                  exit perform cycle
+               end-if
+         when "C"  
+               if zyrt-giris = "G" and
+                  zyrt-cikis = "C"
+                  continue
+               else
+                   exit perform cycle
+               end-if
+         end-evaluate
+
+*************************** KART NO ARAMA ************************
+         if kartara-value <> spaces
+             move zyrt-kartno to kelime
+             move function upper-case(kartara-value)  to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+             for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) - aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+             for all aranan-kelime(1:aranan-kelime-boy)
+         if aranan-i = 0 
+             exit perform cycle
+         end-if
+         end-if
+
+*************************  AD ARAMA     *************************
+         if adara-value <> spaces
+             move function upper-case(zyrt-adi) to adkelime
+             move function upper-case(adara-value) to adaranan-kelime
+             move 0 to adaranan-i adaranan-kelime-boy
+             inspect adaranan-kelime tallying adaranan-kelime-boy
+             for trailing spaces 
+             compute adaranan-kelime-boy = function length(adaranan-kelime) -
+                                           adaranan-kelime-boy
+
+             inspect adkelime tallying adaranan-i 
+                     for all adaranan-kelime(1:adaranan-kelime-boy)
+             if adaranan-i = 0 
+                exit perform cycle
+             end-if
+         end-if       
+
+************************ FÝRMA ARAMA  **********************
+
+         if firmara-value <> spaces
+             move function upper-case(zyrt-firma) to firmkelime
+             move function upper-case(firmara-value) to firmaranan-kelime
+             move 0 to firmaranan-i firmaranan-kelime-boy
+             inspect firmaranan-kelime tallying firmaranan-kelime-boy
+             for trailing spaces 
+             compute firmaranan-kelime-boy = function length(firmaranan-kelime) -
+                                             firmaranan-kelime-boy  
+
+             inspect firmkelime tallying firmaranan-i 
+             for all firmaranan-kelime(1:firmaranan-kelime-boy)
+           if firmaranan-i = 0 
+             exit perform cycle
+           end-if
+         end-if 
+
+********************* PLAKA ARAMA  *********************************
+
+
+         if plakara-value <> spaces
+              move function upper-case(zyrt-plaka) to plakakelime
+              move function upper-case(plakara-value) to plakaranan-kelime
+              move 0 to plakaranan-i plakaranan-kelime-boy
+              inspect plakaranan-kelime tallying plakaranan-kelime-boy
+              for trailing spaces 
+              compute plakaranan-kelime-boy = function length(plakaranan-kelime) -
+                                            plakaranan-kelime-boy 
+
+              inspect plakakelime tallying plakaranan-i 
+              for all plakaranan-kelime(1:plakaranan-kelime-boy)
+            if plakaranan-i = 0 
+              exit perform cycle
+            end-if
+         end-if 
+                move zyrt-kod                           to gd-1-col-1
+                move zyrt-kartno                        to gd-1-col-2
+                move zyrt-adi                           to gd-1-col-3
+                move zyrt-soyadi                        to gd-1-col-4
+                move zyrt-kisi                          to gd-1-col-5
+                evaluate zyrt-zyer
+                         when 01
+                           move "Muhasebe"              to gd-1-col-6
+                         when 02
+                           move "Onburo"                to gd-1-col-6
+                         when 03
+                           move "Satin Alma"            to gd-1-col-6
+                         when 04
+                           move "Insan Kaynaklari"      to gd-1-col-6
+                         when 05
+                           move "Mutfak"                to gd-1-col-6
+                         when 06 
+                           move "Musteri"               to gd-1-col-6
+                         when 07
+                           move "SPA"                   to gd-1-col-6
+                         when 08
+                           move "Halkla Iliskiler"      to gd-1-col-6
+                         when 09
+                           move "F&B"                   to gd-1-col-6
+                         when 10
+                           move "Bahce"                 to gd-1-col-6
+                         when 11
+                           move "Market"                to gd-1-col-6
+                         when 12
+                           move "Kuyumcu"               to gd-1-col-6
+                         when 13
+                           move "Fotografci"            to gd-1-col-6
+                         when 14
+                           move "Cantaci"               to gd-1-col-6
+                         when 15
+                           move "Derici"                to gd-1-col-6
+                         when 16
+                           move "Oyun Salonu"           to gd-1-col-6
+                         when 17
+                           move "Gumuscu"               to gd-1-col-6
+                         when 18
+                           move "Animasyon"             to gd-1-col-6
+                         when 19
+                           move "Teknik Servis"         to gd-1-col-6
+                         when 20
+                           move "Satis Pazarl."         to gd-1-col-6
+                         when 21
+                           move "Dr.Ofisi"              to gd-1-col-6
+                         when 22
+                           move "Guvenlik Mud."         to gd-1-col-6
+                         when 23
+                           move "Otel"                  to gd-1-col-6
+                         when 24
+                           move "Rehber"                to gd-1-col-6
+                         when 25
+                           move "Butik"                 to gd-1-col-6
+                         when 26
+                           move "Hediyelik"             to gd-1-col-6
+                         when 27
+                           move "Ic Giyim"              to gd-1-col-6
+                end-evaluate
+
+                move zyrt-gorkisi                       to gd-1-col-7
+    
+                evaluate zyrt-gorseb(1:1)
+                         when 1
+                           move "C/IN"                  to gd-1-col-8
+                         when 2
+                           move "C/OUT"                 to gd-1-col-8
+                         when 3
+                           move "Is Gorusmesi"          to gd-1-col-8      
+                         when 4 
+                           move "Ziyaret"               to gd-1-col-8
+                         when 5
+                           move "INFO"                  to gd-1-col-8
+                         when 6 
+                           move "Daily Use"             to gd-1-col-8
+                         when 7
+                           move "TUR"                   to gd-1-col-8
+                         when 8
+                           move "Hasta Sevk"            to gd-1-col-8
+                         when 9
+                           move "Hasta Donus"           to gd-1-col-8
+                         when 10
+                           move "Gorusme"               to gd-1-col-8
+                         when 11
+                           move "Transfer"              to gd-1-col-8
+                         when 12
+                           move "Diger"                 to gd-1-col-8
+                end-evaluate
+
+                move gir-gun                            to gd-1-col-9(1:2)
+                move "/"                                to gd-1-col-9(3:1)
+                move gir-ay                             to gd-1-col-9(4:2)
+                move "/"                                to gd-1-col-9(6:1)
+                move gir-yil                            to gd-1-col-9(7:4)
+
+                move gir-saat                           to gd-1-col-10(1:2)
+                move ":"                                to gd-1-col-10(3:1)
+                move gir-dakka                          to gd-1-col-10(4:2)
+
+                evaluate zyrt-giryer
+                         when "A"
+                           move "Ana Giris"             to gd-1-col-11
+                         when "P"
+                           move "Personel Girisi"       to gd-1-col-11
+                         when "D"
+                           move "Depo Girisi"           to gd-1-col-11
+                         when "S"
+                           move "Sahil Giris"           to gd-1-col-11
+                end-evaluate
+
+                move zyrt-plaka                         to gd-1-col-12
+                move zyrt-firma                         to gd-1-col-13
+                move cik-gun                            to gd-1-col-14(1:2)
+                move "/"                                to gd-1-col-14(3:1)
+                move cik-ay                             to gd-1-col-14(4:2)
+                move "/"                                to gd-1-col-14(6:1)
+                move cik-yil                            to gd-1-col-14(7:4)
+                move cik-saat                           to gd-1-col-15(1:2)
+                move ":"                                to gd-1-col-15(3:1)
+                move cik-dakka                          to gd-1-col-15(4:2)
+                move zyrt-aciklama                      to gd-1-col-16
+
+                modify Form2-Gd-1, RECORD-TO-ADD(Form2-Gd-1-Record)
+                add 1 to satir
+                if zyrt-giris = "G" and
+                   zyrt-cikis <> "C"  
+                   add 1 to iceri
+                        modify Form2-Gd-1(satir),row-color = 416        
+                end-if
+                if zyrt-giris = "G" and
+                   zyrt-cikis = "C"
+                   add 1 to disari
+                        modify Form2-Gd-1(satir), row-color = 480
+                end-if
+
+         end-read
+         end-perform
+         end-start
+         close zyrt
+         modify Form2-Gd-1, mass-update = 0
+         display acc-iceri acc-disari.
+
+
+*
+  Form2-Gd-1-Ev-Msg-Begin-Entry.
+     move event-action-fail to event-action
+     move event-data-2      to simdiki-satir
+     inquire Form2-Gd-1(simdiki-satir,1) cell-data in fis-no
+     inquire Form2-Gd-1(simdiki-satir,2) cell-data in kart-no-ara
+     call "/asya/ytl/obj/otel/zyrthrk.asy" using linkle
+     end-call.
+     
+*
+ kayit-giris.
+     call "/asya/ytl/obj/otel/zyrthrk.asy".
+    
+
+*
+ Form2-Bef-Create.
+      perform adresleri-tasi
+      perform acu-splash-routine.
+      initialize key-status.
+      open i-o zyrt
+      close zyrt
+      accept raptar1 from century-date
+      accept raptar2 from century-date
+     .
+*
+ splash-Aft-Initdata.
+      perform varying i
+              from 1 
+              by 1
+              until i > 100
+              if i < 30
+                 modify splash-Fr-1, TITLE"Connecting to Asya Soft Database"
+                 modify splash-Fr-1, color = 1
+              end-if
+              if i > 31 and i < 60
+                 modify splash-Fr-1, TITLE"Reading Database"
+                 modify splash-Fr-1, COLOR = 16
+              end-if
+              if i > 61 and i < 100
+                 modify splash-Fr-1, TITLE"Program is Coming Up" 
+                 modify splash-Fr-1, color = 9
+              end-if
+                 modify splash-Fr-1, 
+                        fill-color = 2
+                        fill-percent = i
+                 accept omitted before time 1 on exception
+                 accept key-status from escape end-accept
+      end-perform.
+      set exit-pushed to true.
+
+
+*
+ pdks.
+    stop " "
+    call "/asya/ytl/obj/pers/pgircik.asy"
+
+    .
+
+*
+ raporla.
+     open i-o genelfis  
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+ 
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Ziyaretci Detay Dokumu"  to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Ziyaretci Detay Dokumu"   to det-filler
+     write dokumer-rec from detay
+ 
+ 
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+ 
+ 
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLRLLRLLLRLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+ 
+     initialize dokumer-rec detay
+     move "1"             to det-dokumer-20(10:1)
+     move "D1"            to det-dokumer-20(1:2)
+
+
+
+         move "Sira"              to det-1 
+         move "Kart No"           to det-2 
+         move "Adi"               to det-3 
+         move "Soyadi"            to det-4 
+         move "K.S"               to det-5 
+         move "Z.Yeri"            to det-6 
+         move "Gor.Kisi"          to det-77
+         move "Z.Sebebi"          to det-7 
+         move "G.Tarihi"          to det-8 
+         move "G.Saati"           to det-9 
+         move "Giris Yeri"        to det-10
+         move "Arac Plaka"        to det-11
+         move "Firma"             to det-12
+         move "C.Tarihi"          to det-13
+         move "C.Saati"           to det-14
+         move "Aciklama"          to det-15
+
+
+
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-77 fil-7
+                  fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-14 fil-15 
+     write dokumer-rec from detay
+ 
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-77 det-7
+                      det-8 det-9 det-10 det-11 det-12 det-13 det-14 det-15
+     write dokumer-rec from detay.
+ 
+     inquire Form2-Gd-1, last-row in son-satir
+ 
+******
+*     initialize frame-degiskenler
+*     move son-satir            to frame-kayit-sayi
+*     move 6                    to frame-win-line
+*     move 10                   to frame-win-pos
+*     move "Raporlaniyor "      to frame-title
+*     perform frame-ac
+******
+ 
+ 
+     perform varying i
+             from 2
+             by 1
+             until i > son-satir
+             inquire Form2-Gd-1(i),
+                     record-data in Form2-Gd-1-Record
+ 
+             initialize dokumer-rec detay
+
+             
+
+             
+             move gd-1-col-1         to det-1  
+             move gd-1-col-2         to det-2  
+             move gd-1-col-3         to det-3  
+             move gd-1-col-4         to det-4  
+             move gd-1-col-5         to det-5
+             move gd-1-col-6         to det-6
+             move gd-1-col-7         to det-77 
+             move gd-1-col-8         to det-7  
+             move gd-1-col-9         to det-8  
+             move gd-1-col-10        to det-9 
+             move gd-1-col-11        to det-10
+             move gd-1-col-12        to det-11
+             move gd-1-col-13        to det-12
+             move gd-1-col-14        to det-13
+             move gd-1-col-15        to det-14
+         
+
+
+                 
+*     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7
+*                  fil-8 fil-9 fil-10 fil-11 fil-12
+* 
+             write dokumer-rec from detay
+     end-perform
+
+      initialize dokumer-rec detay 
+*     move "Toplam"       to det-2
+*     move top-topitop    to z-top-topitop
+*     move z-top-topitop  to det-77
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-77
+                 fil-7 fil-8 fil-9 fil-10 fil-11 fil-13 fil-14 fil-15
+                 fil-12
+     move "A"          to det-dokumer-20(3:1)
+     move 481          to det-renk1
+     move "1"          to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+
+     close dokumer 
+     call dokumer-prog on exception
+          perform callerr-proc
+     not on exception
+          cancel dokumer-prog
+     end-call
+     delete file dokumer.
+
+
+
+ 

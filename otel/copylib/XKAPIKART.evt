@@ -1,0 +1,136 @@
+* xkapikart.evt
+* xkapikart.evt is generated from D:\Asya\acugt.ytl\otel\xkapikart.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+       perform adresleri-tasi
+       open input genel
+       initialize genel-rec 
+       move 1      to genel-anahtar
+       read genel no lock invalid
+            continue 
+       end-read
+       close genel
+       accept system-information from system-info.
+*
+ Form1-Aft-Initdata.
+     perform tesa-servis-cagir     
+     .
+*
+ tesa-servis-cagir.
+*******link-kapi-nereden = 1 |eger 1 ise cin menusunden geliyor
+*******link-kapi-nereden = 2 |eger 2 ise r/c menusunden geliyor
+*******link-kapi-nereden = 3 |eger 3 ise uzatma menusunden geliyor
+      open input konuk rez
+      initialize oda-buldum konuk-rec 
+      move link-kapi-odano        to konuk-odano
+      move "I"                    to konuk-durumu
+      start konuk key not < konuk-oda invalid
+           continue 
+      not invalid 
+      perform with test after until fs-konuk = "10"
+      read konuk next no lock end move "10"  to fs-konuk
+      not at end 
+             if konuk-odano <> link-kapi-odano or
+                konuk-durumu <> "I"
+                   exit perform 
+             end-if
+             if konuk-rez-no > 0 and konuk-rez-no not = link-kapi-rez-no and konuk-fol-kodu = "R"
+                move 1              to oda-buldum
+             end-if
+      end-read 
+      end-perform
+      end-start
+      close konuk 
+
+      initialize rez-rec 
+      move link-kapi-rez-no      to rez-no
+      read rez no lock invalid 
+           display message box "Rezervasyon Bulunamadi..."
+      not invalid 
+
+              initialize cmd-line
+               if link-kapi-nereden = 1                 
+                 move "C"                to cmd-kapi-kart-durumu |ilk c/in 
+              end-if 
+              if oda-buldum = 1
+                 move "K"                to cmd-kapi-kart-durumu |kopya kart
+              else
+                 move "C"                to cmd-kapi-kart-durumu |ilk c/in 
+              end-if 
+
+            
+              if link-kapi-kisi-sayisi = 0
+                 move 01                     to cmd-kart-kisi-sayisi
+              else
+                 move link-kapi-kisi-sayisi  to cmd-kart-kisi-sayisi
+              end-if 
+              move link-kapi-odano        to cmd-kart-odano           
+        
+              accept kart-yap-zamani from time 
+              accept kart-yap-tarihi from century-date         
+
+              move yap-saat          to cmd-kart-yap-saat
+              move yap-gun           to cmd-kart-yap-gun
+              move yap-ay            to cmd-kart-yap-ay
+              move yap-yil(3:2)      to cmd-kart-yap-yil 
+              
+              if REZ-LATE-GEL-SAAT not = zeroes or spaces
+                 move 15                to cmd-kart-git-saat                 
+              else
+                 move REZ-LATE-GEL-SAAT to cmd-kart-git-saat
+              end-if 
+
+              move rez-cik-gun       to cmd-kart-git-gun              
+              move rez-cik-ay        to cmd-kart-git-ay
+              move rez-cik-yil(3:2)  to cmd-kart-git-yil              
+
+              if os-is-unix
+                 call "c$system" using cmd-tum,CSYS-DESKTOP 
+                        giving call-donus
+                 if call-donus = 55
+                     set exit-pushed to true
+                 else
+                     display message box "Hata Donus Kodu->"call-donus new-line
+                                         "Lutfen Karti Tekrar Okutunuz..."
+                                     icon 1
+                                     title "Uyari" new-line 
+                                                                          
+                 end-if 
+                 
+              else 
+                 call "c$system" using cmd-tum,CSYS-DESKTOP 
+                        giving call-donus
+                 if call-donus = 55
+                     set exit-pushed to true
+                 else
+                     display message box "Hata Donus Kodu->"call-donus new-line
+                                         "Lutfen Karti Tekrar Okutunuz..."
+                                     icon 1
+                                     title "Uyari" new-line 
+                 end-if 
+                 
+              end-if
+
+      end-read 
+      close rez.
+
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 2
+         perform tesa-servis-cagir
+      end-evaluate
+     
+     .
+
+ 

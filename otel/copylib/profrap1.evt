@@ -1,0 +1,1205 @@
+* profrap1.evt
+* profrap1.evt is generated from D:\asya\acugt.ytl\otel\profrap1.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ Form2-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi
+    open input genel
+    initialize genel-rec
+    move 1 to genel-anahtar
+    read genel no lock invalid
+       continue 
+    end-read 
+    close genel
+
+    open input kllnc 
+    initialize kllnc-rec
+    move k-kodu-tasi to k-kodu
+    read kllnc no lock invalid 
+       continue 
+    end-read 
+    close kllnc
+     
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+    when 2
+        perform takas-dosya-ac
+        perform takas-kaydet
+        perform kayit-rapor
+    when 3
+        perform takas-dosya-ac
+        perform takas-kaydet
+        perform Acu-Form2-Routine
+    when 1 
+        evaluate control-id
+            when 26
+                 perform Uyruk-Listele
+                 move uyruk-cagir to uyruk-kod
+                 display acc-uyruk-kodu
+        end-evaluate
+
+
+    end-evaluate     
+     .
+ takas-dosya-ac.
+    open i-o genelfis.
+    move 1 to genelfis-anahtar.
+    read genelfis no lock invalid move 1 to ekran-fis-1.
+
+    add 1 to ekran-fis-1.
+ 
+    move ekran-fis-1(1:) to takas-no.
+    move k-kodu-tasi     to takas-kllnc
+    rewrite genelfis-rec invalid write genelfis-rec.
+    close genelfis.
+    set environment "V-version" to 5   ||| kaldýrýldý hata verýyorduuuuu
+    open output takas close takas 
+    open i-o takas with mass-update.
+    set environment "V-version" to 3 .
+*
+ takas-kaydet.
+     open i-o  prohrk baglanti musteri takvim
+        
+     initialize boy deg-boyu sira  soy-boy soy-deg-boyu
+           
+     initialize musteri-rec musteri-adi musteri-soyadi
+
+        inspect bas-adi tallying deg-boyu for trailing spaces
+        compute boy = 20 - deg-boyu 
+
+
+        initialize soy-boy soy-deg-boyu
+        inspect bas-sadi tallying soy-deg-boyu for trailing spaces
+        compute soy-boy = 20 - soy-deg-boyu 
+                
+        evaluate true
+        when boy >= soy-boy
+       
+               move 3 to kac-adet
+               initialize  musteri-rec   sira
+               move bas-adi(1:kac-adet)     to musteri-adi(1:kac-adet)
+               move bas-sadi(1:soy-boy)     to musteri-soyadi(1:soy-boy)
+               start musteri key not < musteri-ad-soy invalid
+                     continue
+               not invalid
+               perform with test after until fs-musteri = "10"
+               read musteri next no lock end move "10" to fs-musteri
+               not at end
+                       if boy > 3                          
+                               if musteri-adi(1:kac-adet) not = bas-adi(1:kac-adet)
+                                  move "10"   to fs-musteri
+                                  exit perform cycle 
+                               end-if 
+                               if musteri-adi(1:boy) not = bas-adi(1:boy)                                 
+                                  exit perform cycle 
+                               end-if 
+                       else
+                               if musteri-adi(1:boy) not = bas-adi(1:boy)
+                                  move "10"   to fs-musteri
+                                  exit perform cycle 
+                               end-if 
+
+                       end-if 
+                       if soy-boy > 3
+                               if musteri-soyadi(1:kac-adet) not = bas-sadi(1:kac-adet)
+                                if boy > 3
+                                  move "10"   to fs-musteri
+                                  end-if
+                                  exit perform cycle 
+                               end-if
+
+
+                       else 
+                               if musteri-soyadi(1:soy-boy) not = bas-sadi(1:soy-boy)
+                               if boy > 3
+                                  move "10"   to fs-musteri
+                                  end-if
+                                  exit perform cycle 
+                               end-if
+
+                       end-if 
+                       if boy > 3
+                               if musteri-adi(1:boy) not = bas-adi(1:boy)                                 
+                                  exit perform cycle 
+                               end-if                           
+                       end-if 
+                       if soy-boy > 3
+                               if musteri-soyadi(1:soy-boy) not = bas-sadi(1:soy-boy)                          
+                                  exit perform cycle 
+                               end-if 
+                       end-if 
+                       if musteri-silindi = 1                           
+                              exit perform cycle 
+                       end-if
+                                      
+                       if musteri-adi = spaces or
+                          musteri-soyadi = spaces 
+                            exit perform cycle 
+                       end-if 
+                          if sadece-tel = 1
+                             if musteri-tel1 = spaces and musteri-tel2 = spaces and musteri-tel3 = spaces and musteri-gsm = spaces
+                                exit perform cycle 
+                             end-if 
+                          end-if 
+                         if sadece-mail = 1
+                            if musteri-e-mail = spaces
+                                exit perform cycle 
+                            end-if 
+                         end-if 
+                            if musteri-sirket = spaces or 
+                               musteri-no = zeroes
+                                 exit perform cycle
+                            end-if
+                            if sadece-evlilik = 1
+                               if musteri-e-tarihi = 00000000
+                                   exit perform cycle 
+                               end-if 
+                               if musteri-eyil < 1900 or
+                                  musteri-eyil > yil-tasi
+                                    continue 
+                               else 
+                                  exit perform cycle 
+                               end-if 
+                            end-if
+                
+                            if sadece-dogum = 1
+                               if musteri-d-tarihi = 00000000
+                                   exit perform cycle 
+                               end-if 
+                               if musteri-dyil < 1900 or
+                                  musteri-dyil > yil-tasi
+                                    continue 
+                               else 
+                                  exit perform cycle 
+                               end-if 
+                               
+                            end-if 
+                
+                            if sadece-ozel = 1
+                               if musteri-o-tarihi = 00000000
+                                   exit perform cycle 
+                               end-if 
+                               if musteri-oyil < 1900 or
+                                  musteri-oyil > yil-tasi
+                                    continue
+                               else 
+                                  exit perform cycle 
+                               end-if 
+                               
+                            end-if 
+
+                          if sadece-adres = 1
+                             if musteri-kis-adrs = spaces
+                                 exit perform cycle 
+                             end-if 
+                          end-if
+                       
+                          if ilk-puan not = zeroes and son-puan not = zeroes 
+                             if musteri-kazanilan-puan <= ilk-puan or
+                                musteri-kazanilan-puan >= son-puan
+                                  exit perform cycle 
+                             end-if 
+                          end-if 
+                          if kart-yok(1:1) not = 0
+***************************************************************************************
+                             if kart-yok(1:1) = 1
+                                if musteri-puan-kart-no(1:8) not = "00000000" and 
+                                   musteri-puan-kart-no(1:8) not = "        "                                   
+                                    exit perform cycle 
+                                end-if 
+                             end-if                
+*****************************************************************************************
+                             if kart-yok(1:1) = 2
+                                if musteri-puan-kart-no(1:8) = "00000000"
+                                    exit perform cycle 
+                                end-if 
+                             end-if 
+                             if kart-yok(1:1) = 2
+                                if musteri-puan-kart-no(1:8) = "        "
+                                    exit perform cycle 
+                                end-if 
+                             end-if 
+                            
+                          end-if
+                          if uyruk-kod not = spaces
+                             if musteri-kim-uyruk <> uyruk-kod
+                                exit perform cycle 
+                             end-if 
+                          end-if 
+
+                            add 1 to yuz 
+                            initialize prohrk-rec
+                            move musteri-sirket     to prohrk-profil-sirket
+                            move musteri-no         to prohrk-profil-no
+                            start prohrk key not < prohrk-anah invalid
+                                 continue
+                            not invalid
+                            perform with test after until fs-prohrk = "10"
+                            read prohrk next no lock end move "10"  to fs-prohrk
+                            not at end 
+                                   if prohrk-profil-sirket not = musteri-sirket or
+                                      prohrk-profil-no     not = musteri-no
+                                         exit perform 
+                                   end-if
+                                      
+                                     initialize takas-rec
+                                     move prohrk-profil-anah          to takas-anah
+                                     read takas no lock invalid
+                                         
+                                         move musteri-adi             to takas-adi
+                                         move musteri-soyadi          to takas-soyadi                  
+                                         move prohrk-profil-anah      to takas-anah
+                                         move prohrk-rez-sirket       to takas-rez-sirket baglanti-adi
+                                         move musteri-d-tarihi        to takas-musteri-d-tarihi
+                                         move musteri-e-tarihi        to takas-musteri-e-tarihi
+                                         move musteri-e-mail          to takas-musteri-e-mail
+
+                                         move musteri-puan-kart-no    to takas-musteri-puan-kart-no
+                                         move musteri-kazanilan-puan  to takas-musteri-kazanilan-puan
+                                         move musteri-kart-tipi-2     to takas-musteri-kart-tipi-2
+                                         move musteri-kart-tipi       to takas-musteri-kart-tipi
+                                         
+                                         if musteri-kis-adrs not = spaces
+                                            move musteri-kis-adrs     to takas-musteri-kis-adrs
+                                            move musteri-kis-adrs1    to takas-musteri-kis-adrs1
+                                         else
+                                            move musteri-adres1       to takas-musteri-kis-adrs
+                                            move musteri-adres2       to takas-musteri-kis-adrs1
+                                         end-if 
+                                         move musteri-tel1      to takas-musteri-tel1
+                                         move musteri-tel2      to takas-musteri-tel2
+                                         move musteri-tel3      to takas-musteri-tel3
+                                         move musteri-gsm       to takas-musteri-gsm
+                                       
+                                         move musteri-kim-uyruk to takas-musteri-kim-uyruk 
+                                         add  prohrk-t-oda-fiyati     prohrk-t-ext-fiyati    to TAKAS-city-toplam 
+                                         add prohrk-puan              to    TAKAS-puan-toplam     
+                                         perform sirket-bul
+                                         add 1 to takas-sirket-toplam
+                                         perform gun-bul
+ 
+                
+                                         write takas-rec invalid 
+                                             display message box "Kayit Yazma Hatasi..."
+                                                             title "[ Uyari ]"
+                                                             icon 1
+                                               set exit-pushed to true
+                                         end-write
+                                     not invalid
+                                         add 1 to takas-sirket-toplam
+                                         perform gun-bul
+ 
+                                         move prohrk-rez-sirket   to baglanti-adi
+                                         perform sirket-bul
+                                         rewrite takas-rec end-rewrite
+                                     end-read  
+                                     
+                            end-read
+                            end-perform 
+                            end-start
+
+               end-read
+               end-perform
+               end-start
+        when other
+
+               move 3 to kac-adet
+               initialize  musteri-rec   sira
+               move bas-adi(1:kac-adet)    to musteri-adi(1:kac-adet)
+               move bas-sadi(1:soy-boy)     to musteri-soyadi(1:soy-boy)
+               start musteri key not < musteri-soy-ad invalid
+                     continue
+               not invalid
+               perform with test after until fs-musteri = "10"
+               read musteri next no lock end move "10" to fs-musteri
+               not at end
+                       if soy-boy > 3                          
+                               if musteri-soyadi(1:kac-adet) not = bas-sadi(1:kac-adet)
+                                  move "10"   to fs-musteri
+                                  exit perform cycle 
+                               end-if 
+                               if musteri-soyadi(1:soy-boy) not = bas-sadi(1:soy-boy)                                 
+                                  exit perform cycle 
+                               end-if 
+                       else
+                               if musteri-soyadi(1:soy-boy) not = bas-sadi(1:soy-boy)
+                                  move "10"   to fs-musteri
+                                  exit perform cycle 
+                               end-if 
+
+                       end-if 
+                       if boy > 3
+                               if musteri-adi(1:kac-adet) not = bas-adi(1:kac-adet)
+                                if soy-boy > 3
+                                  move "10"   to fs-musteri
+                                  end-if
+                                  exit perform cycle 
+                               end-if
+
+
+                       else 
+                               if musteri-adi(1:boy) not = bas-adi(1:boy)
+                               if soy-boy > 3
+                                  move "10"   to fs-musteri
+                                  end-if
+                                  exit perform cycle 
+                               end-if
+
+                       end-if 
+                       if soy-boy > 3
+                               if musteri-soyadi(1:soy-boy) not = bas-sadi(1:soy-boy)                                 
+                                  exit perform cycle 
+                               end-if                           
+                       end-if 
+                       if boy > 3
+                               if musteri-adi(1:boy) not = bas-adi(1:boy)                          
+                                  exit perform cycle 
+                               end-if 
+                       end-if 
+                       if musteri-silindi = 1                           
+                              exit perform cycle 
+                       end-if
+                                      
+                       if musteri-adi = spaces or
+                          musteri-soyadi = spaces 
+                            exit perform cycle 
+                       end-if 
+                          if sadece-tel = 1
+                             if musteri-tel1 = spaces and musteri-tel2 = spaces and musteri-tel3 = spaces and musteri-gsm = spaces
+                                exit perform cycle 
+                             end-if 
+                          end-if 
+                         if sadece-mail = 1
+                            if musteri-e-mail = spaces
+                                exit perform cycle 
+                            end-if 
+                         end-if 
+
+                            if musteri-sirket = spaces or 
+                               musteri-no = zeroes
+                                 exit perform cycle
+                            end-if
+                            if sadece-evlilik = 1
+                               if musteri-e-tarihi = 00000000
+                                   exit perform cycle 
+                               end-if 
+                               if musteri-eyil < 1900 or
+                                  musteri-eyil > yil-tasi
+                                    continue 
+                               else 
+                                  exit perform cycle 
+                               end-if 
+                            end-if
+                
+                            if sadece-dogum = 1
+                               if musteri-d-tarihi = 00000000
+                                   exit perform cycle 
+                               end-if 
+                               if musteri-dyil < 1900 or
+                                  musteri-dyil > yil-tasi
+                                    continue 
+                               else 
+                                  exit perform cycle 
+                               end-if 
+                               
+                            end-if 
+                
+                            if sadece-ozel = 1
+                               if musteri-o-tarihi = 00000000
+                                   exit perform cycle 
+                               end-if 
+                               if musteri-oyil < 1900 or
+                                  musteri-oyil > yil-tasi
+                                    continue
+                               else 
+                                  exit perform cycle 
+                               end-if 
+                               
+                            end-if 
+                          if sadece-adres = 1
+                             if musteri-kis-adrs = spaces
+                                 exit perform cycle 
+                             end-if 
+                          end-if
+                       
+                          if ilk-puan not = zeroes and son-puan not = zeroes 
+                             if musteri-kazanilan-puan <= ilk-puan or
+                                musteri-kazanilan-puan >= son-puan
+                                  exit perform cycle 
+                             end-if 
+                          end-if 
+                          if kart-yok(1:1) not = 0
+                             if kart-yok(1:1) = 1
+                                if musteri-puan-kart-no(1:8) not = "00000000" and 
+                                   musteri-puan-kart-no(1:8) not = "        "                                   
+                                    exit perform cycle 
+                                end-if 
+                             end-if  
+
+                             if kart-yok(1:1) = 2
+                                if musteri-puan-kart-no(1:8) = "00000000"
+                                    exit perform cycle 
+                                end-if 
+                             end-if 
+                             if kart-yok(1:1) = 2
+                                if musteri-puan-kart-no(1:8) = "        "
+                                    exit perform cycle 
+                                end-if 
+                             end-if 
+                            
+                          end-if                
+                            add 1 to yuz 
+                            initialize prohrk-rec
+                            move musteri-sirket     to prohrk-profil-sirket
+                            move musteri-no         to prohrk-profil-no
+                            start prohrk key not < prohrk-anah invalid
+                                 continue
+                            not invalid
+                            perform with test after until fs-prohrk = "10"
+                            read prohrk next no lock end move "10"  to fs-prohrk
+                            not at end 
+                                   if prohrk-profil-sirket not = musteri-sirket or
+                                      prohrk-profil-no     not = musteri-no
+                                         exit perform 
+                                   end-if
+                              
+                                     initialize takas-rec
+                                     move prohrk-profil-anah          to takas-anah
+                                     read takas no lock invalid
+                                         move musteri-adi             to takas-adi
+                                         move musteri-soyadi          to takas-soyadi                  
+                                         move prohrk-profil-anah      to takas-anah
+                                         move prohrk-rez-sirket       to takas-rez-sirket baglanti-adi
+                                         move musteri-d-tarihi        to takas-musteri-d-tarihi
+                                         move musteri-e-tarihi        to takas-musteri-e-tarihi
+                                         move musteri-e-mail          to takas-musteri-e-mail
+                                         move musteri-puan-kart-no    to takas-musteri-puan-kart-no
+                                         move musteri-kazanilan-puan  to takas-musteri-kazanilan-puan
+                                         move musteri-kart-tipi-2     to takas-musteri-kart-tipi-2
+                                         move musteri-kart-tipi       to takas-musteri-kart-tipi
+
+                                         if musteri-kis-adrs not = spaces
+                                            move musteri-kis-adrs     to takas-musteri-kis-adrs
+                                            move musteri-kis-adrs1    to takas-musteri-kis-adrs1
+                                         else
+                                            move musteri-adres1       to takas-musteri-kis-adrs
+                                            move musteri-adres2       to takas-musteri-kis-adrs1
+                                         end-if 
+                                         move musteri-tel1      to takas-musteri-tel1
+                                         move musteri-tel2      to takas-musteri-tel2
+                                         move musteri-tel3      to takas-musteri-tel3
+                                         move musteri-gsm       to takas-musteri-gsm
+                                         move musteri-kim-uyruk to takas-musteri-kim-uyruk
+                                         add  prohrk-t-oda-fiyati     prohrk-t-ext-fiyati    to TAKAS-city-toplam 
+                                         add prohrk-puan              to    TAKAS-puan-toplam     
+                                         perform sirket-bul
+                                         add 1 to takas-sirket-toplam
+                                          perform gun-bul
+
+                                         write takas-rec invalid 
+                                             display message box "Kayit Yazma Hatasi..."
+                                                             title "[ Uyari ]"
+                                                             icon 1
+                                               set exit-pushed to true
+                                         end-write
+                                     not invalid
+                                         add 1 to takas-sirket-toplam
+                                         perform gun-bul
+ 
+                                         move prohrk-rez-sirket   to baglanti-adi
+                                         perform sirket-bul
+                                         rewrite takas-rec end-rewrite
+                                     end-read  
+                                     
+                            end-read
+                            end-perform 
+                            end-start
+
+               end-read
+               end-perform
+               end-start
+
+ 
+               continue 
+        end-evaluate 
+*********************************************************************************
+         close prohrk takas baglanti musteri takvim.
+
+*
+ sirket-bul.
+      start baglanti key not < baglanti-adi invalid
+            continue
+      not invalid
+      perform with test after until fs-baglanti = "10"
+      read baglanti next no lock end move "10"  to fs-baglanti
+      not at end
+              if baglanti-adi not = prohrk-rez-sirket
+                  exit perform 
+              end-if
+              evaluate baglanti-ana
+                      when 01
+                          add 1     to takas-sirket-adet1
+                      when 02
+                          add 1     to takas-sirket-adet2
+                      when 03
+                          add 1     to takas-sirket-adet3
+                      when 04
+                          add 1     to takas-sirket-adet4
+                      when 05
+                          add 1     to takas-sirket-adet5
+                      when other                                  
+                          add 1     to takas-sirket-adet6
+              end-evaluate
+      end-read
+      end-perform
+      end-start
+
+      .
+*
+ kayit-rapor.
+     open input  takas prohrk musteri karttip baglanti uyruk
+     initialize takas-rec
+     evaluate cb-sira(1:1)
+     when "S"
+             start takas key not < takas-sirket-toplam invalid
+                   display message box "Raporlacak Bilgi Bulunamadi..."
+                    close takas prohrk musteri baglanti uyruk
+                    delete file takas 
+                    exit paragraph 
+             end-start
+     when "T"
+             start takas key not < takas-anah1 invalid
+                   display message box "Raporlacak Bilgi Bulunamadi..."
+                    close takas prohrk musteri baglanti uyruk
+                    delete file takas
+                    exit paragraph 
+             end-start
+     when "Z"
+             start takas key not < takas-anah2 invalid
+                   display message box "Raporlacak Bilgi Bulunamadi..."
+                    close takas prohrk musteri baglanti uyruk
+                    delete file takas
+                    exit paragraph 
+             end-start
+     end-evaluate
+
+
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Grup Otel Tekrar Gelen Misafir Raporu" to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Grup Otel Tekrar Gelen Misafir Raporu" to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Acenta.:"     to det-filler(01:10)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLL"                    to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"                    to det-dokumer-20(1:2)     
+     move "Sira"                  to det-1
+     move "Adi"                   to det-2
+     move "Soyadi"                to det-3
+     move "Dogum Tar"             to det-dog
+     move "P.No"                  to det-4
+     move "Sirket"                to det-4-4
+     move "Toplam"                to det-5
+     move "Geceleme"               to det-20
+     move "Gelis Yil"             to det-21
+     move "Evlilik tar."          to det-5-5
+     move "E-Mail "               to det-5-6
+     move "Tel-1"                 to det-14-1
+     move "Tel-2"                 to det-14-2
+     move "Tel-3"                 to det-14-3
+     move "Gsm"                   to det-14-4
+     move "Adres-1"               to det-15
+     move "Adres-2"               to det-16
+     move "OnlineVoucherCode"     to det-17
+     move "U.K."                  to det-18
+     move "Uyruk"                 to det-19
+     initialize baglanti-rec 
+     start baglanti key not < baglanti-kodu invalid
+         continue
+     not invalid
+     perform with test after until fs-baglanti = "10"
+     read baglanti next no lock end move "10"  to fs-baglanti
+     not at end
+              if baglanti-ana not = spaces and
+                 baglanti-alt = spaces
+                      evaluate baglanti-ana
+                      when 01
+                         move baglanti-adi       to det-6
+                      when 02
+                         move baglanti-adi       to det-7
+                      when 03
+                         move baglanti-adi       to det-8
+                      when 04
+                         move baglanti-adi       to det-9
+                      when 05
+                         move baglanti-adi       to det-10
+                      when other
+                         move baglanti-adi       to det-11               
+                      end-evaluate
+              end-if
+
+     end-read
+     end-perform
+     end-start
+     move "Puan"                                 to det-12
+     move "Hak Ettigi Kart"                      to det-13
+     move "Mevcut Kart"                          to det-13-13
+     move "Kart No"                              to det-14
+
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-4-4 fil-5 fil-5-5 fil-5-6 fil-dog
+                 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12  fil-13-13 
+                 fil-12 fil-13 fil-14 fil-15 fil-16 fil-17  fil-14-1
+                 fil-14-2 fil-14-3 fil-14-4 fil-18 fil-19 fil-2  fil-20 fil-21
+                 
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-4-4 det-5 det-5-5 det-5-6 det-dog det-14-1  det-14-2 det-14-3 det-14-4
+                     det-6 det-7 det-8 det-9 det-10 det-11 det-12 det-13 det-13-13 det-14 det-15 det-16 det-17 det-18 det-19 det-20 det-21
+     write dokumer-rec from detay
+**************************
+
+              initialize fs-takas sira sirket-adet yedek-profil yedek-adet
+              perform with test after until fs-takas = "10"
+                read takas next no lock end move "10" to fs-takas
+                  not at end
+                  if takas-sirket-toplam >=konaklama-sayi and 
+                     uzeri-val = 1
+                     if adi-soy = 1 and
+                        takas-adi = spaces or
+                        takas-soyadi = spaces
+                          exit perform cycle
+                     end-if              
+
+                          add 1 to sira
+                          initialize dokumer-rec detay baglanti-rec
+                          move sira                       to zsira
+                          move zsira                      to det-1
+                          move takas-adi                  to det-2
+                          move takas-soyadi               to det-3
+                          move takas-anah-profil-no       to det-4
+                          move takas-anah-profil-sirket   to det-4-4     
+                          move takas-sirket-toplam        to zsira
+                          move zsira                      to det-5
+                          move takas-geceleme-toplam      to zsira
+                          move zsira                      to det-20
+
+                          move takas-gel-yil              to det-21
+                          if musteri-gizlilik = 1 or k-kvkk-bilgileri-gorebilir = 1
+                             move takas-musteri-day          to e-ay
+                             move takas-musteri-dgun         to e-gun
+                             move takas-musteri-dyil         to e-yil
+                             move etarih                     to det-dog
+                          end-if 
+                          move takas-sirket-adet1         to zsira
+                          move zsira                      to det-6
+                          move takas-sirket-adet2         to zsira
+                          move zsira                      to det-7
+                          move takas-sirket-adet3         to zsira 
+                          move zsira                      to det-8
+                          move takas-sirket-adet4         to zsira
+                          move zsira                      to det-9
+                          move takas-sirket-adet5         to zsira 
+                          move zsira                      to det-10
+                          move takas-sirket-adet6         to zsira 
+                          move zsira                      to det-11
+*                          move takas-musteri-e-tarihi     to det-5-5
+                          if musteri-gizlilik = 1 or k-kvkk-bilgileri-gorebilir = 1
+                             move takas-musteri-e-yil        to e-yil
+                             move takas-musteri-e-ay         to e-ay
+                             move takas-musteri-e-gun        to e-gun
+                             move etarih                     to det-5-5
+                             move takas-musteri-e-mail       to det-5-6
+                          end-if 
+
+                          if takas-musteri-kazanilan-puan >0
+                             move takas-musteri-kazanilan-puan   to z8
+                             move z8                             to det-12
+                          end-if 
+
+                          initialize karttip-rec
+                          move takas-musteri-kart-tipi-2  to karttip-kodu
+                          read karttip no lock invalid 
+                              continue 
+                          end-read 
+                              move karttip-adi             to det-13
+
+                          initialize karttip-rec
+                          move takas-musteri-kart-tipi  to karttip-kodu
+                          read karttip no lock invalid 
+                              continue 
+                          end-read 
+                              move karttip-adi             to det-13-13
+
+                           
+                             move takas-musteri-puan-kart-no      to det-14 
+                          if musteri-gizlilik = 1 or k-kvkk-bilgileri-gorebilir = 1
+
+                             move takas-musteri-tel1              to det-14-1
+                             move takas-musteri-tel2              to det-14-3
+                             move takas-musteri-tel3              to det-14-4
+                             move takas-musteri-gsm              to det-14-4
+                           
+                          move takas-musteri-kis-adrs             to det-15
+                          move takas-musteri-kis-adrs1            to det-16
+                        string    takas-adi delimited by " " 
+                                  takas-soyadi delimited by " "
+                                  takas-musteri-dgun delimited by size 
+                                  takas-musteri-day  delimited by size 
+                                  takas-musteri-dyil delimited by size 
+                                 into det-17
+                         move takas-musteri-kim-uyruk to det-18
+                         initialize uyruk-rec
+                         move takas-musteri-kim-uyruk to  uyruk-anah
+                         read uyruk no lock invalid
+                              continue
+                         end-read
+                         move uyruk-adi1        to det-19                         
+
+                         end-if
+                  else 
+                     exit perform cycle
+                  end-if
+
+                  move "|" to fil-1 fil-2 fil-3 fil-4 fil-4-4 fil-5 fil-5-5 fil-5-6 fil-dog
+                              fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-13-13 
+                              fil-14 fil-15 fil-16 fil-17 fil-14-1 fil-14-2 fil-14-3 fil-14-4 fil-20 fil-21
+                              fil-18 fil-19
+                  write dokumer-rec from detay
+                end-read
+              end-perform
+
+              initialize dokumer-rec detay
+              move "-"            to det-dokumer-20(5:1)
+              move all "-" to det-1 det-2 det-3 det-4 det-4-4 det-5  det-5-5 det-5-6 det-dog
+                              det-6 det-7 det-8 det-9 det-10 det-11 det-12  det-13 det-13-13  
+                              det-14 det-15 det-16 det-14-1 det-14-2 det-14-3 det-14-4 det-20 det-21
+                              det-18 det-19
+              write dokumer-rec from detay
+
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close takas  karttip baglanti prohrk musteri uyruk
+              delete file takas 
+              delete file dokumer.
+*
+ Form2-Aft-Initdata.
+      modify form1-gd-1,reset-grid = 1
+                        mass-update = 1
+      initialize form1-gd-1-record
+     move "Sira"                  to gd-1-col-1
+     move "Adi"                   to gd-1-col-2
+     move "Soyadi"                to gd-1-col-3
+     move "Dogum Tar"             to gd-1-col-4
+     move "P.No"                  to gd-1-col-5
+     move "Sirket"                to gd-1-col-6
+     move "Toplam"                to gd-1-col-7
+     move "Evlilik tar."          to gd-1-col-8
+     move "E-Mail "               to gd-1-col-9
+     move "Tel-1"                 to gd-1-col-10
+     move "Tel-2"                 to gd-1-col-11
+     move "Tel-3"                 to gd-1-col-12
+     move "Gsm"                   to gd-1-col-13
+     move "Adres-1"               to gd-1-col-14
+     move "Adres-2"               to gd-1-col-15
+     move "OnlineVoucherCode"     to gd-1-col-16
+      open input baglanti
+     initialize baglanti-rec 
+     start baglanti key not < baglanti-kodu invalid
+         continue
+     not invalid
+     perform with test after until fs-baglanti = "10"
+     read baglanti next no lock end move "10"  to fs-baglanti
+     not at end
+        if baglanti-ana not = spaces and
+           baglanti-alt = spaces
+                evaluate baglanti-ana
+                when 01
+                   move baglanti-adi       to gd-1-col-17
+                when 02
+                   move baglanti-adi       to gd-1-col-18
+                when 03
+                   move baglanti-adi       to gd-1-col-19
+                when 04
+                   move baglanti-adi       to gd-1-col-20
+                when 05
+                   move baglanti-adi       to gd-1-col-21
+                when other
+                   move baglanti-adi       to gd-1-col-22               
+                end-evaluate
+        end-if
+     end-read
+     end-perform
+     end-start
+     move "Puan"                           to gd-1-col-23
+     move "Hak Ettigi Kart"                to gd-1-col-24
+     move "Mevcut Kart"                    to gd-1-col-25
+     move "Kart No"                        to gd-1-col-26
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+
+      open input takas  karttip
+      initialize takas-rec sira
+      
+      evaluate cb-sira(1:1)
+      when "S"
+              start takas key not < takas-sirket-toplam invalid
+                    display message box "Raporlacak Bilgi Bulunamadi..."
+                     close takas  karttip    
+                     delete file takas
+                     exit paragraph 
+              end-start
+      when "T"
+              start takas key not < takas-anah1 invalid
+                    display message box "Raporlacak Bilgi Bulunamadi..."
+                     close takas  karttip   
+                     delete file takas
+                     exit paragraph 
+              end-start
+      when "Z"
+             start takas key not < takas-anah2 invalid
+                   display message box "Raporlacak Bilgi Bulunamadi..."
+                    close takas   karttip 
+                    delete file takas
+                     exit paragraph 
+             end-start
+      end-evaluate 
+
+      perform with test after until fs-takas = "10"
+      read takas next no lock end move "10" to fs-takas
+      not at end 
+                  if takas-sirket-toplam >= konaklama-sayi and 
+                     uzeri-val = 1 
+                             if adi-soy = 1 and
+                                takas-adi = spaces or
+                                takas-soyadi = spaces
+                                  exit perform cycle
+                             end-if
+    
+                          add 1                           to sira                           
+                          initialize form1-gd-1-record
+                          move sira                       to zsira
+                          move zsira                      to gd-1-col-1
+                
+                          move takas-adi                  to gd-1-col-2
+                          move takas-soyadi               to gd-1-col-3
+                          move takas-anah-profil-no       to gd-1-col-5
+                          move takas-anah-profil-sirket   to gd-1-col-6     
+                          
+                          move takas-sirket-toplam        to zsira
+                          move zsira                      to gd-1-col-7
+                          if musteri-gizlilik = 1 or k-kvkk-bilgileri-gorebilir = 1
+                          
+                          move takas-musteri-day          to e-ay
+                          move takas-musteri-dgun         to e-gun
+                          move takas-musteri-dyil         to e-yil
+                          move etarih                     to gd-1-col-4
+                          end-if
+                          move takas-sirket-adet1         to zsira
+                          move zsira                      to gd-1-col-17
+                          move takas-sirket-adet2         to zsira
+                          move zsira                      to gd-1-col-18
+                          move takas-sirket-adet3         to zsira 
+                          move zsira                      to gd-1-col-19
+                          move takas-sirket-adet4         to zsira
+                          move zsira                      to gd-1-col-20
+                          move takas-sirket-adet5         to zsira 
+                          move zsira                      to gd-1-col-21
+                          move takas-sirket-adet6         to zsira 
+                          move zsira                      to gd-1-col-22
+*                          move takas-musteri-e-tarihi     to det-5-5
+                          if musteri-gizlilik = 1 or k-kvkk-bilgileri-gorebilir = 1
+ 
+                          move takas-musteri-e-yil        to e-yil
+                          move takas-musteri-e-ay         to e-ay
+                          move takas-musteri-e-gun        to e-gun
+                          move etarih                     to gd-1-col-8
+
+                          move takas-musteri-e-mail       to gd-1-col-9
+                          end-if
+                          if takas-musteri-kazanilan-puan >0
+                             move takas-musteri-kazanilan-puan   to z8
+                             move z8                             to gd-1-col-23
+                          end-if 
+
+                          initialize karttip-rec
+                          move takas-musteri-kart-tipi-2  to karttip-kodu
+                          read karttip no lock invalid 
+                              continue 
+                          end-read 
+                              move karttip-adi             to gd-1-col-24
+
+                          initialize karttip-rec
+                          move takas-musteri-kart-tipi  to karttip-kodu
+                          read karttip no lock invalid 
+                              continue 
+                          end-read 
+                              move karttip-adi             to gd-1-col-25
+
+                           
+                             move takas-musteri-puan-kart-no      to gd-1-col-26 
+                          if musteri-gizlilik = 1 or k-kvkk-bilgileri-gorebilir = 1
+
+                             move takas-musteri-tel1              to gd-1-col-10
+                             move takas-musteri-tel2              to gd-1-col-11
+                             move takas-musteri-tel3              to gd-1-col-12
+                             move takas-musteri-gsm               to gd-1-col-13
+                           
+                             move takas-musteri-kis-adrs             to gd-1-col-14
+                             move takas-musteri-kis-adrs1            to gd-1-col-15
+                             string    takas-adi delimited by " " 
+                                  takas-soyadi delimited by " "
+                                  takas-musteri-dgun delimited by size 
+                                  takas-musteri-day  delimited by size 
+                                  takas-musteri-dyil delimited by size 
+                                 into gd-1-col-16                         
+                          end-if
+                          modify form1-gd-1,
+                                 record-to-add(form1-gd-1-record) 
+  
+                          modify form1-gd-1(sira,1),hidden-data = takas-anah
+
+                  else 
+                     exit perform cycle
+                  end-if
+             
+      end-read 
+      end-perform
+      close takas baglanti karttip
+      modify form1-gd-1,mass-update = 0
+      delete file takas .
+*
+ Form2-Ex-Other.
+         .
+*
+ profil-cagir.
+       call "/asya/ytl/obj/otel/profbul.asy" using profbul-cagir
+            on exception perform callerr-proc
+       not on exception
+       cancel "/asya/ytl/obj/otel/profbul.asy" 
+       end-call.
+ uyruk-listele.
+       call "/asya/ytl/obj/otel/uyrukara.asy" using uyruk-cagir
+            on exception perform callerr-proc
+       not on exception
+       cancel "/asya/ytl/obj/otel/uyrukara.asy" 
+       end-call.
+*
+ Form1-Gd-1-Ev-Other.
+      evaluate event-type
+      when msg-begin-entry
+         evaluate event-data-1
+         when 10
+         when 11
+         when 12 
+         when 13
+            continue 
+         when other 
+         move event-action-fail to event-action         
+         end-evaluate 
+      when msg-finish-entry
+        evaluate event-data-1
+         when 10
+            open i-o musteri
+            initialize musteri-rec
+            inquire form1-gd-1(event-data-2,1),hidden-data m-profil
+            read musteri no lock invalid 
+                display message box "Profil Kaydi Bulunamadi..."
+                                title "Uyari"
+                                icon 1
+                    close musteri
+                    exit paragraph 
+            end-read 
+                inquire form1-gd-1(event-data-2,event-data-1),
+                        cell-data in musteri-tel1
+                 accept musteri-g-tarih from century-date
+
+                 accept musteri-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+                 accept musteri-edit-zaman from time          |                           
+
+                 rewrite musteri-rec end-rewrite 
+            close musteri
+              perform prohrk-guncel-tarih
+         when 11
+            open i-o musteri
+            initialize musteri-rec
+            inquire form1-gd-1(event-data-2,1),hidden-data m-profil
+            read musteri no lock invalid 
+                display message box "Profil Kaydi Bulunamadi..."
+                                title "Uyari"
+                                icon 1
+                    close musteri
+                    exit paragraph 
+            end-read 
+                inquire form1-gd-1(event-data-2,event-data-1),
+                        cell-data in musteri-tel2
+                 accept musteri-g-tarih from century-date
+
+                 accept musteri-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+                 accept musteri-edit-zaman from time          |                           
+
+                 rewrite musteri-rec end-rewrite 
+            close musteri
+              perform prohrk-guncel-tarih
+
+         when 12 
+            open i-o musteri
+            initialize musteri-rec
+            inquire form1-gd-1(event-data-2,1),hidden-data m-profil
+            read musteri no lock invalid 
+                display message box "Profil Kaydi Bulunamadi..."
+                                title "Uyari"
+                                icon 1
+                    close musteri
+                    exit paragraph 
+            end-read 
+                inquire form1-gd-1(event-data-2,event-data-1),
+                        cell-data in musteri-tel3
+                 accept musteri-g-tarih from century-date
+
+                 accept musteri-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+                 accept musteri-edit-zaman from time          |                           
+
+                 rewrite musteri-rec end-rewrite 
+            close musteri
+              perform prohrk-guncel-tarih
+
+         when 13
+            open i-o musteri
+            initialize musteri-rec
+            inquire form1-gd-1(event-data-2,1),hidden-data m-profil
+            read musteri no lock invalid 
+                display message box "Profil Kaydi Bulunamadi..."
+                                title "Uyari"
+                                icon 1
+                    close musteri
+                    exit paragraph 
+            end-read 
+                inquire form1-gd-1(event-data-2,event-data-1),
+                        cell-data in musteri-gsm
+                 accept musteri-g-tarih from century-date
+
+                 accept musteri-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+                 accept musteri-edit-zaman from time          |                           
+
+                 rewrite musteri-rec end-rewrite 
+            close musteri
+              perform prohrk-guncel-tarih
+
+        end-evaluate 
+      end-evaluate.
+*
+ prohrk-guncel-tarih.
+      open i-o prohrk
+      initialize prohrk-rec
+      move musteri-sirket     to prohrk-profil-sirket
+      move musteri-no         to prohrk-profil-no
+      start prohrk key not < prohrk-anah invalid
+           continue
+      not invalid
+      perform with test after until fs-prohrk = "10"
+      read prohrk next no lock end move "10"  to fs-prohrk
+      not at end 
+             if prohrk-profil-sirket not = musteri-sirket or
+                prohrk-profil-no     not = musteri-no
+                   exit perform 
+             end-if    
+             accept prohrk-duz-tarih from century-date
+             rewrite prohrk-rec end-rewrite                                                    
+      end-read
+      end-perform 
+      end-start
+      close prohrk
+     .
+
+*
+ gun-bul.
+        initialize gece-gun
+        move prohrk-gel-tar to gercek-gir-tar
+        move prohrk-git-tar to gercek-cik-tar 
+        compute s1 = function INTEGER-OF-DATE(gercek-cik-tar) - function INTEGER-OF-DATE(gercek-gir-tar)   
+        move s1 to gece-gun
+        add gece-gun to takas-geceleme-toplam
+        
+        if takas-gel-yil = spaces 
+              move all low-values to takas-gel-yil
+        end-if
+         string takas-gel-yil delimited by low-values
+                 prohrk-gel-yil delimited by low-values
+                 ", "   delimited by low-values
+        into takas-gel-yil.
+
+ 

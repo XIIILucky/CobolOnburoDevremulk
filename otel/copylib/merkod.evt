@@ -1,0 +1,200 @@
+* merkod.evt
+* merkod.evt is generated from D:\asya\acugt.ytl\otel\merkod.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ Form1-Lb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM listbox-eventlar
+        WHEN Cmd-Goto
+           PERFORM Listbox-Eventlar
+        WHEN Ntf-Selchange
+           PERFORM Listbox-Eventlar
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     open i-o merkez close merkez .
+*/
+     open input genel.
+     move 1 to genel-anahtar
+     read genel no lock invalid
+          initialize mesaj-link
+          move 17 to mesaj-no
+          perform mesaj-ver
+          goback
+     end-read
+     close genel.
+     .
+*
+
+*
+ accept-0101-Aft-Procedure.
+     open input merkez
+     initialize merkez-rec
+     move tmerkez-kodu   to merkez-kodu
+     move cmb-deger(1:1) to merkez-tipi
+     read merkez no lock invalid
+          initialize  tmerkez-adi
+     not invaLID
+          move merkez-adi  to tmerkez-adi
+          move merkez-tipi to cmb-deger
+     end-read
+
+     display  accept-0101 accept-0103 Form1-Cm-1 
+     close merkez.                        
+*
+ exception-procedure.
+     evaluate key-status
+
+        when 1
+             if control-id = 5 or 
+                 control-id = 18
+           
+                 initialize  link-merkez-tipi link-merkez-kodu
+                 move cmb-deger(1:1) to link-merkez-tipi
+                 move tmerkez-kodu   to link-merkez-kodu
+                 call "/asya/ytl/obj/otel/merara.asy" using link-merkez-tipi link-merkez-kodu 
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/merara.asy"
+                         move link-merkez-kodu to tmerkez-kodu
+                         if link-merkez-kodu <> zeroes or 
+                            link-merkez-kodu <> spaces
+                                 display accept-0101
+                         end-if
+                         perform Form1-Aft-Initdata
+                         move 4 to accept-control
+                         move 5 to control-id
+                  end-call
+              end-if
+         when 2 
+
+              if tmerkez-kodu = spaces then
+                    display message box "Merkez Kodu Bos Gecilemez "
+                    exit paragraph
+              end-if
+              if tmerkez-adi = spaces then
+                    display message box "Merkez Adi Bos Gecilemez "
+                    exit paragraph
+              end-if
+
+              open i-o merkez
+              initialize merkez-rec
+              move tmerkez-kodu  to merkez-kodu
+              move tmerkez-adi   to merkez-adi
+              move cmb-deger(1:1) to merkez-tipi
+              move k-kodu-tasi to MERKEZ-STAF
+
+              write merkez-rec invalid 
+                    rewrite merkez-rec 
+                    end-rewrite 
+              end-write
+
+              close merkez
+              initialize tmerkez-kodu tmerkez-adi
+              display  accept-0101 accept-0103
+              perform Form1-Aft-Initdata
+              move 4 to accept-control
+              move 12 to control-id
+         when 3
+
+              display message box "Secili Kayit Silinecektir ! Emin misiniz ? "
+              icon 2
+              type 2
+              returning return-code 
+              if return-code <> 1 then
+                    exit paragraph
+              end-if
+
+              open i-o merkez
+              initialize merkez-rec
+              move tmerkez-kodu  to merkez-kodu
+              move cmb-deger(1:1) to merkez-tipi
+              delete merkez invalid continue 
+              end-delete
+          
+              close merkez
+              initialize tmerkez-kodu tmerkez-adi
+              display  accept-0101 accept-0103
+              perform Form1-Aft-Initdata
+              move 4 to accept-control
+              move 12 to control-id
+     end-evaluate.
+
+ Form1-Aft-Initdata.
+     initialize i
+     modify form1-lb-1,
+            reset-list  = 1
+            mass-update = 1
+     open input merkez
+     initialize merkez-rec
+     start merkez key not < merkez-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-merkez = "10"
+     read merkez next no lock end move "10" to fs-merkez
+     not at end
+
+               initialize form1-lb-1-value
+               move merkez-kodu   to lb-1-col-1
+               move merkez-adi    to lb-1-col-2
+               move merkez-tipi    to lb-1-col-3
+               modify form1-lb-1,
+                      item-to-add(form1-lb-1-value)
+               add 1 to i
+               if i = 1 
+                  move form1-lb-1-value to eform1-lb-1-value
+               end-if
+          end-read
+     end-perform
+     end-start
+     close merkez.
+     initialize merkez-rec
+     modify form1-lb-1,
+            mass-update = 0
+            selection-index = 1
+            thumb-position = 1.
+
+     move eform1-lb-1-value to form1-lb-1-value.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ listbox-eventlar.
+     evaluate event-type
+          when cmd-dblclick
+               inquire form1-lb-1,value in form1-lb-1-value
+               move lb-1-col-1 to tmerkez-kodu
+               move lb-1-col-3 to cmb-deger
+               perform accept-0101-Aft-Procedure
+               move 4 to accept-control
+               move 8 to control-id
+               exit paragraph
+          when ntf-selchange
+          when cmd-goto
+               inquire form1-lb-1,value in form1-lb-1-value
+               move lb-1-col-1 to tmerkez-kodu
+               move lb-1-col-3 to cmb-deger
+               display accept-0101,
+               perform accept-0101-Aft-Procedure
+     end-evaluate.
+
+
+ 

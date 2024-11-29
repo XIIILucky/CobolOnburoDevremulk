@@ -1,0 +1,474 @@
+* sayaclzr.evt
+* sayaclzr.evt is generated from D:\asya\acugt.ytl\otel\sayaclzr.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+* foliolst.Evt
+* foliolst.Evt is generated from C:\Asya\acugt.ytl\otel\foliolst.Psf
+* This is a generated file. DO NOT modify this file directly.
+*{Bench}evt
+*{Bench}end
+*
+ Form1-Bef-Create.
+
+     perform adresleri-tasi  
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel
+    
+     move cost-sirketi   of genel to satkod-dosya-adres 
+
+    open i-o genelfis
+    move 1 to genelfis-anahtar
+    read genelfis no lock
+      invalid
+        accept print-no from time
+      not invalid
+        add 1 to print-no
+        rewrite genelfis-rec end-rewrite
+    end-read
+    close genelfis
+
+    move print-no         to dokumer-dosya-adi
+                             dep-toplam-no
+                             rapor-no kdv-toplam-no mami-kllnc  
+     |   move k-kodu-tasi to  mami-kllnc
+   
+*/////////////// 
+    initialize html-deg.
+    open input kllnc
+    initialize kllnc-rec 
+    move k-kodu-tasi          to k-kodu
+    read kllnc no lock invalid 
+         continue 
+    end-read 
+    close kllnc
+ 
+       perform lazer-rapor
+       set exit-pushed to true.
+     
+
+*
+ Form1-Aft-Create.
+ 
+    perform raporla
+    .
+*
+ raporla.
+    initialize rapor-vis-0 rapor-vis-1 rapor-vis-2 rapor-vis-3 rapor-vis-4
+    move 1 to rapor-vis-1 rapor-vis-0   
+    open input odemeler devremulk odemetip  danisman cek musteri  kllnc
+    perform baslik-ayarla 
+/    perform odeme-bul
+    perform demirbas-yaz
+     
+
+   ||| perform alt-toplam-yaz
+*/sayfanýn alti için
+   |  initialize rapor-vis-0 rapor-vis-1 rapor-vis-2 rapor-vis-3 rapor-vis-4
+   |  move 1 to rapor-vis-1 rapor-vis-0 
+
+   | perform odeme-bul2
+   | perform alt-toplam-yaz2
+    close odemeler devremulk odemetip  danisman cek musteri kllnc
+    .
+*
+ baslik-ayarla.
+
+    .
+* 
+ demirbas-yaz.
+ 
+    initialize html-detay-deg  
+    open input sayac sayachrk
+         initialize sayachrk-rec
+         move link-sayac-anah to sayachrk-anah
+         read sayachrk no lock invalid
+                 display message box "Hatali Islem"
+         not invalid
+                ||baslikk        
+                move SAYACHRK-ODA to html-oda-no
+                open input odalar konum
+                     initialize odalar-rec
+                     move SAYACHRK-ODA to  ODALAR-NO
+                     read odalar no lock invalid
+                             initialize html-konum
+                     not invalid
+                            initialize konum-rec
+                            move ODALAR-KONUMU to KONUM-ANAHTAR
+                            read konum no lock invalid
+                                    initialize konum-rec
+                            end-read
+                            move konum-adi to html-konum
+                     end-read
+                close odalar konum
+                move SAYACHRK-KAYNAK-FOLIO  to html-folio
+                
+                move SAYACHRK-ILK-OKU-GUN  to egun
+                move SAYACHRK-ILK-OKU-ay   to eay
+                move SAYACHRK-ILK-OKU-yil  to eyil
+                move etarih to html-ilk-oku-tar  
+
+                move SAYACHRK-SON-OKU-GUN  to egun
+                move SAYACHRK-SON-OKU-ay   to eay
+                move SAYACHRK-SON-OKU-yil  to eyil
+                move etarih to html-SON-oku-tar 
+
+                MOVE SAYACHRK-ILK-ENDEKS  TO html-ilk-oku-deger
+                MOVE SAYACHRK-SON-ENDEKS  TO html-SON-oku-deger 
+
+
+                COMPUTE hesap = SAYACHRK-SON-ENDEKS - SAYACHRK-ILK-ENDEKS  
+                move hesap to html-fark-endeks
+ 
+                move SAYACHRK-SAYAC-KODU     to sayac-kodu
+                read sayac no lock invalid
+                       move "Tanimsiz !!" to html-sayac-adi
+                       move 00000000     to z-endeks
+                       move z-endeks     to html-sayac-endeks
+                       initialize sayac-rec
+                not invalid
+                       move Sayac-adi     to html-sayac-adi
+                       move SAYAC-DEGER   to z-endeks
+                       move z-endeks      to html-sayac-endeks
+                end-read
+
+                     
+                if sayachrk-son-endeks not = zeroes then
+                    compute hesap-tutar = ( sayachrk-son-endeks - sayachrk-ilk-endeks ) * sayac-deger
+                    move hesap-tutar              to z-tutar9
+                    move z-tutar9                 to html-fark-tutar
+
+                    compute odenecek-tutar = hesap-tutar - SAYACHRK-ISKONTO-TUTAR
+                    move odenecek-tutar           to z-tutar9
+                    move z-tutar9                 to html-odenecek-tutar
+                end-if
+
+                move SAYACHRK-ISKONTO-TUTAR to z-tutar9
+                move z-tutar9               to html-kota 
+                
+
+        end-read
+
+    close sayac sayachrk
+    perform Acu-RPT-Report1-DO-PRINT-RTN .
+  
+*
+ alt-toplam-yaz.
+    initialize rapor-vis-0 rapor-vis-1 rapor-vis-2 rapor-vis-3 
+    move 1 to rapor-vis-2 rapor-vis-3 rapor-vis-4   
+    
+    initialize rakam yaziile html-detay-deg
+    move alt-toplam         to rakam
+    call "/asya/ytl/obj/otel/yaziile.asy" using rakam yaziile
+         on exception perform callerr-proc
+         not on exception
+         cancel "/asya/ytl/obj/otel/yaziile.asy" 
+    end-call
+    move yaziile      to html-yazi-ile
+    move alt-toplam   to etutar
+    move etutar       to html-alt-toplam
+    perform Acu-RPT-Report1-DO-PRINT-RTN
+    .
+*
+ html-detay-yaz .
+
+ 
+
+     .
+
+*
+ lazer-rapor.
+    open output mami
+
+    initialize winprint-selection
+
+    call "Win$printer" using winprint-setup-old
+         returning print-donus
+    end-call
+
+   
+
+    write mami-rec from "101"
+
+    if print-donus < 0
+       close mami
+       exit paragraph.
+
+    call "win$printer" using winprint-get-current-info-ex
+                             winprint-selection
+    end-call
+
+    write mami-rec from "102"
+    set environment "dll_convention" to "1"  
+ 
+    if is-remote
+*/ rapor dosyaya gonderildi  
+       call "@[DISPLAY]:asyadll.dll" on exception
+                       display message box 
+                               "asyadll.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+       end-call
+       move all low-values to win-temp
+       call "@[DISPLAY]:ASYA_GetEnvVar" using by reference env-name
+                                              by reference win-temp
+                                              by value 255
+            on exception
+                       display message box 
+                               "asyadll.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+       end-call
+
+       write mami-rec from "103"
+       inspect win-temp replacing trailing spaces by low-values
+       move all low-values to html-rapor
+       string html-rapor
+              "@[DISPLAY]:"     delimited by low-values
+              win-temp          delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into html-rapor
+
+       perform acu-report1-print-para 
+
+      write mami-rec from "104"
+       move all low-values to prt-fullfilename
+       string prt-fullfilename
+              win-temp delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into prt-fullfilename
+
+       call "@[DISPLAY]:AcuBenchPrintDummy" 
+              on exception 
+                 call "@[display]:acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+                 end-call 
+       end-call
+
+      write mami-rec from "105"
+       string "A4", x"00" delimited by size into acu-paper-size
+       initialize acu-paper-header
+       move x"00" to acu-paper-footer
+       move "PORTRAIT" to acu-paper-orientation
+       if acu-paper-orientation = "LANDSCAPE"
+          move 2 to acu-paper-orientationint
+       else
+          move 1 to acu-paper-orientationint
+       end-if
+       string "PORTRAIT", x"00" delimited by size into acu-paper-orientation
+       move "50" to acu-margin-left
+       move "20" to acu-margin-right
+       move "50" to acu-margin-top
+       move "50" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+ 
+       move 1 to acu-paper-copies
+       move spaces to dumy-line
+       write mami-rec from "106"
+       move 1 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "@[DISPLAY]:AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+       write mami-rec from "107"
+       set print-ptr to address of acu-paper-sizeint
+       call "@[DISPLAY]:AcuBenchPrintGetPaperSize" using by value print-unit-type, print-ptr
+       move 1202 to acu-paper-height 
+       move 793 to acu-paper-width
+       compute page-height of report1-height = acu-paper-height - acu-margin-top - acu-margin-bottom
+       compute page-width of report1-height = acu-paper-width - acu-margin-left - acu-margin-right
+       write mami-rec from "108"
+       move 2 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "@[DISPLAY]:AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+       string acu-paper-margin, x"00" delimited by size into print-browser-para
+       write mami-rec from "109"
+       set print-ptr to address of acu-paper-size
+       call "@[DISPLAY]:AcuBenchPrintGetPaperName" using by value print-ptr            
+       write mami-rec from "110"
+       call "@[DISPLAY]:AcuBenchPrintGetOrientation" giving  acu-paper-orientationint  
+       call "@[DISPLAY]:AcuBenchPrintGetCopies" giving Acu-paper-copies                
+       set print-ptr to address of acu-printer-name                                    
+       write mami-rec from "111"
+       call "@[DISPLAY]:AcuBenchPrintGetPrinterName" using by value print-ptr          
+ 
+       move "50" to acu-margin-left
+       move "20" to acu-margin-right
+       move "50" to acu-margin-top
+       move "50" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+           write mami-rec from "112"
+       perform acu-report1-print-tofile
+
+       write mami-rec from "113"
+              call "c$copy" using rapor-dosya html-rapor giving return-code
+           if return-code <> 1 then 
+                display message box "ASYA-SOFT PRINT EMULATION TEST"  new-line
+                                     "LUTFEN SISTEM YONETICISINI ARAYINIZ"
+                   if k-kodu-tasi(1:4) = "ASYA" then stop " " end-if
+           end-if
+       move winprint-name                to acu-printer-name
+
+       write mami-rec from prt-fullfilename
+       write mami-rec from print-browser-para
+       write mami-rec from acu-paper-header, 
+       write mami-rec from acu-paper-footer,
+       write mami-rec from acu-paper-size,
+       write mami-rec from acu-paper-orientationint
+       write mami-rec from acu-paper-copies
+       write mami-rec from acu-printer-name 
+       inspect acu-printer-name replacing trailing spaces by low-values
+       move all low-values to  acu-paper-header acu-paper-footer
+       call "@[DISPLAY]:AcuBenchPrintExecWBPrint" using by content prt-fullfilename,
+                                                     omitted,
+                                                     by content print-browser-para,
+                                                     by content acu-paper-header, 
+                                                     by content acu-paper-footer, 
+                                                     by content acu-paper-size, 
+                                                     by value acu-paper-orientationint,
+                                                     by value acu-paper-copies,
+                                                     by content acu-printer-name
+       end-call
+
+       write mami-rec from "115"
+*       delete file printf
+       call "@[DISPLAY]:ASYA_DeleteFile" using by reference prt-fullfilename
+                                    return-code
+            on exception
+               display message box
+                       prt-fullfilename,x"0a0d",
+                       "dosyasi silinemedi !!!"
+       end-call
+       move 0 to acu-setupprint
+       write mami-rec from "116"
+       cancel "@[display]:acubenchprint.dll"
+       cancel "@[DISPLAY]:asyadll.dll"
+    else
+*/ LOCAL ISE
+       move rapor-dosya         to prt-fullfilename
+       inspect prt-fullfilename replacing trailing spaces by low-values
+       inspect prt-fullfilename replacing all "/" by "\"
+   
+       set environment "dll_convention" to "1"
+
+*////( Sayfa AyarlARI
+       call "AcuBenchPrintDummy" 
+              on exception 
+                 call "acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+                 end-call 
+       end-call
+
+       string "A4", x"00" delimited by size into acu-paper-size
+       initialize acu-paper-header
+       move x"00" to acu-paper-footer
+       move "PORTRAIT" to acu-paper-orientation
+       if acu-paper-orientation = "LANDSCAPE"
+          move 2 to acu-paper-orientationint
+       else
+          move 1 to acu-paper-orientationint
+       end-if
+       string "PORTRAIT", x"00" delimited by size into acu-paper-orientation
+       move "50" to acu-margin-left
+       move "20" to acu-margin-right
+       move "50" to acu-margin-top
+       move "50" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+ 
+       move 1 to acu-paper-copies
+       move spaces to dumy-line
+ 
+       move 1 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+ 
+       set print-ptr to address of acu-paper-sizeint
+       call "AcuBenchPrintGetPaperSize" using by value print-unit-type, print-ptr
+ 
+       compute page-height of report1-height = acu-paper-height - acu-margin-top - acu-margin-bottom
+       compute page-width of report1-height = acu-paper-width - acu-margin-left - acu-margin-right
+
+       move 2 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+       string acu-paper-margin, x"00" delimited by size into print-browser-para
+
+       set print-ptr to address of acu-paper-size
+       call "AcuBenchPrintGetPaperName" using by value print-ptr            
+       call "AcuBenchPrintGetOrientation" giving  acu-paper-orientationint  
+       call "AcuBenchPrintGetCopies" giving Acu-paper-copies                
+       set print-ptr to address of acu-printer-name                                    
+       call "AcuBenchPrintGetPrinterName" using by value print-ptr          
+ 
+       move "50" to acu-margin-left
+       move "20" to acu-margin-right
+       move "50" to acu-margin-top
+       move "50" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+
+        
+
+       perform acu-report1-print-tofile
+*******************************************************************************
+
+       move winprint-name                to acu-printer-name
+ 
+       call "AcuBenchPrintExecWBPrint" USING by content prt-fullfilename,
+                                             omitted,
+                                             by content print-browser-para,
+                                             by content acu-paper-header, 
+                                             by content acu-paper-footer, 
+                                             by content acu-paper-size, 
+                                             by value acu-paper-orientationint,
+                                             by value acu-paper-copies,
+                                             by content acu-printer-name
+       end-call
+       move 0 to acu-setupprint
+      
+       delete file printf
+       call "c$delete" using prt-fullfilename
+    end-if.
+    goback.
+    .
+*
+ Form1-Aft-Initdata.
+     
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+       perform lazer-rapor
+       set exit-pushed to true
+     end-evaluate
+     
+     .
+
+
+ 

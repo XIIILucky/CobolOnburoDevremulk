@@ -1,0 +1,777 @@
+* bantbak1.evt
+* bantbak1.evt is generated from D:\asya\acugt.ytl\otel\bantbak1.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     .
+*
+ exception-procedure.
+     evaluate key-status
+         when 2 
+              perform raporla
+     end-evaluate. 
+*
+* fissekle-dayi.
+*     open i-o kolbant
+*     initialize kolbant-rec 
+*     start kolbant key not < kolbant-anah invalid
+*           continue
+*     not invalid
+*     perform with test after until fs-kolbant = "10"
+*     read kolbant next no lock end move "10" to fs-kolbant
+*     not at end 
+*         if kolbant-rez-no = 0
+*            delete kolbant end-delete
+*         else
+*            exit perform 
+*         end-if
+*
+*     end-read
+*     end-perform 
+*     end-start
+*     close kolbant.
+*
+ Raporla.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                    to det-dokumer-20(1:)
+     move "Kol Bandi Kontrol Raporu" to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                    to det-dokumer-20(1:)
+     move "Kol Bandi Kontrol Raporu" to det-filler
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+     move "B"                    to det-dokumer-20(1:)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O"                    to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "RLLLLLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR 
+     initialize dokumer-rec detay
+     move "D1"                      to det-dokumer-20(1:)     
+     move "Rez No"                  to det-1
+     move "Adi"                     to det-2
+     move "Soyadi"                  to det-3
+     move "Oda N"                   to det-4
+     move "C-in"                    to det-5
+     move "C-out"                   to det-6
+     move "Seri No"                 to det-7
+     move "Durumu"                  to det-8
+     move "Kayit Tarihi/Staff"      to det-9 
+     move "Degisiklik Tarihi/Staff" to det-10
+     move "Sirket ve Musteri No"    to det-11
+     move "#"                       to det-12
+     move all "|" to fil-1  fil-2  fil-3 fil-4 fil-5  
+                     fil-6  fil-7  fil-8 fil-9 fil-10 
+                     fil-11 fil-12
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"         to det-dokumer-20(1:)     
+     move "-"          to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 
+                     det-6 det-7 det-8 det-9 det-10 det-11 det-12
+     write dokumer-rec from detay
+
+
+     stop " " 
+
+     open i-o kolbant musteri rez
+     initialize kolbant-rec 
+     start kolbant key not < kolbant-anah invalid 
+           continue 
+     not invalid
+     perform with test after until fs-kolbant = "10"
+     read kolbant next no lock end move "10" to fs-kolbant
+     not at end
+         initialize dokumer-rec detay kayit-prof-sir rez-rec
+         move kolbant-rez-no to rez-no 
+         read rez no lock invalid        
+              exit perform cycle             
+         end-read
+         if rez-cik-tar > tarih-tasi or
+            kolbant-durumu <> 4 or
+            rez-cik-tar = kolbant-deg-tar
+            exit perform cycle
+         end-if
+
+         string kayit-prof-sir
+                kolbant-mus-sirket delimited by "    "
+                "-"                  delimited by size
+                kolbant-mus-profil     delimited by "    "
+           into kayit-prof-sir
+
+         move kolbant-rez-no  to det-1 
+         move kolbant-seri-no to det-7
+         move kolbant-durumu to det-8
+         move kolbant-kayit-tar         to det-9
+         move kolbant-deg-tar        to det-10
+         move kayit-prof-sir  to det-11
+          write dokumer-rec from detay
+     end-read
+     end-perform 
+     end-start
+     close kolbant musteri rez
+
+     display message "Musteri datasina eklenen bant : ", musteri-ekle new-line
+                     "Musteri datasindan silinen bant : ", musteri-sil 
+     initialize dokumer-rec detay
+     move "-"          to det-dokumer-20(5:1)
+     move all "-"      to det-1 det-2 det-3 det-4 det-5  
+                          det-6 det-7 det-8 det-9 det-10 det-11 det-12
+     write dokumer-rec from detay
+
+     close dokumer 
+     call dokumer-prog on exception
+          perform callerr-proc
+     not on exception
+          cancel dokumer-prog
+     end-call
+     delete file dokumer.
+*
+ aktifleri-ekle.
+     initialize kolbant-rec musteri-ekle 
+     start kolbant key not < kolbant-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-kolbant = "10"
+     read kolbant next no lock end move "10" to fs-kolbant 
+     not at end
+ 
+         if kolbant-mus-anah = spaces 
+            exit perform cycle 
+         end-if
+         initialize musteri-rec 
+         move kolbant-mus-anah to m-profil
+         read musteri no lock invalid
+              exit perform cycle
+         not invalid
+             evaluate kolbant-durumu
+                 when 1
+                 when 4
+                      if musteri-kol-bandi = spaces 
+                         move kolbant-seri-no to musteri-kol-bandi 
+
+                         accept musteri-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+                         accept musteri-edit-zaman from time          |                           
+
+                         rewrite musteri-rec invalid
+                                 stop " "
+                         not invalid
+                             add 1 to musteri-ekle
+                         end-rewrite 
+                      end-if
+             end-evaluate
+         end-read
+     end-read
+     end-perform
+     end-start.
+*
+ pasifleri-kaldir.
+     initialize kolbant-rec  musteri-sil
+     start kolbant key not < kolbant-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-kolbant = "10"
+     read kolbant next no lock end move "10" to fs-kolbant 
+     not at end
+ 
+         if kolbant-mus-anah = spaces 
+            exit perform cycle 
+         end-if
+         initialize musteri-rec 
+         move kolbant-mus-anah to m-profil
+         read musteri no lock invalid
+*              stop " "
+              exit perform cycle
+         not invalid
+             evaluate kolbant-durumu
+                 when 2
+                 when 3
+                      if musteri-kol-bandi <> spaces 
+                         initialize musteri-kol-bandi
+
+                         accept musteri-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+                         accept musteri-edit-zaman from time          |                           
+
+                         rewrite musteri-rec invalid
+                                 stop " "
+                         not invalid
+                             add 1 to musteri-sil
+                         end-rewrite 
+                      end-if
+             end-evaluate
+         end-read
+     end-read
+     end-perform
+     end-start.
+
+*
+ bant-var-mi.
+     initialize yanrez-rec bantli-bantsiz-durumu
+     move rez-no to yanrez-rezno
+     start yanrez key not < yanrez-anah invalid
+           continue
+     not invalid                                     
+     perform with test after until fs-yanrez = "10"
+     read yanrez next no lock end move "10" to fs-yanrez 
+     not at end 
+         if yanrez-rezno <> rez-no 
+            exit perform
+         end-if
+         initialize kolbant-rec bantli-bantsiz  
+         move yanrez-rezno to kolbant-rez-no
+                              z-rez
+         start kolbant key not < kolbant-anah invalid
+               continue
+         not invalid
+         perform with test after until fs-kolbant = "10"
+         read kolbant next no lock end move "10" to fs-kolbant 
+         not at end
+             if kolbant-rez-no <> yanrez-rezno
+                exit perform
+             end-if
+             if kolbant-mus-anah = yanrez-profil-anah and kolbant-durumu = 1
+                exit perform cycle
+             else
+                initialize dokumer-rec detay cin-tar cout-tar
+                           gel-zaman-staff git-zaman-staff
+                           kayit-tar-staff deg-tar-staff
+                           musteri-rec 
+                move yanrez-profil-anah to m-profil
+                read musteri no lock invalid
+                     continue
+                end-read
+                string kayit-tar-staff
+                       kolbant-kayit-staff delimited by "    "
+                       "-"                 delimited by size 
+                       kolbant-kayit-gun   delimited by "    "
+                       "/"                 delimited by size 
+                       kolbant-kayit-ay    delimited by "    "
+                       "/"                 delimited by size 
+                       kolbant-kayit-yil   delimited by "    "
+                  into kayit-tar-staff
+        
+                string deg-tar-staff
+                       kolbant-deg-staff   delimited by "    "
+                       "-"                 delimited by size 
+                       kolbant-deg-gun     delimited by "    "
+                       "/"                 delimited by size 
+                       kolbant-deg-ay      delimited by "    "
+                       "/"                 delimited by size 
+                       kolbant-deg-yil     delimited by "    "
+                  into deg-tar-staff
+        
+                string gel-zaman-staff
+                       yanrez-staf       delimited by "    "
+                       "-"               delimited by size 
+                       yanrez-gel-saat   delimited by "    "
+                       ":"               delimited by size 
+                       yanrez-gel-dakika delimited by "    "
+                       ":"               delimited by size 
+                       yanrez-gel-saniye delimited by "    "
+                  into gel-zaman-staff
+        
+                string git-zaman-staff
+                       yanrez-staf     delimited by "    "
+                       "-"             delimited by size 
+                       yanrez-git-saat   delimited by "    "
+                       ":"               delimited by size 
+                       yanrez-git-dakika delimited by "    "
+                       ":"               delimited by size 
+                       yanrez-git-saniye delimited by "    "
+                  into git-zaman-staff
+        
+                string cin-tar 
+                       rez-gir-gun delimited by "   "
+                       "/"         delimited by size
+                       rez-gir-ay  delimited by "   "
+                       "/"         delimited by size
+                       rez-gir-yil delimited by "   "
+                  into cin-tar
+        
+                string cout-tar 
+                       rez-cik-gun delimited by "   "
+                       "/"         delimited by size
+                       rez-cik-ay  delimited by "   "
+                       "/"         delimited by size
+                       rez-cik-yil delimited by "   "
+                  into cout-tar
+        
+                string kayit-prof-sir
+                       yanrez-profil-sirket delimited by "    "
+                       "-"                  delimited by size
+                       yanrez-profil-no     delimited by "    "
+                  into kayit-prof-sir
+
+                move z-rez           to det-1 yedek-rez
+                move musteri-adi     to det-2
+                move musteri-soyadi  to det-3
+                move rez-odano       to det-4
+                move cin-tar         to det-5
+                move cout-tar        to det-6
+                move kayit-prof-sir  to det-11
+
+                if musteri-personel-bilinci = 1
+                   move "X" to det-12 
+                end-if
+                
+                perform bebek-yas-kontrol
+                if salla = 0 
+                   initialize dokumer-rec detay
+                   exit perform cycle
+                end-if
+
+                add 1 to s-musteri-toplam
+                
+                write dokumer-rec from detay
+             end-if  
+         end-read
+         end-perform
+         end-start
+
+     end-read
+     end-perform
+     end-start
+     .
+*
+ bebek-yas-kontrol.
+     initialize salla
+     move tarih-tasi(1:4) to tmp-yil
+     compute yil-fark = tmp-yil - musteri-dyil
+     if yil-fark < 2
+        initialize takvim-rec gun-say
+        move musteri-d-tarihi to takvim-anah
+        start takvim key not < takvim-anah invalid
+              continue
+        not invalid
+        perform with test after until fs-takvim = "10"
+        read takvim next no lock end move "10" to fs-takvim
+        not at end 
+            if takvim-anah > tarih-tasi
+               exit perform 
+            end-if
+            if gun-say > 730
+               move 1 to salla
+               exit perform 
+            else 
+               add 1 to gun-say
+            end-if
+        end-read
+        end-perform
+        end-start
+     else
+        move 1 to salla
+     end-if.
+
+*
+ bantsizlari-dok.
+     open i-o yanrez
+     initialize rez-rec s-rezervasyon s-musteri-bantli s-musteri-bantsiz
+     move "I"     to rez-durumu
+     move ilk-tar to rez-gir-tar
+     start rez key not < rez-gir invalid
+           continue
+     not invalid
+     perform with test after until fs-rez = "10"
+     read rez next no lock end move "10" to fs-rez 
+     not at end 
+         if rez-gir-tar > son-tar or 
+            rez-durumu <> "I" 
+            exit perform
+         end-if
+
+         if rez-k-g-b <> "K" 
+            exit perform cycle
+         end-if
+         perform bant-var-mi
+         
+     end-read
+     end-perform
+     end-start
+     initialize dokumer-rec detay
+     move "Genel Toplam" to det-2
+     move "A"            to det-dokumer-20(3:1)
+     move 289            to det-renk1
+     move "1"            to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move s-rezervasyon to z-top
+     move z-top         to det-3
+     move "Rezervasyon" to det-2
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move s-musteri-toplam to z-top
+     move z-top            to det-3
+     move "Toplam Musteri" to det-2
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move s-musteri-bantli to z-top
+     move z-top            to det-3
+     move "Verilen Bant"   to det-2
+     move "A"              to det-dokumer-20(3:1)
+     move 112              to det-renk1
+     move "1"              to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move s-musteri-bantsiz to z-top
+     move z-top             to det-3
+     move "Verilecek Bant"  to det-2
+     move "A"               to det-dokumer-20(3:1)
+     move 176               to det-renk1
+     move "1"               to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+     close yanrez.
+*
+ bantlilari-dok.
+     initialize kolbant-rec yedek-rez sayaclar
+     start kolbant key not < kolbant-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-kolbant  = "10"
+     read kolbant next no lock end move "10" to fs-kolbant
+     not at end
+
+           initialize rez-rec musteri-rec 
+
+           move kolbant-rez-no  to rez-anah
+                                   z-rez 
+           read rez no lock invalid
+                continue
+           end-read 
+
+           move kolbant-mus-anah to m-profil
+           read musteri lock invalid
+                continue
+           end-read
+
+           evaluate rapor-tipi(1:1)
+               when 1
+                    if ilk-tar > kolbant-kayit-tar or 
+                       son-tar < kolbant-kayit-tar
+                       exit perform cycle
+                    end-if
+               when 2
+                    if ilk-tar > kolbant-deg-tar or 
+                       son-tar < kolbant-deg-tar
+                       exit perform cycle
+                    end-if
+               when 3
+                    if ilk-tar > rez-gir-tar or 
+                       son-tar < rez-gir-tar
+                       exit perform cycle
+                    end-if
+               when 4
+                    if ilk-tar > rez-cik-tar or 
+                       son-tar < rez-cik-tar
+                       exit perform cycle
+                    end-if
+           end-evaluate
+
+           evaluate bant-durumu(1:1)
+               when "H"
+                    continue
+               when "P"
+                    if kolbant-durumu = 1 
+                       exit perform cycle
+                    end-if
+               when other
+                    if kolbant-durumu <> bant-durumu(1:1)
+                       exit perform cycle
+                    end-if
+           end-evaluate
+
+
+
+           initialize dokumer-rec detay kayit-prof-sir
+                      kayit-tar-staff deg-tar-staff 
+                      cin-tar cout-tar 
+           string kayit-tar-staff
+                  kolbant-kayit-staff delimited by "    "
+                  "-"                 delimited by size 
+                  kolbant-kayit-gun   delimited by "    "
+                  "/"                 delimited by size 
+                  kolbant-kayit-ay    delimited by "    "
+                  "/"                 delimited by size 
+                  kolbant-kayit-yil   delimited by "    "
+           into kayit-tar-staff
+           string deg-tar-staff
+                  kolbant-deg-staff   delimited by "    "
+                  "-"                 delimited by size 
+                  kolbant-deg-gun     delimited by "    "
+                  "/"                 delimited by size 
+                  kolbant-deg-ay      delimited by "    "
+                  "/"                 delimited by size 
+                  kolbant-deg-yil     delimited by "    "
+           into deg-tar-staff
+           string cin-tar 
+                  rez-gir-gun delimited by "   "
+                  "/"         delimited by size
+                  rez-gir-ay  delimited by "   "
+                  "/"         delimited by size
+                  rez-gir-yil delimited by "   "
+           into cin-tar
+           string cout-tar 
+                  rez-cik-gun delimited by "   "
+                  "/"         delimited by size
+                  rez-cik-ay  delimited by "   "
+                  "/"         delimited by size
+                  rez-cik-yil delimited by "   "
+           into cout-tar
+           if yedek-rez <> rez-no
+              move z-rez           to det-1
+                                      yedek-rez
+              move rez-odano       to det-4
+              move cin-tar         to det-5
+              move cout-tar        to det-6
+           end-if
+           move musteri-adi     to det-2
+           move musteri-soyadi  to det-3
+           move kolbant-seri-no to det-7
+           evaluate kolbant-durumu
+               when 1 move "1-Aktif"  to det-8
+               when 2 move "2-Zaiyat" to det-8
+               when 3 move "3-Kayip"  to det-8
+               when 4 move "4-C-out"  to det-8
+           end-evaluate 
+           move kayit-tar-staff to det-9
+           move deg-tar-staff   to det-10
+           string kayit-prof-sir
+                  kolbant-mus-sirket  delimited by "    "
+                  "-"                 delimited by size
+                  kolbant-mus-profil  delimited by "    "
+             into kayit-prof-sir
+             move kayit-prof-sir     to det-11
+           write dokumer-rec from detay
+           perform toplam-al
+
+     end-read
+     end-perform
+     end-start
+     
+     initialize dokumer-rec detay
+     move "Genel Toplam" to det-2
+     move "A"            to det-dokumer-20(3:1)
+     move 289            to det-renk1
+     move "1"            to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move sayac-rez-top to z-top
+     move z-top         to det-3
+     move "Rezervasyon" to det-2
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move sayac-bant-top to z-top
+     move z-top          to det-3
+     move "Kol Bandi"    to det-2
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move sayac-aktif       to z-top
+     move z-top             to det-3
+     move "Aktif Kol Bandi" to det-2
+     move "A"         to det-dokumer-20(3:1)
+     move 112         to det-renk1
+     move "1"         to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move sayac-pasif to z-top
+     move z-top       to det-3
+     move "Pasifler"  to det-2
+     move "A"         to det-dokumer-20(3:1)
+     move 176         to det-renk1
+     move "1"         to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move sayac-zaiyat       to z-top
+     move z-top              to det-3
+     move "Zaiyat Kol Bandi" to det-2
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move sayac-kayip       to z-top                
+     move z-top             to det-3
+     move "Kayip Kol Bandi" to det-2
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move sayac-c-out       to z-top                
+     move z-top             to det-3
+     move "C-out Kol Bandi" to det-2
+     write dokumer-rec from detay.
+*
+ toplam-al.
+     evaluate kolbant-durumu
+         when 1
+              add 1 to sayac-aktif
+              add 1 to sayac-bant-top
+         when 2
+              add 1 to sayac-zaiyat
+              add 1 to sayac-bant-top
+              add 1 to sayac-pasif
+         when 3
+              add 1 to sayac-kayip
+              add 1 to sayac-bant-top
+              add 1 to sayac-pasif
+         when 4
+              add 1 to sayac-c-out
+              add 1 to sayac-bant-top
+              add 1 to sayac-pasif
+     end-evaluate
+     if det-1 <> spaces
+        add 1 to sayac-rez-top
+     end-if
+     .
+*
+ form1-aft-initdata.
+     accept tarih from century-date
+     move 1  to ilk-gun
+     move 31 to son-gun
+     move 1  to ilk-ay
+     move 12 to son-ay
+     move tarih(1:4) to ilk-yil son-yil
+     open input genel
+     initialize genel-rec 
+     move 1 to genel-anahtar
+     read genel no lock invalid        
+          display message box "Genel parametre tanimsiz.."
+          close genel 
+          set exit-pushed to true
+     end-read
+     close genel 
+     display accept-1301 accept-1302 accept-1303 
+             accept-1304 accept-1305 accept-1306 
+     .
+*
+ Form1-Pb-1-Link.
+     initialize konuk-rec 
+     start konuk key not < konuk-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-konuk = "10"
+     read konuk next no lock end move "10" to fs-konuk
+     not at end
+         if konuk-fol-kodu = "R" 
+            exit perform cycle
+         end-if
+
+
+     end-read
+     end-perform 
+     end-start 
+
+     .
+*
+ Form1-Pb-1a-Link.
+     stop " "
+     open i-o kllnc
+     initialize kllnc-rec 
+     start kllnc key not < k-kodu invalid
+           continue
+     not invalid
+     perform with test after until fs-kllnc = "10"
+     read kllnc next no lock end move "10" to fs-kllnc 
+     not at end 
+         move 1 to k-kvkk-bilgileri-gorebilir
+         rewrite kllnc-rec end-rewrite 
+     end-read 
+     end-perform 
+     end-start 
+     close kllnc 
+     exit paragraph
+
+
+*     open i-o romhrk exthrk yromhrk depkod
+*     initialize yromhrk-rec 
+*     move 1 to hata-say-ba
+*     start yromhrk key not < yromhrk-anah invalid
+*           continue
+*     not invalid
+*     perform with test after until fs-yromhrk = "10" 
+*     read yromhrk next no lock end move "10" to fs-yromhrk
+*     not at end 
+*         initialize depkod-rec 
+*         move yromhrk-depkod to depkod-anah
+*         read depkod no lock invalid
+*              stop " " 
+*         end-read 
+*
+*         if yromhrk-ba <> depkod-ba 
+*            add 1 to hata-say-ba
+*         end-if
+*
+*     end-read 
+*     end-perform 
+*     end-start
+*     display message box "Yromhrk Hata Sayisi : ", hata-say-ba
+*
+*     initialize exthrk-rec 
+*     move 1 to hata-say-ba
+*     start exthrk key not < exthrk-anah invalid
+*           continue
+*     not invalid
+*     perform with test after until fs-exthrk = "10" 
+*     read exthrk next no lock end move "10" to fs-exthrk
+*     not at end 
+*         initialize depkod-rec 
+*         move exthrk-depkod to depkod-anah
+*         read depkod no lock invalid
+*              stop " " 
+*         end-read 
+*
+*         if exthrk-ba <> depkod-ba 
+*            add 1 to hata-say-ba
+*         end-if
+*
+*     end-read 
+*     end-perform 
+*     end-start
+*     display message box "Exthrk Hata Sayisi : ", hata-say-ba
+*     close romhrk exthrk yromhrk depkod 
+     .
+
+ 

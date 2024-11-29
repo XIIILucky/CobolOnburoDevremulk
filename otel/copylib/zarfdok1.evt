@@ -1,0 +1,645 @@
+* zarfdok1.evt
+* zarfdok1.evt is generated from D:\asya\acugt.ytl\otel\zarfdok1.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+* foliolst.Evt
+* foliolst.Evt is generated from C:\Asya\acugt.ytl\otel\foliolst.Psf
+* This is a generated file. DO NOT modify this file directly.
+*{Bench}evt
+*{Bench}end
+*
+ Form1-Bef-Create.
+
+
+     perform adresleri-tasi  
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel
+    
+    open i-o genelfis
+    move 1 to genelfis-anahtar
+    read genelfis no lock
+      invalid
+        accept print-no from time
+      not invalid
+        add 1 to print-no
+        rewrite genelfis-rec end-rewrite
+    end-read
+    close genelfis
+
+    move print-no         to dokumer-dosya-adi
+                             dep-toplam-no
+                             rapor-no kdv-toplam-no mami-kllnc  
+     |   move k-kodu-tasi to  mami-kllnc
+   
+*/////////////// 
+    initialize html-deg.
+    open input kllnc
+    initialize kllnc-rec 
+    move k-kodu-tasi          to k-kodu
+    read kllnc no lock invalid 
+         continue 
+    end-read 
+    close kllnc
+             
+    perform lazer-rapor
+          
+    set exit-pushed to true.
+     
+
+*
+ Form1-Aft-Create.
+    perform raporla
+    .
+*
+ raporla.
+    initialize rapor-vis-0 rapor-vis-1 rapor-vis-2 rapor-vis-3 rapor-vis-4
+    move 1 to rapor-vis-1 rapor-vis-0   
+    perform detay-bas 
+            exit paragraph
+    perform alt-toplam-yaz
+
+    .
+*
+ detay-bas.
+
+
+         if link-zarf-icmal-ver <> 1 then
+                 open input rez yanrez acenta firma gruplar
+                     initialize rez-rec
+                     move link-zarf-rez-no to rez-no
+                     read rez no lock invalid
+                             continue
+                     not invalid
+                            initialize html-satir-sayisi
+                            initialize yanrez-rec
+                            move link-zarf-rez-no      to yanrez-rezno
+                            move link-zarf-yan-id      to yanrez-sirano
+                            read yanrez no lock invalid
+                                     perform html-detay-yaz
+                            not invalid
+                                     perform html-detay-yaz
+                            end-read
+                     end-read
+        
+                 close rez yanrez acenta  firma gruplar
+         else
+               initialize html-detay-deg html-kisi  html-cin-cout   html-firma  html-acenta html-oda-no   html-GRUP
+               move link-zarf-aciklama to html-adi-soyadi
+               perform Acu-RPT-Report1-DO-PRINT-RTN 
+         end-if
+
+
+    .
+ 
+*
+ alt-toplam-yaz.
+    initialize rapor-vis-0 rapor-vis-1 rapor-vis-2 rapor-vis-3 
+    move 1 to rapor-vis-2 rapor-vis-3 rapor-vis-4   
+    
+    initialize rakam yaziile html-detay-deg
+    move alt-toplam         to rakam
+    call "/asya/ytl/obj/otel/yaziile.asy" using rakam yaziile
+         on exception perform callerr-proc
+         not on exception
+         cancel "/asya/ytl/obj/otel/yaziile.asy" 
+    end-call
+    move yaziile      to html-yazi-ile
+    move alt-toplam   to etutar
+    move etutar       to html-alt-toplam
+    perform Acu-RPT-Report1-DO-PRINT-RTN
+    .
+*
+ html-detay-yaz.
+        initialize html-detay-deg html-GRUP html-adi-soyadi
+**************************isim soyisim
+               if yanrez-soyadi = spaces and yanrez-soyadi = spaces then
+                       move "NO NAME" to html-adi-soyadi
+               else
+                       initialize string-deger
+                       move all low-values to string-deger
+                       inspect yanrez-adi replacing
+                                  trailing spaces by low-values
+                       inspect yanrez-soyadi replacing
+                                  trailing spaces by low-values
+        
+                        string string-deger, 
+                        yanrez-soyadi   delimited by low-values
+                        " "             delimited by low-values
+                        yanrez-adi      delimited by low-values
+                        into string-deger
+                        
+                        move string-deger to html-adi-soyadi
+               end-if
+              
+***************pax bilgileri****************  
+               initialize string-deger
+               move all low-values to string-deger
+               inspect rez-kisi replacing
+                          trailing spaces by low-values
+               if rez-buyuk <> zeroes then
+                   move rez-buyuk to z-sayi
+                   string string-deger, 
+                   z-sayi        delimited by low-values
+                   " "           delimited by low-values
+                   "PAX"         delimited by low-values
+                   into string-deger
+               end-if
+
+               if rez-kucuk <> zeroes then
+                    if ( rez-buyuk ) > 0 then
+                           string string-deger "," delimited by low-values   into string-deger
+                    end-if
+                   move rez-kucuk to z-sayi
+                   string string-deger, 
+                   z-sayi        delimited by low-values
+                   " "           delimited by low-values
+                   "CHILD"       delimited by low-values
+                   into string-deger
+               end-if 
+
+               if rez-bebek <> zeroes then
+                   if ( rez-buyuk + rez-KUCUK) > 0 then
+                           string string-deger "," delimited by low-values   into string-deger
+                   end-if
+                   move rez-bebek to z-sayi
+                   string string-deger, 
+                   z-sayi        delimited by low-values
+                   " "           delimited by low-values
+                   "BABY"        delimited by low-values
+                   into string-deger
+               end-if 
+
+               if rez-free <> zeroes then
+                   if ( rez-buyuk + rez-KUCUK + rez-free) > 0 then
+                           string string-deger "," delimited by low-values   into string-deger
+                   end-if
+                   move rez-free to z-sayi
+                   string string-deger, 
+                   z-sayi        delimited by low-values
+                   " "           delimited by low-values
+                   "FREE"        delimited by low-values
+                   into string-deger
+               end-if 
+
+               move string-deger to html-kisi
+****************cin-cout**********
+              initialize giris-cikis
+              move rez-gir-gun  to html-gir-gun 
+              move rez-gir-ay   to html-gir-ay  
+              move rez-gir-yil  to html-gir-yil 
+ 
+              move rez-cik-gun  to html-cik-gun 
+              move rez-cik-ay   to html-cik-ay  
+              move rez-cik-yil  to html-cik-yil 
+
+              move giris-cikis to html-cin-cout
+**********************acenta***********
+              initialize acenta-rec
+              move rez-acenta to ACENTA-KODU
+              read ACENTA no lock invalid
+                      continue
+              not invalid
+                   move acenta-adi to html-acenta
+              end-read
+**********************grup***********
+              if rez-grup-no > 0
+                  initialize gruplar-rec
+                  move rez-grup-no  to gruplar-kodu
+                  read gruplar no lock invalid 
+                     move rez-grup-no   to gruplar-adi
+                  end-read 
+                     move gruplar-adi   to html-GRUP
+              end-if 
+*/*/////ramazan askin 23.12.2013 Kaldýrýldý              move REZ-GRUP-ADI to html-GRUP
+***********************oda-no
+             move rez-odano to html-oda-no
+   | initialize html-adi-syoadi  html-kisi html-cin-cout html-firma html-acenta
+         
+    perform Acu-RPT-Report1-DO-PRINT-RTN 
+     .
+
+*
+ alt-toplam-yaz2.
+    initialize rapor-vis-0 rapor-vis-1 rapor-vis-2 rapor-vis-3 
+    move 1 to rapor-vis-2 rapor-vis-3    
+    
+    initialize rakam yaziile html-detay-deg
+    move alt-toplam         to rakam
+    call "/asya/ytl/obj/otel/yaziile.asy" using rakam yaziile
+         on exception perform callerr-proc
+         not on exception
+         cancel "/asya/ytl/obj/otel/yaziile.asy" 
+    end-call
+    move yaziile      to html-yazi-ile
+    move alt-toplam   to etutar
+    move etutar       to html-alt-toplam
+    perform Acu-RPT-Report1-DO-PRINT-RTN
+    .
+*
+ lazer-rapor.
+   | open output mami
+    initialize winprint-selection
+
+ 
+          
+    set wprt-has-no-landscape to true
+    set WPRT-ENV_10   to true
+
+    move 98        to WINPRINT-CURR-COPIES
+    set wprt-auto-tray            to true
+    call "win$printer" using winprint-set-printer-ex
+                             winprint-selection     
+    end-call
+
+    
+   | write mami-rec from "102"
+    set environment "dll_convention" to "1"  
+
+     
+    if link-zarf-kacinci = 1 then
+
+             call "Win$printer" using winprint-setup-OLD
+                 returning print-donus
+            end-call
+
+    end-if
+        
+
+    if print-donus < 0
+      | close mami
+       exit paragraph.
+
+ 
+    if is-remote
+*/ rapor dosyaya gonderildi  
+       call "@[DISPLAY]:asyadll.dll" on exception
+                       display message box 
+                               "asyadll.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+       end-call
+       move all low-values to win-temp
+       call "@[DISPLAY]:ASYA_GetEnvVar" using by reference env-name
+                                              by reference win-temp
+                                              by value 255
+            on exception
+                       display message box 
+                               "asyadll.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+       end-call
+
+       |write mami-rec from "103"
+       inspect win-temp replacing trailing spaces by low-values
+       move all low-values to html-rapor
+       string html-rapor
+              "@[DISPLAY]:"     delimited by low-values
+              win-temp          delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into html-rapor
+
+       perform acu-report1-print-para 
+
+     | write mami-rec from "104"
+       move all low-values to prt-fullfilename
+       string prt-fullfilename
+              win-temp delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into prt-fullfilename
+
+       call "@[DISPLAY]:AcuBenchPrintDummy" 
+              on exception 
+                 call "@[display]:acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+                 end-call 
+       end-call
+
+     | write mami-rec from "105"
+       string "Envelope #10", x"00" delimited by size into acu-paper-size
+       initialize acu-paper-header
+       move x"00" to acu-paper-footer
+       move "LANDSCAPE" to acu-paper-orientation
+       if acu-paper-orientation = "LANDSCAPE"
+          move 2 to acu-paper-orientationint
+       else
+          move 1 to acu-paper-orientationint
+       end-if
+       string "LANDSCAPE", x"00" delimited by size into acu-paper-orientation
+       move "20" to acu-margin-left
+       move "1" to acu-margin-right
+       move "30" to acu-margin-top
+       move "10" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+ 
+       move 1 to acu-paper-copies
+       move spaces to dumy-line
+
+     |  write mami-rec from "106"
+       move 1 to print-unit-type
+
+       set print-ptr to address of acu-paper-margin
+       call "@[DISPLAY]:AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+    |   write mami-rec from "107"
+       set print-ptr to address of acu-paper-sizeint
+*        move 250 to acu-paper-height
+
+       call "@[DISPLAY]:AcuBenchPrintGetPaperSize" using by value print-unit-type, print-ptr
+       move 396 to acu-paper-height
+       move 912 to acu-paper-width  |912
+  
+       compute page-height of report1-height = acu-paper-height - acu-margin-top - acu-margin-bottom
+       compute page-width of report1-height = acu-paper-width - acu-margin-left - acu-margin-right
+      | write mami-rec from "108"
+       move 2 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "@[DISPLAY]:AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+       string acu-paper-margin, x"00" delimited by size into print-browser-para
+     |  write mami-rec from "109"
+       set print-ptr to address of acu-paper-size
+       call "@[DISPLAY]:AcuBenchPrintGetPaperName" using by value print-ptr            
+      | write mami-rec from "110"
+       call "@[DISPLAY]:AcuBenchPrintGetOrientation" giving  acu-paper-orientationint  
+       call "@[DISPLAY]:AcuBenchPrintGetCopies" giving Acu-paper-copies                
+       set print-ptr to address of acu-printer-name                                    
+    |   write mami-rec from "111"
+       call "@[DISPLAY]:AcuBenchPrintGetPrinterName" using by value print-ptr          
+ 
+       move "20" to acu-margin-left
+       move "1" to acu-margin-right
+       move "30" to acu-margin-top
+       move "10" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+        |   write mami-rec from "112"
+
+************erduvan hülolooloohhhhhhhhhh******************
+
+        perform thin-bosluk-icin-sayfa-ayarlari
+
+**************************************************
+                
+       perform acu-report1-print-tofile
+
+    |   write mami-rec from "113"
+              call "c$copy" using rapor-dosya html-rapor giving return-code
+           if return-code <> 1 then 
+                display message box "ASYA-SOFT PRINT EMULATION TEST"  new-line
+                                     "LUTFEN SISTEM YONETICISINI ARAYINIZ"
+                   if k-kodu-tasi(1:4) = "ASYA" then stop " " end-if
+           end-if
+       move winprint-name                to acu-printer-name
+
+    |   write mami-rec from prt-fullfilename
+    |   write mami-rec from print-browser-para
+    |   write mami-rec from acu-paper-header, 
+   |    write mami-rec from acu-paper-footer,
+   |    write mami-rec from acu-paper-size,
+   |    write mami-rec from acu-paper-orientationint
+   |    write mami-rec from acu-paper-copies
+   |    write mami-rec from acu-printer-name 
+   |    inspect acu-printer-name replacing trailing spaces by low-values
+   |    move all low-values to  acu-paper-header acu-paper-footer
+
+       call "@[DISPLAY]:AcuBenchPrintExecWBPrint" using by content prt-fullfilename,
+                                                     omitted,
+                                                     by content print-browser-para,
+                                                     by content acu-paper-header, 
+                                                     by content acu-paper-footer, 
+                                                     by content acu-paper-size, 
+                                                     by value 2,
+                                                     by value acu-paper-copies,
+                                                     by content acu-printer-name
+       end-call
+
+     |  write mami-rec from "115"
+           
+       delete file printf
+       call "@[DISPLAY]:ASYA_DeleteFile" using by reference prt-fullfilename
+                                    return-code
+            on exception
+               display message box
+                       prt-fullfilename,x"0a0d",
+                       "dosyasi silinemedi !!!"
+       end-call
+       move 0 to acu-setupprint
+    |   write mami-rec from "116"
+       cancel "@[display]:acubenchprint.dll"
+       cancel "@[DISPLAY]:asyadll.dll"
+    else
+*/ LOCAL ISE
+      
+       move rapor-dosya         to prt-fullfilename
+       inspect prt-fullfilename replacing trailing spaces by low-values
+       inspect prt-fullfilename replacing all "/" by "\"
+   
+       set environment "dll_convention" to "1"
+
+*////( Sayfa AyarlARI
+       call "AcuBenchPrintDummy" 
+              on exception 
+                 call "acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+                 end-call 
+       end-call
+         initialize acu-paper-size
+       string "Envelope #10", x"00" delimited by size into acu-paper-size
+       initialize acu-paper-header
+       move x"00" to acu-paper-footer  acu-paper-header
+       move "LANDSCAPE" to acu-paper-orientation
+       if acu-paper-orientation = "LANDSCAPE"
+          move 2 to acu-paper-orientationint
+       else
+          move 1 to acu-paper-orientationint
+       end-if
+       string "LANDSCAPE", x"00" delimited by size into acu-paper-orientation
+       move "20" to acu-margin-left
+       move "1" to acu-margin-right
+       move "30" to acu-margin-top
+       move "10" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+ 
+       move 1 to acu-paper-copies
+       move spaces to dumy-line
+ 
+       move 1 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+      | close mami
+            
+          set print-ptr to address of acu-paper-sizeint
+  
+    |   move 396 to acu-paper-height 
+    |   move 912 to acu-paper-width 
+             
+     
+       call "AcuBenchPrintGetPaperSize" using by value print-unit-type, print-ptr
+
+       compute page-height of report1-height = acu-paper-height - acu-margin-top - acu-margin-bottom
+       compute page-width of report1-height = acu-paper-width - acu-margin-left - acu-margin-right
+
+       move 2 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+       string acu-paper-margin, x"00" delimited by size into print-browser-para
+
+       set print-ptr to address of acu-paper-size
+       call "AcuBenchPrintGetPaperName" using by value print-ptr            
+       call "AcuBenchPrintGetOrientation" giving  acu-paper-orientationint  
+       call "AcuBenchPrintGetCopies" giving Acu-paper-copies                
+       set print-ptr to address of acu-printer-name                                    
+       call "AcuBenchPrintGetPrinterName" using by value print-ptr          
+ 
+       move "20" to acu-margin-left
+       move "1" to acu-margin-right
+       move "30" to acu-margin-top
+       move "10" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+**************erduvan hülolooloohhhhhhhhhh******************
+
+        perform bosluk-icin-sayfa-ayarlari
+
+**************************************************
+       perform acu-report1-print-tofile
+*******************************************************************************
+    
+       move winprint-name                to acu-printer-name
+        
+       call "AcuBenchPrintExecWBPrint" USING by content prt-fullfilename,
+                                             omitted,
+                                             by content print-browser-para,
+                                             by content acu-paper-header, 
+                                             by content acu-paper-footer, 
+                                             by content acu-paper-size, 
+                                             by value 2,
+                                             by value acu-paper-copies,
+                                             by content acu-printer-name
+                                            
+       end-call
+ 
+       move 0 to acu-setupprint
+   
+       delete file printf
+       call "c$delete" using prt-fullfilename
+    end-if
+            | close mami
+    goback.
+    .
+*
+ Form1-Aft-Initdata.
+     
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+       perform lazer-rapor
+       set exit-pushed to true
+     end-evaluate .
+*
+ thin-bosluk-icin-sayfa-ayarlari.
+          move 450 to Report1-Dtl-1-DEF-HEIGHT
+              modify Form1-Fr-1, LINE 3.84.
+         open input yanrez
+             initialize html-satir-sayisi
+             perform varying i from 1 by 1 until i > 7
+                initialize yanrez-rec
+                move link-zarf-rez-no to yanrez-rezno
+                move i                to yanrez-sirano
+                read yanrez no lock invalid
+                        continue
+                not invalid
+                          if yanrez-adi <> spaces or yanrez-soyadi <> spaces then
+                               add 1 to html-satir-sayisi
+                          end-if
+                end-read
+              end-perform  
+        close yanrez 
+         
+        if html-satir-sayisi = 1 or  html-satir-sayisi = 2 or  html-satir-sayisi= 3 or  html-satir-sayisi = 4 then
+            |  move 450 to Report1-Dtl-1-DEF-HEIGHT
+            |  modify Form1-Fr-1, LINE 3.84
+              move 440 to Report1-Dtl-1-DEF-HEIGHT
+              modify Form1-Fr-1, LINE 3.84
+        end-if
+        if html-satir-sayisi = 7 then
+             move 446 to Report1-Dtl-1-DEF-HEIGHT
+             modify Form1-Fr-1, LINE 3.25
+        end-if
+        if html-satir-sayisi = 6 then
+             move 443 to Report1-Dtl-1-DEF-HEIGHT
+             modify Form1-Fr-1, LINE 3.43
+        end-if
+ 
+        if html-satir-sayisi = 5 then
+              move 440 to Report1-Dtl-1-DEF-HEIGHT
+              modify Form1-Fr-1, LINE 3.84
+        end-if
+
+        .
+*
+ bosluk-icin-sayfa-ayarlari.
+         open input yanrez
+             initialize html-satir-sayisi
+             perform varying i from 1 by 1 until i > 7
+                initialize yanrez-rec
+                move link-zarf-rez-no to yanrez-rezno
+                move i                to yanrez-sirano
+                read yanrez no lock invalid
+                        continue
+                not invalid
+                          if yanrez-adi <> spaces or yanrez-soyadi <> spaces then
+                               add 1 to html-satir-sayisi
+                          end-if
+                end-read
+              end-perform  
+        close yanrez 
+         
+        if html-satir-sayisi = 1 or  html-satir-sayisi = 2 or  html-satir-sayisi= 3 or  html-satir-sayisi = 4 then
+             move 495 to Report1-Dtl-1-DEF-HEIGHT
+              modify Form1-Fr-1, LINE 3.84
+        end-if
+        if html-satir-sayisi = 7 then
+             move 446 to Report1-Dtl-1-DEF-HEIGHT
+             modify Form1-Fr-1, LINE 3.25
+        end-if
+        if html-satir-sayisi = 6 then
+             move 443 to Report1-Dtl-1-DEF-HEIGHT
+             modify Form1-Fr-1, LINE 3.43
+        end-if
+         
+        if html-satir-sayisi = 5 then
+             move 445 to Report1-Dtl-1-DEF-HEIGHT
+             modify Form1-Fr-1, LINE 3.50
+        end-if
+
+        .
+
+ 

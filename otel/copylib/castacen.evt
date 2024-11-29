@@ -1,0 +1,419 @@
+* castacen.evt
+* castacen.evt is generated from D:\asya\acugt.ytl\otel\castacen.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM exception-procedure
+     .
+***   start event editor code   ***
+
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi.
+      call "c$narg" using link-var.
+
+     .
+*
+ before-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 11
+              evaluate true
+                  when turkce
+                       move "Islemi Baslat  "   to mesaj
+                  when ingilizce 
+                       move "Islemi Baslat  "   to mesaj
+                  when almanca
+                       move "Islemi Baslat  "   to mesaj
+              end-evaluate
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 1 
+            panel-text = mesaj.
+
+ Form1-Aft-Initdata.
+    
+     .
+  
+    if link-var = 1 then 
+          move 2 to  key-status
+          perform  exception-procedure
+       
+        set exit-pushed to true
+    end-if .
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+
+*       
+ exception-procedure.
+     evaluate key-status
+          when 2 
+                open i-o genelfis
+            move 1 to genelfis-anahtar
+            read genelfis no lock
+              invalid
+                accept print-no from time
+              not invalid
+                add 1 to print-no
+                rewrite genelfis-rec end-rewrite
+            end-read
+            close genelfis
+            move print-no to tacenhrk-no
+            move k-kodu-tasi to tacenhrk-k
+            open output tacenhrk close tacenhrk
+              
+                 open input     kontrat  
+                 open i-o       tacenhrk  
+               open input rez acenta
+               open i-o   cast  takvim
+               
+                perform islem-yap 
+                
+                        close  kontrat 
+                        close  tacenhrk 
+                        close  rez acenta  cast takvim
+                 
+*             end-if
+             
+                     move 27 to key-status
+          
+           
+          
+         end-evaluate.
+            .
+
+
+         .
+
+ 
+
+    .
+*
+ tek-acen-oku.
+     
+
+
+
+*
+ islem-yap.
+      
+     
+         perform ykontrat-isle
+         perform rez-isle
+         open i-o acenhrk
+         initialize acenhrk-rec tacenhrk-rec
+          move link-acenta to acenhrk-acenta tacenhrk-acenta
+          move link-bas to acenhrk-tarih tacenhrk-tarih
+          start acenhrk key >= acenhrk-anah
+             invalid move "10" to fs-acenhrk
+             perform until fs-acenhrk = "10"
+              read acenhrk next no lock end move "10" to fs-acenhrk
+                  not end 
+                  if acenhrk-acenta not = link-acenta
+                     or acenhrk-tarih > link-bit
+                       move "10" to fs-acenhrk
+                       else
+                       initialize acenhrk-data
+                       rewrite acenhrk-rec invalid continue end-rewrite
+                  end-if
+              end-read
+              end-perform
+          end-start
+         
+          start tacenhrk key > tacenhrk-anah
+              invalid continue
+              not invalid 
+              perform until fs-tacenhrk = "10"
+                     read tacenhrk next no lock end move "10" to fs-tacenhrk
+                        not end
+                         if tacenhrk-acenta not = link-acenta
+                             or tacenhrk-tarih > link-bit
+                                   move "10" to fs-tacenhrk
+                            else
+                                  move tacenhrk-rec to acenhrk-rec
+                                  write acenhrk-rec invalid rewrite acenhrk-rec end-write
+                         end-if 
+                     end-read
+              end-perform
+          end-start
+           close acenhrk
+                     
+        
+        
+
+
+
+ 
+      
+
+       . 
+ 
+ 
+ 
+
+
+ rez-isle.
+   
+     move link-bas to takvim-anah
+     start takvim key >= takvim-anah invalid continue
+        not invalid 
+            perform until fs-takvim = "10"
+              read takvim next no lock end move "10" to fs-takvim
+                    not end    
+                         if takvim-anah > link-bit then 
+                            move "10" to fs-takvim
+                            else
+                             perform tek-takvim
+                            
+                         end-if
+              end-read
+            end-perform
+     end-start
+
+       .
+
+*     
+ tek-takvim.    
+     move takvim-anah to cast-tarih
+     start cast key >= cast-anah invalid continue
+        not invalid 
+            perform until fs-cast = "10"
+              read cast next no lock end move "10" to fs-cast
+                    not end    
+                         if cast-tarih not = takvim-anah then 
+                            move "10" to fs-cast
+                            exit perform
+                         end-if
+                          move cast-rez-no to rez-no
+                     read rez  no lock invalid continue
+                         not invalid
+                             if cast-tarih >= rez-cik-tar then exit perform cycle end-if
+                            
+                          initialize acenta-rec
+                                     move rez-acenta to acenta-kodu
+                                     read acenta no lock invalid
+                                          continue
+                                     end-read
+                                     if  acenta-kontenjan not = spaces 
+                                         move acenta-kontenjan to acn-kont
+                                       else 
+                                           move acenta-kodu to acn-kont
+                                      end-if
+                                     
+                          if acn-kont = link-acenta or link-acenta = spaces
+*                          if acn-kont not = rez-acenta then 
+*                            display message box acenta-kodu acenta-adi 
+*                          end-if
+                              perform tek-cast-at
+                           else
+                           exit perform cycle
+                         end-if
+                     end-read
+             end-read
+           end-perform
+      end-start
+            modify lb-isl-durumu, 
+               title = "Forecastlar Hazirlaniyor "
+               .
+         
+         
+tek-cast-at.        
+       
+                             if  rez-fiyat-konumu = 0 then
+                                  move 1 to rez-fiyat-konumu
+                              end-if
+                               if rez-oda-konumu = 0 then
+                                  move 1 to rez-oda-konumu 
+                              end-if
+                                  
+                                    
+                                       perform tacenhrk-isle
+                                
+                    
+      .
+
+      
+ 
+  
+
+
+
+
+
+
+
+
+
+
+ tacenhrk-isle.
+        if rez-durumu not = "I" or rez-k-g-b not  = "K" 
+           exit paragraph
+        end-if.
+                          perform kisiler-casttan
+                           perform tacenhrk-tek-gun .
+*
+ yaz-tace.
+    
+           read tacenhrk no lock 
+             
+               invalid 
+               
+               move 99999 to tacenhrk-kontrat-oda
+           end-read
+          
+           compute tacenhrk-sat-oda   = tacenhrk-sat-oda   + 1  
+              compute tacenhrk-sat-buyuk = tacenhrk-sat-buyuk + rez-buyuk  
+              compute tacenhrk-sat-kucuk = tacenhrk-sat-kucuk + rez-kucuk  
+              compute tacenhrk-sat-free  = tacenhrk-sat-free  + rez-free   
+              compute tacenhrk-sat-free  = tacenhrk-sat-free  + rez-bebek   
+              write tacenhrk-rec 
+                invalid  rewrite tacenhrk-rec 
+              end-write.
+ 
+ 
+*
+ tace-def-at.
+      initialize tacenhrk-rec
+      move acn-kont      to tacenhrk-acenta  
+      move takvim-anah       to tacenhrk-tarih
+      move rez-fiyat-konumu  to tacenhrk-oda-konumu   
+      move rez-s-d-t-g       to tacenhrk-s-d-t-g   .
+       
+*
+ tacenhrk-tek-gun.
+        perform  tace-def-at
+        perform yaz-tace.
+
+         perform  tace-def-at
+         move 41              to tacenhrk-oda-konumu  
+        perform yaz-tace.
+     
+       perform  tace-def-at
+         move 5                 to tacenhrk-s-d-t-g 
+        perform yaz-tace.
+     
+      perform  tace-def-at
+         move 41              to tacenhrk-oda-konumu   
+         move 5               to tacenhrk-s-d-t-g   
+        perform yaz-tace.
+
+
+    
+    .
+*       
+ ykontrat-isle.
+     
+      initialize kontrat-rec
+      move link-acenta to kontrat-acenta
+    start kontrat key > kontrat-anah
+      invalid 
+        continue
+      not invalid
+         perform until fs-kontrat = "10"
+             read kontrat next no lock 
+               end move "10" to fs-kontrat
+               not end
+                  if link-acenta  = kontrat-acenta
+                     if KONTRAT-ILK-TARIH < link-bit or kontrat-son-tarih > link-bas
+                       perform tek-kont-yaz
+                      end-if
+                   else
+                      move "10" to fs-kontrat
+                 end-if
+            end-read
+         end-perform
+    end-start
+    .
+*
+ tek-kont-yaz.
+     
+      move kontrat-ilk-tarih    to takvim-anah
+      if link-bas >  kontrat-ilk-tarih 
+        move link-bas to takvim-anah
+      end-if
+     start takvim key not < takvim-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-takvim = "10"
+           read takvim next no lock end move "10" to fs-takvim
+           not at end
+                if takvim-anah > kontrat-son-tarih or takvim-anah > link-bit
+                   exit perform
+                end-if
+                perform varying i from 1 by 1 until i > 41
+                     if i > son-konum and i < 41
+                        exit perform cycle
+                     end-if            
+                    
+                        initialize tacenhrk-rec
+                        move kontrat-acenta          to tacenhrk-acenta
+                        move takvim-anah               to tacenhrk-tarih
+                        move kontrat-tipi               to tacenhrk-s-d-t-g
+                        move i                         to tacenhrk-oda-konumu
+                        read tacenhrk no lock invalid continue end-read
+                        if kontrat-eksi = "-" then
+                                  if  kontrat-oda(i) < 9999
+                                     if tacenhrk-kontrat-oda >  kontrat-oda(i)
+                                         subtract kontrat-oda(i)  from tacenhrk-kontrat-oda
+                                       else
+                                          move 0 to  tacenhrk-kontrat-oda
+                                     end-if
+                                   end-if
+                            else
+                                    if tacenhrk-kontrat-oda +  kontrat-oda(i)  not  > 9999
+                                       add kontrat-oda(i)   to tacenhrk-kontrat-oda
+                                     else
+                                       if kontrat-oda(i)  >  tacenhrk-kontrat-oda
+                                            continue
+                                       else
+                                           move kontrat-oda(i) to  tacenhrk-kontrat-oda
+                                       end-if
+                                   end-if 
+                        end-if 
+                        compute tacenhrk-kontrat-buyuk = 
+                                tacenhrk-kontrat-oda * tacenhrk-s-d-t-g
+                        write tacenhrk-rec invalid
+                              rewrite tacenhrk-rec end-rewrite
+                        end-write 
+
+
+                         end-perform
+
+
+               
+           end-read
+     end-perform
+     end-start.
+
+*
+ kisiler-casttan.
+
+    
+      
+          
+              move cast-kisi to rez-kisi
+              evaluate true
+                when rez-buyuk < 2
+                     move 1 to rez-s-d-t-g
+                when rez-buyuk = 2
+                     move 2 to rez-s-d-t-g
+                when rez-buyuk = 3
+                     move 3 to rez-s-d-t-g
+                when rez-buyuk > 3
+                     move 4 to rez-s-d-t-g
+              end-evaluate 
+           
+              move cast-oda-konumu to rez-oda-konumu
+          
+     .
+   
+
+
+
+ 

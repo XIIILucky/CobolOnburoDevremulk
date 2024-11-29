@@ -1,0 +1,1413 @@
+* tist2.evt
+* tist2.evt is generated from D:\asya\acugt.ytl\otel\tist2.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+     .
+*
+ Form1-Aft-Initdata.
+     set rapor-gizli-goster to false
+     move "Hepsi" to r-acenta
+                     r-ulke
+                     r-pans
+     perform update-combo-oda-konumu
+     perform update-combo-kiyas-sirket
+     move tarih-tasi to ilk-tarih son-tarih
+     move donem-basi to ilk-tarih
+     compute gecen-yil = son-yil - 1
+     display form1
+     .
+*
+ Before-Procedurelar.
+     evaluate control-id
+       when 1011
+     end-evaluate
+     .
+*
+ After-Procedurelar.
+     evaluate control-id
+       when 1011 perform kontrol-ilk-gun
+       when 1012 perform kontrol-ilk-ay
+       when 1013 perform kontrol-ilk-yil
+       when 1021 perform kontrol-son-gun
+       when 1022 perform kontrol-son-ay
+       when 1023 perform kontrol-son-yil
+       when 103  perform kontrol-gecen-yil
+       when 104
+       when 124  perform oku-acenta
+       when 106
+       when 126  perform oku-ulke
+       when 107
+       when 127  perform oku-pansiyon
+     end-evaluate
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+       when 01 perform yardim-cagir
+       when 02 perform rapor-basla
+       when 20 set rapor-gizli-goster to true
+               perform update-combo-kiyas-sirket
+     end-evaluate
+     .
+*
+ yardim-cagir.
+     evaluate control-id
+       when 104
+       when 124 perform ara-acenta
+       when 106
+       when 126 perform ara-ulke
+       when 107
+       when 127 perform ara-pansiyon
+     end-evaluate
+     .
+*
+ ara-acenta.
+     move rapor-acenta to acenta-cagir
+     call "/asya/ytl/obj/otel/acenara.asy"
+       using acenta-cagir
+       on exception
+         perform callerr-proc
+       not on exception
+         cancel "/asya/ytl/obj/otel/acenara.asy"
+         move acenta-cagir to rapor-acenta
+         perform oku-acenta
+     end-call
+     .
+*
+ ara-ulke.
+     move rapor-ulke to ulke-cagir
+     call "/asya/ytl/obj/otel/ulkeara.asy"
+       using ulke-cagir
+       on exception
+         perform callerr-proc
+       not on exception
+         cancel "/asya/ytl/obj/otel/ulkeara.asy"
+         move ulke-cagir to rapor-ulke
+         perform oku-ulke
+     end-call
+     .
+*
+ ara-pansiyon.
+     move "A"            to pansiyon-tipi-cagir
+     move rapor-pansiyon to pansiyon-kodu-cagir
+     call "/asya/ytl/obj/otel/panara.asy"
+       using pansiyon-cagir
+       on exception
+         perform callerr-proc
+       not on exception
+         cancel "/asya/ytl/obj/otel/panara.asy"
+         move pansiyon-kodu-cagir to rapor-pansiyon
+         perform oku-pansiyon
+     end-call
+     .
+*
+ oku-acenta.
+     open input acenta
+     initialize acenta-rec
+     move rapor-acenta to acenta-kodu
+     read acenta no lock
+       invalid
+         move spaces  to rapor-acenta
+         move "Hepsi" to r-acenta
+       not invalid
+         move acenta-adi to r-acenta
+     end-read
+     close acenta
+     display acc-acenta, La-acenta-adi
+     .
+*
+ oku-ulke.
+     open input ulke
+     initialize ulke-rec
+     move rapor-ulke to ulke-anah
+     read ulke no lock
+       key is ulke-anah
+       invalid
+         move spaces  to rapor-ulke
+         move "Hepsi" to r-ulke
+       not invalid
+         move ulke-adi to r-ulke
+     end-read
+     close ulke
+     display acc-ulke, la-ulke-adi
+     .
+*
+ oku-pansiyon.
+     open input kodlar02
+     initialize kodlar02-rec
+     move "A"            to kodlar02-tipi. 
+     move rapor-pansiyon to kodlar02-kodu
+     read kodlar02 no lock
+       key is kodlar02-anah
+       invalid
+         move spaces  to rapor-pansiyon
+         move "Hepsi" to r-pans
+       not invalid
+         move kodlar02-adi to r-pans
+     end-read
+     close kodlar02
+     display acc-pansiyon, la-pansiyon-adi
+     .
+*
+ update-combo-oda-konumu.
+     initialize combo-oda-konumu-value
+     modify combo-oda-konumu, reset-list = 1 mass-update = 1
+     modify combo-oda-konumu,item-to-add("0-Hepsi")
+     open input konum
+     initialize konum-rec 
+     start konum key >= konum-anahtar
+       invalid
+         continue
+       not invalid
+         initialize fs-konum
+         perform with test after
+                 until fs-konum = "10"
+           read konum next no lock
+             end
+               move "10" to fs-konum
+             not at end
+               initialize combo-oda-konumu-value
+               move konum-anahtar     to combo-oda-konumu-value
+               move "-"               to combo-oda-konumu-value(2:)
+               move konum-adi         to combo-oda-konumu-value(3:)
+               modify combo-oda-konumu,
+                 item-to-add(combo-oda-konumu-value)
+           end-read
+         end-perform
+     end-start
+     close konum
+     modify combo-oda-konumu,mass-update = 0
+     move "0-Hepsi" to combo-oda-konumu-value
+     .
+*
+ update-combo-kiyas-sirket.
+     open input kllnc
+     initialize kllnc-rec
+     move K-Kodu-Tasi to K-Kodu
+     read kllnc record no lock
+       key is k-kodu
+       invalid
+         continue
+     end-read
+     close kllnc
+     initialize combo-kiyas-sirket-value
+     modify combo-kiyas-sirket, reset-list = 1 mass-update = 1
+     open input isyeri
+     initialize isyeri-rec 
+     start isyeri key >= isyeri-sira
+       invalid
+         continue
+       not invalid
+         initialize fs-isyeri
+         perform with test after
+                 until fs-isyeri = "10"
+           read isyeri next no lock
+             end
+               move "10" to fs-isyeri
+             not at end
+               if (isyeri-sakli not = "S" and isyeri-sakli not = "T") or
+                  (isyeri-sakli = "T" and rapor-gizli-goster and k-sirket-evet)
+
+                  initialize combo-kiyas-sirket-value
+                  move isyeri-adres to combo-kiyas-sirket-value
+                  move "-"          to combo-kiyas-sirket-value(9:)
+                  move isyeri-unvan to combo-kiyas-sirket-value(10:)
+                  modify combo-kiyas-sirket,
+                  item-to-add(combo-kiyas-sirket-value)
+               end-if
+           end-read
+         end-perform
+     end-start
+     close isyeri
+     modify combo-kiyas-sirket,mass-update = 0
+     if Xxx1-Sirketi = spaces
+        move Isyeri-Adres-Tasi to combo-kiyas-sirket-value
+     else
+        move Xxx1-Sirketi to combo-kiyas-sirket-value
+     end-if
+     display combo-kiyas-sirket
+     .
+*
+ kontrol-ilk-gun.
+     if ilk-gun < 1 or ilk-gun > 31
+        move spaces to ilk-gun
+        display acc-ilk-gun
+        move 4    to accept-control
+        move 1011 to control-id
+     end-if
+     .
+*
+ kontrol-ilk-ay.
+     if ilk-ay < 1 or ilk-ay > 12
+        move spaces to ilk-ay
+        display acc-ilk-ay
+        move 4    to accept-control
+        move 1012 to control-id
+     end-if
+     .
+*
+ kontrol-ilk-yil.
+     if ilk-yil < 1990
+        move spaces to ilk-yil
+        display acc-ilk-yil
+        move 4    to accept-control
+        move 1013 to control-id
+     end-if
+     .
+*
+ kontrol-son-gun.
+     if son-gun < 1 or son-gun > 31
+        move spaces to son-gun
+        display acc-son-gun
+        move 4    to accept-control
+        move 1021 to control-id
+     end-if
+     .
+*
+ kontrol-son-ay.
+     if son-ay < 1 or son-ay > 12
+        move spaces to son-ay
+        display acc-son-ay
+        move 4    to accept-control
+        move 1022 to control-id
+     end-if
+     .
+*
+ kontrol-son-yil.
+     if son-yil < 1990
+        move spaces to son-yil
+        display acc-son-yil
+        move 4    to accept-control
+        move 1023 to control-id
+     end-if
+     .
+*
+ kontrol-gecen-yil.
+     if gecen-yil < 1990 or gecen-yil > 2050
+        move spaces to gecen-yil
+        display acc-gecen-yil
+        move 4    to accept-control
+        move 103  to control-id
+     end-if
+     .
+*
+ Rapor-Basla.
+     move combo-oda-konumu-value(01:01) to rapor-konum
+     perform takas-aktar
+     
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock
+       invalid
+         accept print-no from time
+       not invalid
+         add 1 to print-no
+         rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+
+**************************
+     initialize dokumer-rec
+                dokumer-anah
+                dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+     
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"            to det-dokumer-20(1:)
+     move "Karsilastirmali Konaklama Istatistigi" to det-filler
+     write dokumer-rec from detay, end-write
+
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Karsilastirmali Konaklama Istatistigi" to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move ilk-gun        to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ilk-ay         to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move ilk-yil        to det-filler(57:04)
+     move "-"            to det-filler(61:01)
+     move son-gun        to det-filler(62:02)
+     move "/"            to det-filler(64:01)
+     move son-ay         to det-filler(65:02)
+     move "/"            to det-filler(67:01)
+     move son-yil        to det-filler(68:04)
+     write dokumer-rec from detay, end-write
+
+
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Acenta....:"  to det-filler(01:)
+     move rapor-acenta   to det-filler(15:04)
+     move "<->"          to det-filler(20:03)
+     if rapor-acenta  = spaces
+        move "Tum Acentalar.."    to det-filler(25:20)
+     else
+        move r-acenta             to det-filler(25:20)
+     end-if
+     write dokumer-rec from detay, end-write
+
+     initialize dokumer-rec detay
+     move "B"            to det-dokumer-20(1:1)
+     write dokumer-rec from detay, end-write
+
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"          to det-dokumer-20(1:1)
+     move "            B U G U N              " to det-filler(12:43)
+     move "              B U  A Y             " to det-filler(56:43)
+     move "            B U  Y I L             " to det-filler(100:43)
+     write dokumer-rec from detay, end-write
+            
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LRRRRRRRRRRRRRRRRRR" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay, end-write
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"         to det-dokumer-20(1:2)
+     move "Rezervasyon Tipi"              to det-1
+     move "G.Oda "                        to det-2
+     move "G.Pax "                        to det-3
+     move "G.Chi."                        to det-4
+     move "G.Free"                        to det-5
+     move "G.Beb."                        to det-5-1
+     move "G.Tutar          "             to det-6
+     move "A.Oda "                        to det-7
+     move "A.Pax "                        to det-8
+     move "A.Chi."                        to det-9
+     move "A.Free"                        to det-10
+     move "A.Beb."                        to det-10-1
+     move "A.Tutar          "             to det-11
+     move "Y.Oda "                        to det-12
+     move "Y.Pax "                        to det-13
+     move "Y.Chi."                        to det-14
+     move "Y.Free"                        to det-15
+     move "Y.Beb."                        to det-15-1
+     move "Y.Tutar          "             to det-16
+     perform pipe-at
+     write dokumer-rec from detay, end-write
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     perform cizgi-cek
+     write dokumer-rec from detay, end-write
+
+*********************************
+
+     perform rapor-detay-yaz
+
+*********************************
+     close takas
+     close dokumer
+     
+     call dokumer-prog
+       on exception
+         perform callerr-proc
+       not on exception
+         cancel dokumer-prog
+     end-call
+     delete file dokumer
+     delete file takas
+     .
+*
+ takas-aktar.
+     perform takas-dosya-ac
+     perform bos-olustur
+     if gecen-yil not = son-yil
+        perform takvimtop-kiyas-yil
+        perform detisttop-kiyas-yil
+        perform yuzde-kiyas-bul
+        perform ortalama-kiyas-bul
+     end-if
+     perform takvimtop-bu-yil
+     perform detisttop-bu-yil
+     perform yuzde-buyil-bul
+     perform ortalama-buyil-bul
+     .
+*
+ takas-dosya-ac.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock
+       invalid
+         move 1 to ekran-fis-1
+     end-read
+    
+     add 1 to ekran-fis-1
+    
+     move ekran-fis-1(2:) to takas-no
+     rewrite genelfis-rec
+       invalid
+         write genelfis-rec, end-write
+     end-rewrite
+     close genelfis
+     open output takas
+     close takas
+     open i-o takas with mass-update
+     .
+*
+ bos-olustur.
+     initialize sayi.
+     perform varying sayi
+             from    1
+             by      1
+             until   sayi > 8
+* Gecen Yil Olustur......Rez Tipleri.....
+       initialize takas-rec
+       move 0                   to takas-tipi
+       move sayi                to takas-alt-tipi
+       move gecen-yil           to takas-yili
+       move rez-tipi-dizi(sayi) to takas-aciklama
+       perform takas-dosya-yaz
+* Bu    Yil Olustur......Rez Tipleri......
+       initialize takas-rec
+       move 0                   to takas-tipi
+       move sayi                to takas-alt-tipi
+       move son-yil             to takas-yili
+       move rez-tipi-dizi(sayi) to takas-aciklama
+       perform takas-dosya-yaz
+     end-perform
+     initialize takas-rec
+     move 0                   to takas-tipi
+     move 99                  to takas-alt-tipi
+     move 9999                to takas-yili
+     perform takas-dosya-yaz
+       
+* ---------------------------------------------------
+     move 1                   to takas-tipi
+     move 00                  to takas-alt-tipi
+     move 0000                to takas-yili
+     perform takas-dosya-yaz
+* Genel Toplam Satiri....Gecen Yil
+     initialize takas-rec
+     move 1                   to takas-tipi
+     move 0                   to takas-alt-tipi
+     move gecen-yil           to takas-yili
+     move "Genel Toplam"      to takas-aciklama
+     perform takas-dosya-yaz
+* Genel Toplam Satiri....Bu    Yil
+     initialize takas-rec
+     move 1                   to takas-tipi
+     move 0                   to takas-alt-tipi
+     move son-yil             to takas-yili
+     move "Genel Toplam"      to takas-aciklama
+     perform takas-dosya-yaz
+
+* Yuzde....... Satiri....Gecen Yil
+     move 1                   to takas-tipi
+     move 1                   to takas-alt-tipi
+     move 0000                to takas-yili
+     perform takas-dosya-yaz
+     initialize takas-rec
+     move 1                   to takas-tipi
+     move 1                   to takas-alt-tipi
+     move gecen-yil           to takas-yili
+     move "Oda/Kisi [%]"      to takas-aciklama
+     perform takas-dosya-yaz
+* Yuzde....... Satiri....Bu    Yil
+     initialize takas-rec
+     move 1                   to takas-tipi
+     move 1                   to takas-alt-tipi
+     move son-yil             to takas-yili
+     move "Oda/Kisi [%]"      to takas-aciklama
+     perform takas-dosya-yaz
+     move 1                   to takas-tipi
+     move 99                  to takas-alt-tipi
+     move 9999                to takas-yili
+     perform takas-dosya-yaz
+
+
+* Ortalama Gelir...... Satiri....Gecen Yil 
+     move 1                   to takas-tipi
+     move 88                   to takas-alt-tipi
+     move 0000                to takas-yili
+     perform takas-dosya-yaz
+     initialize takas-rec
+     move 1                   to takas-tipi
+     move 88                   to takas-alt-tipi
+     move gecen-yil           to takas-yili
+     move "Ortalama Fiyat"    to takas-aciklama
+     perform takas-dosya-yaz
+* Ortalama Gelir...... Satiri....Gecen Yil 
+     initialize takas-rec
+     move 1                   to takas-tipi
+     move 88                   to takas-alt-tipi
+     move son-yil             to takas-yili
+     move "Ortalama Fiyat"    to takas-aciklama
+     perform takas-dosya-yaz
+     move 1                   to takas-tipi
+     move 99                  to takas-alt-tipi
+     move 9999                to takas-yili
+     perform takas-dosya-yaz
+
+* ---------------------------------------------------
+     move 2                   to takas-tipi
+     move 0                   to takas-alt-tipi
+     move 0000                to takas-yili
+     perform takas-dosya-yaz
+
+     initialize sayi
+     perform varying sayi
+             from    1
+             by      1
+             until   sayi > 9
+* Gecen Yil Olustur......Pansiyon Dagilimi Oda.Kahvalti....
+       initialize takas-rec
+       move 2                   to takas-tipi
+       move sayi                to takas-alt-tipi
+       move gecen-yil           to takas-yili
+       move pan-tipi-dizi(sayi) to takas-aciklama
+       perform takas-dosya-yaz
+* Bu    Yil Olustur......Pansiyon Dagilimi Oda.Kahvalti....
+       move 2                   to takas-tipi
+       move sayi                to takas-alt-tipi
+       move son-yil             to takas-yili
+       move pan-tipi-dizi(sayi) to takas-aciklama
+       perform takas-dosya-yaz
+     end-perform
+* ---------------------------------------------------
+     move 3                   to takas-tipi
+     move 0                   to takas-alt-tipi
+     move 0000                to takas-yili
+     perform takas-dosya-yaz
+
+     initialize sayi
+     perform varying sayi
+             from    1
+             by      1
+             until   sayi > 4
+* Gecen Yil Olustur......S-D-T-G .............
+       initialize takas-rec
+       move 3                   to takas-tipi
+       move sayi                to takas-alt-tipi
+       move gecen-yil           to takas-yili
+       move sdt-tipi-dizi(sayi) to takas-aciklama
+       perform takas-dosya-yaz
+* Bu    Yil Olustur......S-D-T-G .............
+       move 3                   to takas-tipi
+       move sayi                to takas-alt-tipi
+       move son-yil             to takas-yili
+       move sdt-tipi-dizi(sayi) to takas-aciklama
+       perform takas-dosya-yaz
+     end-perform
+* ---------------------------------------------------
+*     move 4                   to takas-tipi
+*     move 00                  to takas-alt-tipi
+*     move 0000                to takas-yili
+*     perform takas-dosya-yaz
+* SDTG  Toplam Satiri....Gecen Yil
+*     initialize takas-rec
+*     move 4                   to takas-tipi
+*     move 0                   to takas-alt-tipi
+*     move gecen-yil           to takas-yili
+*     move "SDGT Toplam"       to takas-aciklama
+*     perform takas-dosya-yaz
+* SDTG  Toplam Satiri....Bu    Yil
+*     initialize takas-rec
+*     move 4                   to takas-tipi
+*     move 0                   to takas-alt-tipi
+*     move son-yil             to takas-yili
+*     move "SDGT Toplam"       to takas-aciklama
+*     perform takas-dosya-yaz
+*     move 4                   to takas-tipi
+*     move 00                  to takas-alt-tipi
+*     move 9999                to takas-yili
+*     perform takas-dosya-yaz
+* ---------------------------------------------------
+
+     move 4                   to takas-tipi
+     move 1                   to takas-alt-tipi
+     move 0000                to takas-yili
+     perform takas-dosya-yaz
+     open input konum
+     initialize sayi
+     perform varying sayi
+             from    1
+             by      1
+             until   sayi > 9
+* Gecen Yil Olustur......Oda Konumlari........
+       move sayi to konum-anahtar
+       read konum no lock
+         invalid
+           continue
+         not invalid
+           initialize takas-rec
+           move 4            to takas-tipi
+           move sayi         to takas-alt-tipi
+           move gecen-yil    to takas-yili
+           move konum-adi    to takas-aciklama
+           perform takas-dosya-yaz
+* Bu    Yil Olustur......Oda Konumlari........
+           initialize takas-rec
+           move 4            to takas-tipi
+           move sayi         to takas-alt-tipi
+           move son-yil      to takas-yili
+           move konum-adi    to takas-aciklama
+           perform takas-dosya-yaz
+       end-read
+     end-perform
+     close konum
+     move 4                   to takas-tipi
+     move 99                  to takas-alt-tipi
+     move 9999                to takas-yili
+     perform takas-dosya-yaz
+     .
+*
+ takvimtop-kiyas-yil.
+     move "standart" to takvimtop-dosya-adres
+     open input takvimtop
+     initialize takvimtop-rec oda-toplamlar
+     move ilk-tarih to takvimtop-anah
+     move son-tarih to kont-tarih
+     move gecen-yil to takvimtop-yil kont-yil
+     set onceki-yil to true
+     perform takvimtop-start
+     close takvimtop
+     .
+*
+ takvimtop-bu-yil.
+     move "standart" to takvimtop-dosya-adres
+     open input takvimtop
+     initialize takvimtop-rec
+     move ilk-tarih to takvimtop-anah
+     move son-tarih to kont-tarih
+     set bu-yil to true
+     perform takvimtop-start
+     close takvimtop
+     .
+*
+ takvimtop-start.
+     start takvimtop key >= takvimtop-anah
+       invalid
+         continue
+       not invalid
+         initialize fs-takvimtop
+         perform with test after
+                 until fs-takvimtop = "10"
+           perform takvimtop-oku
+         end-perform
+     end-start              
+     .
+*
+ takvimtop-oku.
+     read takvimtop next no lock
+       end
+         move "10" to fs-takvimtop
+       not end
+         if takvimtop-anah > kont-tarih
+            move "10" to fs-takvimtop
+         else
+            evaluate true
+              when onceki-yil
+                if takvimtop-anah = kont-tarih
+                   move takvimtop-hazir-oda to gegun-top-oda
+                end-if
+                if takvimtop-yil = kont-yil and
+                   takvimtop-ay = kont-ay
+                   add takvimtop-hazir-oda  to geay-top-oda
+                end-if
+                if takvimtop-yil = kont-yil
+                   add takvimtop-hazir-oda  to geyil-top-oda
+                end-if
+              when bu-yil
+                if takvimtop-anah = son-tarih
+                   move takvimtop-hazir-oda to bugun-top-oda
+                end-if
+                if takvimtop-yil = son-yil and
+                   takvimtop-ay = son-ay
+                   add takvimtop-hazir-oda  to buay-top-oda
+                end-if
+                if takvimtop-yil = son-yil
+                   add takvimtop-hazir-oda  to buyil-top-oda
+                end-if
+            end-evaluate
+         end-if
+     end-read
+     .
+*
+ detisttop-kiyas-yil.
+     move "standart" to detisttop-dosya-adres
+     open input detisttop
+     initialize detisttop-rec
+     move ilk-tarih    to detisttop-tarih
+     move son-tarih    to kont-tarih
+     move gecen-yil    to detisttop-yil kont-yil
+     move rapor-acenta to detisttop-acenta
+     set onceki-yil to true
+     perform detisttop-start
+     close detisttop
+     .
+*
+ detisttop-bu-yil.
+     move "standart" to takvimtop-dosya-adres
+     open input detisttop
+     initialize detisttop-rec
+     move ilk-tarih    to detisttop-tarih
+     move son-tarih    to kont-tarih
+     move rapor-acenta to detisttop-acenta
+     set bu-yil to true
+     perform detisttop-start
+     close detisttop
+     .
+*
+ detisttop-start.
+     start detisttop key >= detisttop-anah
+       invalid
+         continue
+       not invalid
+         initialize fs-detisttop
+         perform with test after
+                 until fs-detisttop = "10"
+           perform detisttop-oku
+         end-perform
+     end-start              
+     .
+*
+ detisttop-oku.
+     read detisttop next no lock
+       end
+         move "10" to fs-detisttop
+       not end
+         if detisttop-tarih > kont-tarih
+            move "10" to fs-detisttop
+         else
+            if (rapor-konum = 0 or
+                rapor-konum = detisttop-oda-konumu)  and
+
+               (rapor-ulke  = spaces or
+                rapor-ulke  = detisttop-ulke-kodu)   and
+
+               (rapor-pansiyon = spaces or
+                rapor-pansiyon = detisttop-pan-tipi) and
+
+               (rapor-acenta   = spaces or
+                rapor-acenta   = detisttop-acenta)
+
+               perform takas-al
+            end-if
+         end-if
+     end-read           
+     .
+*
+ takas-al.
+* Rez tipleri......
+     initialize takas-rec
+     move 0                  to takas-tipi
+     move detisttop-rez-tipi    to takas-alt-tipi
+     perform detisttop-takas-oku-yaz
+* Toplam Bolumu....
+     initialize takas-rec
+     move 1                  to takas-tipi
+     move 0                  to takas-alt-tipi
+     perform detisttop-takas-oku-yaz
+* Oda Konumlari....
+     initialize takas-rec
+     move 4                  to takas-tipi
+     move detisttop-oda-konumu  to takas-alt-tipi
+     perform detisttop-takas-oku-yaz
+* Pansiyon  Dagilimi Oda.Kahvalti....
+     initialize sayi
+     perform varying sayi
+             from    1
+             by      1
+             until   sayi > 9
+       initialize takas-rec
+       move 2                to takas-tipi
+       move sayi             to takas-alt-tipi
+       perform detisttop-takas-oku-yaz
+     end-perform
+* SDTG   Bolumu....
+     initialize sayi
+     perform varying sayi
+             from    1
+             by      1
+             until   sayi > 4
+       initialize takas-rec
+       move 3                to takas-tipi
+       move sayi             to takas-alt-tipi
+       perform detisttop-takas-oku-yaz
+     end-perform     
+     .
+*
+ detisttop-takas-oku-yaz.
+     move detisttop-yil to takas-yili
+     read takas no lock
+       invalid
+         continue
+     end-read
+     perform takas-yaz
+     .
+*
+ takas-yaz.
+     evaluate takas-tipi
+       when 2
+         evaluate takas-alt-tipi
+           when 1 move detisttop-oda         to detisttop-toplam
+           when 2 move detisttop-kahvalti    to detisttop-toplam
+           when 3 move detisttop-ogle        to detisttop-toplam
+           when 4 move detisttop-aksam       to detisttop-toplam
+           when 5 move detisttop-icecek      to detisttop-toplam
+           when 6 move detisttop-extra       to detisttop-toplam
+           when 7 move detisttop-extra-bed   to detisttop-toplam
+           when 8 move detisttop-compliment  to detisttop-toplam
+           when 9 move detisttop-house-use   to detisttop-toplam
+         end-evaluate
+       when 3
+         move detisttop-sdt-oda(takas-alt-tipi)    to detisttop-top-oda
+         move detisttop-sdt-buyuk(takas-alt-tipi)  to detisttop-top-buyuk
+         move detisttop-sdt-kucuk(takas-alt-tipi)  to detisttop-top-kucuk
+         move detisttop-sdt-free(takas-alt-tipi)   to detisttop-top-free
+         move detisttop-sdt-bebek(takas-alt-tipi)  to detisttop-top-bebek
+         move detisttop-sdt-tutar(takas-alt-tipi)  to detisttop-top-tutar
+     end-evaluate
+     
+     if detisttop-tarih = kont-tarih
+        add detisttop-top-oda   to takas-gun-oda
+        add detisttop-top-buyuk to takas-gun-buyuk
+        add detisttop-top-kucuk to takas-gun-kucuk
+        add detisttop-top-free  to takas-gun-free
+        add detisttop-top-bebek to takas-gun-bebek
+        add detisttop-top-tutar to takas-gun-tutar
+     end-if
+     
+     if detisttop-yil = kont-yil and detisttop-ay = son-ay
+        add detisttop-top-oda   to takas-ay-oda
+        add detisttop-top-buyuk to takas-ay-buyuk
+        add detisttop-top-kucuk to takas-ay-kucuk
+        add detisttop-top-free  to takas-ay-free
+        add detisttop-top-bebek to takas-ay-bebek
+        add detisttop-top-tutar to takas-ay-tutar
+     end-if
+     
+     if detisttop-yil = kont-yil
+        add detisttop-top-oda   to takas-yil-oda
+        add detisttop-top-buyuk to takas-yil-buyuk
+        add detisttop-top-kucuk to takas-yil-kucuk
+        add detisttop-top-free  to takas-yil-free
+        add detisttop-top-bebek to takas-yil-bebek
+        add detisttop-top-tutar to takas-yil-tutar
+     end-if
+     
+     perform takas-dosya-yaz
+     .
+*
+ takas-dosya-yaz.
+     write takas-rec
+       invalid
+         rewrite takas-rec, end-rewrite
+     end-write
+     .
+*
+ yuzde-kiyas-bul.
+     initialize fs-takas
+     initialize takas-rec
+     move 1            to takas-tipi
+     move 0            to takas-alt-tipi
+     move gecen-yil    to takas-yili
+     perform takas-key-oku
+     if fs-takas not = "10"
+        initialize gegun-yuzde geay-yuzde geyil-yuzde
+* Gecen Yil Bugun Bolumu.........
+        compute gegun-oda-yuzde =
+          ((takas-gun-oda   * 100) / gegun-top-oda)
+        compute gegun-pax-yuzde =
+          ((takas-gun-buyuk * 100) / (gegun-top-oda * 2))
+        compute gegun-chi-yuzde = 
+          (((takas-gun-buyuk + takas-gun-kucuk) * 100) / 
+          (gegun-top-oda * 2))
+        compute gegun-fre-yuzde = 
+          (((takas-gun-buyuk + takas-gun-kucuk + takas-gun-free ) * 100) / 
+          (gegun-top-oda * 2))
+        compute gegun-beb-yuzde = 
+          (((takas-gun-buyuk + takas-gun-kucuk + takas-gun-free +
+             takas-gun-bebek) * 100) / (gegun-top-oda * 2))
+* Gecen Yil Bu Ay Bolumu.........
+        compute geay-oda-yuzde = 
+          ((takas-ay-oda   * 100) / geay-top-oda)
+        compute geay-pax-yuzde = 
+          ((takas-ay-buyuk * 100) / (geay-top-oda * 2))
+        compute geay-chi-yuzde = 
+          (((takas-ay-buyuk + takas-ay-kucuk) * 100) / 
+          (geay-top-oda * 2))
+        compute geay-fre-yuzde = 
+          (((takas-ay-buyuk + takas-ay-kucuk + takas-ay-free ) * 100) / 
+          (geay-top-oda * 2))
+        compute geay-beb-yuzde = 
+          (((takas-ay-buyuk + takas-ay-kucuk + takas-ay-free + 
+             takas-ay-bebek) * 100) / (geay-top-oda * 2))
+* Gecen Yil BuYil Bolumu.........
+        compute geyil-oda-yuzde = 
+          ((takas-yil-oda   * 100) / geyil-top-oda)
+        compute geyil-pax-yuzde = 
+          ((takas-yil-buyuk * 100) / (geyil-top-oda * 2))
+        compute geyil-chi-yuzde = 
+          (((takas-yil-buyuk + takas-yil-kucuk) * 100) / 
+          (geyil-top-oda * 2))
+        compute geyil-fre-yuzde = 
+          (((takas-yil-buyuk + takas-yil-kucuk + takas-yil-free ) * 100) / 
+          (geyil-top-oda * 2))
+        compute geyil-beb-yuzde = 
+          (((takas-yil-buyuk + takas-yil-kucuk + takas-yil-free +
+             takas-yil-bebek) * 100) / (geyil-top-oda * 2))
+     end-if
+
+* Gecen Yil Yuzde Olustur........
+     if fs-takas not = "10"
+        move 1         to takas-tipi
+        move 1         to takas-alt-tipi
+        move gecen-yil to takas-yili
+        perform takas-key-oku
+     end-if
+     if fs-takas not = "10"
+        initialize takas-detay
+        move gegun-oda-yuzde to takas-gun-oda
+        move gegun-pax-yuzde to takas-gun-buyuk
+        move gegun-chi-yuzde to takas-gun-kucuk
+        move gegun-fre-yuzde to takas-gun-free
+        move gegun-beb-yuzde to takas-gun-bebek
+        
+        move geay-oda-yuzde  to takas-ay-oda
+        move geay-pax-yuzde  to takas-ay-buyuk
+        move geay-chi-yuzde  to takas-ay-kucuk
+        move geay-fre-yuzde  to takas-ay-free
+        move geay-beb-yuzde  to takas-ay-bebek
+        
+        move geyil-oda-yuzde to takas-yil-oda
+        move geyil-pax-yuzde to takas-yil-buyuk
+        move geyil-chi-yuzde to takas-yil-kucuk
+        move geyil-fre-yuzde to takas-yil-free
+        move geyil-beb-yuzde to takas-yil-bebek
+        perform takas-dosya-yaz
+     end-if
+     .
+*
+ yuzde-buyil-bul.
+     initialize fs-takas
+     initialize takas-rec
+     move 1            to takas-tipi
+     move 0            to takas-alt-tipi
+     move son-yil      to takas-yili
+     perform takas-key-oku
+     if fs-takas not = "10"
+        initialize bugun-yuzde buay-yuzde buyil-yuzde
+* Gecen Yil Bugun Bolumu.........
+        compute bugun-oda-yuzde =
+          ((takas-gun-oda   * 100) / bugun-top-oda)
+        compute bugun-pax-yuzde =
+          ((takas-gun-buyuk * 100) / (bugun-top-oda * 2))
+        compute bugun-chi-yuzde = 
+          (((takas-gun-buyuk + takas-gun-kucuk) * 100) / 
+          (bugun-top-oda * 2))
+        compute bugun-fre-yuzde = 
+          (((takas-gun-buyuk + takas-gun-kucuk + takas-gun-free ) * 100) / 
+          (bugun-top-oda * 2))
+        compute bugun-beb-yuzde = 
+          (((takas-gun-buyuk + takas-gun-kucuk + takas-gun-free +
+             takas-gun-bebek) * 100) / (bugun-top-oda * 2))
+* Gecen Yil Bu Ay Bolumu.........
+        compute buay-oda-yuzde = 
+          ((takas-ay-oda   * 100) / buay-top-oda)
+        compute buay-pax-yuzde = 
+          ((takas-ay-buyuk * 100) / (buay-top-oda * 2))
+        compute buay-chi-yuzde = 
+          (((takas-ay-buyuk + takas-ay-kucuk) * 100) / 
+          (buay-top-oda * 2))
+        compute buay-fre-yuzde = 
+          (((takas-ay-buyuk + takas-ay-kucuk + takas-ay-free ) * 100) / 
+          (buay-top-oda * 2))
+        compute buay-beb-yuzde = 
+          (((takas-ay-buyuk + takas-ay-kucuk + takas-ay-free +
+             takas-ay-bebek) * 100) / (buay-top-oda * 2))
+* Gecen Yil BuYil Bolumu.........
+        compute buyil-oda-yuzde = 
+          ((takas-yil-oda   * 100) / buyil-top-oda)
+        compute buyil-pax-yuzde = 
+          ((takas-yil-buyuk * 100) / (buyil-top-oda * 2))
+        compute buyil-chi-yuzde = 
+          (((takas-yil-buyuk + takas-yil-kucuk) * 100) / 
+          (buyil-top-oda * 2))
+        compute buyil-fre-yuzde = 
+          (((takas-yil-buyuk + takas-yil-kucuk + takas-yil-free ) * 100) / 
+          (buyil-top-oda * 2))
+        compute buyil-beb-yuzde = 
+          (((takas-yil-buyuk + takas-yil-kucuk + takas-yil-free +
+             takas-yil-bebek) * 100) / (buyil-top-oda * 2))
+     end-if
+
+* Gecen Yil Yuzde Olustur........
+     if fs-takas not = "10"
+        move 1         to takas-tipi
+        move 1         to takas-alt-tipi
+        move son-yil   to takas-yili
+        perform takas-key-oku
+     end-if
+     if fs-takas not = "10"
+        initialize takas-detay
+        move bugun-oda-yuzde to takas-gun-oda
+        move bugun-pax-yuzde to takas-gun-buyuk
+        move bugun-chi-yuzde to takas-gun-kucuk
+        move bugun-fre-yuzde to takas-gun-free
+        move bugun-beb-yuzde to takas-gun-bebek
+        
+        move buay-oda-yuzde  to takas-ay-oda
+        move buay-pax-yuzde  to takas-ay-buyuk
+        move buay-chi-yuzde  to takas-ay-kucuk
+        move buay-fre-yuzde  to takas-ay-free
+        move buay-beb-yuzde  to takas-ay-bebek
+        
+        move buyil-oda-yuzde to takas-yil-oda
+        move buyil-pax-yuzde to takas-yil-buyuk
+        move buyil-chi-yuzde to takas-yil-kucuk
+        move buyil-fre-yuzde to takas-yil-free
+        move buyil-beb-yuzde to takas-yil-bebek
+        perform takas-dosya-yaz
+     end-if
+     .
+
+
+
+*
+ ortalama-kiyas-bul.
+     initialize fs-takas
+     initialize takas-rec
+     move 1            to takas-tipi
+     move 0            to takas-alt-tipi
+     move gecen-yil    to takas-yili
+     perform takas-key-oku
+     if fs-takas not = "10"
+        initialize gegun-yuzde geay-yuzde geyil-yuzde
+* Gecen Yil Bugun Bolumu.........
+       
+        compute gegun-oda-yuzde =
+          (takas-gun-tutar / takas-gun-oda)
+        compute gegun-pax-yuzde =
+          (takas-gun-tutar / takas-gun-buyuk)
+        compute gegun-chi-yuzde = 
+          (takas-gun-tutar / takas-gun-buyuk + takas-gun-kucuk)
+        compute gegun-fre-yuzde = 
+          (((takas-gun-buyuk + takas-gun-kucuk + takas-gun-free ) * 100) / 
+          (gegun-top-oda * 2))
+        compute gegun-beb-yuzde = 
+          (((takas-gun-buyuk + takas-gun-kucuk + takas-gun-free + 
+             takas-gun-bebek) * 100) / (gegun-top-oda * 2))
+* Gecen Yil Bu Ay Bolumu.........
+        compute geay-oda-yuzde = 
+          ((takas-ay-oda   * 100) / geay-top-oda)
+        compute geay-pax-yuzde = 
+          ((takas-ay-buyuk * 100) / (geay-top-oda * 2))
+        compute geay-chi-yuzde = 
+          (((takas-ay-buyuk + takas-ay-kucuk) * 100) / 
+          (geay-top-oda * 2))
+        compute geay-fre-yuzde = 
+          (((takas-ay-buyuk + takas-ay-kucuk + takas-ay-free ) * 100) / 
+          (geay-top-oda * 2))
+        compute geay-beb-yuzde = 
+          (((takas-ay-buyuk + takas-ay-kucuk + takas-ay-free + 
+             takas-ay-bebek) * 100) / (geay-top-oda * 2))
+* Gecen Yil BuYil Bolumu.........
+        compute geyil-oda-yuzde = 
+          ((takas-yil-oda   * 100) / geyil-top-oda)
+        compute geyil-pax-yuzde = 
+          ((takas-yil-buyuk * 100) / (geyil-top-oda * 2))
+        compute geyil-chi-yuzde = 
+          (((takas-yil-buyuk + takas-yil-kucuk) * 100) / 
+          (geyil-top-oda * 2))
+        compute geyil-fre-yuzde = 
+          (((takas-yil-buyuk + takas-yil-kucuk + takas-yil-free ) * 100) / 
+          (geyil-top-oda * 2))
+        compute geyil-beb-yuzde = 
+          (((takas-yil-buyuk + takas-yil-kucuk + takas-yil-free + 
+             takas-yil-bebek) * 100) / (geyil-top-oda * 2))
+     end-if
+
+* Gecen Yil Yuzde Olustur........
+     if fs-takas not = "10"
+        move 1         to takas-tipi
+        move 88         to takas-alt-tipi
+        move gecen-yil to takas-yili
+        perform takas-key-oku
+     end-if
+     if fs-takas not = "10"
+        initialize takas-detay
+        move gegun-oda-yuzde to takas-gun-oda
+        move gegun-pax-yuzde to takas-gun-buyuk
+        move gegun-chi-yuzde to takas-gun-kucuk
+        move gegun-fre-yuzde to takas-gun-free
+        move gegun-beb-yuzde to takas-gun-bebek
+        
+        move geay-oda-yuzde  to takas-ay-oda
+        move geay-pax-yuzde  to takas-ay-buyuk
+        move geay-chi-yuzde  to takas-ay-kucuk
+        move geay-fre-yuzde  to takas-ay-free
+        move geay-beb-yuzde  to takas-ay-bebek
+        
+        move geyil-oda-yuzde to takas-yil-oda
+        move geyil-pax-yuzde to takas-yil-buyuk
+        move geyil-chi-yuzde to takas-yil-kucuk
+        move geyil-fre-yuzde to takas-yil-free
+        move geyil-beb-yuzde to takas-yil-bebek
+        perform takas-dosya-yaz
+     end-if
+     .
+*
+ ortalama-buyil-bul.
+     initialize fs-takas
+     initialize takas-rec
+     move 1            to takas-tipi
+     move 0            to takas-alt-tipi
+     move son-yil      to takas-yili
+     perform takas-key-oku
+     if fs-takas not = "10"
+        initialize bugun-yuzde buay-yuzde buyil-yuzde
+* Gecen Yil Bugun Bolumu.........
+        compute bugun-oda-yuzde rounded =
+          (takas-gun-tutar / takas-gun-oda)
+        compute bugun-pax-yuzde rounded =
+          (takas-gun-tutar / takas-gun-buyuk)
+        compute bugun-chi-yuzde rounded = 
+          (takas-gun-tutar / ( takas-gun-buyuk + takas-gun-kucuk))
+        compute bugun-fre-yuzde rounded = 
+          (takas-gun-tutar / (takas-gun-buyuk + takas-gun-kucuk + takas-gun-free)) 
+        compute bugun-beb-yuzde rounded = 
+          (takas-gun-tutar / (takas-gun-buyuk + takas-gun-kucuk + 
+           takas-gun-free + takas-gun-bebek)) 
+* Gecen Yil Bu Ay Bolumu.........
+        compute buay-oda-yuzde rounded =
+          (takas-ay-tutar / takas-ay-oda)
+        compute buay-pax-yuzde rounded =
+          (takas-ay-tutar / takas-ay-buyuk)
+        compute buay-chi-yuzde rounded = 
+          (takas-ay-tutar / ( takas-ay-buyuk + takas-ay-kucuk))
+        compute buay-fre-yuzde rounded = 
+          (takas-ay-tutar / (takas-ay-buyuk + takas-ay-kucuk + takas-ay-free)) 
+        compute buay-beb-yuzde rounded = 
+          (takas-ay-tutar / (takas-ay-buyuk + takas-ay-kucuk + 
+           takas-ay-free + takas-ay-bebek)) 
+* Gecen Yil BuYil Bolumu.........
+        compute buyil-oda-yuzde rounded =
+          (takas-yil-tutar / takas-yil-oda)
+        compute buyil-pax-yuzde rounded =
+          (takas-yil-tutar / takas-yil-buyuk)
+        compute buyil-chi-yuzde rounded = 
+          (takas-yil-tutar / ( takas-yil-buyuk + takas-yil-kucuk))
+        compute buyil-fre-yuzde rounded = 
+          (takas-yil-tutar / (takas-yil-buyuk + takas-yil-kucuk + takas-yil-free)) 
+        compute buyil-beb-yuzde rounded = 
+          (takas-yil-tutar / (takas-yil-buyuk + takas-yil-kucuk + 
+           takas-yil-free + takas-yil-bebek)) 
+     end-if
+
+* Gecen Yil Yuzde Olustur........
+     if fs-takas not = "10"
+        move 1         to takas-tipi
+        move 88         to takas-alt-tipi
+        move son-yil   to takas-yili
+        perform takas-key-oku
+     end-if
+     if fs-takas not = "10"
+        initialize takas-detay
+        move bugun-oda-yuzde to takas-gun-oda
+        move bugun-pax-yuzde to takas-gun-buyuk
+        move bugun-chi-yuzde to takas-gun-kucuk
+        move bugun-fre-yuzde to takas-gun-free
+        move bugun-beb-yuzde to takas-gun-bebek
+        
+        move buay-oda-yuzde  to takas-ay-oda
+        move buay-pax-yuzde  to takas-ay-buyuk
+        move buay-chi-yuzde  to takas-ay-kucuk
+        move buay-fre-yuzde  to takas-ay-free
+        move buay-beb-yuzde  to takas-ay-bebek
+        
+        move buyil-oda-yuzde to takas-yil-oda
+        move buyil-pax-yuzde to takas-yil-buyuk
+        move buyil-chi-yuzde to takas-yil-kucuk
+        move buyil-fre-yuzde to takas-yil-free
+        move buyil-beb-yuzde to takas-yil-bebek
+        perform takas-dosya-yaz
+     end-if
+     .
+
+
+*
+ takas-key-oku.
+     read takas no lock
+       invalid
+         move "10" to fs-takas
+     end-read
+     .
+*
+ rapor-detay-yaz.
+     initialize takas-rec
+     start takas key >= takas-anahtar
+       invalid
+         initialize mesaj-link
+         move 04 to mesaj-no
+         perform mesaj-ver
+       not invalid
+         initialize fs-takas
+         perform with test after
+                 until fs-takas = "10"
+           perform rapor-takas-oku
+         end-perform
+     end-start
+     .
+*
+ rapor-takas-oku.
+     read takas next no lock
+       end
+         move "10" to fs-takas
+       not end
+         perform rapor-detay-ata
+         write dokumer-rec from detay, end-write
+     end-read
+     .
+*
+ rapor-detay-ata.
+     initialize dokumer-rec detay
+     if takas-yili = 0000 or takas-yili = 9999
+        move "-"            to det-dokumer-20(5:1)
+        perform cizgi-cek
+     else
+        move takas-yili             to det-1(01:04)
+        move takas-aciklama         to det-1(06:)
+     
+        move takas-gun-oda       to z-6
+        move z-6                 to det-2
+        move takas-gun-buyuk     to z-6
+        move z-6                 to det-3
+        move takas-gun-kucuk     to z-6
+        move z-6                 to det-4
+        move takas-gun-free      to z-6
+        move z-6                 to det-5
+        move takas-gun-bebek     to z-6
+        move z-6                 to det-5-1
+        move takas-gun-tutar     to z-15
+        move z-15                to det-6
+        move takas-ay-oda        to z-6
+        move z-6                 to det-7
+        move takas-ay-buyuk      to z-6
+        move z-6                 to det-8
+        move takas-ay-kucuk      to z-6
+        move z-6                 to det-9
+        move takas-ay-free       to z-6
+        move z-6                 to det-10
+        move takas-ay-bebek      to z-6
+        move z-6                 to det-10-1
+        move takas-ay-tutar      to z-18
+        move z-18                to det-11
+        move takas-yil-oda       to z-6
+        move z-6                 to det-12
+        move takas-yil-buyuk     to z-6
+        move z-6                 to det-13
+        move takas-yil-kucuk     to z-6
+        move z-6                 to det-14
+        move takas-yil-free      to z-6
+        move z-6                 to det-15
+        move takas-yil-bebek     to z-6
+        move z-6                 to det-15-1
+        move takas-yil-tutar     to z-18
+        move z-18                to det-16
+        if takas-tipi     = 1 and
+           takas-alt-tipi = 1 or takas-alt-tipi = 88
+           move "A"                 to det-dokumer-20(3:1)
+           move 481                 to det-renk1
+           move takas-gun-oda       to z-1
+           move z-1                 to det-2
+           move takas-gun-buyuk     to z-1
+           move z-1                 to det-3
+           move takas-gun-kucuk     to z-1
+           move z-1                 to det-4
+           move takas-gun-free      to z-1
+           move z-1                 to det-5
+           move takas-gun-bebek     to z-1
+           move z-1                 to det-5-1
+           move takas-ay-oda        to z-1
+           move z-1                 to det-7
+           move takas-ay-buyuk      to z-1
+           move z-1                 to det-8
+           move takas-ay-kucuk      to z-1
+           move z-1                 to det-9
+           move takas-ay-free       to z-1
+           move z-1                 to det-10
+           move takas-ay-bebek      to z-1
+           move z-1                 to det-10-1
+           move takas-yil-oda       to z-1
+           move z-1                 to det-12
+           move takas-yil-buyuk     to z-1
+           move z-1                 to det-13
+           move takas-yil-kucuk     to z-1
+           move z-1                 to det-14
+           move takas-yil-free      to z-1
+           move z-1                 to det-15
+           move takas-yil-bebek     to z-1
+           move z-1                 to det-15-1
+         end-if
+        evaluate true
+          when takas-tipi     = 1 and
+               takas-alt-tipi = 0
+               move "A" to det-dokumer-20(3:1)
+               move 432 to det-renk1
+          when takas-tipi     = 1 and
+               takas-alt-tipi = 1
+               move "A" to det-dokumer-20(3:1)
+               move 481 to det-renk1
+          when takas-tipi     = 1 and
+               takas-alt-tipi = 2
+               move "A" to det-dokumer-20(3:1)
+               move 432 to det-renk1
+          when takas-tipi     = 3
+               move "A" to det-dokumer-20(3:1)
+               move 288 to det-renk1
+        end-evaluate
+        perform pipe-at
+     end-if
+     .
+*
+ pipe-at.
+     move "|" to fil-1  fil-2  fil-3  fil-4  fil-5
+                 fil-6  fil-7  fil-8  fil-9  fil-10
+                 fil-11 fil-12 fil-13 fil-14 fil-15
+                 fil-16 fil-5-1 fil-10-1 fil-15-1.
+     .
+*
+ cizgi-cek.
+     move all "-" to det-1  det-2  det-3  det-4  det-5
+                     det-6  det-7  det-8  det-9  det-10
+                     det-11 det-12 det-13 det-14 det-15
+                     det-16 det-5-1 det-10-1 det-15-1.
+     .
+ 

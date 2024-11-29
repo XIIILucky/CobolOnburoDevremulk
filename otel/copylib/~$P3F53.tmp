@@ -1,0 +1,188 @@
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+
+*
+ exception-procedure.
+     evaluate key-status
+        when 2
+        when 4
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no EKRAN-FIS-1
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+
+              move EKRAN-FIS-1 to takdonem-DOSYA-no
+              initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                         dokumer-dosya
+
+              set  dokumer-asya-set to true
+              move print-no         to dokumer-dosya-adi
+              open output dokumer
+*/WINDOW TITLE
+              initialize dokumer-rec detay
+              move "W"                    to det-dokumer-20(1:)
+              move "Donem Degisikligi Raporu" to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR
+              initialize dokumer-rec detay
+              move "B"                  to det-dokumer-20(1:)
+              move "Donem Degisikligi Raporu" to det-filler
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "B"                  to det-dokumer-20(1:)
+              write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+              initialize dokumer-rec detay
+              move "O"                        to det-dokumer-20(1:)
+              move "E" to dokumer-oto-sayfa-basi
+              move 56  to dokumer-oto-sayfa-satir
+              move "|" to dokumer-detay-kolon-ayirici
+              move "LLLLLRRRRLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+              move dokumer-ozellikler-rec     to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR 
+              initialize dokumer-rec detay
+              move "D1"            to det-dokumer-20(1:)     
+              move "Sil.Tar"       to det-1
+              move "Devremulk"     to det-2
+              move "Devremulk Adi" to det-9
+              move "IslmTuru"      to det-3
+              move "TL Tutar"      to det-5
+              move "OdemeTur"      to det-6
+              move "Cek No"        to det-7
+              move "Staf"          to det-8
+              move "Doviz"         to det-11
+              move "DV Tutar"      to det-10
+
+
+              move all "|" to fil-1 fil-2 fil-3  fil-5 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "D2"               to det-dokumer-20(1:)     
+              move "-"                to det-dokumer-20(5:1)
+              move all "-" to det-1 det-2 det-3  det-5 det-6 det-7 det-8 det-9 det-10 det-11
+              write dokumer-rec from detay
+
+
+              initialize log-index-adres
+              move low-values to log-index-adres
+              string log-index-adres,
+              "/asya/ytl/log/otel/"  delimited by low-values,
+              isyeri-adres-tasi      delimited by low-values,
+              "/devmulk"             delimited by low-values,
+              into log-index-adres
+  
+              open output takdonem close takdonem
+              open input Ldevremulk log-index
+              initialize log-index-rec
+              move txt-donem-bas-tar to log-index-sys-tarih
+              start log-index key not < log-index-anah1 invalid
+                         continue
+              not invalid
+              perform with test after until fs-log-index= "10"
+              read log-index next no lock end move "10" to fs-log-index
+              not at end
+                      if txt-donem-bas-tar not  <= log-index-sys-tarih or txt-donem-bit-tar not >= log-index-sys-tarih then
+                            exit perform 
+                      end-if
+                      if cmb-kllnc(1:4) <> log-index-kullanici and cmb-kllnc(1:4) <> "XXXX"
+                            exit perform cycle
+                      end-if
+
+                      initialize ldevremulk-rec
+                      move log-index-islem-no to Ldevremulk-log-fis
+                      read Ldevremulk no lock invalid
+                            exit perform cycle 
+                      end-read
+                      initialize aranacak-dev-no
+                      move Ldevremulk-no to aranacak-dev-no
+
+                      initialize ldevremulk-rec
+                      move aranacak-dev-no to Ldevremulk-no
+                      start Ldevremulk key not < Ldevremulk-log-alt invalid
+                              continue
+                      not invalid
+                      perform until fs-Ldevremulk="10"
+                      read Ldevremulk next no lock end move "10" to fs-Ldevremulk
+                      not end
+                               if Ldevremulk-no <> aranacak-dev-no
+                                     exit perform 
+                               end-if
+
+                                       
+                              initialize detay
+        
+                              move Ldevremulk-No to det-1
+        
+                              write dokumer-rec from detay
+
+                      end-read
+                      end-perform
+                      end-start
+
+                         exit perform 
+              end-read
+              end-perform
+              end-start
+
+              close dokumer
+              call dokumer-prog on exception
+                  perform callerr-proc
+              not on exception
+                 cancel dokumer-prog
+              end-call
+              close  Ldevremulk log-index
+              delete file dokumer takdonem
+     end-evaluate.
+
+
+*
+ Form1-Aft-Create.
+      accept txt-donem-bas-tar from century-date
+      accept txt-donem-bit-tar from century-date
+      display accept-gir-yila accept-gir-aya accept-gir-guna accept-cik-yilb accept-cik-aya accept-cik-guna sc-hareket-tipi sc-kllnc.
+*
+ Form1-Aft-Initdata.
+      modify sc-kllnc, reset-list = 1
+      modify sc-kllnc, item-to-add("XXXX-TUMU")
+      open input kllnc
+      initialize kllnc-rec
+      start kllnc key not < K-KODU invalid
+              continue
+      not invalid
+      perform until fs-kllnc = "10"
+      read kllnc next no lock end move "10" to fs-kllnc
+      not end
+            
+              if k-kullanimda <> "E"
+                    exit perform cycle
+              end-if
+
+              move all low-values to kullanici-adi
+              inspect k-adi replacing trailing spaces by low-values
+              inspect k-soyadi replacing trailing spaces by low-values
+
+              string kullanici-adi
+                 k-adi delimited by low-values
+                 " "   delimited by low-values
+                 k-soyadi delimited by low-values
+              into kullanici-adi
+              inspect kullanici-adi replacing trailing low-values by spaces
+              move k-kodu         to cmb-kllnc
+              move "-"            to cmb-kllnc(5:) 
+              move kullanici-adi  to cmb-kllnc(6:)  
+
+              modify sc-kllnc, item-to-add(cmb-kllnc)
+      end-read
+      end-perform
+      end-start
+      close kllnc
+       modify sc-kllnc, VALUE = "XXXX-TUMU".

@@ -1,0 +1,847 @@
+* devairp1.evt
+* devairp1.evt is generated from D:\asya\acugt.ytl\otel\devairp1.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ form2-Exception-Proc.
+     PERFORM form2-Ex-Other
+     .
+***   start event editor code   ***
+*
+ accept-gir-yil-Aft-Procedure.
+      open input takvim
+      move txt-donem-bas-tar to takvim-anah
+      read takvim no lock invalid
+              move 4    to accept-control
+              move 1004 to control-id
+              move 1 to kaldi-mi
+              continue
+      end-read
+
+      close takvim
+     .
+*
+ accept-cik-yil-Aft-Procedure2.
+      open input takvim
+      move txt-donem-bas-tar to takvim-anah
+      read takvim no lock invalid
+              move 4    to accept-control
+              move 1009 to control-id 
+              move 1 to kaldi-mi
+              continue
+      end-read
+
+      close takvim
+     .
+
+*
+ form2-Bef-Create.
+         perform adresleri-tasi  
+         move tarih-tasi to txt-donem-bas-tar 
+         move tarih-tasi to txt-donem-bit-tar
+     .
+
+
+
+
+*
+ button-0103-Link.
+       perform accept-gir-yil-Aft-Procedure
+       perform accept-cik-yil-Aft-Procedure2
+       if kaldi-mi = 1 then
+            display message box "Lutfen Tarihleri Kontrol Ediniz !"
+            move 4    to accept-control
+            move 1004 to control-id
+            exit paragraph
+       end-if
+
+       stop "RAPORA DEVAM ETMEK ICIN G YAZIP ENTERA BASINIZ"
+
+       open i-o genelfis
+       move 1 to genelfis-anahtar
+       read genelfis no lock invalid
+            accept print-no from time
+       not invalid
+            add 1 to print-no
+            add 1 to ekran-fis-1
+            rewrite genelfis-rec end-rewrite
+       end-read
+       close genelfis
+       move ekran-fis-1 to takaid-no
+       open output takaid close takaid 
+       open i-o  takaid 
+       open input donem donem2 donhrk devremulk musteri odalar 
+       taksit danisman odemeler cek odemetip doviz konuk rez konum
+
+       perform sutun-bas-bit-al
+       perform takas-al
+
+       compute sutun-sayisi = (sutun-bit-yil - sutun-bas-yil) + 1                     |sutunlarin hesabi
+       move 133 to sutunlara-basla                                                    |oncesine eklenen detay alaný kadar artsa yetecektir.
+
+       initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                  dokumer-dosya
+       set  dokumer-asya-set to true
+       move print-no         to dokumer-dosya-adi
+       open output dokumer
+*/WINDOW TITLE
+       initialize dokumer-rec detay
+       move "W"                    to det-dokumer-20(1:)
+       move "Aidat Kontrol Raporu" to det-filler
+       write dokumer-rec from detay
+*/ BASLIKLAR
+      initialize dokumer-rec detay
+      move "B"                  to det-dokumer-20(1:)
+      move "Aidat Kontrol Raporu" to det-filler
+      write dokumer-rec from detay
+      initialize dokumer-rec detay
+      move "B"                  to det-dokumer-20(1:)
+      write dokumer-rec from detay
+*/ DOKUMER OZELLIKLER-REC
+      initialize dokumer-rec detay
+      move "O"                        to det-dokumer-20(1:)
+      move "E" to dokumer-oto-sayfa-basi
+      move 56  to dokumer-oto-sayfa-satir
+      move "|" to dokumer-detay-kolon-ayirici
+      move "LLLLLLRRRLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+      move dokumer-ozellikler-rec     to det-filler
+      write dokumer-rec from detay
+*/ BASLIKLAR 
+      initialize dokumer-rec detay
+      move "D1"              to det-dokumer-20(1:) 
+      move "Devremlk No"     to det-1
+      move "Odano"           to det-2
+      move "Konum"           to det-3
+      move "Donem Adi"       to det-4
+      move "Adi"             to det-5
+      move "Soyadi"          to det-6
+      move "Aidat"           to det-7
+      move "Doviz"           to det-8
+      move all "|" to fil-1 fil-2 fil-3 fil-4 
+                      fil-5 fil-6 fil-7 fil-8  
+
+      perform varying i from 1 by 1 until i > sutun-sayisi                |yillari bas
+         compute sutun-yil = (sutun-bas-yil + i) - 1
+         if i = 1 
+            move sutun-yil to detay(sutunlara-basla:15)
+            move "|"       to detay(sutunlara-basla + 15:1)
+            compute sutun-yer = sutunlara-basla + 16
+         else 
+            move sutun-yil to detay(sutun-yer:15)
+            move "|"       to detay(sutun-yer + 15:1)
+            compute sutun-yer = sutun-yer + 16
+         end-if
+      end-perform 
+
+      move "G. TOPLAM" to detay(sutun-yer:15)
+      move "|"         to detay(sutun-yer + 15:1)
+
+      write dokumer-rec from detay
+      initialize dokumer-rec detay
+      move "D2"               to det-dokumer-20(1:)     
+      move "-"                to det-dokumer-20(5:1)
+      move all "-" to det-1 det-2 det-3 det-4  
+                      det-5 det-6 det-7 det-8 
+      write dokumer-rec from detay  
+
+      initialize takaid-rec alt-aidat-toplam
+      start takaid key not < takaid-anah invalid
+            continue
+      not invalid
+      perform with test after until fs-takaid = "10"
+      read takaid next no lock end move "10" to fs-takaid
+      not at end
+
+          initialize dokumer-rec detay devremulk-rec 
+          move takaid-devno               to devremulk-no 
+          read devremulk no lock invalid
+               exit perform cycle
+          end-read 
+
+          move devremulk-no               to z-8
+          move z-8                        to det-1
+          move devremulk-oda-no           to det-2
+
+          if genel-uzun-oda-no-kullanilsin = 1 
+             initialize odalar-rec 
+             move devremulk-oda-no        to odalar-no
+             read odalar no lock invalid
+                  move devremulk-oda-no   to odalar-uzun-no 
+             end-read 
+             move odalar-uzun-no          to det-2
+          end-if
+
+          initialize konum-rec 
+          move devremulk-oda-konumu       to konum-anahtar
+          read konum no lock invalid
+               move devremulk-oda-konumu  to konum-adi
+          end-read 
+          move konum-adi                  to det-3
+
+          initialize donem2-rec
+          move devremulk-devre-donem      to donem2-kodu
+          read donem2 no lock invalid 
+               move devremulk-devre-donem to donem2-adi                      
+          end-read
+          move donem2-adi                 to det-4
+
+          initialize musteri-rec
+          move devremulk-profil-sirket    to musteri-sirket
+          move devremulk-profil-no        to musteri-no
+          read musteri no lock invalid 
+                continue
+          end-read 
+
+          move musteri-adi                to det-5
+          move musteri-soyadi             to det-6
+
+          move devremulk-aidat-tutar      to z-aidat
+          move z-aidat                    to det-7
+
+          initialize doviz-rec 
+          move devremulk-aidat-doviz-kodu to doviz-kodu
+          read doviz no lock invalid
+               move devremulk-aidat-doviz-kodu to d-kisa-adi
+          end-read 
+          move d-kisa-adi                 to det-8
+
+          move all "|" to fil-1 fil-2 fil-3 fil-4 
+                          fil-5 fil-6 fil-7 fil-8  
+
+          initialize k-bakiye-top
+          perform varying i from 1 by 1 until i > sutun-sayisi          |yillari dagit
+
+             compute sutun-yil = (sutun-bas-yil + i) - 1
+
+             compute k-bakiye rounded = takaid-ai-borc(i) - takaid-ai-odeme(i)
+
+             compute k-bakiye-top rounded = k-bakiye-top + k-bakiye
+
+             move sutun-yil          to alt-ai-yil(i)
+             compute alt-ai-kalan(i) rounded = alt-ai-kalan(i) + k-bakiye
+
+             if i = 1 
+                move k-bakiye   to z-ai-kalan
+                move z-ai-kalan to detay(sutunlara-basla:15)
+                move "|"        to detay(sutunlara-basla + 15:1)
+                compute sutun-yer = sutunlara-basla + 16
+             else 
+                move k-bakiye   to z-ai-kalan
+                move z-ai-kalan to detay(sutun-yer:15)
+                move "|"        to detay(sutun-yer + 15:1)
+                compute sutun-yer = sutun-yer + 16
+             end-if
+
+          end-perform 
+
+          move k-bakiye-top   to z-ai-kalan
+          move z-ai-kalan     to detay(sutun-yer:15)
+          move "|"            to detay(sutun-yer + 15:1)
+
+          write dokumer-rec from detay
+
+      end-read 
+      end-perform 
+      end-start 
+
+      initialize dokumer-rec detay
+      move "GENEL TOPLAM"       to det-5
+      move "AY DAGILIMI ---->"  to det-6
+      move all "|" to fil-1 fil-2 fil-3 fil-4 
+                      fil-5 fil-6 fil-7 fil-8 
+ 
+      initialize k-bakiye-top
+      perform varying i from 1 by 1 until i > sutun-sayisi          |alt toplam yillari dagit
+
+         compute k-bakiye-top = k-bakiye-top + alt-ai-kalan(i)
+
+         if i = 1 
+            move alt-ai-kalan(i) to z-ai-kalan
+            move z-ai-kalan      to detay(sutunlara-basla:15)
+            move "|"             to detay(sutunlara-basla + 15:1)
+            compute sutun-yer = sutunlara-basla + 16
+         else 
+            move alt-ai-kalan(i) to z-ai-kalan
+            move z-ai-kalan      to detay(sutun-yer:15)
+            move "|"             to detay(sutun-yer + 15:1)
+            compute sutun-yer = sutun-yer + 16
+         end-if
+
+      end-perform 
+
+      move k-bakiye-top   to z-ai-kalan
+      move z-ai-kalan     to detay(sutun-yer:15)
+      move "|"            to detay(sutun-yer + 15:1)
+      compute sutun-yer = sutun-yer + 16
+
+      move "A" to det-dokumer-20(3:1)
+      move 481 to detay(sutun-yer:3)
+      move "1" to det-dokumer-20(10:1)
+
+      write dokumer-rec from detay
+
+      close donem donem2 donhrk devremulk musteri odalar taksit 
+      danisman odemeler cek odemetip konum doviz konuk rez
+
+      close dokumer takaid
+      call dokumer-prog on exception
+           perform callerr-proc
+      not on exception
+           cancel dokumer-prog
+      end-call
+  
+      delete file dokumer .
+*
+ aidat-detay-yukle.
+
+    initialize odemeler-rec  alt-toplam-dv kayit-sayisi  alt-toplam-tl
+    move devremulk-no     to odemeler-devremulk-no
+    start odemeler key not < odemeler-dev-tar invalid
+          continue 
+    not invalid 
+    perform with test after until fs-odemeler = "10"
+    read odemeler next no lock end move "10" to fs-odemeler
+    not at end 
+           initialize dok-renk
+           if odemeler-devremulk-no <> devremulk-no
+               exit perform 
+           end-if
+
+           if odemeler-hareket-turu NOT = "A"
+              move 208   to det-renk1 
+           end-if 
+           evaluate odemeler-islem-turu
+           when "AO"
+               move  "AIDAT ODEMESI"            to det-5 
+           when "AI"
+               move  "YILLIK AIDAT"             to det-5
+           WHEN OTHER 
+                exit perform cycle
+           end-evaluate
+
+
+           add 1 to kayit-sayisi
+            evaluate odemeler-odeme-TURU
+              when "NA"
+                 move "NAKIT" to det-6 
+             when "CE"
+                 move "CEK" to det-6 
+              when "BN"
+                 move "BANKA" to det-6 
+             when "KK"
+                 move "KREDI KARTI" to det-6 
+             when "MO"
+                 move "MAIL ORDER" to det-6 
+              when "PO"
+                 move "POS" to det-6
+              when "SE"
+                 move "SENET" to det-6 
+             when other
+                 move odemeler-odeme-TURU to det-4
+             end-evaluate
+ 
+           move odemeler-sira         to z-sira
+*           move z-sira                to det-2
+           move odemeler-tarih-gun    to egun
+           move odemeler-tarih-ay     to eay
+           move odemeler-tarih-yil    to eyil
+           move etar                  to det-4
+
+           move odemeler-tutar    to tl-tutari 
+
+           perform  odeme-dv-hesapla
+                    
+           move para-hesapla      to etut
+           move etut              to det-8
+      
+*           if odemeler-hareket-turu = "A"
+*                   compute alt-toplam-dv = alt-toplam-dv - odemeler-tutar-dv
+*                   compute alt-toplam-tl = alt-toplam-tl - odemeler-tutar
+*           else
+*                   compute alt-toplam-dv = alt-toplam-dv + odemeler-tutar-dv
+*                   compute alt-toplam-tl = alt-toplam-tl + odemeler-tutar
+*                   move "A" to det-dokumer-20(3:1)
+*                   move 257 to det-renk1
+*                   move "1" to det-dokumer-20(10:1)
+*           end-if
+
+           if odemeler-hareket-turu = "A"
+                   compute alt-toplam-dv = alt-toplam-dv - para-hesapla
+           else
+                   compute alt-toplam-dv = alt-toplam-dv + para-hesapla
+           end-if
+
+
+*           if odemeler-islem-turu = "AO" then
+*                 move odemeler-tutar      to etut
+*                 move etut                to det-9 | TL
+*
+*
+*                 add odemeler-tutar to odenen-aidat
+*                 move odemeler-tutar to tl-tutari
+*                 perform odeme-dv-hesapla
+*                 add para-hesapla to odenen-aidat-dv
+*
+*                   initialize doviz-rec
+*                   move odemeler-doviz-kodu   to  doviz-kodu
+*                   read doviz no lock invalid
+*                         continue
+*                   not invalid
+*                          move D-ADI-1 to det-10
+*                   end-read
+*
+*                   move odemeler-tutar-dv to etut
+*                   move etut              to det-11
+*
+*           end-if
+*
+*           initialize odemetip-rec
+*           move odemeler-odeme-turu      to odemetip-anah
+*           read odemetip no lock invalid 
+*                move "     "             to odemetip-adi
+*           end-read 
+*
+*           initialize doviz-rec
+*           move devremulk-aidat-doviz-kodu     to  doviz-kodu
+*           read doviz no lock invalid
+*                 continue
+*           not invalid
+*                  move D-ADI-1 to det-7
+*           end-read
+*
+*           move odemeler-staf to det-12
+*
+           write dokumer-rec from detay
+
+           initialize detay
+          
+    end-read 
+    end-perform
+    end-start
+    .
+        
+*
+ odeme-tl-hesapla.
+     initialize para-hesapla
+     open input kur
+     initialize kur-rec
+     move odemeler-tarih           to kur-tarih                    | odemeler-tarih <> tarih-tasi
+     move 01                   to kur-banka
+     move devremulk-aidat-doviz-kodu          to kur-doviz
+     read kur no lock invalid        
+                CONTINUE
+     not invalid
+              if DOVIZ-ALIS > 0.00001 then 
+                  compute para-hesapla rounded = doviz-tutari * DOVIZ-ALIS
+              END-IF
+     end-read
+     close kur
+     .
+
+*
+ odeme-dv-hesapla.
+     initialize para-hesapla
+     open input kur
+     initialize kur-rec
+     move odemeler-tarih       to kur-tarih  
+     move 01                   to kur-banka
+     move devremulk-aidat-doviz-kodu          to kur-doviz
+     read kur no lock invalid        
+                CONTINUE       
+     not invalid
+         if DOVIZ-ALIS > 0.00001 then 
+             compute para-hesapla rounded = tl-tutari / DOVIZ-ALIS
+         END-IF
+     end-read        
+     close kur
+     .
+*
+ form2-Ex-Other.
+      evaluate key-status
+           when 1
+             if control-id = 3 then
+                initialize devara-cagir
+                call "/asya/ytl/obj/otel/devara.asy" using devara-cagir
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/devara.asy"
+                         move devara-dev-no-cagir to txt-dev-no
+                         display form2-Ef-1
+                  end-call
+
+            end-if
+      end-evaluate
+     .
+*
+ form2-Aft-Initdata.
+       call "c$narg" using link-var
+      if link-var > 0 then
+         move link-devremulk-no to txt-dev-no
+         display form2-Ef-1
+         perform button-0103-Link
+      end-if
+     .
+*
+ guncel-borc-getir.
+ 
+         initialize  link-guncel-borc link-aidat-borc-tl link-aidat-borc-dv 
+         call "/asya/ytl/obj/otel/devgunsor.asy" using devremulk-no link-guncel-borc link-aidat-borc-tl link-aidat-borc-dv
+                    on exception perform callerr-proc
+                not on exception
+          cancel "/asya/ytl/obj/otel/devgunsor.asy" 
+          end-call
+       .
+*
+ form2-Pb-1-Link.
+         exit paragraph
+
+      open i-o odemeler devremulk kur
+      initialize odemeler-rec 
+      start odemeler key not < odemeler-anah invalid
+                 continue
+      not invalid
+      perform until fs-odemeler= "10" 
+      read odemeler next no lock end move "10" to fs-odemeler
+      not end   
+              if  odemeler-islem-turu not = "AO"
+                   exit perform cycle
+              end-if
+
+              initialize devremulk-rec
+              move odemeler-devremulk-no to devremulk-no
+              read devremulk no lock invalid
+                      continue
+              not invalid
+                      move '01'                       to odemeler-banka-kodu 
+                      move devremulk-aidat-doviz-kodu to odemeler-doviz-kodu 
+
+
+                           initialize para-hesapla
+   
+                             initialize kur-rec
+                             move odemeler-tarih               to kur-tarih  
+                             move odemeler-banka-kodu          to kur-banka
+                             move odemeler-doviz-kodu          to kur-doviz
+                             read kur no lock invalid        
+                                        CONTINUE       
+                             not invalid
+                                      if DOVIZ-ALIS > 0.00001 then 
+                                          compute odemeler-tutar-dv rounded = odemeler-tutar / DOVIZ-ALIS
+                                      END-IF
+                             end-read        
+  
+
+                      rewrite odemeler-rec invalid
+                              stop " "
+                      end-rewrite
+              end-read
+
+      end-read
+      end-perform
+      end-start  
+      close odemeler devremulk kur.
+
+*
+ takas-al.
+      initialize devremulk-rec  
+      if txt-dev-no not = zeroes then
+           move txt-dev-no to devremulk-no
+      end-if
+      start devremulk key not < devremulk-anah invalid
+                 continue
+      not invalid
+      perform until fs-devremulk = "10" 
+      read devremulk next no lock end move "10" to fs-devremulk
+      not end                    
+ 
+          if devremulk-no = zeroes then 
+             exit perform  
+          end-if
+
+          if devremulk-no not = txt-dev-no and txt-dev-no not = zeroes then
+             exit perform    
+          end-if
+
+          if kayit-tipi-val(1:1) not = "H" and devremulk-durumu not = kayit-tipi-val(1:1)
+             exit perform cycle 
+          end-if
+
+          if ( txt-donem-bas-tar not <= devremulk-satis-tarihi or 
+             txt-donem-bit-tar not >= devremulk-satis-tarihi ) and 
+             ( txt-dev-no = zeroes ) then
+             exit perform cycle
+          end-if
+
+          perform guncel-borc-getir
+
+          if link-aidat-borc-dv <= 0 and sadece-borc = 1 then
+             exit perform cycle 
+          end-if
+
+          if link-aidat-borc-dv >= 0 and eksi-bakiye = 1
+             exit perform cycle 
+          end-if
+
+          if ozel-kod not = spaces and devremulk-ozel-kod <> ozel-kod
+             exit perform cycle
+          end-if
+
+          if sadece-konak = 1 then
+             initialize donhrk-rec
+             move konaklama-yili         to donhrk-yili
+             move devremulk-devre-donem  to donhrk-kodu
+             move devremulk-oda-no       to donhrk-oda
+             read donhrk no lock invalid
+                     exit perform cycle
+             not invalid
+             
+                 initialize konakalama-var
+                 perform varying i from 1 by 1 until i > 5
+                    evaluate i 
+                        when 1 move donhrk-rez-no   to donhrk-rez-no
+                        when 2 move donhrk-rez-no-2 to donhrk-rez-no
+                        when 3 move donhrk-rez-no-3 to donhrk-rez-no
+                        when 4 move donhrk-rez-no-4 to donhrk-rez-no
+                        when 5 move donhrk-rez-no-5 to donhrk-rez-no
+                    end-evaluate
+                    initialize rez-rec
+                    move donhrk-rez-no to rez-no
+                    read rez no lock invalid
+                         exit perform cycle
+                    not invalid
+                        initialize konuk-rec
+                        move rez-folio to konuk-folio
+                        read konuk no lock invalid
+                             exit perform 
+                        not invalid 
+                             move 1 to konakalama-var
+                        end-read
+                    end-read
+        
+                 end-perform
+                 
+                 if konakalama-var <> 1 then
+                      exit perform cycle
+                 end-if
+
+             end-read
+                                                                                           
+          end-if
+
+          initialize takaid-rec 
+          move devremulk-no       to takaid-devno 
+          read takaid no lock invalid
+               continue
+          end-read 
+
+          perform aidat-detay-al
+
+      end-read
+      end-perform
+      end-start .
+*
+ aidat-detay-al.
+    initialize odemeler-rec t-sira 
+    move devremulk-no     to odemeler-devremulk-no
+    start odemeler key not < odemeler-dev-tar invalid
+          continue 
+    not invalid 
+    perform with test after until fs-odemeler = "10"
+    read odemeler next no lock end move "10" to fs-odemeler
+    not at end 
+
+        if odemeler-devremulk-no <> devremulk-no
+            exit perform 
+        end-if
+
+        if odemeler-tarih-yil < 1900
+           exit perform cycle
+        end-if                    
+
+        evaluate odemeler-islem-turu
+            when "AO"
+            when "AI"
+                 continue
+            when other 
+                 exit perform cycle
+        end-evaluate
+
+        compute t-sira = (odemeler-tarih-yil - sutun-bas-yil) + 1
+
+        move odemeler-tarih-yil to takaid-ai-yil(t-sira)
+
+        move odemeler-tutar      to tl-tutari 
+        perform odeme-dv-hesapla
+        if para-hesapla = 0 
+           move tl-tutari to para-hesapla
+        end-if
+        evaluate odemeler-islem-turu
+            when "AO"
+                 move para-hesapla      to takaid-ai-odeme(t-sira)
+            when "AI"
+                 move para-hesapla      to takaid-ai-borc(t-sira)
+        end-evaluate
+        
+        write takaid-rec invalid
+              rewrite takaid-rec end-rewrite
+        end-write 
+
+    end-read 
+    end-perform
+    end-start
+    .
+*
+ sutun-bas-bit-al.
+      initialize devremulk-rec sutun-bas-yil sutun-bit-yil
+      if txt-dev-no not = zeroes then
+           move txt-dev-no to devremulk-no
+      end-if
+      start devremulk key not < devremulk-anah invalid
+                 continue
+      not invalid
+      perform until fs-devremulk = "10" 
+      read devremulk next no lock end move "10" to fs-devremulk
+      not end                    
+ 
+          if devremulk-no = zeroes then 
+             exit perform  
+          end-if
+
+          if devremulk-no not = txt-dev-no and txt-dev-no not = zeroes then
+             exit perform    
+          end-if
+
+          if kayit-tipi-val(1:1) not = "H" and devremulk-durumu not = kayit-tipi-val(1:1)
+             exit perform cycle 
+          end-if
+
+          if ( txt-donem-bas-tar not <= devremulk-satis-tarihi or 
+             txt-donem-bit-tar not >= devremulk-satis-tarihi ) and 
+             ( txt-dev-no = zeroes ) then
+             exit perform cycle
+          end-if
+
+          perform guncel-borc-getir
+
+          if link-aidat-borc-dv <= 0 and sadece-borc = 1 then
+             exit perform cycle 
+          end-if
+
+          if link-aidat-borc-dv >= 0 and eksi-bakiye = 1
+             exit perform cycle 
+          end-if
+          if ozel-kod not = spaces and devremulk-ozel-kod <> ozel-kod
+             exit perform cycle
+          end-if
+          if sadece-konak = 1 then
+             initialize donhrk-rec
+             move konaklama-yili         to donhrk-yili
+             move devremulk-devre-donem  to donhrk-kodu
+             move devremulk-oda-no       to donhrk-oda
+             read donhrk no lock invalid
+                     exit perform cycle
+             not invalid
+             
+                 initialize konakalama-var
+****************hep bunlar amelelik  ******
+                 perform varying i from 1 by 1 until i > 5
+                    evaluate i 
+                        when 1 move donhrk-rez-no   to donhrk-rez-no
+                        when 2 move donhrk-rez-no-2 to donhrk-rez-no
+                        when 3 move donhrk-rez-no-3 to donhrk-rez-no
+                        when 4 move donhrk-rez-no-4 to donhrk-rez-no
+                        when 5 move donhrk-rez-no-5 to donhrk-rez-no
+                    end-evaluate
+                    initialize rez-rec
+                    move donhrk-rez-no to rez-no
+                    read rez no lock invalid
+                         exit perform cycle
+                    not invalid
+                        initialize konuk-rec
+                        move rez-folio to konuk-folio
+                        read konuk no lock invalid
+                             exit perform 
+                        not invalid 
+                             move 1 to konakalama-var
+                        end-read
+                    end-read
+        
+                 end-perform
+                 
+                 if konakalama-var <> 1 then
+                      exit perform cycle
+                 end-if
+
+             end-read
+
+          end-if
+          perform aidat-detay-bak
+      end-read
+      end-perform
+      end-start .
+*
+ aidat-detay-bak.
+    initialize odemeler-rec t-sira 
+    move devremulk-no     to odemeler-devremulk-no
+    start odemeler key not < odemeler-dev-tar invalid
+          continue 
+    not invalid 
+    perform with test after until fs-odemeler = "10"
+    read odemeler next no lock end move "10" to fs-odemeler
+    not at end 
+
+        if odemeler-devremulk-no <> devremulk-no
+            exit perform 
+        end-if
+
+        if odemeler-tarih-yil < 1900
+           exit perform cycle
+        end-if                    
+
+        if sutun-bit-yil = 0 
+           move odemeler-tarih-yil to sutun-bit-yil
+        else 
+           if odemeler-tarih-yil > sutun-bit-yil
+              move odemeler-tarih-yil to sutun-bit-yil
+           end-if
+        end-if
+
+        if sutun-bas-yil = 0 
+           move odemeler-tarih-yil to sutun-bas-yil
+        else 
+           if odemeler-tarih-yil < sutun-bas-yil
+              move odemeler-tarih-yil to sutun-bas-yil
+           end-if
+        end-if
+
+    end-read 
+    end-perform
+    end-start
+    .
+
+*
+ yedek-xiii.
+          move devremulk-no               to det-1
+          move devremulk-oda-no           to det-2
+          move devremulk-oda-konumu       to det-3
+          move devremulk-devre-donem      to det-4
+
+          initialize musteri-rec
+          move devremulk-profil-sirket    to musteri-sirket
+          move devremulk-profil-no        to musteri-no
+          read musteri no lock invalid 
+                continue
+          end-read 
+
+          move musteri-adi                to det-5
+          move musteri-soyadi             to det-6
+
+          move devremulk-aidat-tutar      to z-aidat
+          move z-aidat                    to det-7
+          move devremulk-aidat-doviz-kodu to det-8
+          .
+
+
+
+ 

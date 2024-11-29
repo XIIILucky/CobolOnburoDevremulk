@@ -1,0 +1,1170 @@
+* losty.evt
+* losty.evt is generated from D:\asya\acugt.ytl\otel\losty.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ combo-2-Exception-Proc.
+     PERFORM combo-2-Ex-Other
+     .
+
+ Form2-Gd-1-Event-Proc.
+     PERFORM Form2-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    move "long2015" to isyeri-adres-tasi
+    perform adresleri-tasi.
+    open input kllnc.
+    move k-kodu-tasi    to k-kodu
+    read kllnc no lock invalid
+         continue
+    end-read
+    close kllnc.
+
+    move 1 to enable-1
+    move 0 to enable-2.
+     .
+*
+ acc-23-Aft-Procedure.
+     move form2-bas-tarih    to takvim-anah.
+     perform tarih-kontrol.
+*
+ tarih-kontrol.
+     initialize gec-gecme
+     open input takvim
+     read takvim no lock invalid
+          set hata to true
+     end-read
+     close takvim.
+     .
+*
+ acc-26-Aft-Procedure.
+     move form2-bit-tarih    to takvim-anah.
+     perform tarih-kontrol.
+     .
+*
+ acc-27-Aft-Procedure.
+     initialize gec-gecme acc-28-value
+     evaluate combo-2-value(1:1)
+     when "O"
+          if form2-oda-dep-no = spaces 
+             move "Tum odalar ..."   to acc-28-value
+          else
+             open input odalar
+             move form2-oda-dep-no   to odalar-anah
+             read odalar no lock invalid
+                  move "Tanimsiz ..." to acc-28-value
+                  set hata to true
+             not invalid
+                  move odalar-anah   to acc-28-value
+                  move " nolu oda"   to acc-28-value(5:)
+             end-read
+             close odalar
+          end-if
+     when "D"
+          if form2-oda-dep-no = spaces 
+             move "Tum odalar ..."   to acc-28-value
+          else
+             open input grup
+             initialize grup-rec
+             set grup-takip-dep                  to true
+             move form2-oda-dep-no               to grup-alt
+             read grup no lock invalid
+                  move 1 to gec-gecme
+                  move "Tanimsiz departman ...." to grup-adi
+                  set hata to true
+             end-read
+             close grup
+             move grup-adi                       to acc-28-value
+          end-if          
+     when other
+          move "Tum kayitlar ..."    to acc-28-value
+     end-evaluate.
+     display acc-28.
+     .
+*
+ combo-2-Ex-Other.
+     evaluate combo-2-value(1:1)
+     when "T"
+          initialize form2-oda-dep-no
+          display acc-27 
+          modify acc-27, enabled = false
+          modify form2-pb-2, enabled = false
+          move "Tum kayitlar ..."    to acc-28-value
+          display acc-28
+     when other
+          modify acc-27, enabled = true
+          modify form2-pb-2, enabled = true
+     end-evaluate
+     .
+*
+ Form2-Ex-Other.
+     evaluate key-status
+     when 29 
+          set exit-pushed to true
+     when 2
+          perform acc-23-Aft-Procedure
+          if hata 
+             move 4 to accept-control
+             move 26 to control-id
+             exit paragraph
+          end-if
+
+          perform acc-26-Aft-Procedure
+          if hata 
+             move 4 to accept-control
+             move 29 to control-id
+             exit paragraph
+          end-if
+
+          if form2-bas-tarih > form2-bit-tarih
+             move 4 to accept-control
+             move 26 to control-id
+             exit paragraph
+          end-if
+
+          perform acc-27-Aft-Procedure
+          if hata 
+             move 4 to accept-control
+             move 21 to control-id
+             exit paragraph
+          end-if
+
+          perform form2-reset-grid
+          perform form2-load-grid
+          move 0 to form2-eski-y 
+          move 2 to event-data-2
+          perform parlat
+          move 4 to accept-control
+          move 36 to control-id
+     end-evaluate.
+
+*
+ form2-load-grid.
+     open input takip kllnc grup odalar
+     initialize takip-rec
+     if cmb-turu2(1:1) = "B" then
+            set takip-tip-lost  to true
+     else
+            set takip-tip-found to true
+     end-if
+     move form2-bas-tarih    to takip-ilk-tarih
+     start takip key not < takip-alt-1 invalid
+           continue
+     not invalid
+     initialize fs-takip
+     perform with test after until fs-takip = "10"
+     read takip next no lock end move "10" to fs-takip
+     not at end
+
+       if cmb-turu2(1:1) = "B" then
+          if  not takip-tip-lost or 
+             takip-ilk-tarih > form2-bit-tarih
+                 exit perform
+          end-if
+       else
+          if  not takip-tip-found or 
+             takip-ilk-tarih > form2-bit-tarih
+                 exit perform
+          end-if
+       end-if
+
+        if filtre-malzeme <> spaces
+             move takip-durum1-aciklamalar1   to kelime
+             move filtre-malzeme              to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                exit perform cycle
+             end-if
+         end-if
+
+         if arama-turu = 2 and takip-found-anah <> spaces then
+               exit perform cycle
+         end-if
+          if combo-2-value(1:1) <> "T"
+             if combo-2-value(1:1) <> takip-odami-depmi
+                exit perform cycle
+             end-if
+             if form2-oda-dep-no <> spaces
+                if form2-oda-dep-no <> takip-oda-dep-no
+                   exit perform cycle
+                end-if
+             end-if
+          end-if
+
+          if combo-3-value(1:1) <> "T"
+             if combo-3-value(1:1) <> takip-acik-kapali
+                exit perform cycle
+             end-if
+          end-if
+
+          initialize form2-gd-1-record
+
+
+          move takip-anah            to gd-1-col-8
+
+          move takip-fis-no          to gd-1-col-1
+          move takip-ilk-gun         to egun
+          move takip-ilk-ay          to eay
+          move takip-ilk-yil         to eyil
+          move etarih                to gd-1-col-2
+
+          evaluate takip-odami-depmi
+          when "O"
+             move takip-oda-dep-no   to odalar-anah
+             read odalar no lock invalid
+                  move "Tanimsiz ..." to gd-1-col-3   
+             not invalid
+                  move odalar-anah   to gd-1-col-3
+                  move " nolu oda"   to gd-1-col-3(5:)
+             end-read
+          when "D"
+             initialize grup-rec
+             set grup-takip-dep                  to true
+             move takip-oda-dep-no               to grup-alt
+             read grup no lock invalid
+                  move takip-oda-dep-no          to grup-adi
+                  move "-"                       to grup-adi(5:)
+                  move "Tanimsiz departman ...." to grup-adi(6:)
+             end-read
+             move grup-adi                       to gd-1-col-3
+          end-evaluate
+
+          move takip-durum1-aciklamalar1    to gd-1-col-4
+          move takip-durum1-aciklamalar2    to gd-1-col-5
+          move takip-ilk-kayit-gun         to egun
+          move takip-ilk-kayit-ay          to eay
+          move takip-ilk-kayit-yil         to eyil
+          move etarih                to gd-1-col-6
+          move takip-staf                to k-kodu
+          read kllnc no lock invalid
+               move "Tanimsiz ...."      to k-soyadi
+               move k-kodu               to k-adi
+          end-read
+          inspect k-adi replacing trailing spaces by low-values
+          inspect k-soyadi replacing trailing spaces by low-values
+          move all low-values to gd-1-col-7
+          string gd-1-col-7
+                 k-adi delimited by low-values
+                 " " delimited by low-values
+                 k-soyadi delimited by low-values
+          into gd-1-col-7
+          inspect gd-1-col-7 replacing all low-values by spaces
+          modify form2-gd-1,
+                 record-to-add(Form2-gd-1-record)
+     end-read
+     end-perform
+     end-start.
+
+     close takip kllnc grup odalar.
+*
+ form2-reset-grid.
+     modify Form2-Gd-1, 
+            reset-grid = 1
+            mass-update = 1
+     initialize form2-gd-1-record
+     move "Islem no"       to gd-1-col-1
+     move "Bul.Tarihi"     to gd-1-col-2
+     move "Bulunan yer"      to gd-1-col-3
+     move "Malzeme"          to gd-1-col-4
+     move "Aciklama"         to gd-1-col-5
+     move "Kayit Tar."       to gd-1-col-6
+     move "Kullanici"        to gd-1-col-7
+     modify form2-gd-1,
+            record-to-add(Form2-gd-1-record)
+     initialize form2-gd-1-record
+     move "    Y  E  N  I "    to gd-1-col-4
+     move "    K  A  Y  I  T " to gd-1-col-5
+     modify form2-gd-1,
+            record-to-add(Form2-gd-1-record)
+     modify form2-gd-1,
+            mass-update = 0.
+     .
+*
+ Form2-Aft-Initdata.
+     perform form2-reset-grid
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc
+     if arama-turu = 2 then
+          if cmb-turu(1:1) = "B" then
+               move "F"      to cmb-turu2 
+          end-if
+          if cmb-turu(1:1) = "F" then
+               move "B"      to cmb-turu2 
+          end-if
+          display sc-turu2
+          modify sc-turu2, enabled = false
+          
+     end-if
+     .
+*/-----------------------------\*         
+*
+ Form2-Bef-Create.
+     initialize form2-deg
+     move tarih-tasi           to form2-bas-tarih
+                                  form2-bit-tarih
+     move "T-Tumu"             to combo-2-value
+                                  combo-3-value.
+*
+ Form2-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-goto-cell
+     when msg-goto-cell-mouse
+          perform parlat
+     when msg-begin-entry
+          move event-action-fail to event-action
+          if event-data-2 > 2
+             inquire form2-gd-1(event-data-2,1),
+                     cell-data in form2-fis-no
+            inquire form2-gd-1(event-data-2,8),
+                     cell-data in xdeger
+             move xdeger           to xtakip-anah
+             set form2-ok to true
+             perform escapele
+          else
+             if event-data-2 = 2
+                set form2-ok to true
+                perform escapele
+             end-if
+          end-if
+     end-evaluate.
+*
+ escapele.
+    call "w$keybuf" using 1,x"1d".
+*
+ parlat.
+     if form2-eski-y <> zeroes
+        modify form2-gd-1(form2-eski-y),
+               row-color = 0
+     end-if
+     move event-data-2     to form2-eski-y
+     modify form2-gd-1(form2-eski-y), 
+               row-color = 481.
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2001
+          if form1-islem-no = zeroes
+             perform fis-al
+             perform kayit-getir
+          else
+             perform kayit-getir
+          end-if
+     when 6
+          if enable-2 = 1
+             perform fis-dok
+          end-if
+     when 2
+          perform kayit-kontrol
+          if hata 
+             exit paragraph
+          end-if
+     when 3
+          if enable-2 = 1
+             if k-super = "E"
+                perform sil-soru
+                if soru-donus = 1
+                   perform kayit-sil
+                   perform yeni-kayit
+                end-if
+             end-if
+          end-if
+     when 5
+          exit paragraph 
+          perform acu-form3-routine
+          perform yeni-kayit
+     when 7
+          perform yeni-kayit
+     when 1 
+          evaluate control-id
+          when 21
+              evaluate takip-odami-depmi(1:1)
+              when "O"
+                 initialize oda-cagir
+                 call "/asya/ytl/obj/otel/odaara.asy" using oda-cagir
+                      on exception perform callerr-proc
+                      not on exception
+                 cancel "/asya/ytl/obj/otel/odaara.asy" 
+                 end-call
+                 if odano-cagir <> spaces
+                    move odano-cagir     to takip-oda-dep-no
+                    display acc-11
+                 end-if
+              when "D"
+                 initialize oda-cagir
+                 move "T" to grup-cagir-tipi
+                 call "/asya/ytl/obj/otel/takdepar.asy" using grup-cagir-tipi grup-cagir
+                      on exception perform callerr-proc
+                      not on exception
+                 cancel "/asya/ytl/obj/otel/takdepar.asy" 
+                 end-call
+                 if grup-cagir <> spaces
+                    move grup-cagir    to takip-oda-dep-no
+                    display acc-11
+                 end-if
+               end-evaluate
+
+          when 3 
+               perform acu-form2-routine
+               if form2-ok
+
+                     if form2-fis-no <> zeroes   
+                         move form2-fis-no    to form1-islem-no
+                         move xtakip-anah(1:1)     to cmb-turu
+                         display Form1-Cm-1
+                     else
+                         perform fis-al
+                     end-if
+                    
+                     display acc-1
+                     perform kayit-getir
+               else
+                  move 4 to accept-control
+                  move 3 to control-id
+                  exit paragraph
+               end-if
+          end-evaluate
+        when 5001 
+             move 2 to arama-turu 
+
+             perform Acu-Form2-Routine
+ 
+             open input takip2
+             initialize takip2-rec
+             if  xtakip-anah <> spaces then
+                     move xtakip-anah      to takip-found-anah takip2-anah
+                     read takip2 no lock  invalid
+                            continue
+                     not invalid
+                            move takip2-ilk-staf-adi-soyadi to txt-bulan-kisi
+                            move takip2-durum1-aciklamalar1 to txt-malzeme
+                            move takip2-durum1-aciklamalar2 to txt-aciklama
+                     end-read
+                     display Form1-Ef-3aa Form1-Ef-3 Form1-Ef-3a 
+             end-if
+             close takip2
+             move 1 to arama-turu 
+
+             display Form1-Ef-1  Form1-Ef-1a acc-13a acc-14a acc-15a acc-13aa acc-14aa Form1-Ef-4  
+             move 4 to accept-control
+             move 56 to control-id
+         when 5002
+              initialize takip-found-anah txt-bulan-kisi takip-son-staf-adi-soyadi  txt-malzeme  txt-aciklama 
+              takip-son-gun  takip-son-ay takip-son-yil  takip-son-saat takip-son-dakika takip-durum2-aciklamalar2
+              display Form1-Ef-1 Form1-Ef-3  Form1-Ef-1a acc-13a acc-14a acc-15a acc-13aa acc-14aa Form1-Ef-4 
+              Form1-Ef-3aa Form1-Ef-3 Form1-Ef-3a 
+     end-evaluate
+     .
+*
+ kayit-kontrol.
+     initialize gec-gecme
+     perform Acc-10-Aft-Procedure
+     if hata 
+        move 4 to accept-control
+        move 19 to control-id
+        exit paragraph
+     end-if.
+     perform Acc-11-Aft-Procedure
+     if hata 
+        move 4 to accept-control
+        move 21 to control-id
+        exit paragraph
+     end-if.
+     perform Acc-15-Aft-Procedure
+     if hata 
+        move 4 to accept-control
+        move 28 to control-id
+        exit paragraph
+     end-if.
+     perform Acc-19-Aft-Procedure
+     if hata 
+        move 4 to accept-control
+        move 34 to control-id
+        exit paragraph
+     end-if.
+
+     if takip-kapali 
+           exit paragraph
+     end-if
+
+     perform kaydet-soru
+     if soru-donus <> 1 
+        exit paragraph
+     end-if.
+
+
+
+     open i-o takip.
+          if cmb-turu(1:1) = "B" then
+                 set takip-tip-lost  to true
+          else
+                 set takip-tip-found to true
+          end-if
+     move form1-islem-no   to takip-fis-no
+     move 0                to takip-fis-sira
+     if kayit-durum <> "E"
+        accept takip-ilk-kayit-tarih from century-date
+        accept takip-ilk-kayit-zaman from time
+     else
+        accept takip-son-kayit-tarih from century-date
+        accept takip-son-kayit-zaman from time
+     end-if
+     move k-kodu-tasi      to takip-staf
+     set takip-acik        to true
+        
+     if takip-durum-grup-kodu(1:1) = "T" then
+          set takip-kapali to true 
+     end-if
+
+     if (takip-durum-grup-kodu(1:1) <> "T" and takip-durum-grup-kodu(1:1) <> "H" ) 
+          set takip-acik to true 
+     end-if
+
+     if  (takip-durum-grup-kodu(1:1) <> "T" and takip-durum-grup-kodu(1:1) <> "H" ) 
+         and takip-found-anah <> spaces then
+          set takip-beklemede to true 
+     end-if
+
+
+
+     write takip-rec invalid
+           rewrite takip-rec end-rewrite
+     end-write
+
+     perform log-operation-takip 
+     close takip
+ 
+     if takip-found-anah <> spaces then
+        open i-o takip2
+                move takip-found-anah to takip2-anah
+                read takip2 no lock invalid
+                        continue
+                not invalid
+                 
+                      move takip-ANAH                 to takip2-found-anah
+                      move takip-durum2-aciklamalar1  to takip2-durum2-aciklamalar1
+                      move takip-durum-grup-kodu      to takip2-durum-grup-kodu
+                      move takip-son-staf-adi-soyadi  to takip2-son-staf-adi-soyadi 
+                      move takip-durum2-aciklamalar2  to takip2-durum2-aciklamalar2
+                      move takip-durum2-aciklamalar2  to takip2-durum2-aciklamalar2
+                      move takip-son-tarih            to takip2-son-tarih
+                      move takip-acik-kapali         to takip2-acik-kapali
+
+                      rewrite takip2-rec invalid
+                              continue
+                      end-rewrite
+                      perform log2-operation-takip 
+                end-read
+        close takip2
+     end-if
+
+     display message box
+             "Takip teslim tutanagi yazdirilsin mi ?",
+             title "Bilgi",
+             type mb_yes_no
+             default 1
+             returning return-code
+     if return-code = 1
+        perform fis-dok
+     end-if.
+
+     perform yeni-kayit.
+*
+ yeni-kayit.
+     initialize takip-rec form1-islem-no acc-12-value acc-8-value acc-9-value
+     move 1 to enable-1
+     move 0 to enable-2
+     initialize takip-found-anah txt-bulan-kisi takip-son-staf-adi-soyadi  txt-malzeme  txt-aciklama 
+             takip-son-gun  takip-son-ay takip-son-yil  takip-son-saat takip-son-dakika takip-durum2-aciklamalar2
+              display Form1-Ef-1 Form1-Ef-3  Form1-Ef-1a acc-13a acc-14a acc-15a acc-13aa acc-14aa Form1-Ef-4 
+              Form1-Ef-3aa Form1-Ef-3 Form1-Ef-3a 
+     display form1
+     move 4 to accept-control
+     move 3 to control-id.
+*
+ fis-al.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept hk-tk-servis-no from time
+     end-read
+     add 1 to hk-tk-servis-no
+     rewrite genelfis-rec invalid
+             write genelfis-rec end-write
+     end-rewrite
+     close genelfis.
+     move hk-tk-servis-no    to form1-islem-no.
+     display acc-1.
+*
+ kayit-getir.
+     |******************************************
+     if cmb-turu(1:1) = "B" then
+           move "Bulan Kisi :      " to lbl1-text
+           move "Bulunan Dep./Oda :" to lbl2-text
+           move "Bulunma Tarihi :  " to lbl3-text
+           move "Bulunma Zamani :  " to lbl4-text
+           move "Bulunan Malzeme : " to lbl5-text
+           move ".....::::: Kayip Esya Sahibi ::::....." to alt-baslik 
+           move ".....::::: Kayip Esya Teslim Bilg.  ::::....." to alt-baslik2
+           display Form1-La-1cbaab
+           move 0 to enable-3
+     else
+           move "Bildiren Kisi :      " to lbl1-text
+           move "Bildirilen Dep./Oda :" to lbl2-text
+           move "Bildirim Tarihi :    " to lbl3-text
+           move "Bildirim Zamani :    " to lbl4-text
+           move "Bildirilen Malzeme : " to lbl5-text
+           move ".....::::: Kayip Esya Bulunan Kayit ::::....." to alt-baslik
+           move ".....::::: Kayip Esya Teslim Bilg.  ::::....." to alt-baslik2
+           display Form1-La-1cbaab
+           move 1 to enable-3
+     end-if                                                                                          
+           display Form1-La-1c Form1-La-1ca Form1-La-1ab Form1-La-1aab Form1-La-1cba Form1-La-1cbaa 
+
+
+     |*****************************************
+     open input takip kllnc
+     initialize takip-rec kayit-durum acc-8-value acc-9-value
+     if cmb-turu(1:1) = "B" then
+                 set takip-tip-lost  to true
+     else
+                 set takip-tip-found to true
+     end-if
+     move form1-islem-no   to takip-fis-no
+     move 0                to takip-fis-sira
+     read takip no lock invalid
+          initialize takip-rec
+          if cmb-turu(1:1) = "B" then
+                 set takip-tip-lost  to true
+          else
+                 set takip-tip-found to true
+          end-if
+          move form1-islem-no to takip-fis-no
+          move 0              to takip-fis-sira
+          move "O"            to takip-odami-depmi
+          accept takip-ilk-tarih from century-date
+          accept takip-ilk-zaman from time 
+     not invalid
+          if takip-kapali
+             display message box 
+                     "Teslim edilmis malzeme kaydinda degisiklik yapamassiniz !"
+                     icon mb_error_icon
+                     title "Hata"
+                     set hata to true
+                     
+             | close takip kllnc
+             | perform yeni-kayit
+             | exit paragraph
+          else
+             move "Teslim Edilmedi"         to acc-9-value
+             move takip-staf                to k-kodu
+             read kllnc no lock invalid
+                  move "Tanimsiz ...."      to k-soyadi
+                  move k-kodu               to k-adi
+             end-read
+             inspect k-adi replacing trailing spaces by low-values
+             inspect k-soyadi replacing trailing spaces by low-values
+             move all low-values to acc-8-value
+             string acc-8-value
+                    k-adi delimited by low-values
+                    " " delimited by low-values
+                    k-soyadi delimited by low-values
+             into acc-8-value
+             inspect acc-8-value replacing all low-values by spaces
+             move "E"            to kayit-durum
+          end-if
+
+          open input takip2
+              move zeroes  to takip2-anah
+              move takip-found-anah to  takip2-anah 
+              read takip2 no lock  invalid
+                     initialize txt-bulan-kisi txt-malzeme txt-aciklama
+              not invalid
+                     move takip2-ilk-staf-adi-soyadi to txt-bulan-kisi
+                     move takip2-durum1-aciklamalar1 to txt-malzeme
+                     move takip2-durum1-aciklamalar2 to txt-aciklama
+              end-read
+              display Form1-Ef-3aa Form1-Ef-3 Form1-Ef-3a 
+          close takip2
+
+          if takip-durum-grup-kodu = "T-" or takip-durum-grup-kodu = "H-"  then
+                modify Form1-Pb-4, enabled = false
+                modify Form1-Pb-5, enabled = false
+          else
+                modify Form1-Pb-4, enabled = true
+                modify Form1-Pb-5, enabled = true
+          end-if
+
+     end-read
+     close takip kllnc.
+     move 0 to enable-1
+     move 1 to enable-2
+     display form1.
+ 
+     move 4 to accept-control
+     move 19 to control-id.
+*
+ acc-10-Aft-Procedure.
+     initialize gec-gecme
+     if takip-ilk-staf-adi-soyadi = spaces 
+        set hata to true
+     end-if.
+     .
+*
+ acc-11-Aft-Procedure.
+     initialize acc-12-value gec-gecme
+     evaluate takip-odami-depmi
+     when "D"
+             open input grup
+             initialize grup-rec
+             set grup-takip-dep                  to true
+             move takip-oda-dep-no               to grup-alt
+             read grup no lock invalid
+                  move 1 to gec-gecme
+                  move "Tanimsiz departman ...." to grup-adi
+                  set hata to true
+             end-read
+             close grup
+             move grup-adi                       to acc-12-value
+     when "O"
+             open input odalar
+             move takip-oda-dep-no   to odalar-anah
+             read odalar no lock invalid
+                  move "Tanimsiz ..." to acc-12-value
+                  set hata to true
+             not invalid
+                  move odalar-anah   to acc-12-value
+                  move " nolu oda"   to acc-12-value(5:)
+             end-read
+             close odalar
+     when other
+          set hata to true
+     end-evaluate.
+     display acc-12.
+     .
+*
+ acc-15-Aft-Procedure.
+     move takip-ilk-tarih        to takvim-anah
+     perform tarih-kontrol.
+     .
+*
+ acc-19-Aft-Procedure.
+     initialize gec-gecme
+     if takip-durum1-aciklamalar1 = spaces
+        set hata to true
+     end-if.
+     .
+*
+ kayit-sil.
+     open i-o takip.
+     initialize takip-rec
+     if cmb-turu(1:1) = "B" then
+          set takip-tip-lost  to true
+     else
+          set takip-tip-found to true
+     end-if
+     move form1-islem-no   to takip-fis-no
+     move 0                to takip-fis-sira
+     read takip no lock invalid
+          display message box  
+                  "Silinecek kayit bulunamadi ..."
+                  icon mb_error_icon
+                  title "Hata"
+                  close takip
+                  exit paragraph
+     end-read
+     delete takip end-delete
+     perform log-operation-takip.
+     close takip.
+*
+ acc-51-Aft-Procedure.
+     initialize gec-gecme
+     if takip-son-staf-adi-soyadi = spaces
+        set hata to true
+     end-if.
+     .
+*
+ acc-54-Aft-Procedure.
+     move takip-son-tarih to takvim-anah
+     perform tarih-kontrol.
+     .
+*
+ acc-58-Aft-Procedure.
+     initialize gec-gecme
+     if takip-durum2-aciklamalar1 = spaces
+        set hata to true
+     end-if.
+     .
+*
+ Form3-Ex-Other.
+     evaluate key-status
+      when 17 
+             move takip-dosya         to link-logview-dosya-adi
+             set link-logview-pointer  to address of takip-rec
+             set link-logview-rec-size to size of takip-rec
+             perform logview-call
+             initialize key-status
+
+     when 29 
+          set exit-pushed to true
+     when 2 
+          perform acc-51-Aft-Procedure
+          if hata
+             move 4 to accept-control
+             move 27 to control-id
+             exit paragraph
+          end-if
+          perform acc-54-Aft-Procedure
+          if hata
+             move 4 to accept-control
+             move 45 to control-id
+             exit paragraph
+          end-if
+          perform acc-58-Aft-Procedure
+          if hata
+             move 4 to accept-control
+             move 52 to control-id
+             exit paragraph
+          end-if
+          open i-o takip
+          if cmb-turu(1:1) = "B" then
+                 set takip-tip-lost  to true
+          else
+                 set takip-tip-found to true
+          end-if
+          move form1-islem-no   to takip-fis-no
+          move 0                to takip-fis-sira
+          set takip-kapali      to true
+          accept takip-son-kayit-tarih from century-date
+          accept takip-son-kayit-zaman from time
+          rewrite takip-rec invalid
+                  continue
+          not invalid
+                  perform log-operation-takip
+          end-rewrite
+          close takip
+          perform escapele
+     end-evaluate.
+     .
+*
+ Form3-Bef-Create.
+     open input takip
+     if cmb-turu(1:1) = "B" then
+           set takip-tip-lost  to true
+     else
+           set takip-tip-found to true
+     end-if
+     move form1-islem-no   to takip-fis-no
+     move 0                to takip-fis-sira
+     read takip no lock invalid
+          display message box 
+                  "Kayit bulunamadi !"
+                  icon mb_error_icon
+                  title "Hata"
+          close takip
+          perform escapele
+     end-read
+     close takip.
+     set takip-lost-found-teslim    to true
+     move "T-"                      to takip-durum-grup-kodu
+     open input kllnc.
+     move "Teslim Edilmedi"         to acc-39-value
+     move takip-staf                to k-kodu
+     read kllnc no lock invalid
+          move "Tanimsiz ...."      to k-soyadi
+          move k-kodu               to k-adi
+     end-read
+     inspect k-adi replacing trailing spaces by low-values
+     inspect k-soyadi replacing trailing spaces by low-values
+     move all low-values to acc-38-value
+     string acc-38-value
+            k-adi delimited by low-values
+            " " delimited by low-values
+            k-soyadi delimited by low-values
+     into acc-38-value
+     inspect acc-38-value replacing all low-values by spaces
+     close kllnc.
+     accept takip-son-tarih from century-date
+     accept takip-son-zaman from time.
+     .
+*
+ Form3-Aft-Initdata.
+     move 4 to accept-control
+     move 37 to control-id.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ fis-dok.
+      open i-o genelfis
+      move 1 to genelfis-anahtar
+      read genelfis no lock invalid
+           accept print-no from time
+      not invalid
+           add 1 to print-no
+           rewrite genelfis-rec end-rewrite
+      end-read
+      close genelfis
+      initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                 dokumer-dosya
+      set  dokumer-yazici-text to true
+      set  dokumer-asya-set to true
+      move print-no         to dokumer-dosya-adi
+
+      open output dokumer
+*/WIND
+      initialize dokumer-rec detay-ana
+      move "W"                    to det-filler(1:)
+      move "KAYIP ESYA TUTANAGI" to detay
+      write dokumer-rec from detay-ana
+*/ BAS
+      initialize dokumer-rec detay-ana
+      move "B"                    to det-filler
+      move "1"                   to det-filler(10:1)
+      move "KAYIP ESYA TUTANAGI" to detay
+      write dokumer-rec from detay-ana
+      initialize dokumer-rec detay
+      move "B"                    to det-filler
+      write dokumer-rec from detay-ana
+
+*/ DOKUMER OZELLIKLER-REC
+      initialize dokumer-rec detay-ana
+      move "O"                    to det-filler
+      move "E" to dokumer-oto-sayfa-basi
+      move 56  to dokumer-oto-sayfa-satir
+      move "|" to dokumer-detay-kolon-ayirici
+      move "LLLLLLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+      move dokumer-ozellikler-rec     to detay
+      write dokumer-rec from detay-ana
+      open input grup odalar takip kllnc
+
+      if cmb-turu(1:1) = "B" then
+               set takip-tip-lost  to true
+      else
+               set takip-tip-found to true
+      end-if
+      move form1-islem-no to takip-fis-no
+      move 0              to takip-fis-sira
+      read takip no lock invalid
+           continue
+      end-read
+
+      perform yazdir 2 times
+      close dokumer
+      call dokumer-prog on exception
+           perform callerr-proc
+      not on exception
+           cancel dokumer-prog
+      end-call
+      close takip grup odalar kllnc
+      delete file dokumer.
+
+yazdir.
+          initialize detay-ana dokumer-rec
+*          move x"12"     to detay
+          write dokumer-rec from detay-ana
+
+          initialize detay-ana dokumer-rec
+          move all "-"   to detay(1:80)
+          write dokumer-rec from detay-ana
+
+          initialize detay-ana dokumer-rec
+          move "Fis No          :"         to detay
+          move takip-fis-no               to detay(18:)
+          write dokumer-rec from detay-ana
+
+          initialize detay-ana dokumer-rec
+ 
+          move "Bulunma Tarihi  :"         to detay
+          if cmb-turu(1:1) = "F" then move "Bildirim Tarihi :"         to detay end-if
+          move takip-ilk-gun                      to egun 
+          move takip-ilk-ay                       to eay
+          move takip-ilk-yil                      to eyil
+          move etarih                             to detay(18:)
+          move "Bulunma Zamani  :"                 to detay(40:)
+          if cmb-turu(1:1) = "F" then  move "Bildirim Zamani :"                 to detay(40:) end-if
+          move takip-ilk-saat                     to esaat
+          move takip-ilk-dakika                   to edakika
+          move takip-ilk-saniye                   to esaniye
+          move ezaman                             to detay(58:)
+          write dokumer-rec from detay-ana
+
+          initialize detay-ana dokumer-rec
+          move "Bulan           :"                to detay
+          move takip-ilk-staf-adi-soyadi          to detay(18:)
+          move "Bulunan Yer     :"                to detay(40:)
+          if cmb-turu(1:1) = "F" then
+                   move "Bildiren        :"                to detay
+          end-if
+
+          initialize dummy-x
+          move takip-oda-dep-no                   to dummy-x
+          move "-"                                to dummy-x(5:)
+          evaluate takip-oda-dep-no
+          when "D"
+                initialize grup-rec
+                set grup-takip-dep                  to true
+                move takip-oda-dep-no               to grup-alt
+                read grup no lock invalid
+                     move "Tanimsiz departman ...." to grup-adi
+                end-read
+                move grup-adi                       to dummy-x(6:)
+          when "O"
+                initialize odalar-rec
+                move takip-oda-dep-no               to odalar-anah
+                read odalar no lock invalid
+                     move "Tanimsiz Oda ..."        to dummy-x(6:)
+                not invalid
+                     move " no'lu oda"              to dummy-x(6:)
+                end-read
+         end-evaluate
+         move dummy-x                               to detay(58:)
+         write dokumer-rec from detay-ana
+
+         initialize dokumer-rec detay-ana
+         move "Bulunan Mlz.    :"         to detay
+         move takip-durum1-aciklamalar1           to detay(19:)
+         write dokumer-rec from detay-ana
+
+         initialize dokumer-rec detay-ana
+         move "Aciklama        :"         to detay
+         move takip-durum1-aciklamalar2           to  detay(19:)
+         write dokumer-rec from detay-ana
+
+          initialize detay-ana dokumer-rec
+          move "Kayit Tarihi    :"         to detay
+          move takip-ilk-kayit-gun                      to egun 
+          move takip-ilk-kayit-ay                       to eay
+          move takip-ilk-kayit-yil                      to eyil
+          move etarih                             to detay(18:)
+          move "Kayit Zamani    :"         to detay(40:)
+          move takip-ilk-kayit-saat                     to esaat
+          move takip-ilk-kayit-dakika                   to edakika
+          move takip-ilk-kayit-saniye                   to esaniye
+          move ezaman                             to detay(58:)
+          write dokumer-rec from detay-ana
+
+          initialize detay-ana dokumer-rec
+          move "Kayit Eden      :"         to detay
+
+             move takip-staf                           to k-kodu
+             read kllnc no lock invalid
+                  move "Tanimsiz Kullanici...."  to k-adi k-soyadi
+             end-read
+             move all low-values        to dummy-x
+             inspect k-adi    replacing trailing spaces by low-values
+             inspect k-soyadi replacing trailing spaces by low-values
+             string dummy-x,
+                    k-adi delimited by low-values
+                    " " delimited by low-values
+                    k-soyadi delimited by spaces
+                    into dummy-x
+             inspect dummy-x replacing all low-values by spaces
+          inspect detay replacing all low-values by space
+          move dummy-x                to detay(18:)
+          write dokumer-rec from detay-ana
+
+          initialize dokumer-rec detay-ana
+          write dokumer-rec
+          write dokumer-rec.
+
+          initialize detay dokumer-rec
+          move all "-"   to detay(1:80)
+          write dokumer-rec from detay-ana.
+*
+ Form1-Aft-Initdata.
+      call "c$narg" using link-var.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*  
+     move takip-dosya to takip2-dosya  
+     perform dil-ayarla-proc
+     
+     if link-var = 1 then
+          move link-lost-anah(2:10)  to form1-islem-no
+          move link-lost-anah(1:1)   to cmb-turu
+          display Form1-Cm-1 acc-1 
+          perform kayit-getir 
+     end-if
+     .
+*/-----------------------------\*         
+     
+     .
+*
+ acc-1-Aft-Procedure.
+           modify Form1-Ef-1a , enabled = false
+           modify acc-13a , enabled = false
+           modify acc-14a , enabled = false
+           modify acc-15a , enabled = false
+           modify acc-13aa , enabled = false
+           modify acc-14aa , enabled = false
+           modify Form1-Ef-4 , enabled = false
+           modify combo-5a,enabled = false
+          if form1-islem-no = zeroes
+             perform fis-al
+          end-if.
+*
+ Form2-Pb-3-Link.
+       if k-kodu-tasi <> "ASYA" then
+             exit paragraph
+       end-if
+       stop "g ye bas devam"
+       open i-o takip takip2
+           initialize takip-rec
+           move "B"   TO takip-tip
+           start takip key not < takip-anah invalid
+                   continue
+           not invalid
+           perform until fs-takip = "10"
+           read takip next no lock end move "10" to fs-takip
+           not end
+                    if takip-tip <> "B" then
+                          exit perform 
+                    end-if
+
+                    initialize takip2-rec
+                    move takip-rec to takip2-rec
+                    move "F" to takip2-tip
+                    delete takip end-delete
+                    write takip2-rec invalid
+                             move 1 to takip2-fis-no(1:1)
+                             write takip2-rec invalid
+                                     stop " "
+                             end-write
+                    end-write
+                  
+           end-read
+           end-perform
+           end-start
+       close takip takip2
+       display message box "Bitti"
+     .             
+
+ 

@@ -1,0 +1,520 @@
+* htmldok.evt
+* htmldok.evt is generated from D:\asya\acugt.ytl\otel\htmldok.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ sc-html-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     initialize deg.
+     open input kllnc.
+     move k-kodu-tasi            to k-kodu
+     read kllnc no lock invalid
+          close kllnc
+          display message box
+                  "Tanimsiz Kullanici ..."
+                  icon mb_error_icon
+                  title "Hata"
+     end-read
+     close kllnc.
+     if html-print-direkt = "E"  and isyeri-adres-tasi(1:4) = "ayka"
+       move 0 to web-vis
+       else
+         move 1 to web-vis
+         end-if .
+
+*
+ Form1-Aft-Initdata.
+     perform load-replace-html.
+     if html-print-direkt = "E"  and isyeri-adres-tasi(1:4) = "ayka"
+            continue
+*     call "C$SYSTEM" using  "@[DISPLAY]:c:\acucorp\acucbl701\acugt\pdf_temp\HtmlPrints.exe  C:\acucorp\acucbl701\acugt\pdf_temp\mutatrkreg.html"
+*            set exit-pushed to true
+
+*        modify sc-html, PRINT-NO-PROMPT=1
+*        set exit-pushed to true
+       | modify form1-lb-1,item-to-add("form1-aft-initdata")
+*     else
+*        modify sc-html, print = 1
+     end-if.    
+
+
+*
+ richedit-Ex-Other.
+     perform form1-ex-other.
+     
+     .
+*
+ load-replace-html.
+           
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+             exit paragraph
+     not invalid
+             add 1 to ekran-fis-1
+             rewrite genelfis-rec
+             end-rewrite
+     end-read
+     close genelfis
+     move all low-values to html-filename html-yaz-dosya html-filename-local  html-oku-dosya
+     inspect htmldok-link-dizayn-dosya replacing trailing spaces by low-values
+ 
+     if NOT is-remote then 
+            string html-filename
+            "C:\acucorp\acucbl701\acugt\pdf_temp\" delimited by low-values
+            htmldok-link-dizayn-dosya delimited by low-values
+             into html-filename
+
+            move html-filename              to html-oku-dosya 
+
+     ELSE
+
+             string html-filename
+                    "@[DISPLAY]:C:\acucorp\acucbl701\acugt\pdf_temp\" delimited by low-values   
+                    htmldok-link-dizayn-dosya delimited by low-values
+             into html-filename
+     
+
+             string html-oku-dosya
+                  "/asya/ytl/liste/" delimited by low-values
+                   ekran-fis-1  delimited by low-values
+                   htmldok-link-dizayn-dosya delimited by low-values
+              into html-oku-dosya
+
+             call "c$copy" using html-filename html-oku-dosya
+                          giving copy-status
+             if copy-status <> 0
+               display message box 
+                       "Html Dizayn Dosyasi Kopyalanamadi !!!"
+                       icon mb_error_icon
+                       title "Hata"
+             end-if
+     end-if
+     
+     string html-yaz-dosya
+            "/asya/ytl/liste/" delimited by low-values
+            htmldok-link-dizayn-dosya delimited by low-values
+            ekran-fis-1 delimited by low-values
+      into html-yaz-dosya
+ 
+      open output html-yaz 
+                            
+      move htmldok-link-dosya         to htmldok-dosya 
+      open i-o htmldok.
+      open input html-oku  
+      
+        
+      initialize htmldok-rec 
+      move "[TARIH___]"    to htmldok-kaynak
+      accept tarih from century-date
+      move yil to yil-x
+      move ay  to ay-x
+      move gun to gun-x
+      move tarih-x to htmldok-hedef  
+      move "R" to htmldok-RL
+      write htmldok-rec end-write
+
+      initialize htmldok-rec 
+      move "[ZAMAN_]"    to htmldok-kaynak
+      accept zaman from time
+      move saat    to saat-x
+      move dakika  to dakika-x
+      move saniye  to saniye-x
+      move zaman-x to htmldok-hedef  
+      move "R" to htmldok-RL
+      write htmldok-rec end-write
+
+      initialize htmldok-rec 
+      move "[STAF____]"    to htmldok-kaynak
+      move K-ADI to htmldok-hedef  
+      move "R" to htmldok-RL
+      write htmldok-rec end-write
+
+
+      initialize htmldok-rec 
+      move "[STAF____________]"    to htmldok-kaynak
+
+
+  
+           move all low-values to htmldok-hedef  
+      inspect k-adi replacing trailing spaces by low-values
+        inspect k-soyadi replacing trailing spaces by low-values
+
+
+        string htmldok-hedef 
+        k-adi delimited by low-values
+        " "
+        k-soyadi delimited by low-values
+        into htmldok-hedef
+
+        inspect htmldok-hedef replacing trailing low-values by spaces
+  
+      move "R" to htmldok-RL
+      write htmldok-rec end-write
+
+*******TOPLAM SAYFAYI BUL************************************ 
+        
+       perform toplam-sayfa-sayisi-bul
+
+****************************
+    initialize fs-html-oku r-var  r-htmldok-sira E-SIRA baslik-html baslik-sira sayfa-satir-say ilk-sayfano  
+    initialize siradaki-sayfa-no sayfa-kes
+    move 1 to siradaki-sayfa-no ilk-sayfano 
+    move 1 to sayfa-satir-say
+    perform until fs-html-oku = "10"
+      initialize html-oku-rec
+      read html-oku next no lock end move "10" to fs-html-oku
+      not end
+
+              
+      
+                |||||||||||||ICIRIDEN GLEN PARAMETRELERRRR
+ 
+                initialize aranan-baslik
+                inspect html-oku-rec tallying aranan-baslik for all "htmldok-print-sayfa-say"
+                if aranan-baslik = 1 
+                   move function numval(html-oku-rec(25:)) to htmldok-print-sayfa-say      
+                end-if
+
+                initialize aranan-baslik
+                inspect html-oku-rec tallying aranan-baslik for all "htmldok-sayfa-kesme"
+                if aranan-baslik = 1 
+                   move html-oku-rec(21:) to htmldok-sayfa-kesme
+                end-if
+
+                initialize aranan-baslik
+                inspect html-oku-rec tallying aranan-baslik for all "htmldok-icmal-kes-sayfa"
+                if aranan-baslik = 1 
+                   move function numval(html-oku-rec(24:)) to htmldok-icmal-kes-sayfa
+                   perform icmal-kes-sayfa-attir
+                end-if
+               ||||||||||||||||
+
+                initialize aranan-baslik
+                inspect html-oku-rec tallying aranan-baslik for all "[B]"
+                if aranan-baslik = 1 
+                      add 1 to baslik-sira
+                      inspect html-oku-rec  replacing all "[B]" by "   "
+                end-if
+
+
+                initialize r-var r-htmldok-sira r-html-oku-rec      
+                perform htmldok-bul-degistir
+                initialize html-yaz-rec
+                move html-oku-rec to html-yaz-rec
+                 |////ILK SAYFA NO SAYFA AYARLAMA 
+                initialize aranan-i
+                inspect html-yaz-rec tallying aranan-i for all "[SAYFANO]"
+                 if ilk-sayfano = 1 and aranan-i = 1 
+                    move toplam-sayfa-sayisi to sayfa-num-top
+                    MOVE siradaki-sayfa-no   TO sayfa-num-siradaki
+                    inspect html-yaz-rec  replacing all "[SAYFANO]" by sayfa-num-gercek
+                    initialize ilk-sayfano
+                end-if
+                |||//////
+
+                write html-yaz-rec 
+          
+                if r-var = 1
+                   perform until r-var = 0
+                         move E-SIRA to r-htmldok-sira
+                         add 1 to r-htmldok-sira sayfa-satir-say
+                         perform htmldok-bul-degistir
+                         if r-var = 1  and kayit-buldum = 1
+                                 initialize html-yaz-rec
+                                 move html-oku-rec to html-yaz-rec
+                                 write html-yaz-rec
+                         end-if
+
+
+                         if r-var = 1  and kayit-buldum = 0
+                              initialize r-var
+                         end-if
+          
+                            
+                         compute son-sayfa-bos-satir-sayisi 
+                         = toplam-kisi-sayisi - r-htmldok-sira
+                         if htmldok-print-sayfa-say < toplam-kisi-sayisi 
+                               divide toplam-kisi-sayisi 
+                               by htmldok-print-sayfa-say 
+                               giving son-sayfa-satir-sayisi remainder son-sayfa-satir-sayisi
+                                  
+                         else
+                               compute  son-sayfa-satir-sayisi 
+                               = toplam-kisi-sayisi 
+                                   
+                         end-if
+                         if son-sayfa-satir-sayisi > htmldok-icmal-kes-sayfa and htmldok-icmal-kes-sayfa <> spaces  and son-sayfa-bos-satir-sayisi = 0
+                              move 1 to sayfa-kes
+                         end-if
+                         
+
+                         if sayfa-satir-say = htmldok-print-sayfa-say or sayfa-kes = 1
+                            initialize sayfa-kes
+                            ADD 1 TO siradaki-sayfa-no
+                            initialize html-yaz-rec sayfa-satir-say
+                            move htmldok-sayfa-kesme to html-yaz-rec
+                            write html-yaz-rec
+                            perform varying i from 1 by 1 until i > 10
+                                  if baslik-html-code(i) = spaces
+                                      exit perform
+                                  end-if
+
+                                  initialize html-yaz-rec
+                                  move baslik-html-code(i) to html-yaz-rec
+                                  
+                                  |////SAYFA AYARLAMA
+                                  move toplam-sayfa-sayisi to sayfa-num-top
+                                  MOVE siradaki-sayfa-no TO sayfa-num-siradaki
+                                  inspect html-yaz-rec replacing all "[SAYFANO]" by sayfa-num-gercek
+                                  |||//////
+
+                                  write html-yaz-rec
+                            end-perform
+                         end-if
+                   end-perform
+               end-if
+
+                if aranan-baslik = 1 
+                      move html-oku-rec to baslik-html-code(baslik-sira)
+                end-if
+              
+
+    end-read
+    end-perform
+ 
+  
+*****************************************************
+    
+     close html-oku  htmldok  html-yaz
+                
+           
+     call "c$copy" using html-yaz-dosya html-filename
+                  giving copy-status. 
+    if copy-status <> 0
+       display message box 
+               "Html Dizayn Dosyasi Kopyalanamadi !!!"
+               icon mb_error_icon
+               title "Hata"
+    end-if
+
+    if NOT is-remote then 
+           modify sc-html,value = html-filename
+    ELSE
+         if html-print-direkt = "E" and isyeri-adres-tasi(1:4) = "ayka"
+             initialize  mamikomut
+         string   "@[DISPLAY]:c:\acucorp\acucbl701\acugt\pdf_temp\HtmlPrints.exe  C:\acucorp\acucbl701\acugt\pdf_temp\" delimited by size
+         htmldok-link-dizayn-dosya delimited by low-values
+         into mamikomut
+           call "C$SYSTEM" using mamikomut
+      |  call "C$SYSTEM" using  "@[DISPLAY]:c:\acucorp\acucbl701\acugt\pdf_temp\HtmlPrints.exe  C:\acucorp\acucbl701\acugt\pdf_temp\mutatrkreg.html"
+           call "c$sleep" using 1
+             call "w$keybuf" using 1,x"1b"
+           else
+
+           modify sc-html,value = html-filename(12:)
+           end-if
+    END-IF.
+
+*
+ htmldok-bul-degistir.
+      initialize R-SIRA E-SIRA r-text-atma kayit-buldum fs-htmldok 
+      if r-htmldok-sira > 0
+              initialize htmldok-rec 
+              move r-htmldok-sira to htmldok-sira
+              move 1              to htmldok-repeat
+              start htmldok key not < htmldok-anah-rsira invalid
+                   initialize r-var r-htmldok-sira r-html-oku-rec
+                   exit paragraph
+              end-start
+      else
+              initialize htmldok-rec 
+              start htmldok key not < htmldok-anah invalid
+                    initialize r-var r-htmldok-sira r-html-oku-rec
+                    exit paragraph
+              end-start
+      end-if
+
+
+      perform until fs-htmldok = "10"
+      read htmldok next no lock end move "10" to fs-htmldok
+      not end
+ 
+
+           if r-htmldok-sira <> htmldok-sira and r-htmldok-sira <> 0  and htmldok-repeat <> 1
+                 initialize r-var r-htmldok-sira r-html-oku-rec
+                 exit perform
+           end-if
+           
+           if htmldok-repeat = 1 AND E-SIRA <> HTMLDOK-SIRA and E-SIRA <> 0
+                 EXIT PERFORM
+           end-if
+
+
+           if htmldok-kaynak = spaces
+              exit perform cycle
+           end-if
+            
+
+
+           initialize aranan-i
+           inspect html-oku-rec tallying aranan-i for all "[R]"
+           if aranan-i = 1 
+                 move 1 to r-var
+                 move html-oku-rec to r-html-oku-rec
+           end-if
+
+           if r-var = 1 and r-text-atma <> 1
+                  move r-html-oku-rec to html-oku-rec  
+           end-if
+
+
+           move 0 to i ii
+           perform varying i from i by 1 until i > 100
+                   if htmldok-kaynak(i:1) = spaces
+                        compute ii = i - 1
+                        exit perform
+                   end-if
+           end-perform
+
+           initialize aranan-i
+           inspect html-oku-rec tallying aranan-i for all htmldok-kaynak(1:ii)
+           if aranan-i = 1 
+                  call "c$justify" using htmldok-hedef(1:ii) ,htmldok-RL
+
+                  move htmldok-hedef to tr-karakter  
+                  perform tr-cevir 
+                  move tr-karakter to htmldok-hedef  
+
+                  inspect html-oku-rec  replacing all htmldok-kaynak(1:ii) by  htmldok-hedef(1:ii)
+
+                  inspect html-oku-rec  replacing all "[R]" by "   "
+                  MOVE HTMLDOK-SIRA TO E-SIRA
+                  move 1 to r-text-atma kayit-buldum
+           end-if            
+
+      end-read
+      end-perform.
+
+
+toplam-sayfa-sayisi-bul.
+      initialize htmldok-rec toplam-kisi-sayisi
+      move 1 to htmldok-repeat
+      start htmldok key not < htmldok-anah-rsira invalid
+             continue
+      not invalid
+      perform with test after until fs-htmldok = "10"
+      read htmldok next no lock end move "10" to fs-htmldok
+      not at end
+             if htmldok-repeat <> 1
+                    exit perform
+             end-if
+             move htmldok-sira to toplam-kisi-sayisi
+      end-read
+      end-perform
+      end-start 
+      compute toplam-sayfa-sayisi = toplam-kisi-sayisi / htmldok-print-sayfa-say
+      add 1 to toplam-sayfa-sayisi.
+
+*
+ icmal-kes-sayfa-attir.
+       if htmldok-print-sayfa-say < toplam-kisi-sayisi 
+            divide toplam-kisi-sayisi 
+            by htmldok-print-sayfa-say giving son-sayfa-satir-sayisi  remainder son-sayfa-satir-sayisi
+      else
+            compute  son-sayfa-satir-sayisi = toplam-kisi-sayisi 
+      end-if
+      if son-sayfa-satir-sayisi > htmldok-icmal-kes-sayfa  
+            add 1 to toplam-sayfa-sayisi 
+      end-if.
+
+*
+ yazdir.
+
+    initialize winprint-selection
+    call "Win$printer" using winprint-setup-old
+         returning return-code
+    end-call
+
+    initialize winprint-no-of-printers winprint-selection. 
+    call "win$printer"  using winprint-get-current-info, 
+                               winprint-selection 
+                        giving winprint-donus.
+
+                                                             
+     call "win$printer" using winprint-set-printer 
+                              winprint-selection
+                        giving winprint-donus
+ 
+
+    move "-P SPOOLER"   to yazici-dosya.
+*
+ Form1-Ex-Other. 
+     evaluate key-status
+     when 1
+          modify sc-html,page-setup = 1
+     when 2
+          if html-print-direkt = "E" and isyeri-adres-tasi(1:4) = "ayka"
+
+                         initialize  mamikomut
+         string   "@[DISPLAY]:c:\acucorp\acucbl701\acugt\pdf_temp\HtmlPrints.exe  C:\acucorp\acucbl701\acugt\pdf_temp\" delimited by size
+         htmldok-link-dizayn-dosya delimited by low-values
+         into mamikomut
+           call "C$SYSTEM" using mamikomut
+      |  call "C$SYSTEM" using  "@[DISPLAY]:c:\acucorp\acucbl701\acugt\pdf_temp\HtmlPrints.exe  C:\acucorp\acucbl701\acugt\pdf_temp\mutatrkreg.html"
+         
+          
+
+
+
+
+
+
+            | call "C$SYSTEM" using  "@[DISPLAY]:c:\acucorp\acucbl701\acugt\pdf_temp\HtmlPrints.exe  C:\acucorp\acucbl701\acugt\pdf_temp\mutatrkreg.html"
+          else
+             modify sc-html, print = 1
+          end-if
+     when 3
+          modify sc-html, PRINT-PREVIEW  = 1
+     when 9
+          call "w$keybuf" using 1,x"1b"
+     end-evaluate.
+*
+ tr-cevir.
+     inspect tr-karakter converting  x"9E" to x"DE" |Þ 
+     inspect tr-karakter converting  x"9F" to x"FE" |þ
+
+     inspect tr-karakter converting  x"98" to x"DD" |Ý 
+
+     inspect tr-karakter converting  x"80" to x"C7" |Ç
+     inspect tr-karakter converting  x"87" to x"E7" |ç
+
+     inspect tr-karakter converting  x"99" to x"D6" |Ö
+     inspect tr-karakter converting  x"94" to x"F6" |ö
+
+     inspect tr-karakter converting  x"A6" to x"D0" |Ð
+     inspect tr-karakter converting  x"A7" to x"F0" |ð
+
+     inspect tr-karakter converting  x"9A" to x"DC" |Ü
+     inspect tr-karakter converting  x"81" to x"FC".|ü
+
+        .
+
+ 
+
+     
+
+
+ 

@@ -1,0 +1,1161 @@
+* share.evt
+* share.evt is generated from D:\asya\acugt.ytl\otel\share.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ Form2-Gd-1-Event-Proc.
+     PERFORM Form2-Gd-1-Ev-Other
+     .
+
+ Form2-Cb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Clicked
+           PERFORM Form2-Cb-1-Ex-Cmd-Clicked
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      open input genel
+      initialize genel-rec
+      move 1     to genel-anahtar
+      read genel no lock invalid
+           display message box "Genel Parametre Tanimsiz..."
+                           title "[ Uyari ]"
+                           icon 1
+               close genel
+           exit paragraph 
+      end-read 
+      close genel
+        call "c$narg" using link-var.
+     .
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 2
+          perform share-ekle
+      when 3
+          perform share-cikar 
+      when 7
+           
+            
+          perform  share-yeni-ekle
+          if rlink-rez-no > 0 then 
+            open input rez
+          
+             move  rlink-rez-no to rez-no 
+             read rez no lock invalid 
+                  stop " "
+             end-read
+               perform share-koy-kont
+            close rez
+           end-if
+
+
+
+      end-evaluate      
+     .
+*
+ share-ekle.
+     perform Acu-Form2-Routine
+     .
+*
+ Form1-Aft-Initdata.
+     move 0 to oto-coz
+     if link-var = 2
+     if link-gelen-rec(1:100) = high-values then 
+        move 1 to oto-coz
+     end-if 
+     end-if.
+     perform baslik-yukle        
+     
+     perform share-rez-yaz
+     
+     display acc-share-num.
+    
+      if oto-coz  = 1
+        
+        perform share-cikar
+        set exit-pushed to true
+      end-if.
+*
+ baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "Rez No"       to gd-1-col-1
+     move "Adi"          to gd-1-col-2
+     move "Soyadi"       to gd-1-col-3
+     move "C/In Tarihi"  to gd-1-col-4
+     move "C/Out Tarihi" to gd-1-col-5
+     move "Acenta"       to gd-1-col-6
+     move "Firma"        to gd-1-col-7
+     move "Oda No"       to gd-1-col-8
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+     modify form1-gd-1, 
+                       mass-update = 0
+     
+     .
+*
+ share-rez-yaz.
+     
+     perform gelen-rez-yaz
+     perform grid-yukle
+     .
+*
+ gelen-rez-yaz. 
+       
+     open i-o rez
+     initialize rez-rec ydk-rez-sharenum
+     move link-share-rez-no   to rez-no
+     read rez no lock invalid 
+          display message box "Rezervasyon Kaydedilmeden Share Yapilamaz.." new-line
+                              "Lutfen Tekrar deneyeniz."
+                          title "[ Uyari ]"
+                          icon 1
+          close rez
+        set exit-pushed to true
+     not invalid
+         if rez-sharenum = 0 or spaces 
+            perform fis-al
+            move share-no       to xshare-no
+            move xshare-no      to rez-sharenum ydk-rez-sharenum
+
+            accept rez-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+            accept rez-edit-zaman from time          |                           
+           
+            rewrite rez-rec end-rewrite
+             perform log-operation-rez 
+            if rez-folio > 0 then 
+              move rez-folio to konuk-folio
+            open i-o konuk
+               read konuk no lock invalid stop " "
+               end-read
+               move rez-sharenum to konuk-sharenum
+               rewrite konuk-rec invalid stop " " end-rewrite
+               close konuk
+            end-if
+
+            perform share-cast-yaz
+         else
+            move rez-sharenum  to ydk-rez-sharenum
+         end-if 
+     end-read 
+     close rez .
+*
+ share-cast-yaz.
+     open i-o cast
+     initialize cast-rec 
+     move link-share-rez-no   to cast-rez-no
+     start cast key not < CAST-ANAH1 invalid
+          continue 
+     not invalid
+     perform with test after until fs-cast = "10"
+     read cast next no lock end move "10"  to fs-cast
+     not at end
+             if cast-rez-no <> link-share-rez-no
+                  exit perform 
+             end-if 
+             move xshare-no     to cast-sharenum
+             rewrite cast-rec end-rewrite 
+     end-read 
+     end-perform
+     end-start
+     close cast
+     .
+*
+ fis-al.
+      open i-o genelfis
+      initialize genelfis-rec 
+      move 2     to genelfis-anahtar
+      read genelfis no lock invalid
+           display message box "Genel Parametre Tanimsiz..."
+                           title "[ Uyari ]"
+                           icon 1
+               close genelfis
+           exit paragraph
+      not invalid
+          add 1                 to share-no
+          rewrite genelfis-rec end-rewrite 
+      end-read 
+      close genelfis.
+*
+ grid-yukle.
+     move "XXXX" to share-odasi
+     open input rez firma acenta
+     move 1                          to i
+     initialize rez-rec 
+     move ydk-rez-sharenum           to rez-sharenum
+     move "I"                        to rez-durumu
+     start rez key not < rez-anah-share invalid
+          continue 
+     not invalid 
+     perform with test after until fs-rez = "10"
+     read rez next no lock end move "10"  to fs-rez
+     not at end 
+            if rez-durumu <> "I" or
+               rez-sharenum <> ydk-rez-sharenum  
+                  exit perform 
+            end-if 
+
+            add 1 to i 
+            if oto-coz  = 1 
+              if rez-no = link-share-rez-no then 
+                move i to oto-coz-i
+              end-if
+            end-if
+            initialize form1-gd-1-record
+            move rez-no            to gd-1-col-1
+            move rez-adi           to gd-1-col-2
+            move rez-soyadi        to gd-1-col-3
+
+            move rez-gir-gun       to egun
+            move rez-gir-ay        to eay
+            move rez-gir-yil       to eyil
+            move etar              to gd-1-col-4
+
+            move rez-cik-gun       to egun
+            move rez-cik-ay        to eay
+            move rez-cik-yil       to eyil
+            move etar              to gd-1-col-5
+            
+            move rez-gir-tar       to ydk-rez-gir-tar
+            move rez-cik-tar       to ydk-rez-cik-tar
+              if rez-cik-tar >= tarih-tasi
+           if "XXXX" = share-odasi
+              move rez-odano to share-odasi
+           end-if
+           end-if
+            if rez-acenta not = spaces 
+               initialize acenta-rec 
+               move rez-acenta                to acenta-kodu
+               read acenta no lock invalid 
+                    move "Tanimsiz Acenta..." to acenta-adi
+               end-read 
+                    move acenta-adi           to gd-1-col-6
+            end-if
+            if rez-firma not = spaces
+               initialize firma-rec 
+               move rez-firma                 to firma-kodu
+               read firma no lock invalid 
+                    move "Tanimsiz Acenta..." to firma-adi
+               end-read 
+                    move firma-adi            to gd-1-col-7               
+            end-if 
+            if rez-cik-tar >= tarih-tasi
+            if rez-odano not = share-odasi then
+              display message box "Farkli blokajli odalar ayni odayi share ediyor gorunuyor"
+            end-if
+            end-if
+            move rez-odano                    to gd-1-col-8
+            modify form1-gd-1(i),record-to-add(form1-gd-1-record)
+                                 hidden-data = rez-c-in
+             modify form1-gd-1(i,1),  hidden-data = rez-c-in
+            if rez-c-in = "E"
+               modify form1-gd-1(i),row-color = 176                                                
+            end-if 
+     end-read 
+     end-perform
+     end-start
+     close rez firma acenta
+     .
+*
+ Form2-Bef-Initdata.
+       perform grid2-baslik.
+
+
+
+*
+ grid2-baslik.
+     modify form2-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form2-gd-1-record
+     move "Rez No"       to gd-2-col-1
+     move "Adi"          to gd-2-col-2
+     move "Soyadi"       to gd-2-col-3
+     move "C/In Tarihi"  to gd-2-col-4
+     move "C/Out Tarihi" to gd-2-col-5
+     move "Acenta"       to gd-2-col-6
+     move "Firma"        to gd-2-col-7
+     move "Oda No"       to gd-2-col-8
+     move "Share No"     to gd-2-col-9
+     modify form2-gd-1,record-to-add(form2-gd-1-record)
+     
+     
+     .
+*
+ Form2-Aft-Initdata.
+     perform grid2-yukle.
+*
+ grid2-yukle.
+      open input rez
+      move link-share-rez-no to rez-no 
+      read rez no lock invalid stop " "
+      end-read
+       move rez-gir-tar       to ydk-rez-gir-tar
+       move rez-cik-tar       to ydk-rez-cik-tar
+       move rez-acenta     to ydk-rez-acenta
+       move rez-firma      to ydk-rez-firma
+       move rez-grup-no    to ydk-rez-grup-no
+       close rez
+     open i-o genelfis
+     initialize genelfis-rec
+     move 1                      to genelfis-anahtar
+     read genelfis no lock invalid 
+          continue 
+     not invalid
+         add 1 to ekran-fis-1 
+         move ekran-fis-1        to takas-no
+         rewrite genelfis-rec end-rewrite 
+     end-read 
+     close genelfis
+
+     move k-kodu-tasi            to takas-k
+     open output takas close takas open i-o takas 
+
+     open input cast  rez acenta firma
+     move 1                      to i
+     initialize cast-rec
+     move ydk-rez-gir-tar        to cast-tarih
+     start cast key not < cast-anah invalid 
+         continue 
+     not invalid
+     perform with test after until fs-cast = "10"
+     read cast next no lock end move "10"  to fs-cast
+     not at end
+           if cast-tarih > ydk-rez-cik-tar 
+                exit perform 
+           end-if 
+           initialize rez-rec
+           move cast-rez-no   to rez-no
+           read rez no lock invalid 
+                continue 
+           not invalid
+                
+                if rez-durumu = "S"
+                    exit perform cycle
+                end-if 
+                if rez-c-in = "E"
+                    exit perform cycle 
+                end-if
+                if uyumlular = 1
+                        if rez-acenta = ydk-rez-acenta and rez-firma = ydk-rez-firma and 
+                           rez-grup-no = ydk-rez-grup-no
+                              continue
+                           else
+                              exit perform cycle 
+                       end-if
+                end-if
+                    initialize takas-rec 
+                    move rez-no            to takas-rez-no
+                    read takas no lock invalid 
+                         initialize takas-rec 
+                         move rez-no            to takas-rez-no
+                         move rez-adi           to takas-rez-adi
+                         move rez-soyadi        to takas-rez-soyadi
+                         move rez-gir-tar       to takas-rez-gir-tar
+                         move rez-cik-tar       to takas-rez-cik-tar
+                         move rez-acenta        to takas-rez-acenta
+                         move rez-firma         to takas-rez-firma
+                         move rez-sharenum      to takas-rez-sharenum
+                         move rez-odano         to takas-rez-odano
+                         write takas-rec invalid 
+                             display message box "Takas Yazilamadi.."
+                         end-write 
+                    not invalid 
+                         move rez-no            to takas-rez-no
+                         move rez-adi           to takas-rez-adi
+                         move rez-soyadi        to takas-rez-soyadi
+                         move rez-gir-tar       to takas-rez-gir-tar
+                         move rez-cik-tar       to takas-rez-cik-tar
+                         move rez-acenta        to takas-rez-acenta
+                         move rez-firma         to takas-rez-firma
+                         move rez-sharenum      to takas-rez-sharenum
+                         move rez-odano         to takas-rez-odano
+                         rewrite takas-rec invalid stop " " end-rewrite 
+                    end-read 
+
+
+           end-read 
+     end-read 
+     end-perform
+     end-start
+     
+
+     initialize takas-rec
+     start takas key not < takas-rez-adi invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-takas = "10"
+     read takas next no lock end move "10"  to fs-takas
+     not at end 
+           add 1                        to i
+           initialize form2-gd-1-record
+           move takas-rez-no            to gd-2-col-1
+           move takas-rez-adi           to gd-2-col-2
+           move takas-rez-soyadi        to gd-2-col-3
+        
+           move takas-rez-gir-gun       to egun
+           move takas-rez-gir-ay        to eay
+           move takas-rez-gir-yil       to eyil
+           move etar                    to gd-2-col-4
+        
+           move takas-rez-cik-gun       to egun
+           move takas-rez-cik-ay        to eay
+           move takas-rez-cik-yil       to eyil
+           move etar                    to gd-2-col-5
+        
+           
+           if takas-rez-acenta not = spaces 
+              initialize acenta-rec 
+              move takas-rez-acenta          to acenta-kodu
+              read acenta no lock invalid 
+                   move "Tanimsiz Acenta..." to acenta-adi
+              end-read 
+                   move acenta-adi           to gd-2-col-6
+           end-if
+           if takas-rez-firma not = spaces
+              initialize firma-rec 
+              move takas-rez-firma           to firma-kodu
+              read firma no lock invalid 
+                   move "Tanimsiz Acenta..." to firma-adi
+              end-read 
+                   move firma-adi            to gd-2-col-7               
+           end-if 
+           move takas-rez-odano              to gd-2-col-8
+            
+           move takas-rez-sharenum           to z-share-no
+           move z-share-no                   to gd-2-col-9
+
+
+           modify form2-gd-1(i),
+                  record-to-add(form2-gd-1-record)
+           if takas-rez-sharenum not = zeroes and 
+              takas-rez-sharenum not = spaces
+                   modify form2-gd-1(i),row-color = 176
+           end-if              
+
+     end-read 
+     end-perform
+     end-start
+     close cast rez acenta firma takas 
+     modify form2-gd-1, 
+                       mass-update = 0
+     delete file takas
+     
+     .
+*
+ Form2-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+         move event-action-fail to event-action                  
+     end-evaluate
+     
+     .
+*
+ share-ekleniyor.
+     display message box ydk-rezno" 'Nolu Rezervasyon Share Edilecek."new-line
+                                "Blokaji " share-odasi " olarak degistirilecek"
+                                  "Eminmisiniz?"
+                     title "[ Dikkat !!!]" 
+                     icon 2
+                     type 2
+                     default 2
+                     returning return-code 
+     if return-code = 2
+        exit paragraph 
+     end-if 
+     open i-o rez cast
+     initialize rez-no
+     move ydk-rezno           to rez-no
+     read rez no lock invalid 
+          display message box "Lutfen Rezervasyon Seciniz.."
+                          title "[ Uyari ]"
+                          icon 1            
+           close rez
+           exit paragraph
+     not invalid 
+         move ydk-rez-sharenum  to rez-sharenum
+         move share-odasi to rez-odano
+          
+         accept rez-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+         accept rez-edit-zaman from time          |                           
+         
+         rewrite rez-rec invalid stop " " end-rewrite 
+         perform log-operation-rez
+        
+     end-read 
+
+     initialize cast-rec 
+     move rez-no                 to cast-rez-no
+     start cast key not < cast-anah1 invalid
+          continue 
+     not invalid
+     perform with test after until fs-cast = "10"
+     read cast next no lock end move "10"  to fs-cast 
+     not at end
+            if cast-rez-no <> rez-no
+                exit perform 
+            end-if 
+               move ydk-rez-sharenum  to cast-sharenum 
+               move share-odasi to cast-oda-no
+               rewrite cast-rec end-rewrite 
+     end-read 
+     end-perform
+     end-start
+     
+     perform share-koy-kont
+     close rez  cast
+            display message box ydk-rezno" 'Nolu Rezervasyon Share Edildi."new-line
+                                         "Lutfen Kontrol Ediniz.."
+                            title "[ Uyari ]"
+                            icon 1
+
+ 
+      .
+*
+ Form2-Ex-Other.
+     evaluate key-status
+     when 56
+       perform  grid2-baslik
+       perform grid2-yukle
+     when 2
+   
+
+         initialize sayac 
+         inquire form2-gd-1, CURSOR-Y sayac
+         inquire form2-gd-1(sayac,1),
+                 cell-data in ydk-rezno
+         perform share-ekleniyor
+         perform grid2-baslik
+         perform grid2-yukle
+     end-evaluate
+     
+     .
+*
+ Form2-Aft-Routine.
+     perform baslik-yukle
+     perform grid-yukle.
+*
+ share-cikar.
+     initialize sayac 
+     inquire form1-gd-1, CURSOR-Y sayac
+     if oto-coz = 1 
+        if oto-coz-i > 0 then 
+          move oto-coz-i to sayac 
+        end-if
+     end-if
+     inquire form1-gd-1(sayac,1),cell-data in ydk-rezno
+     inquire form1-gd-1(sayac,1),hidden-data in rez-c-in
+     if rez-c-in = "E" then 
+         display message box ydk-rezno" 'Nolu Rezervasyonun CIN olmus "new-line
+                                  "Share Islemi yapamassiniz"
+                              title "[ Uyari ]"
+            exit paragraph
+     end-if
+     if oto-coz not = 1 
+     display message box ydk-rezno " 'Nolu Rezervasyonun Baglantisi Cozulecek ve"new-line
+                                   "Blokaji silinecektir ......"new-line
+                                  "Eminmisiniz.?"
+                     title "[ Uyari ]"
+                     icon 2
+                     type 2
+                     default 2
+                     returning return-code 
+     if return-code = 2
+        exit paragraph 
+     end-if
+     end-if
+     perform rez-share-sil
+     perform cast-share-sil
+     open i-o rez
+     perform share-sil-kont
+     close rez
+     if oto-coz not = 1 
+     display message box ydk-rezno" 'Nolu Rezervasyonun Baglantisi Cozuldu."new-line
+                                  "Lutfen Kontrol Ediniz."
+                     title "[ Uyari ]"
+                     icon 1
+     end-if
+     perform baslik-yukle
+     perform grid-yukle
+     .
+*
+ rez-share-sil.
+     open i-o rez
+     initialize rez-rec
+     move ydk-rezno           to rez-no
+     read rez no lock invalid
+          display message box "Lutfen Listeden Bir Rezervasyon Seciniz."
+                          title "[ Uyari ]"
+                          icon 1
+          close rez
+          exit paragraph 
+     not invalid 
+           move rez-sharenum to eski-sharenum
+          initialize rez-sharenum rez-share  rez-odano
+
+            
+           accept rez-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+           accept rez-edit-zaman from time          |                           
+           
+          rewrite rez-rec end-rewrite 
+          perform log-operation-rez
+     end-read 
+     close rez
+     .
+*
+ cast-share-sil.
+     open i-o cast
+     initialize cast-rec
+     move ydk-rezno        to cast-rez-no
+     start cast key not < cast-anah1 invalid 
+          continue 
+     not invalid
+     perform with test after until fs-cast = "10"
+     read cast next no lock end move "10"  to fs-cast 
+     not at end
+             if cast-rez-no <> ydk-rezno
+                 exit perform 
+             end-if
+                initialize cast-sharenum cast-share  cast-oda-no
+                rewrite cast-rec end-rewrite 
+     end-read 
+     end-perform
+     end-start
+     close cast 
+      .
+*
+ share-yeni-ekle.
+       open input rez
+       move link-share-rez-no   to rez-no
+       read rez no lock invalid 
+             STOP " "
+       end-read 
+      close rez .
+     
+           initialize rez-link
+           initialize rlink-rez-no   rlink-gelen-sharenum
+           if rez-gir-tar < tarih-tasi
+             move tarih-tasi to rez-gir-tar
+           end-if
+           move spaces to rez-c-in
+           move 0 to rez-folio
+           move rez-sharenum to rlink-gelen-sharenum
+           move rez-rec to  rlink-gelen-rec 
+            
+             
+         call "/asya/ytl/obj/otel/rez.asy" 
+           using rlink-rez-no rlink-gelen-rec  rlink-gelen-sharenum
+           on exception 
+           perform callerr-proc
+           exit paragraph
+           not on exception 
+               cancel "/asya/ytl/obj/otel/rez.asy"
+         end-call   .
+          perform baslik-yukle
+         perform grid-yukle .
+       
+********************************************************
+*
+ share-koy-kont.
+     
+****** kural .
+****** kontrol edilecek rez kaydi cagrýlmadan okunmus ve kaydedilmis olmali
+******* arez.lib acast.lib takvim2.lib sel tfd de olmali  rez acik olmali
+       
+       open i-o arez  acast  konu2
+       open input takvim2
+       initialize ana-oda-verildi arez-rec
+        move "I" to arez-durumu
+        move rez-sharenum to arez-sharenum
+        move high-values to ilk-share-tar 
+        move low-values  to son-share-tar
+        initialize sodasay
+ 
+              
+          
+         initialize ana-oda-verildi acast-rec  share-odalar
+         move high-values to ilk-share-tar 
+        move low-values  to son-share-tar
+        initialize sodasay
+        move rez-sharenum to acast-sharenum
+        move tarih-tasi to acast-tarih
+
+       start acast key >= acast-anah6 
+               invalid continue
+          not invalid
+          perform until fs-acast = "10" 
+              read acast next no lock end 
+                     move "10" to fs-acast
+                 not end
+                    if rez-sharenum not = acast-sharenum 
+                        move "10" to fs-acast
+                        exit perform cycle
+                    end-if
+                    move acast-rez-no to arez-no 
+                    read arez no lock invalid 
+                          display message  box "Hata Bakim icin arayiniz Castttt "
+                     end-read
+                            if arez-durumu  = "S" then
+                              exit perform cycle
+                            end-if
+
+                             if acast-tarih > son-share-tar
+                                move  acast-tarih to son-share-tar
+                             end-if
+                              if acast-tarih < ilk-share-tar
+                                move  acast-tarih to ilk-share-tar
+                             end-if
+
+                                perform varying ish from 1 by 1 until ish > sodasay or ish > 20 
+                                    if share-oda(ish) = acast-oda-no
+                                      exit perform 
+                                    end-if
+                                end-perform
+                                 if ish > sodasay then 
+                                     if ish >= 20 then
+                                          display message box "20 den fazla oda bagladiniz"
+                                            
+                                       else
+                                             move acast-oda-no to share-oda(ish)
+                                             move ish to  sodasay
+                                     end-if
+                                 end-if
+              end-read
+          end-perform 
+       end-start
+       initialize fs-takvim2 takvim2-rec
+       move ilk-share-tar to takvim2-anah 
+       start takvim2 key >= takvim2-anah invalid continue
+         not invalid 
+         perform until fs-takvim2 = "10"
+             read takvim2 next no lock end move "10" to fs-takvim2 
+               not end
+               if takvim2-anah > son-share-tar 
+                   move "10" to fs-takvim2 
+                   exit perform cycle
+                end-if
+             end-read
+                perform varying ish  from 1 by 1 until ish > sodasay or ish > 20 
+                  initialize ana-oda-verildi acast-rec   fs-acast
+                  move takvim2-anah to acast-tarih
+                  move rez-sharenum to acast-sharenum
+                  move share-oda(ish) to acast-oda-no
+                  move high-values to acast-fiyati  acast-buyuk
+
+                  start acast key < acast-anah6 invalid 
+                          continue
+                     not invalid
+                       perform until fs-acast = "10" 
+                           read acast previous no lock  
+                               end
+                                move "10" to fs-acast
+                                if ana-oda-verildi not = 1 
+                                              move 1 to  ana-oda-verildi
+                                               if  acast-share not = 0
+                                                    move 0 to acast-share
+                                                  rewrite acast-rec invalid stop " " end-rewrite
+                                                  else
+                                                  display message box "Hataaaaa"
+                                               end-if
+                                  end-if
+                                not end
+                                if   takvim2-anah not = acast-tarih  or
+                                     rez-sharenum not = acast-sharenum  or
+                                     share-oda(ish) not = acast-oda-no
+                                       move "10" to fs-acast
+                                        if ana-oda-verildi not = 1 
+                                          read   acast next no lock 
+                                          end   display message box "Hataaaaa"
+                                          exit perform cycle
+                                          end-read
+                                              if   takvim2-anah not = acast-tarih  or
+                                                     rez-sharenum not = acast-sharenum  or
+                                                     share-oda(ish) not = acast-oda-no
+                                                  display message box "Hataaaaa25666"
+                                                   exit perform cycle
+                                             end-if
+                                              move 1 to  ana-oda-verildi
+                                               if  acast-share not = 0
+                                                    move 0 to acast-share
+                                                  rewrite acast-rec invalid stop " " end-rewrite
+                                                  else
+                                                  display message box "Hataaaaa"
+                                               end-if
+                                         end-if
+                                       exit perform cycle
+                                end-if
+                                move acast-rez-no to arez-no
+                                move acast-rez-no to arez-no 
+                                    read arez no lock invalid 
+                                      display message  box "Hata Bakim icin arayiniz Castttt "
+                                          end-read
+                                            if arez-durumu  = "S" then
+                                                  display message box "Silinmis Share gorunuyor"
+                                                  exit perform cycle
+                                                  
+                                            end-if
+                                   if arez-cik-tar <= acast-tarih
+                                       if  acast-share not = 1
+                                            move 1 to acast-share
+                                            rewrite acast-rec invalid stop " " end-rewrite
+                                       end-if
+                                    else
+                                        if ana-oda-verildi not = 1 
+                                              move 1 to  ana-oda-verildi
+                                               if  acast-share not = 0
+                                                    move 0 to acast-share
+                                                  rewrite acast-rec invalid stop " " end-rewrite
+                                              end-if
+                                        else
+                                                 if  acast-share not = 1
+                                                       move 1 to acast-share
+                                                      rewrite acast-rec invalid stop " " end-rewrite
+                                                 end-if
+                                  end-if
+                             end-if
+
+                           end-read
+                       end-perform
+                  end-start
+                end-perform 
+        end-perform
+      end-start
+      initialize arez-rec fs-arez
+
+        move "I" to arez-durumu
+        move rez-sharenum to arez-sharenum
+       start arez key >= aREZ-anah-share invalid continue
+          not invalid
+          perform until fs-arez = "10" 
+              read arez next no lock end 
+                       
+                     move "10" to fs-arez
+                 not end
+                    if rez-sharenum not = arez-sharenum  
+                     
+                            move "10" to fs-arez
+                        exit perform cycle
+                    end-if
+                    if  arez-durumu not = "I"
+                       exit perform cycle
+                    end-if
+                    if arez-cik-tar < tarih-tasi 
+                         exit perform cycle
+                    end-if
+                    if arez-gir-tar <= tarih-tasi
+                       move   tarih-tasi to acast-tarih
+                       move   arez-no   to  acast-rez-no
+                       read acast no lock invalid 
+                                   display message  box "Hata Bakim icin arayiniz Cast444tt "
+                             not invalid 
+                             if acast-share not = arez-share 
+                                     move acast-share to arez-share
+                                     rewrite arez-rec invalid stop " " end-rewrite
+                             end-if
+                             if arez-folio > 0 then 
+                                       move arez-folio to konu2-folio
+                                       read konu2 no lock invalid continue
+                                       not invalid
+                                          move acast-share to konu2-share
+                                          rewrite konu2-rec invalid continue end-rewrite
+                                       end-read
+
+                                     end-if
+                       end-read
+                        else
+                        move   arez-gir-tar  to acast-tarih
+                         move   arez-no        to  acast-rez-no
+                       read acast no lock invalid 
+                                   display message  box "Hata Bakim icin arayiniz Cast444tt "
+                             not invalid 
+                             if acast-share not = arez-share 
+                                     move acast-share to arez-share
+                                     rewrite arez-rec invalid stop " " end-rewrite
+                             end-if
+                       end-read
+
+
+                   end-if
+              end-read
+          end-perform 
+       end-start
+       read rez no lock invalid stop " " 
+       end-read
+
+     close arez acast takvim2 konu2. 
+
+*********************************
+**
+********************************************************
+
+********************************************************
+*
+ share-sil-kont.
+****** kural eski-sharenum dolu olamli .
+****** kontrol edilecek rez kaydi cagrýlmadan okunmus ve kaydedilmis olmali rez-sharenum tabiiki bos
+******* arez.lib acast.lib takvim2.lib sel tfd de olmali  rez acik olmali
+   
+****** kontrol edilecek rez kaydi cagrýlmadan okunmus ve kaydedilmis olmali
+******* arez.lib acast.lib takvim2.lib sel tfd de olmali  rez acik olmali
+       
+       open i-o arez  acast  konu2
+       open input takvim2
+       initialize ana-oda-verildi arez-rec
+        move "I" to arez-durumu
+        move eski-sharenum to arez-sharenum
+        move high-values to ilk-share-tar 
+        move low-values  to son-share-tar
+        initialize sodasay
+ 
+
+      
+       initialize ana-oda-verildi acast-rec  share-odalar
+         move high-values to ilk-share-tar 
+        move low-values  to son-share-tar
+        initialize sodasay   acast-rec fs-acast
+        move eski-sharenum to acast-sharenum
+        move tarih-tasi to acast-tarih
+
+       start acast key >= acast-anah6 
+               invalid continue
+          not invalid
+          perform until fs-acast = "10" 
+              read acast next no lock end 
+                     move "10" to fs-acast
+                 not end
+                    if eski-sharenum not = acast-sharenum 
+                        move "10" to fs-acast
+                        exit perform cycle
+                    end-if
+                    move acast-rez-no to arez-no 
+                    read arez no lock invalid 
+                          display message  box "Hata Bakim icin arayiniz Castttt "
+                     end-read
+                            if arez-durumu  = "S" then
+                              exit perform cycle
+                            end-if
+
+                             if acast-tarih > son-share-tar
+                                move  acast-tarih to son-share-tar
+                             end-if
+                              if acast-tarih < ilk-share-tar
+                                move  acast-tarih to ilk-share-tar
+                             end-if
+
+                                perform varying ish from 1 by 1 until ish > sodasay or ish > 20 
+                                    if share-oda(ish) = acast-oda-no
+                                      exit perform 
+                                    end-if
+                                end-perform
+                                 if ish > sodasay then 
+                                     if ish >= 20 then
+                                          display message box "20 den fazla oda bagladiniz"
+                                       else
+                                             move acast-oda-no to share-oda(ish)
+                                             move ish to  sodasay
+                                     end-if
+                                 end-if
+              end-read
+          end-perform 
+       end-start
+       initialize takvim2-rec fs-takvim2
+       move ilk-share-tar to takvim2-anah 
+       start takvim2 key >= takvim2-anah invalid continue
+         not invalid 
+         perform until fs-takvim2 = "10"
+             read takvim2 next no lock end move "10" to fs-takvim2 
+               not end
+               if takvim2-anah > son-share-tar 
+                   move "10" to fs-takvim2 
+                   exit perform cycle
+                end-if
+             end-read
+                perform varying ish  from 1 by 1 until ish > sodasay or ish > 20 
+                  initialize ana-oda-verildi acast-rec   fs-acast
+                  move takvim2-anah to acast-tarih
+                  move eski-sharenum to acast-sharenum
+                  move share-oda(ish) to acast-oda-no
+                  move high-values to acast-fiyati  acast-buyuk
+
+                  start acast key < acast-anah6 invalid 
+                          continue
+                     not invalid
+                       perform until fs-acast = "10" 
+                           read acast previous no lock  
+                               end
+                                move "10" to fs-acast
+                                if ana-oda-verildi not = 1 
+                                              move 1 to  ana-oda-verildi
+                                               if  acast-share not = 0
+                                                    move 0 to acast-share
+                                                  rewrite acast-rec invalid stop " " end-rewrite
+                                                  else
+                                                  display message box "Hataaaaa"
+                                               end-if
+                                  end-if
+                                not end
+                                if   takvim2-anah not = acast-tarih  or
+                                     eski-sharenum not = acast-sharenum  or
+                                     share-oda(ish) not = acast-oda-no
+                                       move "10" to fs-acast
+                                        if ana-oda-verildi not = 1 
+                                          read   acast next no lock 
+                                          end   display message box "Hataaaaa"
+                                          exit perform cycle
+                                          end-read
+                                              if   takvim2-anah not = acast-tarih  or
+                                                     eski-sharenum not = acast-sharenum  or
+                                                     share-oda(ish) not = acast-oda-no
+                                                  display message box "Hataaaaa25666silll"
+                                                   exit perform cycle
+                                             end-if
+                                              move 1 to  ana-oda-verildi
+                                               if  acast-share not = 0
+                                                    move 0 to acast-share
+                                                  rewrite acast-rec invalid stop " " end-rewrite
+                                                  else
+                                                  display message box "Hataaaaa"
+                                               end-if
+                                         end-if
+                                       exit perform cycle
+                                end-if
+                                move acast-rez-no to arez-no
+                                move acast-rez-no to arez-no 
+                                    read arez no lock invalid 
+                                      display message  box "Hata Bakim icin arayiniz Castttt "
+                                          end-read
+                                            if arez-durumu  = "S" then
+                                                  display message box "Silinmis Share gorunuyor"
+                                                  exit perform cycle
+                                                  
+                                            end-if
+                                   if arez-cik-tar <= acast-tarih
+                                       if  acast-share not = 1
+                                            move 1 to acast-share
+                                            rewrite acast-rec invalid stop " " end-rewrite
+                                       end-if
+                                    else
+                                        if ana-oda-verildi not = 1 
+                                              move 1 to  ana-oda-verildi
+                                               if  acast-share not = 0
+                                                    move 0 to acast-share
+                                                  rewrite acast-rec invalid stop " " end-rewrite
+                                              end-if
+                                        else
+                                                 if  acast-share not = 1
+                                                       move 1 to acast-share
+                                                      rewrite acast-rec invalid stop " " end-rewrite
+                                                 end-if
+                                  end-if
+                             end-if
+
+                           end-read
+                       end-perform
+                  end-start
+                end-perform 
+        end-perform
+      end-start
+      initialize arez-rec fs-arez
+       move "I" to arez-durumu
+        move eski-sharenum to arez-sharenum
+         
+       start arez key >= aREZ-anah-share invalid continue
+          not invalid
+          perform until fs-arez = "10" 
+              read arez next no lock end 
+                       
+                     move "10" to fs-arez
+                 not end
+                    if eski-sharenum not = arez-sharenum or 
+                       arez-durumu not = "I"
+                            move "10" to fs-arez
+                        exit perform cycle
+                    end-if
+                    if arez-cik-tar < tarih-tasi 
+                         exit perform cycle
+                    end-if
+                    if arez-gir-tar <= tarih-tasi
+                       move   tarih-tasi to acast-tarih
+                       move   arez-no   to  acast-rez-no
+                       read acast no lock invalid 
+                                   display message  box "Hata Bakim icin arayiniz Cast444tt "
+                             not invalid 
+                             if acast-share not = arez-share 
+                                     move acast-share to arez-share
+                                     rewrite arez-rec invalid stop " " end-rewrite
+
+                             end-if
+                             if arez-folio > 0 then 
+                                       move arez-folio to konu2-folio
+                                       read konu2 no lock invalid continue
+                                       not invalid
+                                          move acast-share to konu2-share
+                                          rewrite konu2-rec invalid continue end-rewrite
+                                       end-read
+
+                               end-if
+                       end-read
+                        else
+                        move   arez-gir-tar  to acast-tarih
+                         move   arez-no        to  acast-rez-no
+                       read acast no lock invalid 
+                                   display message  box "Hata Bakim icin arayiniz Cast444tt "
+                             not invalid 
+                             if acast-share not = arez-share 
+                                     move acast-share to arez-share
+                                     rewrite arez-rec invalid stop " " end-rewrite
+                             end-if
+                       end-read
+
+
+                   end-if
+              end-read
+          end-perform 
+       end-start
+       read rez no lock invalid stop " " 
+       end-read
+
+     close arez acast takvim2 konu2. 
+
+
+
+
+
+
+
+
+
+
+
+            .
+*
+ Form2-Cb-1-Ex-Cmd-Clicked.
+         perform  grid2-baslik 
+          perform grid2-yukle.
+     
+     .
+
+ 

@@ -1,0 +1,716 @@
+*
+ scr1-Bef-Create.
+     perform adresleri-tasi.
+     open input genel
+     initialize genel-rec
+     move 1   to genel-anahtar
+     read genel no lock invalid 
+           exit paragraph 
+           close genel
+     end-read 
+     close genel
+     open i-o odalar2.
+    if k-kodu-tasi = "ASYA" or "X   " or k-kodu-tasi =  "MURA" then 
+      move 1 to asyami
+      modify scr1-Pb-2,visible = true
+    end-if.
+*
+ scr1-Aft-Initdata.
+     open input kodlar02 konum odalar.
+     open i-o cast.
+     open input rez
+         move cast-link-rez       to rez-no                   
+         read rez no lock invalid continue
+         end-read 
+          display l-s
+
+     close rez
+
+     perform grid-reset.
+     perform grid-load.
+     move rez-no to form-baslik-rez-no
+     modify scr1-Handle, TITLE = form-baslik
+     if k-kodu-tasi = "ASYA" or "X   " or k-kodu-tasi =  "MURA" then 
+          modify scr1-Pb-2,visible = true
+     end-if
+     display assifre
+     open input kllnc
+     initialize kllnc-rec 
+     move k-kodu-tasi to k-kodu
+     read kllnc no lock invalid
+          continue
+     end-read
+     close kllnc.
+
+*
+ grid-reset.
+     modify scr1-Gd-1, 
+            reset-grid = 1
+            mass-update = 1
+     initialize scr1-Gd-1-Record
+     move "*"                    to gd-1-col-0
+     move "Tarih"                to gd-1-col-1
+     move "Oda"                  to gd-1-col-2
+     move "Pax  "                to gd-1-col-3
+     move "Chi  "                to gd-1-col-4
+     move "Free "                to gd-1-col-5
+     move "Beb  "                to gd-1-col-6
+     move "Fiyat"                to gd-1-col-7
+     move "Kn"                   to gd-1-col-8
+     move "Konum"                to gd-1-col-9 
+     move "FK"                   to gd-1-col-10
+     move "Fiy.Konumu"           to gd-1-col-11 
+     move "An"                   to gd-1-col-12
+     move "Anlasma"              to gd-1-col-13
+     move "Pn"                   to gd-1-col-14
+     move "Pansiyon"             to gd-1-col-15
+     move "Anlasma Fiyati"       to gd-1-col-16
+     move "Basilan Fiyat"        to gd-1-col-17
+     move "Grup Kodu"            to gd-1-col-20
+     modify scr1-Gd-1, 
+            record-to-add(scr1-Gd-1-Record)
+            mass-update = 0.
+     move 1 to kayit-sayi.
+*
+ grid-load.
+     modify scr1-Gd-1,
+            mass-update = 1
+     initialize cast-rec
+     move cast-link-rez       to cast-rez-no
+     start cast key not < cast-anah1 invalid
+           continue
+     not invalid
+     initialize fs-cast
+     perform with test after until fs-cast = "10"
+     read cast next no lock end move "10" to fs-cast
+     not at end
+          if cast-rez-no <> cast-link-rez
+             exit perform
+          end-if
+          initialize scr1-Gd-1-Record
+          move cast-gun                to egun
+          move cast-ay                 to eay
+          move cast-yil                to eyil
+          move etarih                  to gd-1-col-1
+          move cast-oda-no             to  o-kisa
+          perform oda-uzat move o-uzun to   gd-1-col-2
+          move cast-buyuk              to gd-1-col-3
+          move cast-kucuk              to gd-1-col-4
+          move cast-free               to gd-1-col-5
+          move cast-bebek              to gd-1-col-6
+          move cast-fiyati             to etutar
+          move etutar                  to gd-1-col-7
+          move cast-oda-konumu         to gd-1-col-8 konum-anahtar
+          read konum no lock invalid
+               move "Tanimsiz..."      to konum-adi
+          end-read
+          move konum-adi               to gd-1-col-9
+          move cast-fiyat-konumu       to gd-1-col-10 konum-anahtar
+          read konum no lock invalid
+               move "Tanimsiz..."      to konum-adi
+          end-read
+          move konum-adi               to gd-1-col-11
+          move cast-anlasma            to gd-1-col-12 kodlar02-kodu
+          move "D"                     to kodlar02-tipi
+          read kodlar02 no lock invalid
+               move "Tanimsiz ..."     to kodlar02-adi
+          end-read
+          move kodlar02-adi            to gd-1-col-13
+          move cast-pan-tipi           to gd-1-col-14 kodlar02-kodu
+          move "A"                     to kodlar02-tipi
+          read kodlar02 no lock invalid
+               move "Tanimsiz ..."     to kodlar02-adi
+          end-read
+          move kodlar02-adi            to gd-1-col-15
+          move cast-anlasma-fiyati     to etutar
+          move etutar                  to gd-1-col-16
+
+
+          move cast-basilan-fiyat   to etutar
+          move etutar                  to gd-1-col-17
+
+          move cast-share      to  gd-1-col-18
+          move cast-sharenum   to  gd-1-col-19
+          move cast-grup       to gd-1-col-20
+
+          modify scr1-Gd-1,
+                 record-to-add(scr1-Gd-1-Record)
+          add 1 to kayit-sayi
+          modify scr1-Gd-1(kayit-sayi,1),
+                 hidden-data = cast-rec
+         if cast-tarih < tarih-tasi then 
+               modify scr1-Gd-1(kayit-sayi,1),
+                 row-color = 131248
+          end-if
+           if cast-tarih = tarih-tasi then 
+                modify scr1-Gd-1(kayit-sayi,1),
+                 row-color = 256
+          end-if
+     end-read
+     end-perform
+     end-start
+     modify scr1-Gd-1,
+            mass-update = 0.
+*
+ scr1-Gd-1-Ev-Other.       
+             evaluate event-type
+             when msg-begin-entry
+             inquire scr1-Gd-1(event-data-2,1),
+                     hidden-data in cast-rec
+    
+                  if cast-tarih < tarih-tasi and not ( yazsif(1:3) = "A42" or  yazsif(1:4) = "MURA" ) |AND K-KODU-TASI <> "ERIM"  then 
+                         display message box "Gecmis Istatistikleri degistiremezsiniz"
+                          move event-action-fail     to event-action
+                          exit paragraph 
+                  end-if
+
+                    if cast-tarih = tarih-tasi then 
+                       if event-data-1 not = 8 and event-data-1 not = 3  
+                          display message box "Bugune ait degisikligi register kartindan yapmalisiniz"
+                          move event-action-fail     to event-action
+                          exit paragraph 
+                        end-if
+                   end-if
+                     
+                  if event-data-1 = 4 or  
+                     event-data-1 = 5 or
+                     event-data-1 = 6 or
+                     event-data-1 = 7 or
+                     event-data-1 = 11 or
+                     event-data-1 = 13 or
+                     event-data-1 = 15 or
+                     event-data-1 = 3  or
+                     event-data-1 = 19 
+                     continue
+                  else
+                     if event-data-1 <> 8 or
+                        (event-data-1 = 8 and k-fiy-sup not = 1)
+                        move event-action-fail     to event-action
+                     end-if
+                  end-if
+                          
+                  if event-data-1 = 4 or  
+                     event-data-1 = 5 or
+                     event-data-1 = 6 or
+                     event-data-1 = 7 or
+                     event-data-1 = 11 or
+                     event-data-1 = 13 or
+                     event-data-1 = 15 or
+                     event-data-1 = 3  or
+                     event-data-1 = 19 
+                     continue
+                  else
+                     if event-data-1 <> 8 or
+                        (event-data-1 = 8 and k-fiy-planlama-yapamaz = 1)
+                        display message box "Fiyat Planlama Yetkiniz Yok."
+                        icon 3
+                        move event-action-fail     to event-action
+                     end-if
+                  end-if
+
+             when msg-finish-entry
+                  perform cell-kontrol
+                  evaluate event-data-1 
+                          when 8
+                             move 1 to cast-planlandi
+                          when 3
+                               move 1 to xkonuk-oda-plan
+                               perform cast-oda-planlama-kontrol
+                          when 4
+                          when 5
+                          when 6 when 7
+                             move 1 to xkonuk-kisi-plan
+                          when 11
+                             move 1 to xkonuk-fkonum-plan
+                          when 15
+                             move 1 to xkonuk-pans-plan
+                  end-evaluate
+             end-evaluate.
+*
+ cast-oda-planlama-kontrol.
+     open i-o rez konuk
+     initialize cast-rec  
+     move cast-link-rez       to cast-rez-no
+     start cast key not < cast-anah1 invalid
+           continue
+     not invalid
+     initialize fs-cast
+     perform with test after until fs-cast = "10"
+     read cast next no lock end move "10" to fs-cast
+     not at end
+          if cast-rez-no <> cast-link-rez
+                   exit perform
+          end-if
+
+          initialize rez-rec
+          move cast-rez-no to rez-no
+          read rez no lock invalid
+                  continue
+          end-read
+
+          if REZ-ODANO not = spaces and CAST-ODA-NO <> REZ-ODANO
+              if REZ-FOLIO not = zeroes
+                    initialize konuk-rec
+                    move rez-folio to konuk-folio
+                    read konuk no lock invalid
+                            continue
+                    not invalid
+                           initialize konuk-oda-plan
+                           rewrite konuk-rec invalid
+                                   stop " "
+                           end-rewrite
+                    end-read
+              end-if
+              exit paragraph
+          end-if
+
+     end-read
+     end-perform
+     end-start
+     close rez konuk.    
+*
+ cell-kontrol.
+     inquire scr1-Gd-1(event-data-2,1),
+             hidden-data in cast-rec
+     inquire scr1-Gd-1(event-data-2),
+             record-data in scr1-Gd-1-Record
+
+     read cast no lock invalid
+          display message box 
+                  "Kayit bulunamadi !"
+                  icon mb_error_icon
+                  title "Hata"
+                  exit paragraph
+     end-read
+
+
+     evaluate event-data-1
+     
+     when 3 
+         initialize eski-oda-no
+         move cast-oda-no  to eski-oda-no
+         move gd-1-col-2 to  o-uzun
+          perform oda-kisalt move o-kisa to ODALAR-ANAH         
+         READ ODALAR NO LOCK invalid
+             move event-action-fail     to event-action
+             move cast-oda-no    to  o-kisa
+          perform oda-uzat move o-uzun to gd-1-col-2
+               modify scr1-Gd-1(event-data-2,3),
+                      cell-data = gd-1-col-2                      
+               exit paragraph 
+         not invalid
+             move odalar-anah  to cast-oda-no
+             initialize oda-bulundu
+             perform blok-kont2  
+             if oda-bulundu = 1
+                modify scr1-Gd-1(event-data-2,3),
+                       cell-data = eski-oda-no  
+                exit paragraph    
+             end-if 
+         end-read
+         MOVE ODALAR-KONUMU TO KONUM-ANAHTAR 
+          read konum no lock invalid
+               display message box 
+                       "Oda konumu tanimsiz ..."
+                       icon mb_error_icon
+                       title "Hata"
+                       exit paragraph
+          not invalid
+                  
+               move odalar-konumu    to gd-1-col-8
+               modify scr1-Gd-1(event-data-2,9),
+                      cell-data = gd-1-col-8
+               
+          end-read
+          move konum-adi                to gd-1-col-9
+          modify scr1-Gd-1(event-data-2,10),
+                 cell-data = gd-1-col-9
+          move konum-anahtar            to cast-oda-konumu
+
+          if tarih-tasi > rez-cik-tar and cast-tarih = rez-cik-tar and (yazsif(1:3) = "A42" or yazsif(1:4) = "MURA") |AND  K-KODU-TASI <> "ERIM"  
+          open i-o rez konuk
+            move ODALAR-KONUMU to rez-oda-konumu
+            move odalar-anah to rez-odano
+            rewrite rez-rec invalid continue 
+            not invalid
+            perform log-operation-rez
+            move rez-folio to konuk-folio
+            read konuk no lock invalid continue
+              not invalid
+                   move ODALAR-KONUMU to konuk-oda-konumu
+                    move odalar-anah  to konuk-odano
+                    rewrite konuk-rec invalid continue end-rewrite
+                    perform log-operation-konuk
+            end-read
+            add 1 to konuk-folio
+            
+            read konuk no lock invalid continue
+              not invalid
+              if konuk-extra-rez-no = rez-no
+                   move ODALAR-KONUMU to konuk-oda-konumu
+                    move odalar-anah to konuk-odano
+                    rewrite konuk-rec invalid continue end-rewrite
+                    perform log-operation-konuk
+              end-if
+            end-read
+            end-rewrite
+            close rez konuk
+         end-if
+
+     when 4
+          move function numval-c(gd-1-col-3)          to cast-buyuk
+     when 5
+          move function numval-c(gd-1-col-4)          to cast-kucuk
+     when 6
+          move function numval-c(gd-1-col-5)          to cast-free
+     when 7
+          move function numval-c(gd-1-col-6)          to cast-bebek
+     when 8
+          move function numval-c(gd-1-col-7)          to cast-fiyati
+          move cast-fiyati to  etutar
+          move etutar to  gd-1-col-7
+          modify scr1-Gd-1(event-data-2,8),
+                 cell-data = etutar
+         
+     when 9
+          move gd-1-col-8               to konum-anahtar
+          read konum no lock invalid
+               display message box 
+                       "Oda konumu tanimsiz ..."
+                       icon mb_error_icon
+                       title "Hata"
+               move cast-oda-konumu    to gd-1-col-8
+               modify scr1-Gd-1(event-data-2,9),
+                      cell-data = gd-1-col-8
+               exit paragraph
+          end-read
+          move konum-adi                to gd-1-col-9
+          modify scr1-Gd-1(event-data-2,10),
+                 cell-data = gd-1-col-9
+          move konum-anahtar            to cast-oda-konumu
+     when 11
+          move gd-1-col-10               to konum-anahtar
+          read konum no lock invalid
+               display message box 
+                       "Fiyat konumu tanimsiz ..."
+                       icon mb_error_icon
+                       title "Hata"
+               move cast-fiyat-konumu    to gd-1-col-10
+               modify scr1-Gd-1(event-data-2,11),
+                      cell-data = gd-1-col-10
+               exit paragraph
+          end-read
+          move konum-adi                to gd-1-col-11
+          modify scr1-Gd-1(event-data-2,12),
+                 cell-data = gd-1-col-11
+          move konum-anahtar            to cast-fiyat-konumu
+      
+     when 13
+          move gd-1-col-12               to kodlar02-kodu
+          move "D"                       to kodlar02-tipi
+          read kodlar02 no lock invalid
+               display message box 
+                       "Anlasma Fiyat tanimlamasi tanimsiz ..."
+                       icon mb_error_icon
+                       title "Hata"
+               move cast-anlasma         to gd-1-col-12
+               modify scr1-Gd-1(event-data-2,13),
+                      cell-data = gd-1-col-12
+               exit paragraph
+          end-read
+          move kodlar02-adi             to gd-1-col-13
+          modify scr1-Gd-1(event-data-2,14),
+                 cell-data = gd-1-col-13
+          move kodlar02-kodu            to cast-anlasma
+     when 15
+          move gd-1-col-14               to kodlar02-kodu
+          move "A"                       to kodlar02-tipi
+          read kodlar02 no lock invalid
+               display message box 
+                       "Pansiyon tanimlamasi tanimsiz ..."
+                       icon mb_error_icon
+                       title "Hata"
+               move cast-pan-tipi        to gd-1-col-14
+               modify scr1-Gd-1(event-data-2,15),
+                      cell-data = gd-1-col-14
+               exit paragraph
+          end-read
+          move kodlar02-adi             to gd-1-col-15
+          modify scr1-Gd-1(event-data-2,16),
+                 cell-data = gd-1-col-15
+          move kodlar02-kodu            to cast-pan-tipi
+     WHEN 19
+          move function numval(gd-1-col-18)              to cast-share
+     end-evaluate.
+     rewrite cast-rec end-rewrite.
+
+     perform log-operation-cast
+
+     
+     .
+*
+ scr1-Aft-Routine.
+     close kodlar02 konum cast odalar odalar2.
+     
+     .
+      
+*
+ scr1-Gd-1-Ex-Other.
+      evaluate key-status 
+      when 17  
+            inquire scr1-Gd-1,cursor-y in sayac
+            inquire scr1-Gd-1,cursor-x in hangi-kolon
+            inquire scr1-Gd-1(sayac,2), cell-data in yedek-cast-tarih
+
+            move yedek-cast-tarih(1:2) to cast-gun
+            move yedek-cast-tarih(4:2) to cast-ay
+            move yedek-cast-tarih(7:4) to cast-yil
+            move cast-link-rez  to cast-rez-no
+       
+            move cast-dosya         to link-logview-dosya-adi
+            set link-logview-pointer  to address of cast-rec
+            set link-logview-rec-size to size of cast-rec
+            perform logview-call
+            initialize key-status
+       when 1
+          inquire scr1-Gd-1,cursor-x in hangi-kolon
+          inquire scr1-Gd-1,cursor-y in sayac
+
+                                      
+             inquire scr1-Gd-1(sayac,1),
+                     hidden-data in cast-rec
+    
+                  if cast-tarih < tarih-tasi and not ( yazsif(1:3) = "A42" or yazsif(1:4) = "MURA" ) |AND K-KODU-TASI <> "ERIM" then 
+                         display message box "Gecmis Istatistikleri degistiremezsiniz"
+                          move event-action-fail     to event-action
+                          exit paragraph 
+                   end-if
+
+                    if cast-tarih = tarih-tasi then 
+                       if hangi-kolon not = 8 
+                         display message box "Bugune ait degisikligi register kartindan yapmalisiniz"
+                          move event-action-fail     to event-action
+                          exit paragraph 
+                        end-if
+                   end-if
+
+        
+                  if hangi-kolon = 4 or  
+                     hangi-kolon = 5 or
+                     hangi-kolon = 6 or
+                     hangi-kolon = 7 or
+                     hangi-kolon = 8 or                     
+                     hangi-kolon = 11 or
+                     hangi-kolon = 13 or
+                     hangi-kolon = 15 or
+                     hangi-kolon = 3  or
+                     hangi-kolon = 19
+                           continue
+                  else
+                  
+                        move event-action-fail     to event-action
+                   end-if 
+
+          evaluate hangi-kolon
+          when 3
+             inquire scr1-Gd-1(sayac,2), cell-data in yedek-cast-tarih           
+             open input rez
+             initialize rez-rec
+             move cast-link-rez  to rez-no
+             read rez no lock invalid 
+                  display message box "Rezervasyon Numarasi Okunamadi..."
+                                  title "Uyari"
+                                  icon 1
+                   close rez
+                   exit paragraph
+             end-read 
+                if rez-durumu = "S"
+                   display message box "Silinmis Rezervasyon uzerinde degisiklik yapilamaz.."
+                                   title "Uyari"
+                                   icon 1
+                          close rez
+                          exit paragraph 
+                end-if 
+             close rez
+
+             perform oda-ara
+             
+             if odano-cagir not = spaces
+                display message box "Secilen Oda Numarasi diger gunlere uygulansin mi?"
+                                title "Uyari"
+                                icon 1
+                                type 2
+                                default 2
+                                returning donus 
+                   modify scr1-Gd-1(sayac,hangi-kolon),
+                          cell-data odano-cagir
+                   perform odano-cast-yaz
+                if donus = 1               
+                   inquire scr1-Gd-1, LAST-ROW in son-satir
+                   perform varying i from sayac by 1 until i > son-satir - 1                      
+                      compute sayac = sayac + 1
+                      modify scr1-Gd-1(sayac,hangi-kolon),
+                            cell-data odano-cagir
+                      inquire scr1-Gd-1(sayac,2), cell-data in yedek-cast-tarih
+                      perform odano-cast-yaz
+                   end-perform
+                end-if 
+             end-if              
+          end-evaluate 
+       end-evaluate.
+*
+ scr1-Ex-Other.
+     evaluate key-status
+     when 2
+         perform cast3-form-cagir
+     when 444
+         perform cast-share-temizle
+     end-evaluate.
+*
+ cast3-form-cagir.
+     call "/asya/ytl/obj/otel/cast3.asy" 
+        using cast-link-rez,cast-planlandi
+        on exception 
+        perform callerr-proc
+         exit paragraph
+     not on exception 
+        cancel "/asya/ytl/obj/otel/cast3.asy"
+     end-call.
+*
+ oda-ara.
+    initialize blok-cagir
+    move "M"              to oda-db-cagir
+    move rez-oda-konumu   to oda-konum-cagir.
+    move cast-tarih       to blok-bas-tar
+    move rez-cik-tar      to blok-bit-tar
+    move rez-no           to blok-rez-no
+    call "/asya/ytl/obj/otel/odaara2.asy" 
+          using oda-cagir, blok-bas-tar, 
+                blok-bit-tar, blok-rez-no
+         on exception perform callerr-proc
+     not on exception
+    cancel "/asya/ytl/obj/otel/odaara2.asy" 
+    end-call.
+*
+ odano-cast-yaz.
+    initialize odalar-rec 
+    move odano-cagir       to odalar-no
+    read odalar no lock invalid  
+         display message box "Secilen Oda Numarasi Tanimsiz..."
+                         title "Uyari"
+                         icon 1
+            close odalar
+            exit paragraph 
+    end-read 
+
+    initialize cast-rec
+    move yedek-cast-tarih(1:2) to cast-gun
+    move yedek-cast-tarih(4:2) to cast-ay
+    move yedek-cast-tarih(7:4) to cast-yil
+    move rez-no                to cast-rez-no
+    read cast no lock invalid 
+         display message box "Cast Okunamadi..."
+                         title "Uyari"
+                         icon 1
+                close cast
+                exit paragraph 
+    not invalid 
+        move odano-cagir        to cast-oda-no
+        initialize konum-rec
+        MOVE ODALAR-KONUMU      to KONUM-ANAHTAR 
+        read konum no lock invalid
+             display message box 
+                     "Oda konumu tanimsiz ..."
+                     icon mb_error_icon
+                     title "Hata"
+                     exit paragraph
+        not invalid                          
+           modify scr1-Gd-1(sayac,9),
+                  cell-data = konum-anahtar                       
+           modify scr1-Gd-1(sayac,10),
+                  cell-data = konum-adi
+           move konum-anahtar  to cast-oda-konumu
+        end-read
+      rewrite cast-rec end-rewrite 
+      perform log-operation-cast
+      move 1 to xkonuk-oda-plan
+    end-read.    
+*
+ cast-share-temizle.
+     if k-kodu-tasi not = "ASYA" AND K-KODU-TASI not = "X   " 
+           EXIT PARAGRAPH
+     END-IF
+
+     display message box "Bu islem cast tablosundaki share numaralarini siler ve cast share 0 yapar" new-line
+     "Devam etmek istiyor musunuz ?"
+     type 2
+     default 2
+     returning return-code
+     if return-code <> 1
+           exit paragraph
+     end-if
+     stop "g enter"
+     open i-o rez konuk
+     initialize cast-rec
+     move cast-link-rez       to cast-rez-no
+     start cast key not < cast-anah1 invalid
+           continue
+     not invalid
+     initialize fs-cast
+     perform with test after until fs-cast = "10"
+     read cast next no lock end move "10" to fs-cast
+     not at end
+          if cast-rez-no <> cast-link-rez
+                     exit perform
+          end-if
+
+          initialize cast-share cast-sharenum    
+
+          rewrite cast-rec invalid
+                  stop " "
+          end-rewrite
+
+          initialize rez-rec
+          move cast-rez-no to rez-no
+          read rez no lock invalid
+                  continue
+          not invalid
+                  initialize rez-share rez-sharenum
+                  rewrite rez-rec invalid
+                          stop " "
+                  end-rewrite
+               initialize konuk-rec
+               move rez-folio to konuk-folio
+               read konuk no lock invalid 
+                  continue 
+               not invalid 
+                   initialize konuk-sharenum konuk-share
+                   rewrite konuk-rec end-rewrite 
+               end-read 
+
+          end-read
+
+
+     end-read
+     end-perform
+     end-start
+     close rez konuk
+     display message box "Islem Bitti".
+*
+ blok-kont2.
+     initialize blok-cagir 
+     move cast-tarih      to blok-bas-tar 
+     move rez-cik-tar     to blok-bit-tar 
+     move cast-rez-no      to blok-rez-no 
+     move cast-oda-no      to blok-oda 
+     move cast-sharenum   to blok-sharenum
+     call "/asya/ytl/obj/otel/blokara.asy" using blok-cagir
+          on exception perform callerr-proc
+          not on exception
+     cancel "/asya/ytl/obj/otel/blokara.asy" 
+     end-call
+     if rezpara-cifte-blokaj not = "E" and 
+        blok-yapabilir = "H" 
+        move 1   to oda-bulundu
+        exit paragraph
+     end-if.

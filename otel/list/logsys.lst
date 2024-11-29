@@ -1,0 +1,356 @@
+
+       LOG-CALL-PROC.
+            MOVE FUNCTION LENGTH ( CALL-REC ) TO LOG-INDEX-RECORD-SIZE
+              LOG-DEST-SIZE
+            SET LOG-DEST-ADDR TO ADDRESS OF LOG-KAYIT-ALANI
+            MOVE "Write" TO LOG-LAST-OP
+            MOVE ALL LOW-VALUES TO LOG-DIR-FILE
+            STRING LOG-DIR-FILE "/asya/ytl/data/" DELIMITED BY
+              LOW-VALUES PROGRAM-MODUL DELIMITED BY LOW-VALUES "/"
+              DELIMITED BY LOW-VALUES ISYERI-ADRES-TASI DELIMITED BY
+              LOW-VALUES "/" DELIMITED BY LOW-VALUES CALLING-DOSYA-ADI
+              DELIMITED BY LOW-VALUES INTO LOG-DIR-FILE.
+            INSPECT LOG-DIR-FILE REPLACING ALL SPACES BY LOW-VALUES
+            PERFORM LOG-SET-ADDR.
+            PERFORM LOG-NO-AL.
+            OPEN I-O LOG-INDEX.
+            PERFORM LOG-INDEX-WRITE.
+            CLOSE LOG-INDEX.
+            IF LOG-TRANSACTION-DURUM <> 1
+              PERFORM LOG-DATA-WRITE-PROC.
+       LOG-PROC.
+            IF LOG-SISTEMI-DEVREDE = 0
+              EXIT PARAGRAPH.
+            IF LOG-NUMARA-DURUM <> "E"
+              MOVE "E" TO LOG-NUMARA-DURUM
+              INITIALIZE LOG-NUMARA-NUMARA
+              MOVE FUNCTION RANDOM ( 10000 ) TO LOG-NUMARA-RANDOM
+              COMPUTE LOG-NUMARA-RANDOM = LOG-NUMARA-RANDOM * 10000
+              MOVE LOG-NUMARA-RANDOM TO LOG-NUMARA-NUMARA
+            END-IF
+            ADD 1 TO LOG-NUMARA-NUMARA
+            MOVE LOG-SOURCE-SIZE TO LOG-INDEX-RECORD-SIZE LOG-DEST-SIZE
+            SET LOG-DEST-ADDR TO ADDRESS OF LOG-KAYIT-ALANI.
+            CALL "c$getlastfileop" USING LOG-LAST-OP.
+            CALL "c$rerrname" USING LOG-DIR-FILE.
+            PERFORM LOG-SET-ADDR.
+            PERFORM LOG-AYIKLA.
+            IF LOG-SEVIYE-KONTROL <> 9
+              EXIT PARAGRAPH.
+            PERFORM LOG-NO-AL.
+            OPEN I-O LOG-INDEX.
+            IF FS-LOG-INDEX = "98"
+              EXIT PARAGRAPH.
+            PERFORM LOG-INDEX-WRITE.
+            CLOSE LOG-INDEX.
+            IF LOG-TRANSACTION-DURUM <> 1
+              PERFORM LOG-DATA-WRITE-PROC.
+       LOG-SET-ADDR.
+            PERFORM LOG-FILE-PARSE.
+            MOVE LOW-VALUES TO LOG-INDEX-ADRES LOG-DATA-ADRES.
+            STRING LOG-INDEX-ADRES "/asya/ytl/log/" DELIMITED BY
+              LOW-VALUES PROGRAM-MODUL DELIMITED BY LOW-VALUES "/"
+              DELIMITED BY LOW-VALUES ISYERI-ADRES-TASI DELIMITED BY
+              LOW-VALUES "/" DELIMITED BY LOW-VALUES LOG-FILE DELIMITED
+              BY LOW-VALUES INTO LOG-INDEX-ADRES.
+            STRING LOG-DATA-ADRES "/asya/ytl/log/" DELIMITED BY
+              LOW-VALUES PROGRAM-MODUL DELIMITED BY LOW-VALUES "/"
+              DELIMITED BY LOW-VALUES ISYERI-ADRES-TASI DELIMITED BY
+              LOW-VALUES "/" DELIMITED BY LOW-VALUES LOG-FILE DELIMITED
+              BY LOW-VALUES ".log" DELIMITED BY LOW-VALUES INTO
+              LOG-DATA-ADRES.
+       LOG-FILE-PARSE.
+            INSPECT LOG-DIR-FILE REPLACING TRAILING SPACES BY LOW-VALUES
+            INITIALIZE LOG-II
+            INSPECT LOG-DIR-FILE TALLYING LOG-II FOR ALL LOW-VALUES
+            COMPUTE LOG-II = FUNCTION LENGTH ( LOG-DIR-FILE ) - LOG-II
+            PERFORM VARYING LOG-I FROM LOG-II BY -1 UNTIL LOG-I = 0
+            IF LOG-DIR-FILE ( LOG-I : 1 ) = "/" OR "\"
+              ADD 1 TO LOG-I
+              EXIT
+              PERFORM
+            END-IF
+            END-PERFORM.
+            MOVE LOG-DIR-FILE ( LOG-I : ) TO LOG-FILE.
+            PERFORM VARYING LOG-I FROM 1 BY 1 UNTIL LOG-I > 20
+            IF LOG-FILE ( LOG-I : 1 ) = "."
+              MOVE ALL SPACES TO LOG-FILE ( LOG-I : )
+              EXIT
+              PERFORM
+            END-IF
+            END-PERFORM.
+            INSPECT LOG-FILE REPLACING TRAILING SPACES BY LOW-VALUES.
+       LOG-INDEX-WRITE.
+            INITIALIZE LOG-INDEX-REC
+            MOVE TARIH-TASI TO LOG-INDEX-CAL-TARIH
+            MOVE LOG-DATA-ANAH TO LOG-INDEX-ISLEM-NO
+            MOVE LOG-NUMARA-NUMARA TO LOG-INDEX-SIRKET
+            EVALUATE LOG-LAST-OP
+              WHEN "Delete"
+              SET LOG-INDEX-ISLEM-DELETE TO TRUE
+              WHEN "Write"
+              SET LOG-INDEX-ISLEM-WRITE TO TRUE
+              WHEN "Rewrite"
+              SET LOG-INDEX-ISLEM-REWRITE TO TRUE
+            END-EVALUATE
+            MOVE K-KODU-TASI TO LOG-INDEX-KULLANICI
+            ACCEPT LOG-INDEX-SYS-TARIH FROM CENTURY-DATE
+            ACCEPT LOG-INDEX-SYS-ZAMAN FROM TIME.
+            MOVE TERMINAL-NAME TO LOG-INDEX-TERMINAL-NAME
+            MOVE USER-ID TO LOG-INDEX-USER-ID
+            MOVE STATION-ID TO LOG-INDEX-STATION-ID
+            MOVE CLIENT-MACHINE-NAME TO LOG-INDEX-CLIENT-MACHINE-NAME
+            MOVE LOG-SOURCE-SIZE TO LOG-INDEX-RECORD-SIZE
+            CALL "c$myfile" USING LOG-INDEX-PROGRAM-NAME
+            END-CALL
+            WRITE LOG-INDEX-REC INVALID
+            MOVE 1 TO LOG-TRANSACTION-DURUM
+            DISPLAY MESSAGE BOX "Log index yazilamadi ...."
+            END-WRITE.
+       LOG-DATA-WRITE-PROC.
+            PERFORM LOG-DATA-OPEN-PROC.
+            IF F-ERRNO = 0
+              CONTINUE
+              PERFORM LOG-DATA-WRITE
+              IF F-ERRNO <> 0
+                CONTINUE
+              END-IF
+              PERFORM LOG-DATA-CLOSE
+            END-IF.
+       LOG-DATA-OPEN-PROC.
+            PERFORM LOG-DATA-OPEN.
+            IF RETURN-CODE = ZEROES
+              EVALUATE TRUE
+                WHEN E-MISSING-FILE
+                PERFORM LOG-DATA-CREATE
+                PERFORM LOG-DATA-OPEN
+                WHEN E-BROKEN
+                DISPLAY MESSAGE BOX LOG-DATA-ADRES
+                  " dosya index yapisi bozulmus ...." ICON MB-ERROR-ICON
+                  TITLE "Hata"
+                WHEN OTHER
+                DISPLAY MESSAGE BOX LOG-DATA-ADRES " hata kodu : "
+                  F-ERRNO ICON MB-ERROR-ICON TITLE "Log hatasi"
+              END-EVALUATE.
+            MOVE RETURN-CODE TO FILESYS-FILE-HANDLE.
+       LOG-DATA-OPEN.
+            INSPECT LOG-DATA-ADRES REPLACING TRAILING SPACES BY
+              LOW-VALUES
+            SET FIO TO TRUE
+            SET OPEN-FUNCTION TO TRUE
+            CALL "i$io" USING IO-FUNCTION LOG-DATA-ADRES OPEN-MODE
+              FILESYS-LOGICAL-INFO
+            END-CALL.
+       LOG-DATA-WRITE.
+            ADD 10 TO LOG-DEST-SIZE
+            CALL "m$copy" USING LOG-DEST-ADDR LOG-SOURCE-ADDR
+              LOG-SOURCE-SIZE.
+            MOVE LOG-DATA-ANAH TO LOG-KAYIT-ALANI ( LOG-SOURCE-SIZE + 1
+              : )
+            SET WRITE-FUNCTION TO TRUE
+            CALL "i$io" USING IO-FUNCTION FILESYS-FILE-HANDLE
+              LOG-KAYIT-ALANI LOG-DEST-SIZE.
+       LOG-DATA-CLOSE.
+            SET CLOSE-FUNCTION TO TRUE
+            CALL "i$io" USING IO-FUNCTION FILESYS-FILE-HANDLE.
+       LOG-DATA-CREATE.
+            INSPECT LOG-DIR-FILE REPLACING TRAILING SPACES BY LOW-VALUES
+            SET FINPUT TO TRUE
+            SET OPEN-FUNCTION TO TRUE
+            CALL "i$io" USING IO-FUNCTION LOG-DIR-FILE OPEN-MODE
+              FILESYS-LOGICAL-INFO
+            END-CALL
+            IF RETURN-CODE = ZEROES
+              DISPLAY MESSAGE BOX LOG-DIR-FILE
+                " dosyasi acilamiyor... Hata : " F-ERRNO ICON
+                MB-ERROR-ICON TITLE "Log hatasi"
+              EXIT PARAGRAPH.
+            MOVE RETURN-CODE TO LOG-SOURCE-FILE-HANDLE.
+            SET INFO-FUNCTION TO TRUE
+            MOVE 0 TO INFO-MODE
+            CALL "i$io" USING IO-FUNCTION LOG-SOURCE-FILE-HANDLE
+              INFO-MODE KEY-INFO
+            END-CALL.
+            MOVE LOG-SOURCE-SIZE TO MAX-REC-SIZE MIN-REC-SIZE LOG-I
+            ADD 10 TO MAX-REC-SIZE MIN-REC-SIZE
+            MOVE 2 TO NUM-KEYS
+            MOVE 1 TO DUPS-ALLOWED
+            ADD 1 TO NUM-SEGS
+            MOVE ALL LOW-VALUES TO LOG-KEYS-AREA
+            STRING LOG-KEYS-AREA "01,0,10," DELIMITED BY LOW-VALUES
+              LOG-SOURCE-SIZE DELIMITED BY LOW-VALUES "," DELIMITED BY
+              LOW-VALUES KEY-INFO DELIMITED BY LOW-VALUES INTO
+              LOG-KEYS-AREA.
+            INSPECT LOG-KEYS-AREA REPLACING TRAILING SPACES BY
+              LOW-VALUES
+            STRING LOG-KEYS-AREA ",10," DELIMITED BY LOW-VALUES
+              LOG-SOURCE-SIZE DELIMITED BY LOW-VALUES INTO LOG-KEYS-AREA
+              .
+            SET MAKE-FUNCTION TO TRUE
+            CALL "i$io" USING IO-FUNCTION LOG-DATA-ADRES LOG-DUSUNCE
+              NULL FILESYS-LOGICAL-INFO LOG-KEYS-AREA NULL.
+            SET CLOSE-FUNCTION TO TRUE
+            CALL "i$io" USING IO-FUNCTION LOG-SOURCE-FILE-HANDLE.
+       LOG-NO-AL.
+            OPEN I-O GENELFIS.
+            MOVE 1 TO GENELFIS-ANAHTAR
+            READ GENELFIS NO LOCK INVALID
+            CONTINUE
+            END-READ
+            IF GENELFIS-LOG-NO NOT NUMERIC
+              MOVE 1 TO GENELFIS-LOG-NO
+            END-IF
+            ADD 1 TO GENELFIS-LOG-NO
+            REWRITE GENELFIS-REC INVALID
+            WRITE GENELFIS-REC
+            END-WRITE
+            END-REWRITE
+            CLOSE GENELFIS.
+            MOVE GENELFIS-LOG-NO TO LOG-DATA-ANAH.
+       LOGVIEW-CALL.
+            CALL "/asya/ytl/obj/otel/logview.asy" USING
+              LINK-LOGVIEW-LINK ON EXCEPTION
+            PERFORM CALLERR-PROC NOT ON EXCEPTION
+            CANCEL "/asya/ytl/obj/otel/logview.asy"
+            END-CALL.
+       LOG-AYIKLA.
+            INITIALIZE LOG-SEVIYE-KONTROL.
+            INSPECT LOG-FILE REPLACING ALL LOW-VALUES BY SPACES
+            EVALUATE PROGRAM-MODUL
+              WHEN "otel"
+              EVALUATE LOG-FILE
+                WHEN "acenta"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "firma"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "aksiyon"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "banka"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "cevap1"
+                MOVE 2 TO LOG-SEVIYE-KONTROL
+                WHEN "cevap2"
+                MOVE 2 TO LOG-SEVIYE-KONTROL
+                WHEN "dagilim"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "depkod"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "depozit"
+                MOVE 2 TO LOG-SEVIYE-KONTROL
+                WHEN "doviz"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "extpost"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "fihrist"
+                MOVE 2 TO LOG-SEVIYE-KONTROL
+                WHEN "fihrist1"
+                MOVE 2 TO LOG-SEVIYE-KONTROL
+                WHEN "fiyatana"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "genel"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "genelfis"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "halk"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "kat"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "kategori"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "kodlar02"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "kontrat"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "konuk"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "konum"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "kur"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "odalar"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "onavans"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "ozluk"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "postkod"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "rez"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "aceanlas"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "cast"
+                MOVE 2 TO LOG-SEVIYE-KONTROL
+                WHEN "soru"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "telkim"
+                MOVE 2 TO LOG-SEVIYE-KONTROL
+                WHEN "telkod"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "ulke"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "polisxml"
+                MOVE 2 TO LOG-SEVIYE-KONTROL
+                WHEN "karalist"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "grup"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "uyruk"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "yrez"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "isyeri"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "kllnc"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "prosif"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "prtler"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "devmulk"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "odemeler"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "taksit"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "odemetip"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "prim"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "gorev"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "primhrk"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "danisman"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "cek"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "donhrk"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "donem"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "donem2"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "romhrk"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "exthrk"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "kart"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "takip"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+                WHEN "formul"
+                MOVE 1 TO LOG-SEVIYE-KONTROL
+              END-EVALUATE
+            END-EVALUATE.
+            INSPECT LOG-FILE REPLACING ALL SPACES BY LOW-VALUES
+            IF LOG-SISTEM-SEVIYESI = 1 OR 2
+              CONTINUE
+            ELSE
+              MOVE 1 TO LOG-SISTEM-SEVIYESI
+            END-IF.
+            IF LOG-SEVIYE-KONTROL >= LOG-SISTEM-SEVIYESI
+              MOVE 9 TO LOG-SEVIYE-KONTROL
+            ELSE
+              MOVE 0 TO LOG-SEVIYE-KONTROL
+            END-IF.

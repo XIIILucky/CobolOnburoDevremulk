@@ -1,0 +1,148 @@
+* scanner.evt
+* scanner.evt is generated from D:\asya\acugt.ytl\otel\scanner.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Cm-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM Form1-Cm-1-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+     if activex-yok = "E"
+         display message box "AsyaSoft Tarayici Arayuz Programi Yuklu Degil..." new-line
+                         "Lutfen Kontrol Ediniz.."
+                         title "[ Uyari ]"
+                         icon 2
+          exit paragraph 
+     end-if
+     move 0 to i.
+     inquire Form1-Twa-1, Devicecount in n.
+     if n = 0
+        move "Bilgisayara Bagli Tarayici Bulunamadi..."   to isl-durum
+        display acc-isl
+        exit paragraph
+     end-if
+
+     perform varying i
+             from 1
+             by 1
+             until i > n - 1
+             move i         to combo-sira 
+
+             inquire Form1-Twa-1,
+                     devicename(i) in combo-deger
+                     
+             move combo-value     to  Form1-Cm-1-Value
+             modify Form1-Cm-1, item-to-add(form1-cm-1-value)                             
+     end-perform.     
+     modify Form1-Cm-1, value = combo-value
+     move combo-value           to secili-tarayici
+     move tarayici-cagir-dosya  to taranacak-dosya-adi
+     display acc-secili-tarayici acc-dosya-adi
+
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status 
+     when 2
+        perform taramaya-basla
+     end-evaluate
+     
+     .
+*
+ taramaya-basla.
+    inquire Form1-Cm-1,value in form1-cm-1-value
+     if form1-cm-1-value = spaces
+          move "Tarayici Secimi Yapilmadi...."   to isl-durum
+          display acc-isl
+          exit paragraph
+     end-if
+
+     inspect form1-cm-1-value replacing trailing spaces by low-values
+     modify Form1-Twa-1,CurrentDevice(1).
+    
+     inquire Form1-Twa-1, connected in i
+
+     if i <> 1
+        move  "Bilgisayara Bagli Tarayici Bulunamadi..."  to isl-durum
+        display acc-isl
+        exit paragraph
+     end-if
+
+
+     move tarayici-cagir-dosya              to tara-dosya
+
+
+     modify Form1-Twa-1, appname("ASYASOFT_TARAYICI_SISTEMI")
+                         UseInterface(1)
+                         showprogress(1)
+                         waitforacquire(1)
+                         acquire()
+                         savetofile(tara-yer)
+
+     perform resim-upload
+
+     if copy-status = 0
+        move "Tarama Islemi Basariyla Tamamlandi..."   to isl-durum
+        display acc-isl
+        display message box "Tarama Islemi Basariyla Tamamlandi..."
+                        title "[ Uyari ]"
+                        icon 1
+        set exit-pushed to true 
+     end-if.
+*     
+ resim-upload.
+    move low-values           to komut1 komut2 rename-dosya
+    if is-remote
+        string komut1,
+              "@[DISPLAY]:"      delimited by low-values,
+              tara-yer    delimited by low-values,
+              into komut1
+
+        string komut2,
+               base-dir           delimited by low-values
+               tara-dosya      delimited by low-values
+               tara-jpg        delimited by low-values
+              into komut2
+    else
+        string komut1,
+               tara-yer delimited by low-values
+        into komut1
+
+        string komut2,
+               base-dir        delimited by low-values
+               tara-dosya      delimited by low-values
+               tara-jpg        delimited by low-values
+        into komut2
+    end-if.
+    call "c$copy" using komut1
+                        komut2
+                  giving copy-status.
+
+    if copy-status <> 0
+       display message box "Dosya Kopyalanamadi..."
+                       title "Hata"
+                       icon 1 
+    end-if.
+*
+ Form1-Cm-1-Ex-Ntf-Selchange.
+    move Form1-Cm-1-Value   to secili-tarayici
+    display acc-secili-tarayici
+     
+     .
+
+ 

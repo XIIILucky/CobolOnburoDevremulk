@@ -1,0 +1,1169 @@
+* devodeme.evt
+* devodeme.evt is generated from D:\asya\acugt.ytl\otel\devodeme.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Screen1-Event-Proc.
+     .
+
+ Screen1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Close
+           PERFORM Form1-Ex-Cmd-Close
+        END-EVALUATE
+     ELSE
+        PERFORM Screen1-Ex-Other
+     END-IF
+     .
+
+ cb-odeme-turu-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-odeme-turu-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Screen1-Gd-1-Event-Proc.
+     EVALUATE Event-Control-Id
+     WHEN 29
+        PERFORM Form1-Gd-1-Ev-Other
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+ Screen1-Bef-Create.
+      perform adresleri-tasi
+      move tarih-tasi      to kay-tar
+      open input genel
+      initialize genel-rec 
+      move 1        to genel-anahtar
+      read genel no lock invalid 
+           display message box "Genel Parametreler Tanimsiz..."
+                           title "Uyari"
+                           icon 1
+                 close genel
+                 exit paragraph           
+      end-read 
+      close genel
+      move muha-sirketi to hesap-dosya-adres cari-dosya-adres mgenelfis-dosya-adres 
+      perform acuserve-adres-aktar
+      call "c$narg",using link-var 
+      move link-odeme-uye-no to uye-no
+      initialize ilk-giris
+     .
+*
+ fatura-kontol.
+
+       initialize yetki-yok
+       if devremulk-fatura-no not = spaces  then
+          if devremulk-fatura-no not = zeroes  then   
+             if odeme-turu(1:2)  = "AO"  OR 
+                odeme-turu(1:2)  = "AI"  OR 
+                odeme-turu(1:2)  = "SP"  or
+                odeme-turu(1:2)  = "NP"  or
+                odeme-turu(1:2)  = "AV"  or
+                odeme-turu(1:2)  = "AG"  or
+                odeme-turu(1:2)  = "GS"  or
+                odeme-turu(1:2)  = "GN"  or
+                odeme-turu(1:2)  = "PP"  or
+                odeme-turu(1:2)  = "BO"  or
+                odeme-turu(1:2)  = "SS"  then
+                move 0 to yetki-yok
+             else
+                move 1 to yetki-yok
+             end-if
+          end-if
+       end-if 
+         .
+*
+ Screen1-Ex-Other.
+     evaluate key-status
+
+     when 1001 
+        if odeme-tut = 0
+           display message box "Tutar Sifir [0] Gecilemez..."
+                           title "Uyari"
+                           icon 1
+             exit paragraph 
+        end-if
+         
+           compute toplam-odeme = 
+                   toplam-odeme + odeme-tut
+           if toplam-odeme > odeme-tutar
+              display message box "Odeme Tutari- "odeme-tutar " -TL'yi Gecemez..."
+                              title "Uyari"
+                              icon 1
+           compute toplam-odeme = 
+                   toplam-odeme - odeme-tut
+            exit paragraph 
+           end-if
+           perform grid-yukle
+     when 1
+        evaluate control-id
+        when 4
+             initialize odeme-kodu-cagir
+             call "/asya/ytl/obj/otel/odemtipa.asy" using odeme-kodu-cagir
+             on exception perform callerr-proc
+                not on exception
+                cancel "/asya/ytl/obj/otel/odemtipa.asy" 
+              end-call
+            move odeme-kodu-cagir     to odeme-sekli
+            display accept-0101
+        when 16
+        when 17
+            perform banka-ara
+        when 12
+        when 14
+            perform hesap-ara
+        when 31
+            perform devremulk-ara
+        when 52
+              initialize prim-danisman-kodu
+             call "/asya/ytl/obj/otel/danisara.asy" using prim-danisman-kodu
+             on exception perform callerr-proc
+                not on exception
+                cancel "/asya/ytl/obj/otel/danisara.asy" 
+              end-call
+            display danisman-sc 
+        when 61
+                perform doviz-ara
+        end-evaluate
+     when 2
+
+          perform fatura-kontol
+
+          if yetki-yok = 1 then
+             display message box "Faturasi Kesilmis Devremulk ! , Bu Islem Yapilamaz "
+                            icon 3
+             exit paragraph
+          end-if
+
+          if odeme-tutar = 0
+             display message box "Odeme Tutari Sifir [0] Olamaz.."
+                           title "Uyari"
+                            icon 1
+             initialize ilk-giris
+             exit paragraph 
+          end-if 
+
+          if odeme-sekli = spaces
+             display message box "Odeme Sekli Bos Gecilemez.."
+                           title "Uyari"
+                            icon 1
+             exit paragraph            
+          end-if
+
+          if odeme-sekli = "CE" and odeme-cek-no = spaces then
+             display message box "Cek Numarasi Bos Gecilemez.."
+                           title "Uyari"
+                            icon 1
+             exit paragraph            
+          end-if
+
+          if cek-odeyen-kisi = spaces then
+             display message box "' Tahsil / Tediye Edilen Kisi ' Alani Bos Gecilemez !."
+                           title "Uyari"
+                            icon 1
+             exit paragraph   
+          end-if
+
+          if kayit-sayi not > 0 then
+             display message box "Girdiginiz Odemeyi En Az Bir Sozlesmeye Dagitiniz !"
+                           title "Uyari"
+                            icon 1
+             exit paragraph 
+          end-if
+
+          display message box "Odeme Kaydedilecek..."new-line
+                              "Eminmisiniz?"
+                        title "Uyari"
+                         icon 1
+                         type 2
+                      default 2
+                    returning return-code 
+
+          if return-code = 2
+             exit paragraph 
+          end-if 
+
+          move odeme-tutar to sms-tutar
+
+          perform cek-fis-al
+          perform cek-kaydet
+
+          if hata-var not = 1
+             perform odemeler-kaydet
+             display message box "Odeme Kaydedildi.."  
+                           title "Uyari"
+                            icon 1
+             if sms-gonder = 1 then
+                perform sms-gonder
+             end-if
+          end-if 
+          set exit-pushed to true
+    | when 3
+       | if grid-sira = 2
+       |     display message box "Uye Girilmeden Odeme Dagitilamaz.."
+       |                     title "Uyari"
+       |                     icon 1
+       |       exit paragraph 
+       | end-if 
+        |display message box "Odemeler Yeniden Dagilatacaktir." new-line
+        |                    "Eminmisiniz.?"
+        ||                title "Uyari"
+        |                icon 1
+        |                type 2
+        |                default 2
+        |                returning return-code 
+        | if return-code = 2
+        |    exit paragraph 
+        |end-if 
+         
+        |perform cek-sil
+        |perform odeme-sil
+        |perform cek-fis-al
+        |perform cek-kaydet
+        |perform odemeler-kaydet
+
+        |display message box "Odemeler Dagitildi.." new-line
+        |                    "Kontrol Ediniz."
+        |                title "Uyari"
+        |                icon 1
+        |set exit-pushed to true
+     when 4
+        display message box "Tek Odeme Silinecektir.." new-line
+                            "Eminmisiniz.?"
+                        title "Uyari"
+                        type 2
+                        icon 2
+                        default 2
+                        returning return-code 
+        if return-code = 2
+            exit paragraph 
+        end-if
+        if link-var = 3
+           perform cek-tek-sil
+           perform odeme-tek-sil
+           display message box "Odeme Silindi..."
+                           title "Uyari"
+                           icon 1
+           set exit-pushed to true 
+        end-if 
+     when 85 
+             open i-o cek
+             initialize cek-rec
+             move ydk-cek-isl-no    to cek-isl-no
+             read cek no lock invalid
+                     display message box "Hata 35"
+                     continue
+             not invalid
+         
+                  if CEK-DURUMU = "X" then
+                       initialize CEK-DURUMU
+                       move 0 to cek-onaylandi
+                       INITIALIZE CEK-ODEME
+                       modify cek-onay-button , bitmap-handle = onayla-bmp
+                  ELSE
+                       move "X" to CEK-DURUMU
+                       move 1   to cek-onaylandi
+                       accept CEK-ODEME from century-date
+                       modify cek-onay-button , bitmap-handle = onayiptal-bmp
+                  end-if
+        
+                  rewrite cek-rec invalid 
+                      display message box "Kayit Yazilamadi..."
+                  end-rewrite 
+        
+                  perform log-operation-cek
+
+                 
+             end-read
+             close cek
+     end-evaluate
+     
+     .
+*
+ sms-gonder.
+
+           initialize link-devremulk-no link-sms-nereden link-tutar
+           move uye-no    to link-devremulk-no
+           move "D"       to link-sms-nereden
+           move sms-tutar to link-tutar
+           move kay-tar   to link-tarih 
+             call "/asya/ytl/obj/otel/smsgond.asy" using link-devremulk-no link-sms-nereden link-tutar link-tarih
+             on exception perform callerr-proc
+                not on exception
+                cancel "/asya/ytl/obj/otel/smsgond.asy" 
+              end-call
+           move odeme-kodu-cagir     to odeme-sekli
+           display accept-0101
+       .
+*
+ cek-fis-al.
+        open i-o mgenelfis
+        move 1        to mgenelfis-anahtar
+        read mgenelfis no lock invalid
+             initialize mgenelfis-rec
+             add 1    to mcek-oto
+             write mgenelfis-rec invalid
+                   rewrite mgenelfis-rec end-rewrite
+             end-write
+        not invalid
+             compute mcek-oto = mcek-oto + 1
+             rewrite mgenelfis-rec end-rewrite
+        end-read
+        close mgenelfis.
+*
+ cek-kaydet.
+     perform cek-kayit-kontrol
+     if hata-var = 1
+        display message box odeme-cek-no" 'Nolu Cek Daha Once Islenmis.."
+                                        "Kontrol Ediniz."
+                        title "Uyari"
+                        icon 1
+          exit paragraph 
+     end-if 
+
+     open i-o cek
+     initialize cek-rec 
+     move mcek-oto                to cek-isl-no
+     read cek no lock invalid
+          move kay-tar            to cek-isl-tar  cek-valor
+          move vade-tar           to cek-vade
+          move hes-kodu           to cek-ilk-cari
+          move odeme-banka-kodu   to cek-banka
+          move odeme-banka-subesi to cek-banka-sube
+          move odeme-cek-no       to cek-no
+          move odeme-tutar        to cek-tutar
+          move "A"                to cek-a-v
+          move "E"                to cek-muhasebe-eh
+          move "T"                to cek-dovizlimi
+          move odeme-sekli        to cek-tipi
+          move cek-odeyen-kisi    to cek-odeyen
+
+          if cek-onaylandi = 1 then
+             move "X" to cek-durumu
+             accept CEK-ODEME from century-date
+          ELSE
+             INITIALIZE CEK-ODEME cek-durumu
+          end-if
+
+          write cek-rec invalid 
+              display message box "Kayit Yazilamadi..."
+          end-write 
+          perform log-operation-cek
+     not invalid
+          display message box "Hatali islem sistem yoneticisi ile irtibata geciniz!!!!" 
+          move 1 to hata-var
+          exit paragraph
+     end-read
+     close cek.
+*
+ odemeler-kaydet.
+   
+     inquire form1-gd-1,last-row in son-satir 
+     open i-o odemeler devremulk
+     perform varying i from 2 by 1 until i > son-satir
+        inquire form1-gd-1(i),
+                record-data form1-gd-1-record
+        if function numval(gd-1-col-0) = 0 or 
+           function numval(gd-1-col-0) = zeroes 
+              exit perform cycle 
+        end-if 
+        initialize devremulk-rec 
+        move function numval(gd-1-col-1)   to devremulk-no
+        read devremulk no lock invalid 
+             exit perform cycle 
+        not invalid 
+        
+             perform odemeler-bos-sira-bul
+
+             initialize odemeler-rec 
+             move devremulk-no                     to odemeler-devremulk-no
+             move son-sira                         to odemeler-sira 
+             read odemeler no lock invalid
+                  move kay-tar                     to odemeler-tarih
+                  move "A"                         to odemeler-hareket-turu
+                  move k-kodu-tasi                 to odemeler-prim-staf                            
+                  move odeme-turu(1:2)             to odemeler-islem-turu
+                  move function numval(gd-1-col-4) to odemeler-tutar 
+                  perform tl-den-doviz-yap
+                  move odeme-dv-tutar              to odemeler-tutar-dv
+                  move aidat-doviz                 to odemeler-doviz-kodu
+                  move doviz-tahsilati             to odemeler-doviz-tahsilati
+                  move odeme-sekli                 to odemeler-odeme-turu
+                  move odeme-cek-no                to odemeler-cekno
+                  move odeme-banka-kodu            to odemeler-banka-kodu
+                  move cek-isl-no                  to odemeler-cek-isl-no  
+                  move tik-prim-tah                to odemeler-AG-primden-dus
+                  move k-kodu-tasi                 to odemeler-staf
+                  move d-odeme-sekli               to odemeler-d-odeme-turu
+                  ||| 30.12.2012 EKSI ARTI OLAYI
+
+                   evaluate odeme-turu(1:2) 
+                       when "IO" 
+                       when "PI"
+                           compute odemeler-tutar = odemeler-tutar * -1 
+                           compute odemeler-tutar-dv = odemeler-tutar-dv * -1
+                       WHEN "AI"
+                       when "OD"
+                       when "BK"
+                            move "B"                to odemeler-hareket-turu
+                      
+                    end-evaluate
+
+
+
+                  ||||
+                  ||||SY. 25 12 2012  PRIM GIRISINDE DANISMAN KODU ATILDI VE PRIM ODEMEELERI EKSILENDI ....     
+                  evaluate odeme-turu(1:2)
+                  when "PP"
+                  when "SS"
+                  WHEN "AG"
+                     move prim-danisman-kodu  to odemeler-danisman-kodu
+                  when "SP"
+                  when "NP"
+                  WHEN "AV"
+                      move prim-danisman-kodu to odemeler-danisman-kodu
+                      compute odemeler-tutar = odemeler-tutar * -1 
+                      compute odemeler-tutar-dv = odemeler-tutar-dv * -1
+                  end-evaluate
+                 |||||||||||||||-
+                  move yil-tasi to odemeler-donem-yili
+                  write odemeler-rec invalid 
+                        display message box "Odeme Yazilamadi.."
+                  end-write 
+                  perform log-operation-odemeler
+             end-read
+        end-read 
+                  
+     end-perform
+     close odemeler devremulk
+       .
+*
+ odemeler-bos-sira-bul.
+     initialize odemeler-rec
+     move devremulk-no     to odemeler-devremulk-no
+     move high-values      to odemeler-sira 
+     start odemeler key < odemeler-anah invalid 
+          move 1 TO son-sira
+          continue 
+     not invalid 
+     perform with test after until fs-odemeler = "10"
+     read odemeler previous no lock end move "10"   to fs-odemeler
+     not at end 
+              if odemeler-devremulk-no <> devremulk-no
+                  move 1 to  son-sira
+                  exit perform 
+              end-if
+              if odemeler-sira is not numeric 
+                  initialize odemeler-sira 
+              end-if 
+              move odemeler-sira     to son-sira
+              compute son-sira = son-sira + 1
+              exit perform 
+     end-read 
+     end-perform
+     end-start
+       .
+*
+ acuserve-adres-aktar.
+    move muha-sirketi of genel-rec to CARI-DOSYA-adres         
+                         ISLENEN-DOSYA-adres      
+                         HESAP-DOSYA-adres        
+                         MAHSUP-DOSYA-adres       
+                         
+                         REFERANS-DOSYA-adres     
+                         mgenel-DOSYA-adres       
+
+    move all low-values to      
+                           CARI-ACUSERVE-DOSYA       
+                           ISLENEN-ACUSERVE-DOSYA    
+                           HESAP-ACUSERVE-DOSYA      
+                           MAHSUP-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA   
+                           REFERANS-ACUSERVE-DOSYA   
+                           Mgenel-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA                           
+                           ip-no.
+
+    inspect genel-muha-uzak-ip 
+            replacing trailing spaces by low-values.
+
+    if genel-muha-uzak-ip <> low-values
+       move all low-values to ip-no
+       string ip-no,
+              "@" delimited by low-values
+              genel-muha-uzak-ip delimited by low-values
+              ":" delimited by low-values
+              into ip-no
+    end-if
+
+    string mgenel-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mgenel-dosya                    delimited by low-values
+           into mgenel-acuserve-dosya.
+
+       
+    string hesap-acuserve-dosya,
+           ip-no                        delimited by low-values
+           hesap-dosya                 delimited by low-values
+           into hesap-acuserve-dosya.
+    string mahsup-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mahsup-dosya                 delimited by low-values
+           into mahsup-acuserve-dosya.
+    string cari-acuserve-dosya,
+           ip-no                        delimited by low-values
+           cari-dosya                 delimited by low-values
+           into cari-acuserve-dosya.
+    string islenen-acuserve-dosya,
+           ip-no                        delimited by low-values
+           islenen-dosya               delimited by low-values
+           into islenen-acuserve-dosya.
+    string referans-acuserve-dosya,
+           ip-no                        delimited by low-values
+           referans-dosya                delimited by low-values
+           into referans-acuserve-dosya.
+    
+    inspect CARI-ACUSERVE-DOSYA        replacing  all spaces by low-values
+    inspect ISLENEN-ACUSERVE-DOSYA     replacing  all spaces by low-values
+    inspect HESAP-ACUSERVE-DOSYA       replacing  all spaces by low-values
+    inspect MAHSUP-ACUSERVE-DOSYA      replacing  all spaces by low-values
+    inspect REFERANS-ACUSERVE-DOSYA    replacing  all spaces by low-values
+    inspect mgenel-ACUSERVE-DOSYA      replacing  all spaces by low-values .
+
+*
+ hesap-oku.
+    open input hesap
+    initialize hesap-rec 
+    move hes-kodu    to hesap-kodu
+    read hesap no lock invalid 
+         move "Tanimsiz..."  to hesap-adi
+    end-read 
+         move hesap-adi      to muh-adi
+    close hesap
+    display acc-muh-adi.
+*
+ banka-oku.    
+    open input banka
+    initialize banka-rec
+    move odeme-banka-kodu to banka-kodu
+    read banka no lock invalid 
+        move "Tanimsiz.." to banka-adi
+    end-read 
+        move banka-adi    to banka-adi-deg
+    close banka
+    display acc-banka-adi.
+*
+ baslik-yukle.
+    modify form1-gd-1,reset-grid = 1
+                      mass-update = 1
+    initialize form1-gd-1-record
+    move "Sira"       to gd-1-col-0
+    move "Uye No"     to gd-1-col-1
+    move "Adi"        to gd-1-col-2
+    move "Soyadi"     to gd-1-col-3
+    move "Tutar"      to gd-1-col-4
+    move "Sil"        to gd-1-col-5
+    modify form1-gd-1,
+           record-to-add(form1-gd-1-record)
+           mass-update = 0
+    move 2            to grid-sira
+    initialize kayit-sayi toplam-odeme.
+*
+ grid-yukle.
+    initialize form1-gd-1-record
+    add 1             to kayit-sayi
+    move kayit-sayi   to zsira 
+    move zsira        to gd-1-col-0
+    move uye-no       to gd-1-col-1
+    move mus-adi      to gd-1-col-2
+    move mus-soyadi   to gd-1-col-3
+    move odeme-tut    to etut
+    move etut         to gd-1-col-4
+
+    modify form1-gd-1(grid-sira,6)
+           bitmap = no-bmp
+           bitmap-width = 16
+           bitmap-number = 1
+ 
+    modify form1-gd-1(grid-sira),
+           record-data(form1-gd-1-record)
+
+    add 1             to grid-sira
+    move 4            to accept-control
+    move 31           to control-id.
+*
+ uye-oku.   
+    open input DEVREMULK musteri
+    initialize DEVREMULK-rec
+    move uye-no        to devremulk-no
+    read DEVREMULK no lock invalid 
+         initialize mus-adi mus-soyadi 
+         move 4            to accept-control
+         move 31           to control-id 
+    not invalid 
+          initialize musteri-rec 
+          move devremulk-profil-sirket to musteri-sirket
+          move devremulk-profil-no     to musteri-no
+          read musteri no lock invalid 
+               initialize mus-adi mus-soyadi
+          end-read 
+               move musteri-adi      to mus-adi
+               move musteri-soyadi   to mus-soyadi
+    end-read 
+    close DEVREMULK musteri
+    display acc-mus-adi acc-mus-soyadi
+    .
+*
+ Form1-Aft-Initdata.  
+    perform baslik-yukle        
+    if link-var = 3 |duzeltme kaydi
+ 
+       perform odeme-oku
+       perform banka-oku
+       perform hesap-oku
+       perform odeme-sekli-oku
+       if link-cek-isl-no > 0
+          perform eski-odeme-baslik-yukle    
+          perform eski-odeme-grid-yukle
+       end-if
+       modify kaydet-button,visible = false
+       |modify Screen1-Pb-1a,visible = true
+
+       modify cek-onay-button,visible = true
+       modify button-sil,visible = true
+       perform uye-oku
+    else 
+       perform uye-oku
+       modify kaydet-button,visible = true
+    end-if
+    modify cb-odeme-turu, MASS-UPDATE = 1
+    modify cb-odeme-turu, ITEM-TO-ADD "BK-BAKIM BORCU" 
+    modify cb-odeme-turu, ITEM-TO-ADD "AD-AI. DUZELTME" 
+    modify cb-odeme-turu, ITEM-TO-ADD "OD-OD. DUZELTME" 
+    modify cb-odeme-turu, MASS-UPDATE = 0
+     .
+*
+ banka-ara.
+    initialize banka-cagir.
+    call "/asya/ytl/obj/otel/bankaara.asy" using banka-cagir
+          on exception perform callerr-proc
+             not on exception
+             cancel "/asya/ytl/obj/otel/bankaara.asy" 
+    end-call.
+    move banka-cagir     to odeme-banka-kodu
+    display accept-0106
+    perform banka-oku.
+*
+ hesap-ara.
+    initialize hesapara-link
+    move MUHA-SIRKETI  to hesapara-isyeri
+    move genel-muha-uzak-ip to hesapara-ip-no
+    call "/asya/ytl/obj/otel/hesapara.asy" using hesapara-link
+           on exception 
+              perform callerr-proc
+           not on exception
+              if hesapara-hesap <> spaces 
+                 move hesapara-hesap  to hes-kodu 
+                 display accept-0105
+              end-if
+           cancel "/asya/ytl/obj/otel/hesapara.asy"
+    end-call
+    perform hesap-oku.
+*
+ Form1-Gd-1-Ev-Other.
+    evaluate event-type
+    when msg-bitmap-clicked
+         inquire form1-gd-1(event-data-2,5),
+                 cell-data in odeme-tut
+         compute toplam-odeme = 
+                 toplam-odeme - odeme-tut
+         compute grid-sira = grid-sira - 1
+         compute kayit-sayi = kayit-sayi - 1
+         if grid-sira < 3
+            move 2   to grid-sira 
+         end-if 
+         
+         evaluate event-data-1
+         when 6
+              perform grid-satir-kaldir
+         end-evaluate 
+    end-evaluate     
+     .
+*
+ grid-satir-kaldir.
+    initialize form1-gd-1-record
+    move 0                      to gd-1-col-0
+    modify Form1-Gd-1(event-data-2), RECORD-data = form1-gd-1-record    
+     .
+*
+ cek-sil.
+    open i-o cek
+    initialize cek-rec kayit-silinemedi
+    move link-cek-isl-no      to cek-isl-no
+    read cek no lock invalid 
+         continue 
+    not invalid 
+        delete cek end-delete 
+        perform log-operation-cek
+    end-read 
+    close cek
+    .
+*
+ odeme-sil.
+    open i-o odemeler
+    initialize odemeler-rec 
+    move link-cek-isl-no    to odemeler-cek-isl-no
+    start odemeler key not < odemeler-cek-isl-no invalid 
+         continue 
+    not invalid 
+    perform with test after until fs-odemeler = "10"
+    read odemeler next no lock end move "10" to fs-odemeler
+    not at end 
+            if odemeler-cek-isl-no <> link-cek-isl-no
+                exit perform 
+            end-if
+            delete odemeler end-delete 
+            perform log-operation-odemeler
+            perform odemesil-yaz
+          
+    end-read 
+    end-perform
+    end-start
+    close odemeler
+     .
+*
+ eski-odeme-baslik-yukle.
+    modify form1-gd-2,reset-grid = 1
+                      mass-update = 1
+    initialize form1-gd-2-record
+    move "Tarih"      to gd-2-col-1
+    move "Tutar"      to gd-2-col-2
+    move "O.Turu"     to gd-2-col-3
+    move "Uye No"     to gd-2-col-4
+    move "Adi"        to gd-2-col-5
+    move "Soyadi"     to gd-2-col-6
+    move "Islem No"   to gd-2-col-7
+    modify form1-gd-2,record-to-add(form1-gd-2-record)
+    .
+*
+ eski-odeme-grid-yukle.
+    open input odemeler musteri devremulk odemetip
+    initialize odemeler-rec 
+    move link-cek-isl-no      to odemeler-cek-isl-no
+    start odemeler key not < odemeler-cek-isl-no invalid 
+          continue 
+    not invalid 
+    perform with test after until fs-odemeler = "10"
+    read odemeler next no lock end move "10" to fs-odemeler
+    not at end
+            if odemeler-cek-isl-no <> link-cek-isl-no
+                 exit perform 
+            end-if
+            initialize form1-gd-2-record
+            move odemeler-tarih-gun         to egun
+            move odemeler-tarih-ay          to eay
+            move odemeler-tarih-yil         to eyil
+            move etar                       to gd-2-col-1
+
+            move odemeler-tutar             to etut
+            move etut                       to gd-2-col-2
+            initialize odemetip-rec
+            move odemeler-odeme-turu  to odemetip-anah
+            read odemetip no lock invalid 
+                 move "     "         to odemetip-adi
+            end-read 
+                 move odemetip-adi    to gd-2-col-3
+
+            initialize devremulk-rec musteri-rec 
+            move odemeler-devremulk-no        to gd-2-col-4 devremulk-no
+            read devremulk no lock invalid 
+                 move "Tanimsiz.."  to musteri-adi musteri-soyadi
+            end-read 
+                 move devremulk-profil-sirket to musteri-sirket
+                 move devremulk-profil-no     to musteri-no
+                 read musteri no lock invalid 
+                      move "Tanimsiz..."      to musteri-adi musteri-soyadi
+                 end-read 
+                      move musteri-adi        to gd-2-col-5
+                      move musteri-soyadi     to gd-2-col-6
+
+            move odemeler-cek-isl-no          to gd-2-col-7
+            modify form1-gd-2,
+                   record-to-add(form1-gd-2-record)
+    end-read 
+    end-perform
+    end-start
+    close odemeler musteri devremulk odemetip
+    modify form1-gd-2,mass-update = 0.
+*
+ odeme-oku.
+
+
+    open input odemeler cek
+    initialize odemeler-rec 
+    move link-odeme-uye-no         to odemeler-devremulk-no
+    move link-odeme-sira           to odemeler-sira 
+    read odemeler no lock invalid 
+         display message box "Kayit Bulunamadi.."
+         set exit-pushed to true
+    not invalid 
+         move odemeler-tarih              to kay-tar
+
+         move odemeler-islem-turu         to odeme-turu 
+         move odemeler-tutar              to odeme-tutar
+         MOVE odemeler-tutar-dv           to odeme-dv-tutar 
+         move odemeler-odeme-turu         to odeme-sekli           
+         move odemeler-cekno              to odeme-cek-no                
+         move odemeler-banka-kodu         to odeme-banka-kodu
+         move odemeler-doviz-kodu         to aidat-doviz  
+         move odemeler-doviz-tahsilati    to doviz-tahsilati
+         initialize cek-rec 
+         move odemeler-cek-isl-no         to cek-isl-no  ydk-cek-isl-no
+         read cek no lock invalid 
+              move "  "                   to cek-banka-sube cek-ilk-cari
+         end-read 
+              move cek-banka-sube         to odeme-banka-subesi
+              move cek-ilk-cari           to hes-kodu
+              move cek-vade               to vade-tar
+              move cek-odeyen             to cek-odeyen-kisi
+
+             if odemeler-odeme-turu = "CE"  or odemeler-odeme-turu  = "SE"  then
+                 if CEK-DURUMU not = "X" then
+                     modify cek-onay-button , bitmap-handle = onayla-bmp , enabled = true
+                 ELSE
+                     modify cek-onay-button , bitmap-handle =  onayiptal-bmp , enabled = true
+              end-if
+
+         end-if
+
+            
+
+              perform hesap-oku
+    end-read 
+    close odemeler cek
+    display accept-0101 accept-0102 accept-0103 accept-0104   accept-0102a accept-0103a accept-0104a  
+    accept-0105 accept-0106 accept-0107 accept-0108 cek-odeyen-kisi Screen1-Cb-3
+    accept-0109 cb-odeme-turu accept-0115a accept-0109a .
+*
+ cek-tek-sil.
+    open i-o cek
+    initialize cek-rec 
+    move link-cek-isl-no   to cek-isl-no
+    read cek no lock invalid 
+         |display message box "Kayit Bulunamadi.."
+         close cek
+         exit paragraph 
+    not invalid 
+         delete cek end-delete
+         perform log-operation-cek
+    end-read 
+    close cek
+     .
+*
+ odeme-tek-sil.
+    open i-o odemeler
+    initialize odemeler-rec 
+    move link-odeme-uye-no   to odemeler-devremulk-no
+    move link-odeme-sira     to odemeler-sira
+    read odemeler no lock invalid 
+         display message box "Kayit Bulunamadi..."
+                         title "Uyari"
+                         icon 1
+           close odemeler
+           exit paragraph 
+    not invalid 
+         delete odemeler end-delete 
+         perform log-operation-odemeler
+         perform odemesil-yaz
+        
+    end-read 
+    close odemeler
+      .
+*
+ cek-kayit-kontrol.
+    if odeme-cek-no not = spaces
+       open input cek
+       initialize cek-rec hata-var
+       move odeme-banka-kodu   to cek-banka 
+       move odeme-cek-no       to cek-no
+       start cek key not < cek-anah1 invalid 
+             continue 
+       not invalid 
+       perform with test after until fs-cek = "10"
+       read cek next no lock end move "10" to fs-cek
+       not at end 
+               if cek-banka <> odeme-banka-kodu or 
+                  cek-no <> odeme-cek-no
+                     exit perform 
+               end-if 
+               move 1     to hata-var
+       end-read 
+       end-perform
+       end-start
+       close cek
+    end-if 
+    .
+*
+ odeme-sekli-oku.
+     open input odemetip
+     MOVE odeme-sekli TO odemetip-KODU
+     read odemetip no lock invalid 
+          move "Tanimsiz.." to odemetip-adi
+
+          move 4            to accept-control
+          move 4            to control-id 
+     end-read 
+          move odemetip-adi to odeme-sekli-adi
+          if (odemetip-KODU = "CE" or "SE" )AND link-var NOT = 3 then
+              modify cek-onay-sc , visible = true
+          ELSE 
+              modify cek-onay-sc , visible = FALSE
+          end-if
+           if odemetip-KODU = "CE" or "SE" then
+                modify accept-0108 ,  enabled = true
+                modify accept-0102a , enabled = true
+                modify accept-0103a , enabled = true
+                modify accept-0104a , enabled = true
+          else 
+               modify accept-0108 ,  enabled = false
+               modify accept-0102a , enabled = false
+               modify accept-0103a , enabled = false
+               modify accept-0104a , enabled = false
+          end-if
+                      
+     close odemetip
+     display lb-odeme-sekli.
+*
+ devremulk-ara.
+       initialize devara-cagir
+       call "/asya/ytl/obj/otel/devara.asy" using devara-cagir
+       on exception perform callerr-proc
+                not on exception
+                cancel "/asya/ytl/obj/otel/devara.asy" 
+              end-call
+        move devara-dev-no-cagir     to uye-no
+        display accept-0110
+        .
+*
+ odemesil-yaz.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+         initialize genelfis-rec
+         move 1 to genelfis-anahtar
+     end-read
+     add 1            to ekran-fis-1
+     move ekran-fis-1 to odemesil-sira
+     rewrite genelfis-rec invalid
+         write genelfis-rec, end-write
+     end-rewrite
+     close genelfis
+
+     open i-o odemesil
+     initialize odemesil-rec
+
+      move odemesil-sira          to odemesil-islem-no  
+      accept odemesil-tarih from century-date
+      move odemeler-devremulk-no  to odemesil-dev-no 
+      move odemeler-hareket-turu  to odemesil-hareket-turu     
+      move odemeler-islem-turu    to odemesil-islem-turu 
+      move odemeler-tutar         to odemesil-tutar
+      move odemeler-odeme-turu    to odemesil-odeme-turu
+      move odemeler-cekno         to odemesil-cekno
+      move odemeler-cek-isl-no    to odemesil-cek-isl-no
+      move k-kodu-tasi            to odemesil-staf
+
+      move odemeler-tutar-dv      to odemesil-doviz-tutar
+      move odemeler-doviz-kodu    to odemesil-doviz-kodu
+      move odemeler-tarih         to odemesil-hrk
+
+      write odemesil-rec invalid
+              stop "odemesil yazilamadi"
+      end-write 
+
+     close odemesil   .
+*
+ cb-odeme-turu-Ex-Ntf-Selchange.
+
+        evaluate odeme-turu(1:2)
+          when "SS"
+          when "PP"
+          when "NP"
+          when "SP"
+          when "AV"
+          when "AG"
+                 modify danisman-label-sc , visible = true 
+                 modify danisman-sc , visible = true
+          when other
+                 modify danisman-label-sc , visible = false 
+                 modify danisman-sc , visible = false
+         end-evaluate
+
+        evaluate odeme-turu(1:2)
+          when "AG"
+                 initialize tik-prim-tah
+                 modify Screen1-La-1caaaaa , visible = true 
+                 modify Screen1-Cb-1 , visible = true
+          when other
+                 initialize tik-prim-tah
+                 modify Screen1-La-1caaaaa , visible = false 
+                 modify Screen1-Cb-1 , visible = false
+         end-evaluate
+         display Screen1-Cb-1
+
+     .
+*
+ danisman-sc-Aft-Procedure.
+         open input danisman
+           move prim-danisman-kodu to danisman-anah
+           read danisman no lock invalid
+                   move 4  to accept-control
+                   move 52 to control-id
+                   continue
+           end-read
+         close danisman
+     
+     .
+*
+ Screen1-Pb-1-Link.
+         
+     .
+* 
+ doviz-ara.
+      initialize aidat-doviz
+      call "/asya/ytl/obj/otel/dovizara.asy" using aidat-doviz
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/dovizara.asy" 
+       end-call
+       display accept-0115a
+         .
+*
+ accept-0115a-Aft-Procedure.
+     open input doviz
+     initialize doviz-rec
+     move aidat-doviz to doviz-kodu
+     read doviz no lock invalid
+             continue
+     not invalid
+          modify Form1-La-2 , title = D-ADI-1    
+     end-read
+     close doviz
+     .
+*
+ tl-den-doviz-yap.
+     open input kur
+     initialize kur-rec
+     move kay-tar to kur-tarih
+     move odeme-banka-kodu to kur-banka
+     move aidat-doviz      to kur-doviz
+     read kur no lock invalid        
+             CONTINUE
+     not invalid
+     if DOVIZ-ALIS > 0.00001 then 
+          compute para-hesapla rounded = odemeler-tutar / DOVIZ-ALIS
+          move para-hesapla to odeme-dv-tutar
+      END-IF
+     end-read
+     close kur
+     .
+*
+ accept-0109-Aft-Procedure.
+     open input kur
+     initialize kur-rec
+     move kay-tar to kur-tarih
+     move odeme-banka-kodu to kur-banka
+     move aidat-doviz      to kur-doviz
+     read kur no lock invalid        
+             CONTINUE
+     not invalid
+          if DOVIZ-ALIS > 0.00001 then 
+                  compute para-hesapla rounded = odeme-tutar / DOVIZ-ALIS
+                  move para-hesapla to odeme-dv-tutar
+          end-if
+     end-read
+     display accept-0109a
+     close kur
+     .
+*
+ accept-0109a-Aft-Procedure.
+       open input kur
+     initialize kur-rec
+     move kay-tar          to kur-tarih
+     move odeme-banka-kodu to kur-banka
+     move aidat-doviz      to kur-doviz
+     read kur no lock invalid        
+                CONTINUE
+     not invalid
+              if DOVIZ-ALIS > 0.00001 then 
+                  compute para-hesapla rounded = odeme-dv-tutar * DOVIZ-ALIS
+                  if NOT (( odeme-tutar - 0.01 ) =  para-hesapla OR ( odeme-tutar + 0.01 )  =  para-hesapla )then
+                          move para-hesapla to odeme-tutar
+                  end-if
+              END-IF
+     end-read
+     display accept-0109
+     close kur
+     .
+*
+ accept-0109-Bef-Procedure.
+
+     open input banka
+     move odeme-banka-kodu to banka-kodu
+     read banka no lock invalid        
+            move 4            to accept-control
+            move 16           to control-id
+            display message box "Banka Kodu Giriniz !"
+     end-read
+     close banka
+
+     open input doviz
+     move aidat-doviz to doviz-kodu
+     read doviz no lock invalid        
+             move 4            to accept-control
+             move 61           to control-id
+             display message box "Doviz Kodu Giriniz !"
+     end-read
+     close doviz
+     .
+*
+ accept-0111-Bef-Procedure.
+      if ilk-giris = zeroes then
+          move  odeme-tutar to odeme-tut
+          display accept-0111
+      end-if
+      add 1 to ilk-giris
+     .
+*
+ Form1-Ex-Cmd-Close.
+ 
+     .
+*
+ cek-odeyen-sc-Aft-Procedure.
+           if cek-odeyen-kisi = spaces then
+                 display message box "' Tahsil / Tediye Edilen Kisi ' Alani Bos Gecilemez !."
+                               title "Uyari"
+                               icon 1
+                 move 4            to accept-control
+                 move 54          to control-id       
+           end-if.
+*
+ cb-odeme-turu-Aft-Procedure.
+     evaluate odeme-turu(1:2)
+         when "AD" 
+         when "OD"
+               modify accept-1313, ENABLED = true
+         when other
+               modify accept-1313, enabled = false 
+     end-evaluate 
+     .
+
+ 

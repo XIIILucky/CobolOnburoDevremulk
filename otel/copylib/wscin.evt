@@ -1,0 +1,695 @@
+* wscin.evt
+* wscin.evt is generated from D:\asya\acugt.ytl\otel\wscin.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.    
+     call "c$narg" using link-var.
+     perform adresleri-tasi.
+
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid continue
+          not invalid continue
+     end-read
+     close genel.
+     move CALISMA-TARIHI to tarih-tasi
+    if rezpara-ortak-profil = 1
+       move "standart" to musteri-dosya-adres prohrk-dosya-adres
+    else
+       move isyeri-adres-tasi to musteri-dosya-adres prohrk-dosya-adres
+    end-if 
+
+*     open extend wlog
+*     initialize wlog-rec
+*      accept wlog-tarih  from century-date 
+*      accept wlog-zaman  from time 
+*      move "Form1-bef-create"  to wlog-data
+*     write wlog-rec end-write     
+     .
+
+     
+*
+ Form1-Aft-Initdata.   
+     if link-var >= 1 then      
+*      initialize wlog-rec
+*      accept wlog-tarih  from century-date 
+*      accept wlog-zaman  from time 
+*      move "Form1-Aft-Initdata"  to wlog-data
+*     write wlog-rec end-write 
+              
+          move cingweb-sorgu to cinweb-sorgu
+          perform islem 
+          move cinweb-sorgu to cingweb-sorgu
+
+          set exit-pushed  to true
+     end-if .             
+*
+ Exception-Procedure.
+        evaluate key-status 
+          when 564
+            move sorgu-voucher     to voucweb-gelen-sorgu-voucher
+            move sorgu-giris-tar   to voucweb-gelen-sorgu-gir-tar
+             call "/asya/ytl/obj/otel/wsvsorgu.asy" 
+                        using   voucweb
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                   cancel "/asya/ytl/obj/otel/wsvsorgu.asy"
+            end-call            
+               perform baslik-yukle
+               perform grid-yukle
+          when 2
+            initialize cinweb          
+            move sorgu-voucher     to cinweb-voucher 
+             perform varying i from 1 by 1 until i > 10
+               move voucweb-giden-oda-rez-adi(i)    to cinweb-giden-rez-adi(i)
+               move voucweb-giden-oda-rez-soyadi(i) to cinweb-giden-rez-soyadi(i)      
+               move "E"                             to cinweb-giden-cinsiyet(i)       
+               move voucweb-giden-oda-d-tar(i)      to cinweb-giden-d-tar(i)
+               move voucweb-giden-oda-yanrez-anah(i) to cinweb-yanrez-anah(i)
+             end-perform
+             call "/asya/ytl/obj/otel/wscin.asy" 
+                        using   cinweb
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                   cancel "/asya/ytl/obj/otel/wscin.asy"
+            end-call
+**            move "OK"                    to sorguweb-giden-profil-bilgi-sonuc           
+        end-evaluate.
+*
+ baslik-yukle. 
+    modify Form1-Gd-1,reset-grid = 1
+                      mass-update = 1
+    initialize Form1-Gd-1-Record
+    move "yanrezanah"   to gd-1-col-1
+    move "ad"           to gd-1-col-2
+    move "soyad"        to gd-1-col-3
+    move "dogumtarihi"  to gd-1-col-4
+    modify form1-gd-1,record-to-add(Form1-Gd-1-Record).
+*
+ grid-yukle.
+    perform varying ii from 1 by 1 until ii > 10 
+        initialize Form1-Gd-1-Record 
+        move voucweb-giden-oda-yanrez-anah(ii) to gd-1-col-1
+        move voucweb-giden-oda-rez-adi(ii) to gd-1-col-2
+        move voucweb-giden-oda-rez-soyadi(ii) to gd-1-col-3
+        move voucweb-giden-oda-d-tar(ii) to gd-1-col-4
+        modify form1-gd-1,record-to-add(Form1-Gd-1-Record)
+    end-perform
+    modify form1-gd-1,mass-update = 0.
+*
+ islem.
+     open i-o rez  polisxml  uyrukweb nt
+     open i-o yanrez musteri konuk prohrk
+     initialize rez-rec rez-bulundu
+       
+     move cingweb-voucher to rez-voucher
+     move "I"             to rez-durumu
+     start rez key not < REZ-VOUC invalid
+         continue 
+     not invalid 
+     perform until fs-rez = "10"
+     read rez next no lock end move "10"  to fs-rez
+     not at end 
+         if rez-durumu <> "I"
+           exit perform 
+         end-if 
+         if rez-voucher <> cingweb-voucher
+            exit perform
+         end-if 
+*         if rez-gir-tar <> tarih-tasi
+*            exit perform cycle 
+*         end-if 
+         if REZ-C-IN = "E" 
+             exit perform  
+         end-if 
+         if rez-folio > 0 
+           exit perform  
+         end-if
+*         if rez-odano = spaces
+*            move 1 to link-hata
+*            move "Oda Numarasi Atanmamis" to link-hata-donus
+*            exit perform   
+*         end-if
+*      initialize wlog-rec
+*      accept wlog-tarih  from century-date 
+*      accept wlog-zaman  from time 
+*      move "voucher bulundu"  to wlog-data
+*      write wlog-rec end-write     
+ 
+          
+*          initialize bul-rez-no
+*          move rez-no   to bul-rez-no
+*          perform yanrez-kontrol-write
+          move 0        to rez-bulundu      |voucher no ile arama býrakýldý hep rez nodan alýnacak burasý 0 kalsýn
+*            perform cin-prog-cagir
+     end-read 
+     end-perform
+     end-start
+
+     if rez-bulundu = 0
+        perform rez-no-ara
+     end-if
+
+*     if rez-bulundu = 0
+*        perform soyad-ara
+*     end-if
+
+**********************  1. kiþinin ismi deðiþtiði zaman rez ve konuk isim deðiþikliði yapýlýyor.
+     initialize rez-rec
+     move bul-rez-no  to rez-no
+     read rez no lock invalid
+          continue 
+     not invalid 
+         if rez-folio > 0               
+             initialize konuk-rec 
+             move rez-folio   to konuk-folio
+             read konuk no lock invalid 
+                 continue 
+             not invalid 
+                 move rez-adi    to konuk-adi
+                 move rez-soyadi to konuk-soyadi
+                 rewrite konuk-rec invalid continue end-rewrite 
+                 perform log-operation-konuk
+             end-read               
+         end-if 
+            if cingweb-tesis-mesaj not = spaces  
+*                initialize wlog-rec
+*                accept wlog-tarih  from century-date 
+*                accept wlog-zaman  from time 
+*                move  cingweb-tesis-mesaj to wlog-data
+*                write wlog-rec end-write 
+              perform not-data-yaz
+            end-if
+     end-read
+    move 0               to cinweb-giden-bilgi-hata
+    move "Basarili"      to cinweb-giden-bilgi-donus-notu .
+************************************** 
+     close rez yanrez polisxml musteri konuk uyrukweb nt prohrk.
+*
+ rez-no-ara.
+     initialize rez-rec 
+     move function numval(cingweb-voucher) to rez-no
+     read rez no lock invalid
+          continue
+     not invalid
+         if rez-durumu <> "I"
+           exit paragraph 
+         end-if 
+
+         if REZ-C-IN = "E" 
+             exit paragraph  
+         end-if 
+
+         if rez-folio > 0 
+           exit paragraph  
+         end-if
+
+         initialize bul-rez-no
+         move rez-no   to bul-rez-no
+         perform yanrez-kontrol-write
+         move 1        to rez-bulundu 
+
+     end-read 
+     .
+*
+ yanrez-son-sira-bul.
+     initialize yanrez-rec sira
+     move rez-no   to yanrez-rezno
+     start yanrez key not < yanrez-anah invalid 
+          continue 
+     not invalid 
+     perform until fs-yanrez = "10"
+     read yanrez next no lock end move "10" to fs-yanrez
+     not at end 
+            if yanrez-rezno <> rez-no
+               exit perform 
+            end-if
+            if yanrez-adi = spaces and yanrez-soyadi = spaces
+                exit perform cycle 
+            end-if 
+            add 1 to sira
+     end-read 
+     end-perform
+     end-start.   
+*
+ yanrez-kontrol-write.
+    perform yanrez-son-sira-bul
+    initialize i
+    perform varying i from 1 by 1 until i > 10 
+ 
+       if cingweb-giden-rez-adi(i) = spaces and 
+          cingweb-giden-rez-soyadi(i) = spaces
+             exit perform cycle 
+       end-if 
+       if cingweb-giden-rez-adi(i)(1:3) = "REZ" and
+          cingweb-giden-rez-soyadi(i)(1:3) = "YOK"
+             exit perform cycle 
+       end-if 
+       if cingweb-yanrez-rezno(i) = spaces
+         exit perform cycle 
+       end-if 
+
+*             initialize wlog-rec
+*              accept wlog-tarih  from century-date 
+*              accept wlog-zaman  from time 
+*              move cingweb-yanrez-anah(i)  to wlog-data
+*             write wlog-rec end-write
+
+
+       initialize yanrez-rec
+       move cingweb-yanrez-anah(i)                 to yanrez-anah
+       read yanrez no lock invalid   
+            add 1                            to sira
+            initialize yanrez-rec
+            move rez-no                      to yanrez-rezno
+            move sira                        to yanrez-sirano
+       end-read
+ 
+            if yanrez-sirano = 1 
+               move cingweb-giden-rez-adi(i)    to yanrez-adi rez-adi
+               move cingweb-giden-rez-soyadi(i) to yanrez-soyadi rez-soyadi  
+               move 1                           to rez-online-cin
+
+               accept rez-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+               accept rez-edit-zaman from time          |                           
+               
+               rewrite rez-rec invalid continue end-rewrite 
+               perform log-operation-rez
+            end-if 
+            move cingweb-giden-rez-adi(i)    to yanrez-adi  
+            move cingweb-giden-rez-soyadi(i) to yanrez-soyadi  
+            move cingweb-giden-d-tar(i)      to yanrez-dog-tar 
+            perform gr-kontrol
+
+*             initialize wlog-rec
+*              accept wlog-tarih  from century-date 
+*              accept wlog-zaman  from time 
+*              move yedek-musteri-no  to wlog-data
+*             write wlog-rec end-write
+
+*             initialize wlog-rec
+*              accept wlog-tarih  from century-date 
+*              accept wlog-zaman  from time 
+*              move yanrez-anah  to wlog-data
+*             write wlog-rec end-write
+
+            if yedek-musteri-no > 0 
+               move yedek-m-profil   to yanrez-profil-anah
+            end-if 
+**            move cingweb-tesis-mesaj to  rez-not1
+ 
+
+            write yanrez-rec invalid 
+               rewrite yanrez-rec invalid continue end-rewrite  
+            end-write 
+            perform log-operation-yanrez   
+    end-perform.
+
+
+                           
+
+*
+ not-data-yaz.
+      initialize xnot-dos-anah
+      move rez-no to xnot-dos-anah
+      initialize not-rec
+      move "REZ"            to not-dos
+      move xnot-dos-anah    to not-dos-anah          
+      start nt key >= not-anah
+         invalid
+           move 0 to not-sira
+         MOVE not-sira to son-sira
+         not invalid
+            perform until fs-not = "10"
+              read nt next no lock
+                 end move "10" to fs-not
+                 not end
+                   if not-dos not = "REZ" or
+                      xnot-dos-anah not = not-dos-anah 
+                         move "10" to fs-not
+                     else
+                         add 1 to son-sira
+                   end-if
+              end-read
+            end-perform            
+      end-start
+      perform mesaj-ekle.
+ mesaj-ekle. 
+
+           
+     initialize not-gerisi 
+      move "REZ"            to not-dos
+      move xnot-dos-anah    to not-dos-anah  
+      add 1                to son-sira
+      move son-sira to not-sira
+      move cingweb-tesis-mesaj to not1
+      move 1 to not-rez
+      move 1 to NOT-REGISTER
+      move 1 to NOT-COUTr
+      move 1 to NOT-COUTe
+      move 1 to NOT-RACKDE
+      accept not-takip-tar from century-date
+*      if mesajmi = 1 then
+        move "M" to  not-tip
+*      else
+*        move "N" to not-tip
+*      end-if
+
+      move k-kodu-tasi to not-giris-staf
+      if k-kodu-tasi = spaces
+          move "ASYA"  to not-giris-staf
+      end-if 
+      accept not-giris-tarih from century-date
+      accept not-giris-zaman from time
+      write not-rec invalid 
+         continue 
+      end-write.
+
+*
+ cin-prog-cagir. 
+    if rez-folio = 0 then 
+      move 99999977 to rez-folio
+    end-if
+  
+    initialize link-rezno link-fol-no link-oda-no link-hata-durum
+    move rez-no    to link-rezno 
+    move rez-folio to link-fol-no
+    move rez-odano to link-oda-no
+    call "/asya/ytl/obj/otel/webcin.asy" 
+               using   link-rezno , link-fol-no  ,link-oda-no  ,link-hata-durum
+               on exception 
+               perform callerr-proc
+               exit paragraph
+               not on exception 
+          cancel "/asya/ytl/obj/otel/webcin.asy"
+    end-call
+    move link-hata       to cinweb-giden-bilgi-hata
+    move link-hata-donus to cinweb-giden-bilgi-donus-notu .
+
+*    initialize wlog-rec
+*    accept wlog-tarih  from century-date 
+*    accept wlog-zaman  from time 
+* 
+*
+*    string 
+*        rez-no delimited by "     "
+*        " " delimited by size
+*        link-hata-donus delimited by "         "
+*    into  wlog-data
+*    write wlog-rec end-write. 
+
+*
+ gr-kontrol.
+    initialize musteri-rec yedek-m-profil
+*    move 0               to yedek-musteri-no
+    move yanrez-adi      to musteri-adi  
+    move yanrez-soyadi   to musteri-soyadi
+    start musteri key not < musteri-ilk invalid 
+        continue 
+    not invalid 
+    perform with test after until fs-musteri = "10"
+    read musteri next no lock end move "10"  to fs-musteri
+    not at end           
+           if musteri-silindi = 1
+              exit perform cycle
+           end-if
+           if musteri-adi = yanrez-adi and
+              musteri-soyadi = yanrez-soyadi and
+              musteri-d-tarihi = yanrez-dog-tar and 
+              musteri-sirket not = spaces and 
+              (musteri-no not = spaces or musteri-no not = 0)
+
+                move m-profil        to yedek-m-profil
+                move musteri-sirket  to yedek-musteri-sirket
+                move musteri-no      to yedek-musteri-no
+                perform prohrk-kaydet
+                exit perform 
+           else 
+             if musteri-adi not = yanrez-adi or
+                musteri-soyadi not = yanrez-soyadi
+                  move "10"  to fs-musteri
+             end-if
+           end-if 
+    end-read 
+    end-perform
+    end-start
+    if yedek-musteri-no = 0
+       perform fis-al
+       if mis-no > 0 
+          initialize musteri-rec yedek-m-profil
+          move mis-no            to musteri-no
+          move isyeri-adres-tasi to musteri-sirket
+          read musteri no lock invalid 
+              continue 
+          end-read 
+              move yanrez-adi     to musteri-adi
+              move yanrez-soyadi  to musteri-soyadi
+              move yanrez-dog-tar to musteri-d-tarihi            
+              accept musteri-g-tarih from century-date
+              accept musteri-k-tarih from century-date
+              move "ASYA" to musteri-staf-son musteri-staf-ilk
+              perform musteri-kim-kaydet
+              perform polisxml-kaydet
+
+          accept musteri-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+          accept musteri-edit-zaman from time          |                           
+
+          write musteri-rec invalid 
+              continue 
+          end-write 
+          move m-profil to yedek-m-profil
+          move musteri-sirket  to yedek-musteri-sirket
+          move musteri-no      to yedek-musteri-no
+          perform prohrk-kaydet
+       end-if       
+    end-if. 
+*
+ musteri-kim-kaydet.
+ 
+/////////////// daha önce kalan müþteri kaydý bulunduðu zaman yine de güncel bilgileri almak gerekiyor.ÖNEMLÝ
+
+
+    if cinweb-uyruk(i)(1:2) = "TR"
+        move function numval(cinweb-kimlik-belge(i))  to musteri-kim-tcno
+        move "N"                     to musteri-b-turu
+        move "."       to musteri-seri-no
+    else 
+        move cinweb-kimlik-belge(i)  to musteri-seri-no
+        move "P"                     to musteri-b-turu
+    end-if 
+    move cinweb-giden-cinsiyet(i)(1:1)  to musteri-kim-cinsiyet |||E-Erkek K-Kadýn
+    if musteri-kim-cinsiyet = spaces
+       move "E"  to musteri-kim-cinsiyet
+    end-if 
+    move "B"                  to musteri-kim-medeni
+
+    initialize uyrukweb-rec
+    move cinweb-uyruk(i)      to uyrukweb-web-kodu
+    read uyrukweb no lock key uyrukweb-web-kodu  invalid 
+         move "TC"            to musteri-kim-uyruk
+    not invalid 
+         move uyrukweb-KODU   to musteri-kim-uyruk
+    end-read
+    if cinweb-email(i) not = spaces
+       move cinweb-email(i)         to musteri-e-mail
+    end-if
+    if cinweb-telefon(i) not = spaces
+       move cinweb-telefon(i)       to musteri-tel1
+    end-if
+    if cinweb-adres not = spaces
+       move cinweb-adres(1:20)   to musteri-kim-adrs
+       move cinweb-adres(21:)    to musteri-kim-adrs1
+    end-if 
+
+    if musteri-kim-adrs = spaces
+       move "." to musteri-kim-adrs musteri-kim-adrs1
+    end-if 
+    move "." to musteri-baba-adi
+    move "." to musteri-ana-adi
+    move "." to musteri-d-yeri
+    move "." to musteri-kim-il
+    move "." to musteri-kim-ilce
+    move "." to musteri-kim-mahalle
+    move "." to musteri-kim-cilt
+    move "." to musteri-kim-aile-no
+    move "." to musteri-kim-sira-no.
+*
+ polisxml-kaydet.
+    initialize polisxml-rec
+    move rez-no        to polisxml-rezno
+    move yanrez-sirano to polisxml-sirano
+    read polisxml no lock invalid 
+       continue 
+    end-read 
+      move musteri-adi            to polisxml-adi
+      move musteri-soyadi            to polisxml-soyadi
+      move musteri-kim-tcno          to polisxml-tckimlikno          
+      move musteri-kim-uyruk         to polisxml-uyruk 
+      if  polisxml-uyruk = "KKT" then 
+          move "KKTC" to  polisxml-uyruk
+      end-if
+      move musteri-kim-cinsiyet      to polisxml-cinsiyet   
+      move musteri-kim-medeni        to polisxml-medeni
+      initialize polisxml-adr
+      string 
+             musteri-kim-adrs    delimited by "   "
+             musteri-kim-adrs1   delimited by "   "                      
+      into polisxml-adr
+
+      MOVE musteri-d-tarihi          to polisxml-dog-tar
+    
+      move musteri-b-turu            to polisxml-kturu         
+      move musteri-seri-no           to polisxml-kseri        
+      move musteri-baba-adi          to polisxml-babaadi       
+      move musteri-ana-adi           to polisxml-anaadi        
+      move musteri-d-yeri            to polisxml-dyeri         
+      move musteri-kim-il            to polisxml-nil         
+      move musteri-kim-ilce          to polisxml-nilce       
+      move musteri-kim-mahalle       to polisxml-nmahalle    
+      move musteri-kim-cilt          to polisxml-ncilt       
+      move musteri-kim-aile-no       to polisxml-naile    
+      move musteri-kim-sira-no       to polisxml-nsira  
+     
+      move musteri-prb-ack           to polisxml-prb
+      write polisxml-rec invalid 
+        rewrite polisxml-rec invalid 
+           continue 
+        end-rewrite  
+      end-write.
+*
+ fis-al.
+      open i-o genelfis
+      move 1 to genelfis-anahtar
+      read genelfis no lock invalid  
+        initialize genelfis-rec
+        move 1 to genelfis-anahtar
+        add  1 to profile-oto
+        move profile-oto to mis-no   
+        write genelfis-rec invalid
+          rewrite genelfis-rec invalid continue
+          end-rewrite 
+        end-write
+      not invalid
+          add 1 to profile-oto
+          move profile-oto      to mis-no   
+          rewrite genelfis-rec end-rewrite
+      end-read
+      close genelfis.
+*
+ Form1-Aft-Routine.        
+*     close wlog.
+      .
+*
+ Prohrk-Kaydet.         
+        initialize prohrk-rec 
+        move isyeri-adres-tasi       to prohrk-profil-sirket prohrk-rez-sirket
+        move mis-no                  to prohrk-profil-no
+        if yedek-musteri-no > 0
+           move yedek-musteri-no     to prohrk-profil-no
+           move yedek-musteri-sirket to prohrk-profil-sirket 
+        end-if  
+        move rez-no                  to prohrk-rez-no 
+        read prohrk no lock invalid 
+             initialize prohrk-rec        
+        end-read                
+           move isyeri-adres-tasi         to prohrk-profil-sirket musteri-sirket
+           move mis-no                    to prohrk-profil-no     musteri-no
+           read musteri no lock invalid
+              continue 
+           end-read                            
+           move yanrez-sirano   to  prohrk-rez-sira       
+           move musteri-adi     to  prohrk-pro-adi       
+           move musteri-soyadi  to  prohrk-pro-soyadi    
+           move rez-acenta      to  prohrk-acenta       
+           move rez-gir-tar     to  prohrk-gel-tar
+           move rez-cik-tar     to  prohrk-git-tar
+           move rez-banka       to  prohrk-banka  
+           move rez-doviz       to  prohrk-doviz 
+           move rez-pan-tipi    to  prohrk-pans     
+           move rez-pazar       to  prohrk-pazar
+           move rez-ulke        to  prohrk-ulke 
+           move rez-voucher     to  prohrk-voucher
+           move rez-odano       to  prohrk-odano
+
+           accept prohrk-duz-tarih from century-date 
+           move isyeri-adres-tasi         to prohrk-rez-sirket
+           move rez-no                    to prohrk-rez-no
+           write prohrk-rec invalid
+               rewrite prohrk-rec end-rewrite
+           end-write
+           perform gelis-sayisi-duzelt
+        .
+*
+ gelis-sayisi-duzelt.
+      initialize prohrk-rec gel-sayi
+      move isyeri-adres-tasi      to prohrk-profil-sirket
+      move mis-no                 to prohrk-profil-no
+      if yedek-musteri-no > 0
+         move yedek-musteri-no     to prohrk-profil-no
+         move yedek-musteri-sirket to prohrk-profil-sirket 
+      end-if  
+      start prohrk key not < prohrk-anah invalid   
+          continue 
+      not invalid 
+      perform until fs-prohrk = "10"
+      read prohrk next no lock end move "10" to fs-prohrk
+      not at end 
+          if yedek-m-profil > 0
+             if prohrk-profil-sirket <> yedek-musteri-sirket
+                exit perform 
+             end-if 
+             if prohrk-profil-no <> yedek-musteri-no
+                exit perform 
+             end-if 
+          else 
+             if prohrk-profil-sirket <> isyeri-adres-tasi
+                exit perform 
+             end-if 
+             if prohrk-profil-no <> mis-no
+                exit perform 
+             end-if 
+          end-if  
+          
+          if prohrk-rez-durumu not = "S"
+             add 1 to gel-sayi
+          end-if 
+      end-read 
+      end-perform
+      end-start
+
+      initialize musteri-rec
+      move isyeri-adres-tasi to musteri-sirket
+      move mis-no            to musteri-no
+      if yedek-musteri-no > 0
+         move yedek-musteri-no     to musteri-no
+         move yedek-musteri-sirket to musteri-sirket 
+      end-if  
+      read musteri no lock invalid
+          continue 
+      not invalid
+          move gel-sayi  to musteri-gelis-sayisi
+
+          accept musteri-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+          accept musteri-edit-zaman from time          |                           
+
+          rewrite musteri-rec end-rewrite 
+      end-read.
+
+
+ 

@@ -1,0 +1,248 @@
+* testpoli.evt
+* testpoli.evt is generated from D:\asya\acugt.ytl\otel\testpoli.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     move "long2013"  to isyeri-adres-tasi
+     perform adresleri-tasi.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+        perform grid-baslik-yukle
+        perform grid-yukle
+     end-evaluate.
+*
+ grid-baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "Tarih"          to gd-1-col-1
+     move "Cast Oda"       to gd-1-col-2
+     move "Cast Kisi"      to gd-1-col-3
+     move "Yanrez Kisi"    to gd-1-col-4
+     move "Polisxml Kisi"  to gd-1-col-5
+     move "Polisxml Kisi Cikis Gunu"   to gd-1-col-6
+     move "Fark"     to gd-1-col-7
+     modify form1-gd-1,record-to-add(form1-gd-1-record).
+*
+ grid-yukle.
+     open i-o genelfis
+     initialize genelfis-rec
+     move 1  to genelfis-anahtar
+     read genelfis no lock invalid 
+          continue 
+     not invalid 
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite 
+          move print-no  to takas-no
+     end-read 
+     close genelfis
+     open output takas close takas open i-o takas 
+
+     open input cast rez yanrez konuk takvim polisxml
+     initialize takvim-rec
+     move "20130101"    to takvim-anah
+     start takvim key not < takvim-anah invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-takvim = "10"
+     read takvim next no lock end move "10" to fs-takvim
+     not at end 
+             if takvim-anah > "20131231"
+                 exit perform 
+             end-if 
+
+             initialize cast-rec  toplam-kisi-cast
+             move takvim-anah        to cast-tarih
+             start cast key not < cast-anah invalid 
+                  continue 
+             not invalid 
+             perform with test after until fs-cast = "10"
+             read cast next no lock end move "10"  to fs-cast
+             not at end 
+                     if cast-tarih <> takvim-anah
+                         exit perform 
+                     end-if 
+                     initialize rez-rec
+                     move cast-rez-no   to rez-no
+                     read rez no lock invalid 
+                          continue 
+                     not invalid 
+                         if rez-durumu = "S"
+                            exit perform cycle 
+                         end-if
+                         if cast-tarih = rez-cik-tar
+                             initialize polisxml-rec  
+                             move rez-no            to polisxml-rezno
+                             start polisxml key not < polisxml-anah invalid 
+                                  continue 
+                             not invalid 
+                             perform with test after until fs-polisxml = "10"
+                             read polisxml next no lock end move "10" to fs-polisxml
+                             not at end 
+                                   if polisxml-rezno <> rez-no
+                                      exit perform 
+                                   end-if 
+                                   if polisxml-sirano > 0
+                                     initialize takas-rec
+                                     move takvim-anah  to takas-anah
+                                     read takas no lock invalid 
+                                         continue 
+                                     end-read 
+                                        if cast-tarih = rez-cik-tar
+                                           add 1 to takas-polisxml-kisi-sayisi-cikis-gun                                                                       
+                                        end-if 
+                                     write takas-rec invalid 
+                                         rewrite takas-rec end-rewrite 
+                                     end-write                               
+                                   end-if
+        
+                             end-read 
+                             end-perform
+                             end-start                                                
+                            exit perform cycle 
+                         end-if 
+
+                         initialize konuk-rec mus-lis-cikma
+                         move rez-folio  to konuk-folio
+                         read konuk no lock invalid
+                              continue 
+                         not invalid 
+                             if Konuk-Cik-Cikma = "E"
+                                add 1 to mus-lis-cikma
+                             end-if 
+                         end-read 
+
+                     end-read
+                     compute toplam-kisi-cast = 
+                             cast-buyuk + 
+                             cast-kucuk + 
+                             cast-free + 
+                             cast-bebek
+
+                     initialize takas-rec
+                     move takvim-anah  to takas-anah
+                     read takas no lock invalid 
+                         continue 
+                     end-read 
+                        add toplam-kisi-cast to takas-cast-kisi-sayisi
+                     write takas-rec invalid 
+                         rewrite takas-rec end-rewrite 
+                     end-write
+
+
+                     initialize yanrez-rec  
+                     move rez-no            to yanrez-rezno
+                     start yanrez key not < yanrez-anah invalid 
+                          continue 
+                     not invalid 
+                     perform with test after until fs-yanrez = "10"
+                     read yanrez next no lock end move "10" to fs-yanrez
+                     not at end 
+                           if yanrez-rezno <> rez-no
+                              exit perform 
+                           end-if 
+                           if yanrez-sirano > 0
+                             initialize takas-rec
+                             move takvim-anah  to takas-anah
+                             read takas no lock invalid 
+                                 continue 
+                             end-read 
+                                add 1 to takas-yanrez-kisi-sayisi
+                             write takas-rec invalid 
+                                 rewrite takas-rec end-rewrite 
+                             end-write                               
+                           end-if 
+                     end-read 
+                     end-perform
+                     end-start
+
+                     initialize polisxml-rec  
+                     move rez-no            to polisxml-rezno
+                     start polisxml key not < polisxml-anah invalid 
+                          continue 
+                     not invalid 
+                     perform with test after until fs-polisxml = "10"
+                     read polisxml next no lock end move "10" to fs-polisxml
+                     not at end 
+                           if polisxml-rezno <> rez-no
+                              exit perform 
+                           end-if 
+                           if polisxml-sirano > 0
+                             initialize takas-rec
+                             move takvim-anah  to takas-anah
+                             read takas no lock invalid 
+                                 continue 
+                             end-read 
+                                if cast-tarih not = rez-cik-tar
+                                   add 1 to takas-polisxml-kisi-sayisi
+                                     write takas-rec invalid 
+                                         rewrite takas-rec end-rewrite 
+                                     end-write 
+                                end-if 
+                           end-if
+                     end-read 
+                     end-perform
+                     end-start                    
+             end-read 
+             end-perform
+             end-start 
+
+     end-read 
+     end-perform
+     end-start
+     initialize takas-rec fark 
+     move 1 to grid-kayit-sayi
+     start takas key not < takas-anah invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-takas = "10"
+     read takas next no lock end move "10"   to fs-takas
+     not at end
+                     add 1 to grid-kayit-sayi
+                     initialize form1-gd-1-record fark
+                     move takas-gun       to egun
+                     move takas-ay        to eay
+                     move takas-yil       to eyil
+                     move etar             to gd-1-col-1
+                     move takas-cast-kisi-sayisi to zkisi
+                     move zkisi            to gd-1-col-3
+                     move takas-yanrez-kisi-sayisi to zkisi
+                     move zkisi            to gd-1-col-4
+                     move takas-polisxml-kisi-sayisi to zkisi
+                     move zkisi            to gd-1-col-5
+                     move takas-polisxml-kisi-sayisi-cikis-gun to zkisi
+                     move zkisi            to gd-1-col-6
+
+                     compute fark = (takas-polisxml-kisi-sayisi + 
+                                     takas-polisxml-kisi-sayisi-cikis-gun)  -
+                                      takas-cast-kisi-sayisi
+                     move fark to zkisi
+                     move zkisi            to gd-1-col-7
+
+                     modify form1-gd-1,record-to-add(form1-gd-1-record) 
+                     if fark > 0 
+                       modify form1-gd-1(grid-kayit-sayi,7),cell-color = 176
+                     end-if 
+     end-read 
+     end-perform
+     end-start
+     close cast rez yanrez konuk takvim takas polisxml
+     delete file takas
+*****     display message box mus-lis-cikma
+     modify form1-gd-1,mass-update = 0.
+
+ 

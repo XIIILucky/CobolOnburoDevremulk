@@ -1,0 +1,524 @@
+* proguns.evt
+* proguns.evt is generated from D:\asya\acugt.ytl\otel\proguns.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    accept arg from command-line
+    UNSTRING arg
+               delimited by  "--"  
+               into par4 par1
+                  par2
+                  par3
+                    
+              end-unstring
+     move par4 to isyeri-adres-tasi genel-dosya-adres
+     move function numval(par1) to gkey
+    open i-o genel
+    move 1 to genel-anahtar
+    read genel no lock invalid 
+         continue
+    end-read
+    close genel.
+*********DIL OLAYI
+    move rezpara-ortak-profil  to ext-ortak-profil     
+    perform adresleri-tasi.   
+*
+ Form1-Ex-Other.
+       move  key-status to gun
+      
+      accept yedek-tarih from century-date
+      open input takvim
+      initialize takvim-rec 
+      
+      move yedek-tarih        to takvim-anah trans-bit
+      start takvim key not > takvim-anah invalid
+            continue
+      not invalid 
+          read takvim backward no lock end move "10" to fs-takvim
+              not at end   
+               continue
+              end-read 
+           read takvim backward no lock end move "10" to fs-takvim
+              not at end   
+               continue
+              end-read     
+          move takvim-anah to son-gun   trans-bit                 
+          perform varying i from 1 by 1 until i > gun - 1 or fs-takvim = "10"
+              read takvim backward no lock end move "10" to fs-takvim
+              not at end   
+                 
+                 continue
+              continue
+              end-read
+         end-perform
+      end-start
+       
+      close takvim
+      
+         move takvim-anah to trans-bas ilk-gun
+              perform merkez-ip-bul
+                 initialize ana-label
+                 move  ip-no to ana-label
+                 move " baglantisi aciliyor " to ana-label(20:)
+                  display ana-l
+
+        open input takvim 
+        initialize takvim-rec
+        move ilk-gun to takvim-anah
+
+
+        accept system-information   from system-info
+        accept terminal-abilities   from terminal-info
+         inspect ip-no 
+            replacing trailing spaces by low-values
+              move all low-values to yip-no
+
+            string 
+              "@"   delimited by low-values
+              ip-no delimited by low-values
+              ":"   delimited by low-values
+           into yip-no
+         if operating-system = "Unix" and 
+            ybaglanti-merkezi = 0
+            
+                 string yip-no delimited by low-values
+                    "/asya/ytl/prof/log/prolog" delimited by size 
+                    into prolog-dosya
+         else  
+               string 
+                    "/asya/ytl/prof/log/prolog" delimited by size 
+                    into prolog-dosya   
+          end-if,
+         open i-o prolog
+
+         start takvim key  >= takvim-anah invalid
+            continue
+             not invalid 
+            perform until takvim-anah > son-gun or fs-takvim = "10"
+              read takvim next no lock end move "10" to fs-takvim
+              not at end 
+                if takvim-anah > son-gun 
+                     continue
+                  else
+                   move takvim-anah to trans-bas trans-bit
+                    perform birles-basla
+              
+              end-if
+              end-read
+         end-perform
+      end-start
+      close prolog
+       
+      close takvim
+               
+    .
+*
+ merkez-ip-bul.
+    open input baglanti
+    initialize baglanti-rec ip-no ybaglanti-merkezi
+    start baglanti key not < baglanti-kodu invalid
+         continue
+    not invalid
+    perform with test after until fs-baglanti = "10"
+    read baglanti next no lock end move "10" to fs-baglanti
+    not at end
+         if baglanti-adi  = isyeri-adres-tasi
+            move baglanti-ana to sube
+            move 0 to ybaglanti-merkezi
+         end-if
+           if baglanti-merkezi = 1
+              move baglanti-aciklama-1        to ip-no
+              move 1 to ybaglanti-merkezi
+           end-if
+       
+    end-read
+    end-perform
+    end-start
+    initialize baglanti-rec i
+    move sube to baglanti-ana
+    start baglanti key not < baglanti-kodu invalid
+         continue
+    not invalid
+    perform with test after until fs-baglanti = "10"
+    read baglanti next no lock end move "10" to fs-baglanti
+    not at end
+      if baglanti-ana = sube then 
+          if i < 30 then 
+             add 1 to i
+             move baglanti-cost-sirketi to sirketler(i)
+          else
+             display message box "Max Sube kodu asildi"
+          end-if
+     end-if     
+    end-read
+    end-perform
+    end-start
+    close baglanti.
+*
+ Form1-Aft-Initdata.
+        move  "  Baglanti Aciliyor " to ana-label(10:)
+     display ana-l
+        if gkey > 0 then
+        move gkey to key-status
+        perform form1-ex-other
+        set exit-pushed to true
+      end-if.
+*     
+ birles-basla.
+     initialize trnot-rec 
+     open extend trnot
+     accept bas-tarih from century-date
+     accept bas-zaman from time 
+     move bas-yil to e-yil
+     move bas-ay  to  e-ay
+     move bas-gun to e-gun
+     move e-tarih to trnot-rec(1:10)
+     move bas-saat   to e-saat
+     move bas-dakika to e-dakika
+     move bas-saniye to e-saniye
+     move e-zaman    to trnot-rec(12:8)
+     move isyeri-adres-tasi to trnot-rec(22:8)
+     move ip-no to trnot-rec(32:17)
+     move tr-tip(1:20) to trnot-rec(50:20)
+     move "baglantisi basladi."  to trnot-rec(72:20) 
+     write trnot-rec end-write
+     inspect ip-no 
+            replacing trailing spaces by low-values
+     move all low-values to yip-no
+
+     string yip-no,
+              "@"   delimited by low-values
+              ip-no delimited by low-values
+              ":"   delimited by low-values
+     into yip-no
+
+      move sube to takasadi-sirket 
+      move trans-bas to takasadi-tarih 
+      move "tmusteri" to takasadi-dosya
+      move isyeri-adres-tasi to takasadi-sirketadi
+     string takas-dosya2 delimited by spaces
+           into takasa-dosya
+     move "tgprohrk" to takasadi-dosya
+      move isyeri-adres-tasi to takasadi-sirketadi
+      string 
+           takas-dosya2 delimited by spaces
+           
+           into takasb-dosya
+     move "tsprohrk" to takasadi-dosya
+      move isyeri-adres-tasi to takasadi-sirketadi
+      string 
+           takas-dosya2 delimited by spaces
+           
+           into  takasc-dosya
+     initialize gonder-mus gonder-pro gonder-sil
+     perform musteri-kont
+       move gonder-mus to z-adet
+       move z-adet to mis-l 
+       display mis-lab
+     perform prohrk-kont
+      move gonder-pro to z-adet
+       move z-adet to pro-l 
+       display pro-lab
+     perform sprohrk-kont.
+      move gonder-sil to z-adet
+       move z-adet to sil-l 
+       display sil-lab
+        
+     move gonder-mus to z-adet
+     initialize ana-label
+     move z-adet to ana-label
+     move  "   adet misafir profili gonderiliyor" to ana-label(10:)
+     display ana-l
+     perform musteri-salla
+     move gonder-pro to z-adet
+     initialize ana-label
+     move z-adet to ana-label
+     move  "   adet misafir linki gonderiliyor" to ana-label(10:)
+      display ana-l
+     perform prohrk-salla
+     move gonder-sil to z-adet
+     initialize ana-label
+     move z-adet to ana-label
+     move  "   adet silien misafir linki gonderiliyor" to ana-label(10:) 
+      display ana-l
+      initialize ana-label
+     perform sprohrk-salla.
+     move  " Transfer Basari ile tamamlandi 10 saniye icinde kapanacaktir"   to ana-label
+      display ana-l
+      accept bit-zaman from time
+    
+     initialize  trnot-rec
+     move bit-saat   to e-saat
+     move bit-dakika to e-dakika
+     move bit-saniye to e-saniye
+     move e-zaman    to trnot-rec(12:8)
+     move isyeri-adres-tasi to trnot-rec(22:8)
+     move ip-no to trnot-rec(32:19)
+      move gonder-mus to z-adet
+      move z-adet to trnot-rec(40:10)
+      move "Profil" to trnot-rec(50:10)
+      move gonder-pro to z-adet
+      move z-adet to trnot-rec(60:10)
+      move "Hareket" to trnot-rec(70:10)
+       move gonder-sil to z-adet
+      move z-adet to trnot-rec(80:10)
+      move "Silinme" to trnot-rec(90:10)
+      move "MERKEZE GONDERILDI"  to trnot-rec(100:20)
+       inspect trnot-rec
+            replacing all low-values by spaces
+    
+     write trnot-rec end-write
+      close trnot
+     
+     
+     .
+
+*
+ musteri-kont.          
+    open input musteri 
+    
+   
+     initialize musteri-rec sayac     
+    move trans-bas        to musteri-g-tarih
+    start musteri key not < musteri-g-tarih invalid
+         continue
+    not invalid
+    perform with test after until fs-musteri = "10"
+    read musteri next no lock end move "10"   to fs-musteri
+    not at end 
+          if  musteri-g-tarih > trans-bit
+            exit perform 
+          end-if
+            add 1 to sayac
+            initialize takasa-rec
+            
+            add 1 to gonder-mus
+    end-read
+    end-perform
+    end-start
+
+
+
+    close musteri 
+    .
+*
+ prohrk-kont.         
+    open input prohrk
+    
+    
+    initialize prohrk-rec 
+    move trans-bas        to prohrk-duz-tarih
+    start prohrk key not < prohrk-duz-tarih invalid
+         continue
+    not invalid
+    perform with test after until fs-prohrk = "10"
+    read prohrk next no lock end move "10"   to fs-prohrk
+    not at end 
+          if prohrk-duz-tarih > trans-bit
+               exit perform 
+          end-if
+           add 1 to sayac
+           add 1 to gonder-pro
+            
+           
+              
+    end-read
+    end-perform
+    end-start
+
+
+
+
+    close prohrk.
+    
+*
+ sprohrk-kont.          
+    open input sprohrk
+    
+    
+     initialize sprohrk-rec sayac 
+    move trans-bas        to sprohrk-duz-tarih
+    start sprohrk key not < sprohrk-duz invalid
+         continue
+    not invalid
+    perform with test after until fs-sprohrk = "10"
+    read sprohrk next no lock end move "10"   to fs-sprohrk
+    not at end                                     
+          if  sprohrk-duz-tarih > trans-bit
+            exit perform 
+          end-if
+           add 1 to sayac
+           add 1 to gonder-sil
+    end-read
+    end-perform
+    end-start
+    close sprohrk 
+
+
+    .
+
+
+*
+ musteri-salla.
+         
+    open input musteri 
+    open i-o takasa
+    initialize musteri-rec sayac     
+    move trans-bas        to musteri-g-tarih
+    start musteri key not < musteri-g-tarih invalid
+         continue
+    not invalid
+    perform with test after until fs-musteri = "10"
+    read musteri next no lock end move "10"   to fs-musteri
+    not at end
+           compute yuzde  rounded =  sayac / gonder-mus * 100
+            move yuzde to eski-yuzde z-yuzde
+            modify fr-mus title = z-yuzde fill-percent = z-yuzde
+
+          if  musteri-g-tarih > trans-bit 
+            exit perform 
+          end-if
+            
+            add 1 to sayac
+            initialize takasa-rec
+            
+            move musteri-rec to takasa-rec
+              read takasa no lock invalid
+                 initialize takasa-rec
+              end-read
+                 if  takasa-g-tarih < musteri-g-tarih 
+                 move musteri-rec to takasa-rec
+                 move isyeri-adres-tasi to takasa-gonderen 
+                   write takasa-rec invalid 
+                      rewrite takasa-rec end-rewrite  
+                   end-write
+                 end-if
+           
+    end-read
+    end-perform
+    end-start
+    close musteri close takasa .
+    initialize prolog-rec
+    move sube to prolog-sube
+    move takvim-anah to prolog-tarih
+    read prolog no lock invalid
+    continue 
+    end-read
+     accept prolog-olusturma-tarih(1) from century-date
+     accept prolog-olusturma-zamani(1) from time
+    
+    write prolog-rec invalid rewrite prolog-rec end-write .
+    
+*
+ prohrk-salla.         
+    open input prohrk
+    open i-o takasb
+    initialize prohrk-rec sayac     
+    move trans-bas        to prohrk-duz-tarih
+    start prohrk key not < prohrk-duz-tarih invalid
+         continue
+    not invalid
+    perform with test after until fs-prohrk = "10"
+    read prohrk next no lock end move "10"   to fs-prohrk
+    not at end 
+          if prohrk-duz-tarih > trans-bit 
+               exit perform 
+          end-if
+           add 1 to sayac
+           compute yuzde  rounded =  sayac / gonder-pro * 100
+            move yuzde to eski-yuzde z-yuzde
+            modify fr-pro title = z-yuzde fill-percent = z-yuzde
+
+             move prohrk-rec to takasb-rec
+              read takasb no lock invalid
+                 initialize takasb-rec
+                 end-read
+                 if  takasb-duz-tarih < prohrk-duz-tarih 
+                 move prohrk-rec to takasb-rec
+                 move isyeri-adres-tasi to takasb-gonderen 
+                   write takasb-rec invalid 
+                      rewrite takasb-rec end-rewrite  
+                   end-write
+                 end-if
+           
+              
+    end-read
+    end-perform
+    end-start
+    close prohrk close takasb
+       initialize prolog-rec
+    move sube        to prolog-sube
+    move takvim-anah to prolog-tarih
+    read prolog no lock invalid
+         continue 
+    end-read
+     accept prolog-olusturma-tarih(2) from century-date
+     accept prolog-olusturma-zamani(2) from time
+     
+
+    write prolog-rec invalid rewrite prolog-rec end-write .
+
+
+    .
+*
+ sprohrk-salla.          
+    open input sprohrk
+    open i-o takasc
+    initialize sprohrk-rec sayac 
+    move trans-bas        to sprohrk-duz-tarih
+    start sprohrk key not < sprohrk-duz invalid
+         continue
+    not invalid
+    perform with test after until fs-sprohrk = "10"
+    read sprohrk next no lock end move "10"   to fs-sprohrk
+    not at end                                     
+          if  sprohrk-duz-tarih > trans-bit 
+            exit perform 
+          end-if
+           add 1 to sayac
+           compute yuzde  rounded =  sayac / gonder-sil * 100
+            move yuzde to eski-yuzde z-yuzde
+            modify fr-sil title = z-yuzde fill-percent = z-yuzde
+            move sprohrk-rec to takasc-rec
+              read takasc no lock invalid
+                 initialize takasc-rec
+                 end-read
+                 if  takasc-duz-tarih < sprohrk-duz-tarih 
+                 move sprohrk-rec to takasc-rec
+                 move isyeri-adres-tasi to takasc-gonderen 
+                   write takasc-rec invalid 
+                      rewrite takasc-rec end-rewrite  
+                   end-write
+                 end-if
+           
+           
+    end-read
+    end-perform
+    end-start
+    close sprohrk close takasc
+         initialize prolog-rec
+    move sube to prolog-sube
+    move takvim-anah to prolog-tarih
+    read prolog no lock invalid
+         continue 
+    end-read
+     accept prolog-olusturma-tarih(3) from century-date
+     accept prolog-olusturma-zamani(3) from time
+   
+
+    write prolog-rec invalid rewrite prolog-rec end-write .
+
+
+
+    .
+
+ 

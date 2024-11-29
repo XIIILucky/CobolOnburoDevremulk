@@ -1,0 +1,653 @@
+* ulkeist.evt
+* ulkeist.evt is generated from D:\asya\acugt.ytl\otel\ulkeist.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+    move onkpara-banka    to rap-banka
+    move onkpara-doviz    to rap-doviz.
+     .
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to ilk-tarih son-tarih.
+    move donem-basi to ilk-tarih.
+    move "G" to rap-det.
+    display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 acc-07 com-01.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Aft-Proc-ulke.
+     perform oku-ulke
+     .
+*
+ ara-proc.
+     evaluate control-id
+       when 12
+       when 13 perform ara-ulke
+       when 14
+       when 15 perform ara-banka
+       when 22
+       when 23 perform ara-doviz
+          
+     end-evaluate
+     .
+*
+ ara-ulke.
+     call "/asya/ytl/obj/otel/ulkeara.asy"
+       using ulk-kod
+       on exception
+         perform callerr-proc
+       not on exception
+         cancel "/asya/ytl/obj/otel/ulkeara.asy"
+     end-call
+     display acc-07
+     .
+*
+ ara-banka.
+     call "/asya/ytl/obj/otel/bankaara.asy"
+       using rap-banka
+       on exception
+         perform callerr-proc
+       not on exception
+         cancel "/asya/ytl/obj/otel/bankaara.asy"
+     end-call
+     display acc-08.
+     move 4 to accept-control
+     move 14 to control-id.
+
+*
+ ara-doviz.
+     call "/asya/ytl/obj/otel/dovizara.asy"
+       using rap-doviz
+       on exception
+         perform callerr-proc
+       not on exception
+         cancel "/asya/ytl/obj/otel/dovizara.asy"
+     end-call
+     display acc-09.
+     move 4 to accept-control
+     move 22 to control-id.
+*
+ oku-ulke.
+     open input ulke
+     initialize ulke-rec
+     move ulk-kod to ulke-anah1
+     read ulke no lock
+       invalid
+         move spaces  to ulk-kod
+         move "Hepsi" to r-ulke
+       not invalid
+         move ulke-adi to r-ulke
+     end-read
+     close ulke
+     display acc-07, La-ulke-adi
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 1 perform ara-proc
+      when 2
+          initialize fiyat-ref-external
+          move rapor-ref to oda-ref-external
+              perform Acc-08-Aft-Procedure
+              if gec-gecme <> 0
+                 move 4 to accept-control
+                 move 14 to control-id
+                 exit paragraph
+              end-if
+
+              perform Acc-09-Aft-Procedure
+              if gec-gecme <> 0
+                 move 4 to accept-control
+                 move 22 to control-id
+                 exit paragraph
+              end-if
+
+
+              open input ulke sehir
+              if rapor-ref = 0
+                 perform takas-aktar thru takas-aktar-exit
+              else
+                 perform takas-aktarr thru takasr-aktar-exit
+              end-if
+
+              initialize takas-rec
+              start takas key not < takas-ulke invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close takas  ulke sehir
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Ulke Istatistigi"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Ulke Istatistigi"   to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move ilk-gun        to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ilk-ay         to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move ilk-yil        to det-filler(57:04)
+     move "-"            to det-filler(61:01)
+     move son-gun        to det-filler(62:02)
+     move "/"            to det-filler(64:01)
+     move son-ay         to det-filler(65:02)
+     move "/"            to det-filler(67:01)
+     move son-yil        to det-filler(68:04)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Rapor Tipi..:"          to det-filler(01:15)
+     if rap-det     = "G"
+        move "Ulkeye Gore Gelenler"     to det-filler(15:25)
+     else
+        move "Ulkeye Gore Kalanlar"     to det-filler(15:25)
+     end-if
+
+     move "Secilen Ulke:"          to det-filler(40:15)
+     move ulk-kod                 to det-filler(55:04)
+     move "<->"                   to det-filler(60:03)
+     if ulk-kod       = spaces
+        move "Tum Ulkeler...."    to det-filler(65:20)
+     else
+        initialize ulke-rec  
+        move ulk-kod        to ulke-anah
+        read ulke   no lock invalid 
+             move all "*" to ulke-adi  
+                        not invalid continue
+        end-read
+        move ulke-adi             to det-filler(65:20)
+     end-if
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LRRRRRRRRRRRRL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"         to det-dokumer-20(1:2)
+     move "Ulke"                        to det-1
+     move "Oda "                        to det-2
+     move "Pax "                        to det-3
+     move "Chi."                        to det-4
+     move "Free"                        to det-5
+     move "Beb."                        to det-51
+     move "Oda %"                       to det-6
+     move "YTL Gelir"                   to det-7
+     move d-adi-1                       to det-8
+     move " "                           to det-8(7:)
+     move "Gelir"                       to det-8(8:)
+     move "Gelir %"                     to det-9
+     move "Ort.Oda Gel.%YTL"            to det-10
+     move "Ort.Pax Gel.%YTL"            to det-11
+     move "Ort.Oda Gel.%Dov"            to det-12
+     move "Ort.Pax Gel.%Dov"            to det-13
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6
+     fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-51
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8
+     det-9 det-10 det-11 det-12 det-13 det-51
+     write dokumer-rec from detay
+*********************************
+
+              initialize fs-takas
+              perform with test after until fs-takas = "10"
+                    read takas next no lock end move "10" to fs-takas
+                      not at end
+                        
+                      initialize dokumer-rec detay
+                      move takas-ulke          to det-1 ulke-anah sehir-anah
+                      if sehir-value = 1 then 
+                               read sehir no lock invalid 
+                           move "Belirtilmemis" to  sehir-adi 
+                           end-read
+                          move sehir-adi to det-1(5:)
+
+                         else
+                      
+                           read ulke no lock invalid 
+                           initialize ulke-adi 
+                           end-read
+                            move ulke-adi to det-1(5:)
+                         
+                      end-if
+                      
+                      move takas-oda           to z-1
+                      move z-1                 to det-2
+                      move takas-pax           to z-1
+                      move z-1                 to det-3 
+                      move takas-chi           to z-1     
+                      move z-1                 to det-4 
+                      move takas-fre           to z-1
+                      move z-1                 to det-5 
+                      move takas-beb           to z-1
+                      move z-1                 to det-51
+                      compute yzd-tut = (takas-oda * 100) / t-oda
+                      move yzd-tut to z-2
+                      move z-2 to det-6
+                      move takas-tl-tutar      to etutar
+                      move etutar              to det-7
+                      move takas-dv-tutar      to etutar
+                      move etutar              to det-8
+                      compute yzd-tut = (takas-tl-tutar * 100) / t-tl-tutar
+                      move yzd-tut             to z-2
+                      move z-2                 to det-9
+
+                      compute doviz-al = takas-tl-tutar / takas-oda
+                      move doviz-al            to etutar
+                      move etutar              to det-10
+                      compute doviz-al = takas-tl-tutar / (takas-pax + (takas-chi * 0.5))
+                      move doviz-al            to etutar
+                      move etutar              to det-11
+
+                      compute doviz-al = takas-dv-tutar / takas-oda
+                      move doviz-al            to etutar
+                      move etutar              to det-12
+                      compute doviz-al = takas-dv-tutar / (takas-pax + (takas-chi * 0.5))
+                      move doviz-al            to etutar
+                      move etutar              to det-13
+
+                      move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6
+                      fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-51
+                      write dokumer-rec from detay
+
+                    end-read
+              end-perform
+
+              initialize dokumer-rec detay
+              move "-"            to det-dokumer-20(5:1)
+              move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+              det-7 det-8 det-9 det-10 det-11 det-12 det-13 det-51
+              write dokumer-rec from detay
+              initialize dokumer-rec detay  
+              move "Toplam"            to det-1 
+              move t-oda               to z-1
+              move z-1                 to det-2 
+              move t-pax               to z-1        
+              move z-1                 to det-3 
+              move t-chi               to z-1
+              move z-1                 to det-4 
+              move t-fre               to z-1
+              move z-1                 to det-5 
+              move t-beb               to z-1
+              move z-1                 to det-51
+              move t-tl-tutar          to etutar
+              move etutar              to det-7
+              move t-dv-tutar          to etutar
+              move etutar              to det-8
+              move "A"          to det-dokumer-20(3:1)
+              move 481          to det-renk1
+              move "1"          to det-dokumer-20(10:1)
+              move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6
+              fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-51
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "-"            to det-dokumer-20(5:1)
+              move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+              det-7 det-8 det-9 det-10 det-11 det-12 det-13 det-51
+              write dokumer-rec from detay
+
+              close takas ulke  sehir
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer takas
+    end-evaluate.
+     .
+
+ takas-aktar. 
+    perform takas-dosya-ac. 
+    open input turizm kur odalar. 
+    initialize turizm-rec toplam. 
+    move ilk-tarih  to turizm-tarih. 
+    move ulk-kod    to turizm-ulke. 
+    start turizm key not < turizm-anah1 invalid continue, 
+        not invalid, 
+ 
+        move spaces to evet-hayir, 
+        perform with test after until evet, 
+            read turizm next no lock end move "E" to evet-hayir, 
+                not end, 
+ 
+
+                evaluate true 
+                when ulk-kod not = spaces and turizm-ulke not = ulk-kod, 
+                     exit perform cycle
+*                     move "E" to evet-hayir 
+                when turizm-tarih > son-tarih 
+                     move "E" to evet-hayir 
+                when ulk-kod = spaces, 
+                     if turizm-tarih not > son-tarih, 
+                            perform takas-yaz, 
+                     end-if, 
+                when ulk-kod not = spaces and turizm-ulke = ulk-kod, 
+                     if turizm-tarih not > son-tarih, 
+                            perform takas-yaz, 
+                     end-if, 
+                end-evaluate, 
+            end-read, 
+        end-perform, 
+    end-start. 
+    close turizm kur odalar. 
+ takas-aktar-exit. 
+    exit. 
+ takas-yaz. 
+    initialize takas-rec kur-rec doviz-al.
+
+    move turizm-tarih     to kur-tarih
+    move rap-banka to kur-banka
+    move rap-doviz to kur-doviz
+    read kur no lock invalid 
+         continue
+    not invalid
+         initialize doviz-al
+         evaluate true
+         when onkpara-d-e = "D"
+              evaluate true
+                  when onkpara-a-s = "A"
+                       compute doviz-al  = turizm-toplam-tutar / doviz-alis
+                  when onkpara-a-s = "S"
+                       compute doviz-al  = turizm-toplam-tutar / doviz-satis
+              end-evaluate
+         when onkpara-d-e = "E"
+              evaluate true
+                  when onkpara-a-s = "A"
+                       compute doviz-al  = turizm-toplam-tutar / efektif-alis
+                  when onkpara-a-s = "S"
+                       compute doviz-al  = turizm-toplam-tutar / efektif-satis
+              end-evaluate
+         end-evaluate
+    end-read
+    if sehir-value = 1 then
+       move turizm-sehir to takas-ulke
+      else
+        move turizm-ulke to takas-ulke
+    end-if.
+ 
+    read takas no lock invalid 
+         initialize takas-rec
+         if sehir-value = 1 then
+           move turizm-sehir to takas-ulke
+          else
+          move turizm-ulke to takas-ulke
+        end-if
+    end-read
+    evaluate true 
+    when rap-det = "G" 
+         compute takas-oda = takas-oda + gelen-oda 
+         compute takas-pax = takas-pax + gelen-buyuk 
+         compute takas-chi = takas-chi + gelen-kucuk 
+         compute takas-fre = takas-fre + gelen-free 
+         compute takas-beb = takas-beb + gelen-bebek
+ 
+         compute t-oda     = t-oda     + gelen-oda 
+         compute t-pax     = t-pax     + gelen-buyuk 
+         compute t-chi     = t-chi     + gelen-kucuk 
+         compute t-fre     = t-fre     + gelen-free 
+         compute t-beb     = t-beb     + gelen-bebek
+ 
+    when rap-det = "K" 
+         compute takas-oda = takas-oda + kalan-oda 
+         compute takas-pax = takas-pax + kalan-buyuk 
+         compute takas-chi = takas-chi + kalan-kucuk 
+         compute takas-fre = takas-fre + kalan-free 
+         compute takas-beb = takas-beb + kalan-bebek
+         compute takas-tl-tutar = takas-tl-tutar + turizm-toplam-tutar
+         compute takas-dv-tutar = takas-dv-tutar + doviz-al
+ 
+         compute t-oda     = t-oda     + kalan-oda 
+         compute t-pax     = t-pax     + kalan-buyuk 
+         compute t-chi     = t-chi     + kalan-kucuk 
+         compute t-fre     = t-fre     + kalan-free 
+         compute t-beb     = t-beb     + kalan-bebek
+         compute t-tl-tutar = t-tl-tutar + turizm-toplam-tutar
+         compute t-dv-tutar = t-dv-tutar + doviz-al
+
+    end-evaluate. 
+ 
+    rewrite takas-rec invalid write takas-rec. 
+ takas-dosya-ac. 
+    open i-o genelfis. 
+    move 1 to genelfis-anahtar. 
+    read genelfis no lock invalid move 1 to ekran-fis-1. 
+   
+    add 1 to ekran-fis-1.
+   
+    move ekran-fis-1(2:) to takas-no. 
+    rewrite genelfis-rec invalid write genelfis-rec. 
+    close genelfis. 
+    open output takas close takas open i-o takas with mass-update. 
+*
+ acc-08-Aft-Procedure.
+    initialize gec-gecme.
+    open input banka
+    move rap-banka to banka-kodu
+    read banka no lock invalid
+         move 1 to gec-gecme
+         move "Tanimsiz ..." to banka-adi
+    end-read
+    close banka.
+    display lb-banka-adi.
+     
+     .
+*
+ acc-09-Aft-Procedure.
+    initialize gec-gecme.
+    open input doviz
+    move rap-doviz to doviz-kodu
+    read doviz no lock invalid
+         move 1 to gec-gecme
+         move "Tanimsiz ..." to d-adi-1
+    end-read
+    close doviz.
+    display lb-doviz-adi.
+
+     
+     .
+
+
+
+
+
+
+
+
+*
+ takas-aktarr. 
+    perform takasr-dosya-ac. 
+    open input turizmr kur odalar. 
+    initialize turizmr-rec toplam. 
+    move ilk-tarih  to turizmr-tarih. 
+*    move ulk-kod    to turizmr-ulke 
+    move rapor-ref  to turizmr-ref
+    start turizmr key not < turizmr-anah1 invalid continue, 
+        not invalid, 
+ 
+        move spaces to evet-hayir, 
+        perform with test after until evet, 
+            read turizmr next no lock end move "E" to evet-hayir, 
+                not end, 
+                if turizmr-ref not = rapor-ref or
+                   turizmr-tarih > son-tarih
+                   move "E"          to evet-hayir
+                   exit perform cycle
+                end-if
+ 
+                evaluate true 
+                when ulk-kod not = spaces and 
+                   turizmr-ulke not = ulk-kod 
+                     exit perform cycle
+*                     move "E" to evet-hayir 
+                when turizmr-tarih > son-tarih
+                     move "E" to evet-hayir 
+
+                when ulk-kod = spaces, 
+                     if turizmr-tarih not > son-tarih
+                            perform takasr-yaz, 
+                     end-if, 
+
+                when ulk-kod not = spaces and turizmr-ulke = ulk-kod, 
+                     if turizmr-tarih not > son-tarih
+                            perform takasr-yaz, 
+                     end-if, 
+                end-evaluate, 
+            end-read, 
+        end-perform, 
+    end-start. 
+    close turizmr kur odalar. 
+ takasr-aktar-exit. 
+    exit. 
+ takasr-yaz. 
+    initialize takas-rec kur-rec doviz-al.
+
+    move turizmr-tarih     to kur-tarih
+    move rap-banka to kur-banka
+    move rap-doviz to kur-doviz
+    read kur no lock invalid 
+         continue
+    not invalid
+         initialize doviz-al
+         evaluate true
+         when onkpara-d-e = "D"
+              evaluate true
+                  when onkpara-a-s = "A"
+                       compute doviz-al  = turizmr-toplam-tutar / doviz-alis
+                  when onkpara-a-s = "S"
+                       compute doviz-al  = turizmr-toplam-tutar / doviz-satis
+              end-evaluate
+         when onkpara-d-e = "E"
+              evaluate true
+                  when onkpara-a-s = "A"
+                       compute doviz-al  = turizmr-toplam-tutar / efektif-alis
+                  when onkpara-a-s = "S"
+                       compute doviz-al  = turizmr-toplam-tutar / efektif-satis
+              end-evaluate
+         end-evaluate
+    end-read
+    if sehir-value = 1 then
+       move turizmr-sehir to takas-ulke
+      else
+        move turizmr-ulke to takas-ulke
+    end-if.
+ 
+    read takas no lock invalid 
+         initialize takas-rec
+         if sehir-value = 1 then
+           move turizmr-sehir to takas-ulke
+          else
+          move turizmr-ulke to takas-ulke
+        end-if
+    end-read
+    evaluate true 
+    when rap-det = "G" 
+         compute takas-oda = takas-oda + gelenr-oda 
+         compute takas-pax = takas-pax + gelenr-buyuk 
+         compute takas-chi = takas-chi + gelenr-kucuk 
+         compute takas-fre = takas-fre + gelenr-free 
+         compute takas-beb = takas-beb + gelenr-bebek
+ 
+         compute t-oda     = t-oda     + gelenr-oda 
+         compute t-pax     = t-pax     + gelenr-buyuk 
+         compute t-chi     = t-chi     + gelenr-kucuk 
+         compute t-fre     = t-fre     + gelenr-free 
+         compute t-beb     = t-beb     + gelenr-bebek
+ 
+    when rap-det = "K" 
+         compute takas-oda = takas-oda + kalanr-oda 
+         compute takas-pax = takas-pax + kalanr-buyuk 
+         compute takas-chi = takas-chi + kalanr-kucuk 
+         compute takas-fre = takas-fre + kalanr-free 
+         compute takas-beb = takas-beb + kalanr-bebek
+         compute takas-tl-tutar = takas-tl-tutar + turizmr-toplam-tutar
+         compute takas-dv-tutar = takas-dv-tutar + doviz-al
+ 
+         compute t-oda     = t-oda     + kalanr-oda 
+         compute t-pax     = t-pax     + kalanr-buyuk 
+         compute t-chi     = t-chi     + kalanr-kucuk 
+         compute t-fre     = t-fre     + kalanr-free 
+         compute t-beb     = t-beb     + kalanr-bebek
+         compute t-tl-tutar = t-tl-tutar + turizmr-toplam-tutar
+         compute t-dv-tutar = t-dv-tutar + doviz-al
+
+    end-evaluate. 
+ 
+    rewrite takas-rec invalid write takas-rec. 
+ takasr-dosya-ac. 
+    open i-o genelfis. 
+    move 1 to genelfis-anahtar. 
+    read genelfis no lock invalid move 1 to ekran-fis-1. 
+   
+    add 1 to ekran-fis-1.
+   
+    move ekran-fis-1(2:) to takas-no. 
+    rewrite genelfis-rec invalid write genelfis-rec. 
+    close genelfis. 
+    open output takas close takas open i-o takas with mass-update. 
+
+
+ 

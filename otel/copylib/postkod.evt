@@ -1,0 +1,337 @@
+* postkod.evt
+* postkod.evt is generated from D:\asya\acugt.ytl\otel\postkod.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Lb-01-Exception-Proc.
+     PERFORM Lb-01-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+     .
+*
+ accept-depkodu-Bef-Procedure.
+    modify button-depara enabled = true.
+     .
+*
+ Aft-Procedure.
+    initialize depkod-rec.
+    open input depkod.
+    move dep-kod to depkod-kodu
+    read depkod no lock invalid 
+         move 4    to accept-control
+         move 1001 to control-id
+         close depkod
+         exit paragraph
+              not invalid
+                  perform Lb-01-goster
+          end-read.
+    modify lb-depadi-e, title = depkod-adi of depkod
+    modify button-depara enabled = false.
+    close depkod.
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 17 
+           move postkod-dosya         to link-logview-dosya-adi
+           set link-logview-pointer  to address of postkod-rec
+           set link-logview-rec-size to size of postkod-rec
+           perform logview-call
+           initialize key-status
+      when 1 
+        perform yardimlar
+      when 6
+            perform adalya-safe-degistir
+      when 7
+        if k-kodu-tasi =  "ASYA" or "X"
+         open input odalar
+            open i-o postkod
+         start odalar key > odalar-anah
+            invalid continue
+            not invalid 
+            perform until fs-odalar = "10"
+              read odalar next no lock end move "10" to fs-odalar
+                 not end
+                  if odalar-hayali = "E" or "H" 
+                    exit perform cycle
+                  end-if
+                  if odalar-dis = 1 
+                   exit perform cycle
+                  end-if
+        move dep-kod  to postkod-kodu
+        move odalar-anah to postkod-no
+        read postkod no lock invalid continue,end-read
+        move odalar-anah     to postkod-adi
+        move post-tl      to postkod-tl-tutar
+        move post-dv      to postkod-dv-tutar
+        move k-kodu-tasi  to postkod-staf
+        write postkod-rec invalid 
+              rewrite postkod-rec,
+              end-rewrite, 
+        end-write
+       
+        perform log-operation-postkod
+        end-read
+        end-perform 
+        end-start
+         close odalar
+             postkod
+        end-if
+
+      when 2 
+        initialize postkod-rec
+        open i-o postkod
+        move dep-kod  to postkod-kodu
+        move post-num to postkod-no
+        read postkod no lock invalid continue,end-read
+        move post-adi     to postkod-adi
+        move post-tl      to postkod-tl-tutar
+        move post-dv      to postkod-dv-tutar
+        move k-kodu-tasi  to postkod-staf
+        initialize postkod-dolu-bos
+        write postkod-rec invalid 
+              rewrite postkod-rec,
+              end-rewrite, 
+        end-write
+       
+        perform log-operation-postkod
+        move 4        to accept-control
+        move 1001     to control-id
+        close postkod
+        initialize post-adi post-tl post-dv
+        display accept-postadi
+        display accept-tltutar
+        display accept-dvtutar
+        perform Lb-01-goster      
+      when 3
+        initialize postkod-rec
+        open i-o postkod
+        move dep-kod  to postkod-kodu
+        move post-num to postkod-no
+        delete postkod invalid continue, 
+        end-delete
+        perform log-operation-postkod
+        move 4        to accept-control
+        move 1001     to control-id
+        close postkod
+      when 16
+        if dep-kod = zeroes 
+           display message box "Departman Kodu Giriniz.."
+                           title "Uyari"
+                           icon 1
+             exit paragraph 
+        end-if 
+
+        display message box "Tum Odalara Extra Posting Kodu Acilacaktir."
+                        title "Uyari"
+                        icon 1
+                        type 2
+                        default 2
+                        returning return-code 
+        if return-code = 2
+            exit paragraph 
+        end-if 
+        open i-o postkod
+        open input odalar
+        initialize odalar-rec
+        start odalar key not < odalar-anah invalid 
+             continue 
+        not invalid 
+        perform with test after until fs-odalar = "10"
+        read odalar next no lock end move "10"  to fs-odalar
+        not at end 
+              if odalar-hayali not = "G"
+                 exit perform cycle 
+              end-if 
+              move dep-kod    to postkod-kodu
+              move odalar-no  to postkod-no
+              move depkod-adi to postkod-adi
+              write postkod-rec invalid 
+                  rewrite postkod-rec end-rewrite  
+              end-write 
+              perform log-operation-postkod
+        
+        end-read 
+        end-perform
+        end-start
+        close odalar postkod
+        display message box "islem tamamlandi.."
+                        title "Uyari"
+                        icon 1
+    end-evaluate.
+     .
+ depkod-ara.
+      initialize depkod-cagir.
+      call "/asya/ytl/obj/otel/depara.asy" using depkod-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/depara.asy" 
+       end-call
+       open input depkod
+       initialize depkod-rec
+       move depkod-dep-kodu to depkod-kodu dep-kod
+       read depkod no lock invalid 
+            move 4        to accept-control
+            move 1001     to control-id
+            close depkod
+            exit paragraph
+            not invalid continue 
+       end-read
+       close depkod
+       modify lb-depadi-e, title = depkod-adi of depkod
+       display accept-depkodu.
+       move 4        to accept-control
+       move 1002     to control-id.
+*
+ accept-satno-Aft-Procedure.
+    open input postkod.
+    initialize postkod-rec.
+    move dep-kod  to postkod-kodu.
+    move post-num to postkod-no.
+    read postkod no lock invalid continue
+        initialize postkod-rec 
+        move dep-kod  to postkod-kodu
+        move post-num to postkod-no
+      not invalid 
+        continue
+    end-read
+    close postkod.
+        move postkod-adi      to post-adi 
+        move postkod-tl-tutar to post-tl  
+        move postkod-dv-tutar to post-dv
+        display accept-postadi
+        display accept-tltutar
+        display accept-dvtutar.
+     .
+*
+ Lb-01-Ex-Other.
+    perform listbox-eventlar.     
+     .
+ listbox-eventlar.
+     evaluate event-type
+          when cmd-dblclick
+               inquire lb-01,value in post-num
+               perform accept-satno-Aft-Procedure
+               move 4 to accept-control
+               move 3 to control-id
+               exit paragraph
+          when ntf-selchange
+          when cmd-goto
+               inquire lb-01,value in post-num
+               display accept-satno,
+               perform accept-satno-Aft-Procedure
+     end-evaluate.
+ Lb-01-goster.
+    modify lb-01,
+           reset-list  = 1
+           mass-update = 1.
+     open input postkod
+     initialize postkod-rec
+     move dep-kod to postkod-kodu
+     start postkod key not < postkod-anah invalid
+           continue
+     not invalid
+     move zeroes to fs-postkod
+     perform with test after until fs-postkod = "10"
+       read postkod next no lock end move "10" to fs-postkod
+         not at end
+           if postkod-kodu <> dep-kod 
+              move "10" to fs-postkod
+            else
+              initialize lb-01-value
+              move postkod-no  to lb-01-col-1
+              move postkod-adi to lb-01-col-2
+              modify lb-01, item-to-add(lb-01-value)
+           end-if
+       end-read
+     end-perform
+     end-start
+     close postkod.
+     initialize postkod-rec
+     modify lb-01,
+            mass-update = 0
+            selection-index = 1
+            thumb-position = 1.     
+
+*
+ yardimlar.
+     evaluate control-id
+       when 1001 perform Depkod-Ara
+     end-evaluate
+     .
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ Form1-Pb-1aaaaa-Link.
+     perform adalya-safe-degistir
+     .
+*
+ adalya-safe-degistir.
+     move postkod-dosya to   post13-dosya
+     move extpost-dosya to   ext13-dosya
+     open i-o postkod post13 extpost ext13
+     initialize postkod-rec 
+     start postkod key not < postkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-postkod = "10" 
+     read postkod next no lock end move "10" to fs-postkod
+     not at end 
+         if postkod-kodu <> 12 
+            exit perform cycle
+         end-if
+
+         move postkod-rec to post13-rec 
+         move 111           to post13-KODU
+         write post13-rec invalid
+               stop " " 
+         end-write 
+
+         delete postkod end-delete 
+
+     end-read 
+     end-perform 
+     end-start 
+
+     initialize extpost-rec 
+     start extpost key not < extpost-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-extpost = "10" 
+     read extpost next no lock end move "10" to fs-extpost
+     not at end 
+         if EXTPOST-DEP <> 12 
+            exit perform cycle
+         end-if
+
+         move extpost-rec to ext13-rec
+         move 111          to EXT13-DEP
+         write ext13-rec invalid
+               stop " " 
+         end-write 
+
+         delete extpost end-delete
+
+     end-read
+     end-perform
+     end-start
+
+     close postkod post13 extpost ext13.
+
+ 

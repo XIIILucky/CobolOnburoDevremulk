@@ -1,0 +1,934 @@
+* minigir.evt
+* minigir.evt is generated from D:\asya\acugt.ytl\otel\minigir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ cb-dep-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-dep-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ cb-sira-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-sira-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create. 
+      perform adresleri-tasi
+      open input genel
+      initialize genel-rec
+      move 1   to genel-anahtar
+      read genel no lock invalid 
+           continue 
+      end-read 
+      close genel
+
+      open i-o genelfis
+        move 1 to genelfis-anahtar,
+        read genelfis no lock invalid
+             move 1 to GENELFIS-LOG-NO
+        not invalid
+             add 1 to GENELFIS-LOG-NO
+             move GENELFIS-LOG-NO to takas-no
+        rewrite genelfis-rec invalid
+        write genelfis-rec end-write
+        end-rewrite
+        move GENELFIS-LOG-NO         to takas-no
+
+        end-read
+      close genelfis
+
+      move cost-sirketi         to pacikla-dosya-adres 
+                                   satkod-dosya-adres posy-dosya-adres 
+                                   posdep-dosya-adres kart-dosya-adres
+      cgenelfis-dosya-adres.
+*
+ minibar.
+        move 0 to ok-ver
+       
+        move 1 to gec-gecme
+
+        open input odalar
+        move konuk-odano  to odalar-anah
+        read odalar no lock invalid
+             display message box konuk-odano"'Nolu Oda Bulunamadi"
+             close odalar
+        end-read
+        close odalar 
+
+        open input posdep
+        move c-dep(1:2) to posdep-anah
+        read posdep no lock invalid
+             display message box "<Minibar> POS DEP BULUNAMADI POSDEP :" 
+             close posdep
+             exit paragraph
+        end-read
+        close posdep 
+
+ 
+        open input satkod
+        initialize satkod-rec   
+        move posdep-recete-ana-dep        to satkod-ana-dep
+        move posdep-recete-alt-dep        to satkod-alt-dep
+        move takas-satkod-kodu            to satkod-kodu
+        read satkod no lock invalid
+             close satkod
+             exit paragraph           
+        end-read
+        close satkod.
+  
+        open i-o pacikla
+        initialize pacikla-rec
+        move "K"                               to pacikla-altgrup-tipi
+        move posdep-anah                       to pacikla-altgrup-kodu
+        move satkod-kdv-tipi                   to pacikla-aciklama-kodu
+        read pacikla no lock invalid
+             display message box
+                     satkod-kodu " nolu satis koduna bagli onburo departmani tanimlanmamis." x"0a0d"
+                     "Kayit onburoya yazilmadi."
+                     title " UYARI - Onburo baglantisi tanimsiz."
+                      icon mb-warning-icon
+              close pacikla
+              exit paragraph 
+        end-read
+        close pacikla 
+        if pacikla-kdv-onb-dep = zeroes 
+            exit paragraph 
+        end-if 
+        move pacikla-kdv-onb-dep      to minibar-onb-dep
+
+        open input depkod
+        initialize depkod-rec
+        move minibar-onb-dep   to depkod-kodu
+        read depkod no lock invalid 
+               display message box "Onburo Departmani Tanimsiz.." new-line
+                                   "KAYIT YAZILAMADI.."
+                               title "Uyari"
+                               icon 1
+                      close depkod
+                      exit paragraph
+                      set exit-pushed to true                
+        end-read 
+        close depkod
+
+        initialize gecer-gecmez
+        open input kart
+        initialize kart-rec
+         move 0 to kart-ind
+          move konuk-folio to kart-folio
+          start kart key = kart-folio
+            invalid
+               display message box "Pos Kart Bulunamadi..." new-line
+                                   "Islem Iptal edildi."
+                               title "Uyari"
+                               icon 1
+                     exit paragraph
+                   set exit-pushed to true 
+            not invalid
+             Read Kart next no lock end move "10" to fs-kart
+             not at end 
+               if kart-folio not = konuk-folio
+                   move 0 to kart-ind
+                   initialize kart-rec
+               end-if
+             end-read
+          end-start
+        close kart
+     inspect kart-no replacing  all low-values  by spaces 
+     open input kur
+     move tarih-tasi    to kur-tarih
+     move konuk-banka   to kur-banka
+     move konuk-doviz   to kur-doviz
+     read kur no lock invalid
+         move 1 to doviz-alis
+     end-read 
+     if onkpara-d-e = "D" and
+        onkpara-a-s = "A"
+        move doviz-alis    to islem-kuru
+     end-if,
+     if onkpara-d-e = "D" and
+        onkpara-a-s = "S"
+        move doviz-satis   to islem-kuru
+     end-if,
+     if onkpara-d-e = "E" and
+        onkpara-a-s = "A"
+        move efektif-alis  to islem-kuru
+     end-if,
+     if onkpara-d-e = "E" and
+        onkpara-a-s = "S"
+        move efektif-satis to islem-kuru
+     end-if
+     close kur    
+        initialize tl-tutar dv-tutar
+        if genel-minibar-doviz-tl = "D"
+            compute tl-tutar rounded = satkod-dv-satis-kdvli * islem-kuru * ( (100 - kart-ind) / 100)
+            compute dv-tutar   = satkod-dv-satis-kdvli * ( (100 - kart-ind) / 100)         
+        else
+            compute tl-tutar rounded = satkod-tl-satis-kdvli * ( (100 - kart-ind) / 100)
+            compute dv-tutar   = tl-tutar/islem-kuru
+        end-if
+        
+        open input kodlar02
+        move "B"               to kodlar02-tipi
+        move konuk-odeme-tipi  to kodlar02-kodu
+        read kodlar02 no lock invalid
+             continue
+        end-read,
+        close kodlar02
+*->
+        if ode-posting = "H"            
+             display message box "Fiyat Basilamaz(Minibar)"  
+             set exit-pushed to true 
+        end-if
+
+        open i-o genelfis
+        move 1 to genelfis-anahtar,
+        read genelfis no lock invalid
+             move 1 to cekgir-oto
+        not invalid
+             add 1 to cekgir-oto
+        end-read
+        rewrite genelfis-rec invalid
+        write genelfis-rec end-write
+        end-rewrite,
+        close genelfis
+
+        perform pos-write
+
+        open i-o exthrk romhrk onkasa 
+
+        initialize exthrk-rec hrkgir-rec
+        move konuk-folio                  to exthrk-folio,
+        move cekgir-oto                to exthrk-islem,    
+        move "P"                       to exthrk-islem-tipi
+        move yil-tasi                to exthrk-yil
+        move ay-tasi                 to exthrk-ay
+        move gun-tasi                to exthrk-gun,
+        move minibar-onb-dep           to exthrk-depkod
+        move "B"                       to exthrk-ba
+        move tl-tutar                  to exthrk-tl-tutar
+        move dv-tutar                  to exthrk-dv-tutar
+        move posy-fis-no                  to exthrk-cekno
+        accept exthrk-zaman from time,
+        move kart-no                    to exthrk-kart-no exthrk-pos-kodu
+        move k-kodu-tasi                to exthrk-staf,
+
+***************************ilyas ekleme
+********************kopyalanacak
+       open input route konu2 rez
+       open i-o yromhrk
+
+       move exthrk-rec  to hrkgir-rec
+       move hrkgir-rec  to yromhrk-rec
+       move hrk2-data to yromhrk-data
+       write yromhrk-rec invalid stop " " end-write 
+       close yromhrk
+    
+       perform folref-bul
+       perform folref-ata
+       close route konu2 rez
+       open i-o hrk2
+       move hrkgir-anah to hrk2-anah
+       move yromhrk-folio to hrk2-kaynak-folio
+       write hrk2-rec end-write
+       close hrk2
+       move hrkgir-rec       to romhrk-rec exthrk-rec
+**************** kopyalanacak
+          open input konu2
+          move hrkgir-folio   to konu2-folio
+          read konu2 no lock invalid 
+               close konu2
+               exit paragraph 
+          end-read 
+          close konu2
+                                                    
+       if konu2-fol-kodu = "R"
+          move exthrk-rec to romhrk-rec,
+          write romhrk-rec invalid
+                 continue 
+          not invalid 
+                 continue 
+          end-write
+          perform log-operation-romhrk
+        else
+          write exthrk-rec invalid
+             continue 
+          not invalid 
+             continue 
+          end-write,
+          perform log-operation-exthrk
+       end-if,
+        open i-o nt
+        initialize not-rec
+        if konu2-fol-kodu = "R"
+           move  "RHR"     to NOT-DOS
+           move romhrk-anah to  NOT-DOS-ANAH 
+        else
+           move  "EHR"      to NOT-DOS
+           move exthrk-anah to  NOT-DOS-ANAH 
+        end-if
+
+        initialize not1
+
+        if kart-ind > 0
+            string 
+                 satkod-adi(1:12) ,
+                 " %",
+                   kart-ind,
+                   " Ind."
+                   
+            into not1
+        else   
+           initialize aciklama
+           move satkod-adi to aciklama-2
+           move posy-adet  to aciklama-1
+           move aciklama      to not1
+        end-if
+        write not-rec invalid
+              continue
+        end-write
+        close nt
+
+               
+       move yil-tasi              to onk-yil
+       move ay-tasi               to onk-ay
+       move gun-tasi              to onk-gun
+       move minibar-onb-dep       to onkasa-dep
+       read onkasa no lock invalid
+            initialize onkasa-tutar-tl onkasa-tutar-dv
+                       onkasa-corr-tutar-tl onkasa-corr-tutar-dv
+       end-read
+       compute onkasa-tutar-tl = onkasa-tutar-tl + tl-tutar
+       compute onkasa-tutar-dv = onkasa-tutar-dv + dv-tutar
+
+       rewrite onkasa-rec invalid
+       write onkasa-rec end-write
+       end-rewrite
+
+         open i-o konu2
+          move hrkgir-folio to konu2-folio
+           read konu2 no lock invalid
+               display message box "Hata   No: AR78955552 FNF"
+           end-read
+           if depkod-ba = "B" 
+              compute konu2-top-borc = konu2-top-borc + tl-tutar.
+           if depkod-ba = "A" 
+              compute konu2-top-alac = konu2-top-alac + tl-tutar.
+          rewrite konu2-rec invalid continue.
+
+       close romhrk exthrk konu2 onkasa.
+*
+ pos-write.
+       open i-o cgenelfis
+        move 1 to cgenelfis-anahtar
+        read cgenelfis no lock invalid
+            close cgenelfis
+             exit paragraph
+             
+        not invalid
+             compute cgenelfis-pos-fis = cgenelfis-pos-fis + 1
+             rewrite cgenelfis-rec of cgenelfis end-rewrite
+         end-read
+         close cgenelfis
+
+            open i-o posy
+             initialize posy-rec
+             move yil-tasi       to   posy-yil
+             move ay-tasi        to   posy-ay
+             move gun-tasi       to   posy-gun  
+
+             move cgenelfis-pos-fis                  to posy-fis-no
+             move 1                                  to posy-fis-sira            
+             move posdep-anah                        to posy-depkod
+             move k-kodu-tasi                        to posy-staf
+            
+             move kart-no                            to posy-kart-no
+             move takas-satkod-kodu                    to posy-rec-kodu
+              
+             move takas-adet        to posy-adet
+             move satkod-tl-satis-kdvli              to posy-birim-fiat-gercek
+
+                initialize tl-tutar dv-tutar
+                if genel-minibar-doviz-tl = "D"
+                   compute tl-tutar rounded = satkod-dv-satis-kdvli * islem-kuru * ( (100 - kart-ind) / 100)
+                   compute dv-tutar   = satkod-dv-satis-kdvli * ( (100 - kart-ind) / 100)
+                   compute tl-tutar = tl-tutar * posy-adet
+                   compute dv-tutar = dv-tutar * posy-adet 
+                else
+                    compute tl-tutar rounded = satkod-tl-satis-kdvli * ( (100 - kart-ind) / 100)
+                   compute dv-tutar   = tl-tutar / islem-kuru
+                   compute tl-tutar = tl-tutar * posy-adet
+                   compute dv-tutar = dv-tutar * posy-adet 
+
+                end-if
+                
+               compute posy-tutar-tl =  tl-tutar            
+               compute posy-tutar-dv =  dv-tutar               
+             
+             compute posy-birim-fiat = posy-tutar-tl / posy-adet
+             compute posy-ind = kart-ind
+             
+             move satkod-yid          to posy-yid
+             move kart-tipi           to posy-musteri
+             if kart-tipi = spaces
+                move "M"   to kart-tipi
+             end-if 
+             move konuk-folio         to posy-folio
+             accept posy-satis-zaman     from time
+             evaluate kart-tipi
+                 when "M"
+                      set posy-kdv-dusuk to true
+                      
+                         move "P" to posy-kapatma-kodu
+                         if satkod-alkollumu = "E"
+                            set posy-kdv-yuksek to true
+                         end-if
+                     
+                 when "O"    move "O"   to posy-kapatma-kodu
+                        set posy-kdv-dusuk        to true
+                 when "I"    move "I"   to posy-kapatma-kodu
+                        set posy-kdv-dusuk        to true
+             end-evaluate
+             
+             evaluate true
+             when posy-yiyecek
+                    if  posy-kdv-yuksek 
+                       move posdep-kdv-y   to posy-kdv-oran
+                    else
+                       move posdep-kdv-y-8 to posy-kdv-oran
+                    end-if
+               when posy-icecek
+                     if  posy-kdv-yuksek 
+                       move posdep-kdv-i   to posy-kdv-oran
+                    else
+                       move posdep-kdv-i-8 to posy-kdv-oran
+                    end-if
+               when satkod-yid = "D"
+               when satkod-yid = "S"
+                    if  posy-kdv-yuksek 
+                       move posdep-kdv-d   to posy-kdv-oran
+                    else
+                       move posdep-kdv-d-8 to posy-kdv-oran
+                    end-if
+             end-evaluate
+
+              move "M"               to posy-manuel-minibar
+              write posy-rec invalid 
+                    display message box "yazamadim"
+              end-write            
+              close posy.
+*
+ Form1-Aft-Initdata.  
+     call "c$narg" using link-var 
+     if link-var = 1
+        open input konuk
+        initialize konuk-rec
+        move link-minibar-folio  to konuk-folio
+        read konuk no lock invalid
+            display message box "Folio Bulunamadi"
+            set exit-pushed to true 
+        end-read 
+           if konuk-durumu not = "I"
+               set exit-pushed to true 
+           end-if
+           open i-o odalar2
+           move konuk-odano   to o-kisa 
+            perform oda-uzat
+            move o-uzun to  form-odano
+           close odalar2
+           move konuk-adi    to form-konuk-adi
+           move konuk-soyadi to form-konuk-soyadi
+           display acc-01 acc-02 acc-03
+        close konuk
+        if GENEL-MINIBAR-POS-DEP = spaces
+           display message box "Minibar Parametresi Kapali.." new-line
+                               "Genel Parametrelerden POS Minibar Departman Kodunu Giriniz."
+                           title "Uyari"
+                           icon 1
+             set exit-pushed to true 
+        end-if 
+        perform posdep-doldur
+        perform grid-baslik-yukle
+        perform grid-yukle
+     else
+       set exit-pushed to true 
+     end-if 
+     
+     .
+*
+ grid-baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "Kodu"     to gd-1-col-1
+     move "Adi"      to gd-1-col-2
+     move "AD"       to gd-1-col-3
+     move "B.Fiyat"    to gd-1-col-4
+     move "Tutar"      to gd-1-col-5
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+     .
+*
+ grid-yukle.
+    open input posdep
+    initialize posdep-rec
+    move c-dep(1:2) to posdep-kodu
+    read posdep no lock invalid
+        display message box "Minibar POS Departmani Tanimsiz..."
+                        title "Uyari"
+                        icon 1
+                 close posdep
+           exit paragraph 
+    not invalid 
+         perform satkod-yukle
+    end-read 
+    close posdep.     
+*
+ satkod-yukle.
+    open i-o genelfis
+    initialize genelfis-rec
+    move 1   to genelfis-anahtar
+    read genelfis no lock invalid 
+        continue 
+    not invalid 
+        add 1 to print-no of genelfis-rec
+        rewrite genelfis-rec end-rewrite 
+    end-read 
+    move k-kodu-tasi   to takas-k-kodu-tasi
+    open output takas close takas open i-o takas 
+
+    close genelfis 
+
+    open input satkod
+    initialize satkod-rec
+    move 1       to satir
+    move posdep-recete-dep  to satkod-depkod
+    start satkod key not < SATKOD-ALT-1 invalid
+        continue 
+    not invalid 
+    perform with test after until fs-satkod = "10"
+    read satkod next no lock end move "10" to fs-satkod
+    not at end
+           if satkod-depkod <> posdep-recete-dep
+                exit perform 
+           end-if
+
+           if not satkod-kullanimda
+              exit perform cycle
+           end-if
+           initialize takas-rec
+           move satkod-kodu   to takas-satkod-kodu
+           read takas no lock invalid
+                continue  
+           end-read 
+              move satkod-kodu  to takas-satkod-kodu
+              move satkod-adi   to takas-satkod-adi
+              
+           if genel-minibar-doviz-tl = "D"
+              move satkod-dv-satis-kdvli to  takas-satkod-dv-satis-kdvli
+           else
+              move satkod-tl-satis-kdvli to  takas-satkod-tl-satis-kdvli
+           end-if
+
+              write takas-rec invalid 
+                  rewrite takas-rec end-rewrite 
+              end-write 
+                            
+    end-read 
+    end-perform
+    end-start
+    close satkod
+
+    evaluate c-sira(1:1)
+    when "A"
+       initialize takas-rec
+       start takas key not < takas-satkod-adi invalid
+            display message box "Kayit Bulunamadi.."
+                            title "Uyari"
+                            icon 1
+            close takas 
+            exit paragraph  
+       end-start        
+    when "K"
+       initialize takas-rec
+       start takas key not < takas-anah invalid 
+            display message box "Kayit Bulunamadi.."
+                            title "Uyari"
+                            icon 1
+            close takas 
+            exit paragraph 
+       end-start 
+    end-evaluate 
+
+ 
+    perform with test after until fs-takas = "10"
+    read takas next no lock end move "10" to fs-takas
+    not at end 
+           add 1                         to satir
+           initialize form1-gd-1-record
+           move takas-satkod-kodu        to gd-1-col-1
+           move takas-satkod-adi         to gd-1-col-2
+           move 0                        to gd-1-col-3
+           if genel-minibar-doviz-tl = "D"
+              move takas-satkod-dv-satis-kdvli to etutar
+              move etutar                      to gd-1-col-4
+           else
+              move takas-satkod-tl-satis-kdvli to etutar
+              move etutar                to gd-1-col-4
+           end-if
+           modify form1-gd-1,record-to-add(form1-gd-1-record)
+           modify form1-gd-1(satir,1),hidden-data takas-satkod-kodu 
+    end-read 
+    end-perform
+    close takas     
+    modify form1-gd-1,mass-update = 0.
+**************************Route islemi icin...........
+*
+ folref-bul.
+       initialize aroute-anah routtur routyazma routbulundu
+        if konuk-grup-no > 0 then 
+          move konuk-grup-no to aroute-rezno
+          move konuk-grup-no to aroute-folio
+            move hrkgir-depkod   to route-depkod
+          else
+          move high-values to  aroute-anah
+       end-if
+         move aroute-anah to route-anah
+             move hrkgir-depkod   to route-depkod
+         read route no lock invalid
+           
+                initialize route-rec aroute-anah
+               if konuk-fol-kodu = "R" then 
+                  move konuk-rez-no to aroute-rezno
+                 else
+                  if konuk-extra-rez-no  > 0 
+                      move 1 to extradan-geldi
+                      move konuk-extra-rez-no to aroute-rezno
+                   else
+                      move konuk-folio to aroute-folio
+                  end-if
+               end-if
+
+       end-read
+
+     
+       perform until routbulundu = 1 or routtur > 10 
+       add 1 to routtur
+       initialize route-rec
+        move aroute-anah to route-anah
+       move hrkgir-depkod   to route-depkod
+       read route no lock invalid
+           
+           perform rout-folio-kontrol
+           perform def-pen-bul
+            move 1 to routbulundu
+         not invalid
+         if route-tip = "P"
+
+            perform rout-folio-kontrol
+            move 1 to routbulundu
+          else
+            if route-tip = "F"
+               if route-no <> route-folio
+                        initialize aroute-anah
+                        move route-no to  aroute-folio
+                   else
+                     perform rout-folio-kontrol
+                     perform def-pen-bul
+                  move 1 to routbulundu
+
+                end-if
+              else
+                if route-no <> route-rezno
+                      initialize aroute-anah
+                      move route-no  to aroute-rezno
+                         else
+                       perform rout-folio-kontrol
+                     perform def-pen-bul
+                  move 1 to routbulundu
+
+               end-if
+            end-if
+        end-if
+        end-read
+       end-perform 
+        .
+ rout-folio-kontrol.
+     initialize konu2-rec
+     if route-rezno = 0 then
+       move route-folio to konu2-folio
+       else
+        move route-rezno to rez-no
+        read rez no lock invalid
+         move 1 to routyazma
+        end-read
+
+         if extradan-geldi = 1 then 
+               compute konu2-folio = rez-folio + 1
+               read konu2 no lock invalid 
+                   move 1 to routyazma
+                   move rez-folio to konu2-folio
+                   not invalid
+                   if konu2-extra-rez-no = rez-no then 
+                      continue
+                      else
+                      move 1 to routyazma
+                      move rez-folio to konu2-folio
+                  end-if
+               else
+                move rez-folio to konu2-folio
+           end-if
+
+    end-if
+       read konu2 no lock 
+          invalid
+           move 1 to routyazma
+          not invalid
+          if KONU2-ACIK-KAPALI    = "C" 
+            move 2 to routyazma
+          end-if
+          if KONU2-DURUMU not = "I" then
+              move 3 to routyazma
+          end-if
+       end-read
+          .
+ def-pen-bul.
+       initialize konu2-rec
+      if route-rezno = 0 then
+       move route-folio to konu2-folio
+       else
+        initialize rez-rec
+        move route-rezno to rez-no
+        read rez no lock invalid
+         move 1 to routyazma
+        end-read
+         if extradan-geldi = 1 then 
+               compute konu2-folio = rez-folio + 1
+               read konu2 no lock invalid 
+                   move 1 to routyazma
+                   move rez-folio to konu2-folio
+                   not invalid
+                   if konu2-extra-rez-no = rez-no then 
+                      continue
+                      else
+                      move 1 to routyazma
+                      move rez-folio to konu2-folio
+                  end-if
+               else
+                move rez-folio to konu2-folio
+           end-if
+     end-if
+       read konu2 no lock 
+          invalid
+           move 1 to routyazma
+          not invalid
+             open input kodlar02
+             move "B"               to kodlar02-tipi
+               move konu2-odeme-tipi  to kodlar02-kodu 
+              read kodlar02 no lock invalid
+                    move 1 to route-no
+             
+                  not invalid
+                     if  ode-tipi  not =  "A"   | KREDI ISE
+                        
+                          if depkod-tipi = 2 then 
+                                move 1 to route-no
+                             else
+                                move 2 to route-no
+                          end-if
+                      else
+                         move 1 to route-no
+                   end-if
+             end-read
+             close kodlar02
+       end-read
+          .
+*
+ folref-ata.
+     if routyazma = 0 and routbulundu = 1 
+      move konu2-folio to hrkgir-folio
+      if vis-pen = 1 then
+          move odemepen to hrkgir-ref
+             else
+          move route-no to hrkgir-ref
+      end-if
+    end-if
+       .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+    when 2
+       if toplam = zeroes 
+          display message box "Urun Secimi Yapilmadi.."
+                          title "Uyari"
+                          icon 1
+          exit paragraph
+       end-if 
+       display message box "Secili Urunler Folio'ya Eklenecektir." new-line
+                           "Eminmisiniz.?"
+                       title "Uyari"
+                       icon 1
+                       type 2 
+                       default 2
+                       returning return-code 
+       if return-code = 2
+           exit paragraph
+       end-if 
+        
+       perform minibar-dagit
+       delete file takas
+       set exit-pushed to true
+    end-evaluate
+     
+     .
+*
+ minibar-dagit.
+    open input takas
+    initialize takas-rec
+    start takas key not < takas-anah invalid 
+         continue 
+    not invalid 
+    perform with test after until fs-takas = "10"
+    read takas next no lock end move "10"  to fs-takas
+    not at end 
+            if takas-adet > 0   
+               perform minibar
+            end-if 
+    end-read 
+    end-perform
+    end-start
+    close takas. 
+*/*********************************eski hali************************
+*    inquire form1-gd-1,last-row in son-satir
+*    perform varying i
+*               from 1
+*               by 1
+*               until i > son-satir
+*                
+*                 inquire form1-gd-1(i),
+*                         record-data in form1-gd-1-record
+*                 inquire form1-gd-1(i),
+*                         record-data in form1-gd-1-record
+                    
+*                 if function numval(gd-1-col-3) > 0 
+*                    perform minibar 
+*                 end-if 
+*    end-perform.
+*/*********************************eski hali************************
+*
+ Form1-Gd-1-Ev-Other.
+    evaluate event-type
+    when msg-finish-entry
+        evaluate event-data-1
+        when 3
+           initialize top-tutar son-satir  
+           inquire form1-gd-1(event-data-2),
+                   record-data form1-gd-1-record
+           if function numval(gd-1-col-3) > 10
+               display message box "Girmek Istediginiz Miktardan Eminmisiniz."
+                               title "Uyari"
+                               icon 1
+                               type 2 
+                               default 2
+                               returning return-code 
+               if return-code = 2
+                   modify form1-gd-1(event-data-2,event-data-1),cell-data = 0    
+                   modify form1-gd-1(event-data-2,5),cell-data 0
+                   exit paragraph 
+               else
+                  compute top-tutar = function numval(gd-1-col-4) * function numval(gd-1-col-3)
+                  modify form1-gd-1(event-data-2,5),cell-data top-tutar                   
+               end-if 
+           else
+              compute top-tutar = function numval(gd-1-col-4) * function numval(gd-1-col-3)
+              modify form1-gd-1(event-data-2,5),cell-data top-tutar               
+           end-if
+*/******************grid hatasý yüzünden takasa yazýlýyor*/*/***********************           
+           open i-o takas 
+           initialize takas-rec
+           inquire form1-gd-1(event-data-2,1),
+                   hidden-data takas-satkod-kodu
+           read takas no lock invalid 
+                 display message box "Satis Kodu Bulunamadi..."
+                                 title "Uyari"
+                                 icon 1
+                 close takas 
+                 exit paragraph 
+           end-read 
+                 move function numval(gd-1-col-3)   to takas-adet 
+                 rewrite takas-rec end-rewrite 
+           close takas        
+*/******************grid hatasý yüzünden takasa yazýlýyor*/*/***********************                      
+           inquire form1-gd-1,last-row in son-satir 
+           initialize top-tutar toplam
+           perform varying i
+                    from 1 
+                    by 1
+                    until i > son-satir                       
+                       inquire form1-gd-1(i,5),
+                       cell-data top-tutar
+                       if top-tutar > 0
+                          compute toplam = toplam + top-tutar
+                       end-if 
+           end-perform
+           display acc-top
+        end-evaluate 
+    end-evaluate.
+*
+ posdep-doldur.
+    modify cb-dep,reset-list = 1
+                          mass-update = 1   
+    open input posdep
+    initialize posdep-rec 
+    start posdep key not < posdep-anah invalid  
+          continue 
+    not invalid 
+    perform with test after until fs-posdep = "10"
+    read posdep next no lock end move "10" to fs-posdep
+    not at end 
+           initialize combo-dep
+           move posdep-anah        to combo-dep-kodu
+           move posdep-adi         to combo-dep-adi
+           modify cb-dep,item-to-add(combo-dep)
+    end-read 
+    end-perform
+    end-start
+    close posdep    
+    modify cb-dep,mass-update = 0
+                       value = GENEL-MINIBAR-POS-DEP
+    move GENEL-MINIBAR-POS-DEP   to c-dep
+    display cb-dep.
+*
+ cb-dep-Ex-Ntf-Selchange.
+        perform grid-baslik-yukle
+        perform grid-yukle
+     
+     .
+*
+ cb-sira-Ex-Ntf-Selchange.
+        perform grid-baslik-yukle
+        perform grid-yukle     
+     .
+
+ 

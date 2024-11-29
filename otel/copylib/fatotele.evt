@@ -1,0 +1,239 @@
+* fatotele.evt
+* fatotele.evt is generated from D:\asya\acugt.ytl\otel\fatotele.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     EVALUATE Event-Control-Id
+     WHEN 0
+        PERFORM Form1-Ex-Other
+     END-EVALUATE
+     .
+
+ Form1-Pb-2-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Bef-Create-Form1.
+     perform adresleri-tasi.
+      call "c$narg" using link-var.
+   
+     .
+*
+ Form1-Aft-Initdata.
+
+           .
+
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\* 
+*
+
+       
+ 
+ 
+ 
+    
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     
+     
+    
+
+     when 3
+     when 4
+         if acc-fat = 0 or  acc-fat2 = 0 then 
+           display message box "Fatura No giriniz"
+        end-if
+     open i-o exthrk romhrk
+     open i-o fatura  fatura5
+      open i-o fatdetay fatdetay2 konuk
+         perform varying i from 1 by 1 until i > acc-fatura-adet
+           compute acc-fatura-no = acc-fat + i    - 1
+           compute acc-fatura-no2 = acc-fat2 + i  - 1
+
+          
+          move acc-fatura-no2            to fatura-no
+          move 0                        to fatura-sira
+          read fatura no lock invalid
+             continue
+             not invalid 
+              if fatura-durumu = "D"  or "I" then 
+                 move fatura-matrah      to gtop-top
+                  move fatura-indirim     to gtop-ind
+                  move fatura-kdv         to gtop-kdv
+                  move fatura-g-toplam      to gtop-gen
+                  display acc-adi acc-soyadi acc-adr1 acc-adr2 acc-ilce acc-il
+                  acc-ulke acc-vd acc-vno acc-ack acc-top acc-ind acc-kdv acc-gen
+               display message box acc-fatura-no2 " nolu fatura dolu"
+               exit perform
+             end-if
+                  
+          end-read
+
+
+          move acc-fatura-no            to fatura-no
+          move 0                        to fatura-sira
+          read fatura no lock invalid
+             continue
+             not invalid 
+              if fatura-durumu = "D"  or "I" then 
+                 move fatura-matrah      to gtop-top
+                  move fatura-indirim     to gtop-ind
+                  move fatura-kdv         to gtop-kdv
+                  move fatura-g-toplam      to gtop-gen
+                  display acc-adi acc-soyadi acc-adr1 acc-adr2 acc-ilce acc-il
+                  acc-ulke acc-vd acc-vno acc-ack acc-top acc-ind acc-kdv acc-gen
+                   
+                    perform fatura-tasi
+             end-if
+                  
+          end-read
+           end-perform 
+          close fatura fatdetay fatdetay2 fatura5
+          close exthrk romhrk konuk
+          display message box " Islem Tamamlandi" title " "
+          initialize   acc-fat acc-fat2 acc-fatura-adet
+          display acc-faturaa acc-fatura acc-faturaaa
+     end-evaluate.
+        
+          
+     .
+
+     
+                       
+             
+     
+    
+              .
+
+*
+ fatura-tasi.
+      
+      initialize fatdetay-rec
+      move fatura-tarihi to fatdetay-fat-tar
+   
+      start fatdetay key > fatdetay-anah invalid
+        continue
+        not invalid
+        perform until fs-fatdetay = "10" 
+          read fatdetay next no lock end 
+            move "10" to fs-fatdetay
+            not end
+              if fatura-tarihi not = fatdetay-fat-tar
+                move "10" to fs-fatdetay
+                else
+              if function numval(fatdetay-fat-no) = acc-fatura-no then
+              move fatdetay-rec to fatdetay2-rec
+               initialize   fatdetay2-fat-no
+              move   acc-fatura-no2 to fatdetay2-fat-no
+               delete fatdetay end-delete
+               write fatdetay2-rec invalid stop " "  end-write
+
+                perform romhrk-fatura-tasi
+                perform exthrk-fatura-tasi
+                continue
+             end-if
+             end-if
+          end-read
+
+        end-perform 
+      end-start
+
+
+    
+     initialize fatura-rec
+     move acc-fatura-no            to fatura-no
+     start fatura key not < fatura-anah invalid
+           continue
+     not invalid
+     initialize fs-fatura
+  
+     perform with test after until fs-fatura = "10"
+     read fatura next no lock end move "10" to fs-fatura
+     not at end
+          if fatura-no <> acc-fatura-no
+             exit PERFORM
+          else                                                        
+             move fatura-anah to yastik
+             move fatura-rec to fatura5-rec
+             move "D" to fatura-durumu
+             move acc-fatura-no2 to fatura5-no
+           
+             if uzerine-yaz = 1
+                   write fatura5-rec invalid 
+                      delete fatura not invalid
+                             rewrite fatura5-rec end-rewrite
+                      end-delete
+                   end-write 
+             else
+                   write fatura5-rec invalid stop " " end-write 
+                      initialize fatura-rec
+                      move yastik to fatura-anah
+                      move "B" to fatura-durumu
+                   rewrite fatura-rec end-rewrite
+             end-if
+          end-if
+     end-read
+     end-perform
+     end-start.
+   
+
+
+
+
+
+
+*
+ romhrk-fatura-tasi.
+     initialize romhrk-rec
+       move fatdetay-folio to romhrk-folio
+     start romhrk key not < romhrk-anah invalid
+          continue
+            not invalid
+     initialize fs-romhrk
+     perform with test after until fs-romhrk = "10"
+     read romhrk next no lock end move "10" to fs-romhrk
+     not at end
+          if romhrk-folio not = fatdetay-folio
+            move "10" to fs-romhrk
+            else
+          if romhrk-fatura-no = acc-fatura-no
+             compute romhrk-fatura-no = acc-fatura-no2
+             rewrite romhrk-rec end-rewrite
+             perform log-operation-romhrk
+          end-if
+          end-if
+     end-read
+     end-perform
+     end-start.
+
+ exthrk-fatura-tasi.
+     initialize exthrk-rec
+         move fatdetay-folio to exthrk-folio
+     start exthrk key not < exthrk-anah invalid
+           continue
+          not invalid
+
+     initialize fs-exthrk
+     perform with test after until fs-exthrk = "10"
+     read exthrk next no lock end move "10" to fs-exthrk
+     not at end
+          if exthrk-folio not = fatdetay-folio
+            move "10" to fs-exthrk
+            else 
+          if exthrk-fatura-no = acc-fatura-no
+             compute exthrk-fatura-no = acc-fatura-no2
+             rewrite exthrk-rec end-rewrite
+             perform log-operation-exthrk
+          end-if
+          end-if
+     end-read
+     end-perform.
+
+
+ 

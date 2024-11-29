@@ -1,0 +1,271 @@
+* kvkkgir.evt
+* kvkkgir.evt is generated from D:\asya\acugt.ytl\otel\kvkkgir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ gd-kisiler-Event-Proc.
+     PERFORM gd-kisiler-Ev-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM gd-soru-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform Adresleri-Tasi
+     .
+*
+ Exception-Procedure.
+     evaluate key-status 
+         when 2 
+              perform Form-Kaydet
+         when 3
+              perform Form-Sil
+     end-evaluate 
+     .
+*
+ Form1-Aft-Initdata.
+     perform Form-Yenile
+     .
+*
+ After-Procedure.
+
+    .
+*
+ Form-Oku.
+     open i-o yanrez
+     initialize yanrez-rec 
+     move rez-no-val  to yanrez-rezno
+     move sira-no-val to yanrez-sirano
+     read yanrez no lock invalid
+          continue
+     end-read 
+     close yanrez
+     perform Baslik-Grid-Yukle
+     .
+*
+ Form-Kaydet.
+     if sira-no-val not > 0
+        exit paragraph
+     end-if
+
+     open i-o yanrez
+     initialize yanrez-rec 
+     move rez-no-val  to yanrez-rezno
+     move sira-no-val to yanrez-sirano
+     start yanrez key not < yanrez-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-yanrez = "10" 
+     read yanrez next no lock end move "10" to fs-yanrez 
+     not at end
+
+         if yanrez-rezno <> rez-no-val
+            exit perform 
+         end-if
+         inquire gd-soru, last-row in son-satir 
+         perform varying i from 2 by 1 until i > son-satir
+            compute satir-getir = i - 1 
+            inquire gd-soru(i,3), cell-data in cevap-val
+            move cevap-val(1:1)   to yanrez-kvkk-cevap(satir-getir:1)
+         end-perform
+         move bilgi-val(1:1)      to yanrez-kvkk-mail-tel
+         rewrite yanrez-rec invalid
+                 stop " "
+         end-rewrite 
+
+     end-read 
+     end-perform
+     end-start 
+
+*     move rez-no-val  to yanrez-rezno
+*     move sira-no-val to yanrez-sirano
+*     read yanrez no lock invalid
+*          continue
+*     end-read 
+*     inquire gd-soru, last-row in son-satir 
+*     perform varying i from 2 by 1 until i > son-satir
+*        compute satir-getir = i - 1 
+*        inquire gd-soru(i,3), cell-data in cevap-val
+**        if cevap-val(1:1) = 0
+**           move space          to yanrez-kvkk-cevap(satir-getir:1)
+**        else 
+*           move cevap-val(1:1) to yanrez-kvkk-cevap(satir-getir:1)
+**        end-if
+*     end-perform
+*     rewrite yanrez-rec invalid
+*             stop " "
+*     end-rewrite 
+     close yanrez 
+     display message box "Kayit islemi tamamlandi.." 
+     set exit-pushed to true
+*     perform Form-Yenile
+     .
+*
+ Form-Sil.
+     exit paragraph
+     .
+*
+ Form-Yenile.
+     move kvkk-cagir-giden-rez to rez-no-val
+     move 1                    to sira-no-val
+     display acc-rez-no acc-sira-no
+
+     perform Baslik-Grid-Yukle
+*     perform Kisiler-Grid-Yukle
+     .
+Baslik-Grid-Yukle.
+     open i-o kvkksoru yanrez
+     modify gd-soru, reset-grid  = 1 
+                     mass-update = 1 
+
+     initialize soru-rec 
+     move "Sira"     to soru-col-1
+     move "Baslik"   to soru-col-2
+     move "Cevap"    to soru-col-3
+     modify gd-soru, record-to-add(soru-rec)
+
+     initialize yanrez-rec 
+     move rez-no-val  to yanrez-rezno
+     move sira-no-val to yanrez-sirano
+     read yanrez no lock invalid
+          continue
+     end-read 
+
+     move yanrez-kvkk-mail-tel to bilgi-val
+     if yanrez-kvkk-mail-tel = spaces 
+        move "H"               to bilgi-val
+     end-if
+     display cmb-1301
+
+     initialize kvkksoru-rec 
+     move 2  to satir-getir
+     start kvkksoru key not < kvkksoru-anah invalid
+           continue
+     not invalid                                                 
+     perform with test after until fs-kvkksoru = "10" 
+     read kvkksoru next no lock end move "10" to fs-kvkksoru
+     not at end
+         compute i = satir-getir - 1 
+         initialize soru-rec 
+         move kvkksoru-sira       to soru-col-1
+         move kvkksoru-baslik     to soru-col-2
+         move "0-Reddedildi"      to soru-col-3
+         modify gd-soru(satir-getir,3), cell-color = 176
+*         if sira-no-val > 0
+         evaluate yanrez-kvkk-cevap(i:1) 
+             when 1 
+                  move "1-Onaylandi"    to soru-col-3
+                  modify gd-soru(satir-getir,3), cell-color = 112
+
+             when other
+                  move "0-Reddedildi"   to soru-col-3
+                  modify gd-soru(satir-getir,3), cell-color = 176
+
+*             when other 
+*                  move "0-Cevap Yok"    to soru-col-3
+*                  modify gd-soru(satir-getir,3), cell-color = 481
+
+         end-evaluate
+*         end-if
+         modify gd-soru, record-to-add(soru-rec)
+         add 1 to satir-getir
+
+     end-read 
+     end-perform 
+     end-start
+     modify gd-soru, mass-update = 0
+     close kvkksoru yanrez
+     .
+*
+ Kisiler-Grid-Yukle.
+     open i-o yanrez
+     modify gd-kisiler, reset-grid  = 1 
+                        mass-update = 1 
+
+     initialize kisiler-rec  
+     move "Sira"                   to kisiler-col-1
+     move "Adi"                    to kisiler-col-2
+     move "Soyadi"                 to kisiler-col-3
+     modify gd-kisiler, record-to-add(kisiler-rec)
+
+     initialize yanrez-rec 
+     move rez-no-val to yanrez-rezno
+     start yanrez key not < yanrez-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-yanrez = "10" 
+     read yanrez next no lock end move "10" to fs-yanrez
+     not at end
+
+         if yanrez-rezno <> rez-no-val
+            exit perform 
+         end-if
+
+         initialize kisiler-rec 
+         move yanrez-sirano            to kisiler-col-1
+         move yanrez-adi               to kisiler-col-2
+         move yanrez-soyadi            to kisiler-col-3
+         modify gd-kisiler, record-to-add(kisiler-rec)
+
+     end-read 
+     end-perform 
+     end-start
+     modify gd-kisiler, mass-update = 0
+     close yanrez
+    .
+*
+ gd-soru-Ev-Other.
+     evaluate event-type
+         when msg-begin-entry
+              move event-action-fail to event-action
+
+              inquire gd-soru, cursor-y in satir-getir
+
+              if satir-getir > 1 and sira-no-val > 0
+                 inquire gd-soru(satir-getir,1), cell-data in sira-no-val
+                 inquire gd-soru(satir-getir,3), cell-data in cevap-val
+
+                 evaluate cevap-val(1:1)
+                     when 1 
+                          move "0-Reddedildi" to y-cevap-val
+                          modify gd-soru(satir-getir,3), cell-color = 176
+*                     when 2 
+*                          move "0-Cevap Yok"  to y-cevap-val
+*                          modify gd-soru(satir-getir,3), cell-color = 481
+                     when other
+                          move "1-Onaylandi"  to y-cevap-val
+                          modify gd-soru(satir-getir,3), cell-color = 112
+                 end-evaluate    
+              
+                 modify gd-soru,(satir-getir,3), cell-data = y-cevap-val
+              end-if
+     end-evaluate 
+     .
+*
+ gd-kisiler-Ev-Other.
+     evaluate event-type
+         when msg-begin-entry
+              move event-action-fail to event-action
+
+*              inquire gd-kisiler, cursor-y in satir-getir
+*        
+*              if satir-getir > 1
+*                 inquire gd-kisiler(satir-getir,1), cell-data in sira-no-val   
+*                 display acc-sira-no
+*                 if sira-no-val > 0
+*                    perform Form-Oku
+*                 end-if
+*              end-if
+     end-evaluate 
+     .
+
+ 

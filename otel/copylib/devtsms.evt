@@ -1,0 +1,656 @@
+* devtsms.evt
+* devtsms.evt is generated from D:\asya\acugt.ytl\otel\devtsms.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ form2-Exception-Proc.
+     PERFORM form2-Ex-Other
+     .
+
+ form2-Cm-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM form2-Cm-1-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+
+*
+ form2-Ex-Other.
+     evaluate key-status
+         when 1
+          if control-id = 20 then
+               initialize devara-cagir
+                call "/asya/ytl/obj/otel/devara.asy" using devara-cagir
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/devara.asy"
+                         move devara-dev-no-cagir to rpr-devremulk-no
+                         display accept-0101aaa
+                  end-call
+            end-if
+
+            if control-id = 11 then
+               initialize rpr-danisman-kodu
+                call "/asya/ytl/obj/otel/danisara.asy" using rpr-danisman-kodu
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/danisara.asy"
+                         if rpr-danisman-kodu <> zeroes or 
+                            rpr-danisman-kodu <> spaces
+                                 display accept-0101aa
+                         end-if
+                         move 4 to accept-control
+                         move 11 to control-id
+                  end-call
+
+            end-if
+            if control-id = 5 then
+               initialize rpr-donem-kodu
+                call "/asya/ytl/obj/otel/donara.asy" using rpr-donem-kodu
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/donara.asy"
+                         if rpr-donem-kodu <> zeroes or 
+                            rpr-donem-kodu <> spaces
+                                 display accept-0101a
+                         end-if
+                         move 4 to accept-control
+                         move 5 to control-id
+                  end-call
+            end-if
+            if control-id = 88 then
+                      initialize oda-cagir
+                      call "/asya/ytl/obj/otel/odaara.asy" using oda-cagir
+                            on exception perform callerr-proc
+                               not on exception
+                               cancel "/asya/ytl/obj/otel/odaara.asy" 
+                       end-call
+                       move odano-cagir     to rpr-oda-no
+                       display accept-cik-yilaa
+                       move 4 to accept-control
+                       move 88 to control-id
+              end-if 
+
+          when 4
+             
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   add 1 to EKRAN-FIS-1
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+              move EKRAN-FIS-1 to takas-no  takasodeme-no
+              open output takasodeme close takasodeme
+              open i-o  takasodeme
+              open input donem donem2 donhrk  devremulk  musteri odalar  taksit  DANISMAN odemeler 
+              
+
+              initialize eski-devremulk-no detay-toplam detay-dip-toplam  hisse-toplam eski-anah-deger ilk-kayit-mi
+              initialize devremulk-rec  alt-toplamlar
+              move 1 to ilk-kayit-mi
+
+              initialize devremulk-rec alt-toplam alt-toplamlar kayit-sayisi
+
+              if rpr-devremulk-no not = zeroes then
+                 move rpr-devremulk-no to  devremulk-no
+              end-if
+
+              start devremulk key not < devremulk-anah invalid
+                      continue
+              not invalid
+              perform until fs-devremulk = "10" 
+              read devremulk next no lock end move "10" to fs-devremulk
+              not end
+                      
+              | FILTRELER
+                  if rpr-devremulk-no not = zeroes and devremulk-no not = rpr-devremulk-no  then
+                          exit perform  
+                 end-if
+
+                  if rpr-donem-kodu not = spaces and devremulk-devre-donem not = rpr-donem-kodu then 
+                          exit perform cycle
+                  end-if
+                  if rpr-danisman-kodu not = zeroes and rpr-danisman-kodu not = devremulk-satan-danisman then
+                           exit perform cycle
+                  end-if
+
+                  if rpr-oda-no not = spaces and rpr-oda-no not = DEVREMULK-ODA-NO
+                           exit perform cycle
+                  end-if
+ 
+                  if devremulk-durumu not = "Y" then
+                         exit perform cycle
+                  end-if
+
+                initialize taksit-rec alt-toplam
+
+                move devremulk-no           to taksit-devremulk-no
+                move txt-donem-bas-tar      to taksit-tarih
+                start taksit key not < taksit-dev-tarih invalid
+                        continue
+                not invalid
+                perform until fs-taksit = "10" 
+                read taksit next no lock end move "10" to fs-taksit
+                not end
+                      if taksit-devremulk-no not =  devremulk-no then
+                           exit perform
+                      end-if
+                     if txt-donem-bit-tar   not >= taksit-tarih  then
+                           exit perform 
+                     end-if
+                     initialize takasodeme-rec
+                     move  taksit-devremulk-no to takasodeme-devremulk-no
+                     read takasodeme no lock invalid
+                             move taksit-tutar to takasodeme-taksit-toplam 
+                             move taksit-tarih to takasodeme-taksit-tar
+                             write takasodeme-rec invalid
+                                     stop " "
+                             end-write
+                             continue
+                     not invalid
+                            add taksit-tutar to takasodeme-taksit-toplam 
+                            rewrite takasodeme-rec invalid
+                                     stop " "
+                            end-rewrite
+                     end-read
+                end-read
+                end-perform
+                end-start
+  
+                |   if devremulk-no = 22132 then stop " " end-if
+
+                initialize odemeler-rec
+                move devremulk-no to odemeler-devremulk-no
+                move txt-donem-bas-tar   to odemeler-tarih
+                start odemeler key not < odemeler-dev-tar invalid
+                        continue
+                not invalid
+                perform until fs-odemeler = "10" 
+                read odemeler next no lock end move "10" to fs-odemeler
+                not end
+                       
+                if odemeler-devremulk-no not =  devremulk-no then
+                      exit perform
+                end-if
+                       evaluate odemeler-islem-turu
+                           when "SO"
+                               continue 
+                           when "IO"
+                               continue 
+                           when "SP"               
+                           when "NP"               
+                           when "PM"
+                           when "AG"               
+                           when "DP"                
+                           when "GS"               
+                           when "GN"
+                           WHEN "PP"
+                           WHEN "SS"
+                           when "AV"
+                           when "BK"
+                           when "BO"
+                                exit perform cycle 
+                           when "FO"
+                               continue                 
+                           when "PI"
+                               continue 
+                           WHEN OTHER 
+                               continue 
+                           end-evaluate
+                 
+
+                     if txt-donem-bit-tar not >= odemeler-tarih then
+                           exit perform 
+                     end-if
+
+                     initialize takasodeme-rec
+                     move  odemeler-devremulk-no to takasodeme-devremulk-no
+                     read takasodeme no lock invalid
+                             move 1 to donguden-cikti 
+                             exit perform cycle
+                             continue
+                     not invalid
+                            add odemeler-tutar to takasodeme-odeme-toplam 
+                            rewrite takasodeme-rec invalid
+                                     stop " "
+                            end-rewrite
+                     end-read
+
+                     if donguden-cikti = 1 then 
+                           exit perform cycle
+                     end-if
+
+                end-read
+                end-perform
+                end-start
+
+           end-read
+           end-perform
+           end-start
+
+            ||||||||||||||||||ekrana basssssssssssss
+
+               initialize grd1-record
+               modify grd1 , reset-grid = 1 , mass-update = 1
+               move "S.Tarih"        to gd-1-col-1
+               move "Dev.No "        to gd-1-col-2
+               move "Musteri Adi"    to gd-1-col-3
+               move "Sat. Danisman"  to gd-1-col-4
+               move "Soz.Fiyati"     to gd-1-col-5
+               move "Gun.Borc"       to gd-1-col-6
+               move "Gun.Odeme"      to gd-1-col-7
+               move "Gun.Kalan"      to gd-1-col-8
+               modify grd1,record-to-add(grd1-record)
+
+              initialize takasodeme-rec ilk-kayit  
+              move 1 to ilk-kayit
+              start takasodeme key not < takasodeme-anah invalid
+                      continue
+              not invalid
+              perform until fs-takasodeme = "10"
+              read takasodeme next no lock end move "10" to fs-takasodeme
+              not end
+                            initialize detay devremulk-rec gborc-kalan grd1-record
+                            move takasodeme-devremulk-no  to gd-1-col-2 devremulk-no
+                            read devremulk no lock invalid
+                                    continue
+                            not invalid
+
+                                     initialize musteri-rec mis-adi
+                                     move devremulk-profil-sirket    to musteri-sirket
+                                     move devremulk-profil-no        to musteri-no
+                                     read musteri no lock invalid 
+                                          move "      "         to musteri-adi musteri-soyadi
+                                     end-read 
+                                          initialize mis-adi
+                                          string mis-adi
+                                                 musteri-adi delimited by spaces " "
+                                                 " " delimited by size 
+                                                 musteri-soyadi
+                                          into mis-adi
+                                     move mis-adi          to gd-1-col-3
+
+                                  move devremulk-satan-danisman to danisman-kodu
+                                  read danisman no lock invalid
+                                           move 4    to accept-control
+                                           move 11 to control-id
+                                           continue
+                                  not invalid
+                                         initialize string-deger
+                                         string string-deger
+                                                    danisman-adi delimited by spaces
+                                                    " " delimited by size 
+                                                    danisman-soyadi
+                                          into string-deger
+                                          move string-deger to gd-1-col-4
+                                  end-read
+                        
+                                    move devremulk-satis-tutari   to z-tutar
+                                    move z-tutar                  TO gd-1-col-5
+
+                            end-read
+                            initialize det-4 
+        
+                            move devremulk-satis-gun  to gd-1-col-1(1:2)
+                            move "/"                  to gd-1-col-1(3:1)
+                            move devremulk-satis-ay   to gd-1-col-1(4:2)
+                            move "/"                  to gd-1-col-1(6:1)
+                            move devremulk-satis-yil  to gd-1-col-1(7:4)
+                            
+                            move takasodeme-taksit-toplam to z-tutar  
+                            move z-tutar                  to gd-1-col-6 
+                         
+
+                            move takasodeme-odeme-toplam  to z-tutar 
+                            move z-tutar                  to gd-1-col-7  
+
+                            compute gborc-kalan = takasodeme-taksit-toplam -  takasodeme-odeme-toplam
+                          
+                            move gborc-kalan              to z-tutar 
+                            move z-tutar                  to gd-1-col-8
+
+                            perform odeme-bul
+                            perform taksit-bul
+                            
+                            compute dev-kalan-borc = taksit-toplam-bul - odeme-toplam-bul
+
+                            move taksit-toplam-bul to z-tutar 
+                            move z-tutar           to det-8
+                            move odeme-toplam-bul  to z-tutar 
+                            move z-tutar           to det-9
+                            move dev-kalan-borc    to z-tutar 
+                            move z-tutar           to det-10
+
+
+                            if sadece-borcu = 1   and gborc-kalan <= 0  then
+                                 delete takasodeme end-delete
+                                 exit perform cycle 
+                            end-if
+
+                            if sadece-top-borcu = 1  and dev-kalan-borc <=0 then
+                                 delete takasodeme end-delete
+                                 exit perform cycle
+                            end-if
+
+                          |  add takasodeme-taksit-toplam  to taksit-top
+                          |  add takasodeme-odeme-toplam   to odeme-top
+                          |  add dev-kalan-borc            to kalan-top
+                          |  add taksit-toplam-bul         to borc-top 
+                          |  add odeme-toplam-bul          to odenen-top
+                          |  add gborc-kalan               to top-gborc-kalan
+           
+                         modify grd1 , record-to-add(grd1-record)
+                         add 1 to kayit-sayisi
+                   
+                    initialize ilk-kayit
+                    move takasodeme-devremulk-no to eski-devremulk-no
+
+              end-read
+              end-perform
+              end-start
+              initialize grd1-record
+              move kayit-sayisi to z-sayi
+              move z-sayi       to gd-1-col-1 
+              modify grd1 , record-to-add(grd1-record) , row-color = 112
+              modify grd1  , mass-update = 0 
+
+              close  donem donem2 donhrk devremulk musteri odalar takasodeme taksit DANISMAN odemeler  
+        when 88
+
+          if txt-sms-kalip = spaces  then
+               display message box "Lutfen Gonderilecek Sms Alanini Doldurunuz !"
+                         title "[ Asyasoft Sms Gonderim ]"
+               exit paragraph
+           end-if
+
+          if kayit-sayisi not > 0 then 
+                display message box "Toplu Mesaj Gonderilecek Liste Bos !!!"
+                         title "[ Asyasoft Sms Gonderim ]"
+                exit paragraph
+          end-if
+
+ 
+           display message box "Listedeki Kisilere Sectiginiz Sms Gonderilmek Uzere Sms Havuza Gonderelecektir ! Emin misiniz ?"
+                         title "[ Asyasoft Sms Gonderim ]"
+                         icon 1
+                         type 2
+                         default 2
+                         returning return-code
+         if return-code not = 1 then
+                exit paragraph
+         end-if
+           
+
+          open i-o  takasodeme smsliste  devremulk musteri donem2
+
+            initialize takasodeme-rec kayit-sayisi
+            start takasodeme key not < takasodeme-anah invalid
+                    continue
+            not invalid
+            perform until fs-takasodeme = "10"
+            read takasodeme next no lock end move "10" to fs-takasodeme
+            not end
+
+
+                  initialize smsliste-rec
+                  perform musteri-telno-bul
+                  if gsm-no(1:2) = "+9" then   
+                        move gsm-no(3:13) to smsliste-gon-numara
+                  else
+                        move gsm-no       to smsliste-gon-numara
+                  end-if
+
+                  move txt-sms-kalip            to smsliste-gon-mesaj 
+                  move takasodeme-devremulk-no  to smsliste-anah(1:8)
+                  move "D"                      to smsliste-nereden
+                  move "S"                      to smsliste-tip
+                  accept smsliste-zaman from time
+                  initialize gborc-kalan
+                  compute gborc-kalan = takasodeme-taksit-toplam -  takasodeme-odeme-toplam
+                  move gborc-kalan              to smsliste-tutar
+                  move k-kodu-tasi              to smsliste-staf
+                  move 0                        to smsliste-gonderildi-mi 
+
+                  move takasodeme-devremulk-no to devremulk-no
+                  read devremulk no lock invalid
+                          continue
+                  end-read
+                  initialize musteri-rec
+                  move DEVREMULK-profil-sirket        to musteri-sirket              
+                  move DEVREMULK-profil-no            to musteri-no 
+                  read musteri no lock invalid 
+                        move "      " to musteri-adi musteri-soyadi
+                  end-read
+                  initialize string-deger
+                  string string-deger
+                       musteri-adi delimited by spaces " "
+                       " " delimited by size 
+                       musteri-soyadi
+                  into string-deger     
+                  move string-deger                   to smsliste-gon-kisi
+
+                   if sadece-dev = 1 then
+                           initialize donem2-rec
+                           move devremulk-devre-donem to donem2-kodu
+                           read donem2 no lock invalid
+                                    exit perform cycle
+                           end-read
+                   end-if
+
+                  write smsliste-rec  invalid
+                          stop " "
+                  end-write
+                  add 1 to kayit-sayisi
+                
+
+            end-read
+            end-perform
+            end-start
+
+             display message box "Toplam "kayit-sayisi " Adet Sms Iletilmek Uzere Havuzuna Gonderilmistir." 
+                      title "[ Asyasoft Sms Gonderim ]"
+          initialize kayit-sayisi
+          close takasodeme smsliste devremulk musteri donem2
+          
+          delete file takasodeme
+          modify grd1,reset-grid = 1 
+        end-evaluate
+     .
+
+
+*
+ form2-Bef-Create.
+         perform adresleri-tasi
+
+        open input genel
+      initialize genel-rec 
+      move 1        to genel-anahtar
+      read genel no lock invalid 
+           display message box "Genel Parametreler Tanimsiz..."
+                           title "Uyari"
+                           icon 1
+                 close genel
+                 exit paragraph           
+      end-read 
+      close genel
+      move muha-sirketi to  mgenelfis-dosya-adres 
+
+         move "20090101" to txt-donem-bas-tar 
+         move tarih-tasi to txt-donem-bit-tar
+     .
+
+*
+ odeme-bul.
+
+    initialize odemeler-rec odeme-toplam-bul 
+    move devremulk-no            to odemeler-devremulk-no
+    start odemeler key not < odemeler-anah invalid 
+         continue 
+    not invalid 
+    perform with test after until fs-odemeler = "10"
+    read odemeler next no lock end move "10" to fs-odemeler
+    not at end 
+             if odemeler-devremulk-no <> devremulk-no
+                 exit perform 
+             end-if
+             if odemeler-hareket-turu <> "A"
+                 exit perform cycle 
+             end-if
+
+           evaluate odemeler-islem-turu
+           when "SO"
+               continue 
+           when "IO"
+               continue 
+           when "SP"               
+           when "NP"               
+           when "PM"
+           when "AG"               
+           when "DP"                
+           when "GS"               
+           when "GN"
+           WHEN "PP"
+           WHEN "SS"
+           when "AV"
+           when "BK"
+           when "BO"
+                exit perform cycle 
+           when "FO"
+               continue                 
+           when "PI"
+               continue 
+           WHEN OTHER 
+               continue 
+           end-evaluate
+             compute odeme-toplam-bul = odeme-toplam-bul + odemeler-tutar
+    end-read 
+    end-perform
+    end-start
+
+     .
+ taksit-bul.
+
+    initialize taksit-rec taksit-toplam-bul 
+    move devremulk-no            to taksit-devremulk-no
+    start taksit key not < taksit-anah invalid 
+         continue 
+    not invalid 
+    perform with test after until fs-taksit = "10"
+    read taksit next no lock end move "10" to fs-taksit
+    not at end 
+             if taksit-devremulk-no <> devremulk-no
+                 exit perform  
+             end-if
+             compute taksit-toplam-bul = taksit-toplam-bul + taksit-tutar
+    end-read 
+    end-perform
+    end-start
+
+     .
+*
+ form2-Cm-1-Ex-Ntf-Selchange.
+     
+      if cmb-rap-tur(1:2) not = "01" then
+              move "20601231" to txt-donem-bit-tar
+              initialize sadece-borcu sadece-top-borcu
+      else
+              move tarih-tasi to txt-donem-bit-tar
+              move 1 to sadece-borcu sadece-top-borcu
+      end-if
+      display form2-Cb-2aa form2-Cb-2a accept-cik-yilb accept-cik-aya accept-cik-ayab
+     .
+*
+ sc-sms-kalip-Aft-Procedure.
+        open input smstan
+             initialize smstan-anah
+             move "D" to smstan-tip
+             move sms-kalip-value(1:4) to smstan-kodu
+             read smstan no lock invalid   
+                      initialize txt-sms-kalip
+                       modify Form1-Ef-1a ,enabled = true 
+                      continue
+             not invalid
+                 move smstan-gon-ileti to txt-sms-kalip
+                 modify Form1-Ef-1a ,enabled = false 
+             end-read
+                 display Form1-Ef-1a
+     close smstan
+     .
+*
+ form2-Aft-Initdata.
+        open input smstan 
+              modify sc-sms-kalip , reset-list = 1 
+              modify sc-sms-kalip , item-to-add("0000-OZEL SMS")
+              move "0000-OZEL SMS" to sms-kalip-value
+              display sc-sms-kalip
+
+              initialize smstan-rec
+              move "D" to smstan-tip
+              start smstan key not < smstan-anah invalid
+                      continue
+              not invalid
+              perform until fs-smstan = "10"
+              read smstan next no lock end move "10" to fs-smstan
+              not end
+                     if smstan-tip not = "D" then
+                           exit perform 
+                     end-if
+                     initialize sms-string
+                     string sms-string
+                         smstan-kodu delimited by spaces
+                         "-" delimited by size 
+                         smstan-baslik
+                      into sms-string  
+                     modify sc-sms-kalip , item-to-add(sms-string)
+              end-read
+              end-perform
+              end-start               
+      close smstan 
+     .
+* 
+ musteri-telno-bul.
+
+          move takasodeme-devremulk-no to devremulk-no
+          read devremulk no lock invalid
+                  continue
+          end-read
+          initialize musteri-rec
+          move DEVREMULK-profil-sirket        to musteri-sirket              
+          move DEVREMULK-profil-no            to musteri-no 
+          read musteri no lock invalid 
+                initialize musteri-rec
+                continue
+          end-read
+
+          initialize gsm-no
+          if musteri-gsm not = spaces then
+             move musteri-gsm to gsm-no
+             exit paragraph
+          end-if
+          if musteri-tel1 not = spaces
+             move musteri-tel1 to gsm-no
+             exit paragraph
+          end-if
+          if musteri-tel2 not = spaces
+             move musteri-tel2 to gsm-no
+             exit paragraph
+          end-if
+          if musteri-tel3 not = spaces
+             move musteri-tel3 to gsm-no
+             exit paragraph
+          end-if
+  
+         .
+
+ 

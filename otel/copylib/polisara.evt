@@ -1,0 +1,398 @@
+* polisara.evt
+* polisara.evt is generated from D:\asya\acugt.ytl\otel\polisara.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Lb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM Form1-Lb-1-Ex-Cmd-Dblclick
+        WHEN Ntf-Pl-First
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-First
+        WHEN Ntf-Pl-Last
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Last
+        WHEN Ntf-Pl-Next
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Next
+        WHEN Ntf-Pl-Nextpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Nextpage
+        WHEN Ntf-Pl-Prev
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prev
+        WHEN Ntf-Pl-Prevpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prevpage
+        WHEN Ntf-Pl-Search
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Search
+        END-EVALUATE
+     END-IF
+     .
+
+ arama-combo-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM arama-combo-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+*
+ Form1-Aft-Initdata.
+     modify arama-combo,reset-list = 1 
+                        mass-update = 1
+     modify arama-combo,
+            item-to-add("1-Ada gore","2-Soyada gore")
+     move "1-Ada gore"  to arama-combo-value.
+     move 1 to arama.
+     modify arama-combo,mass-update = 0
+                        value = arama-combo-value.
+
+     open input polisxml.
+     perform kolon-ayarla.
+     perform  Form1-Lb-1-Ex-Ntf-Pl-Search.
+     modify form1-lb-1, selection-index = 1
+                        mass-update = 0.
+
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+*     set reading-forwards to true
+*     modify form1-lb-1, mass-update = 1
+*     perform get-next-item kayit-sayisi times
+*     modify form1-lb-1, mass-update = 0.
+*
+get-next-item.
+    evaluate state-flag
+*       when reading-backwards
+        when "b"
+             move kayit-sayisi to number-reads-needed
+*       when at-end
+        when "e"
+             exit paragraph
+*       when reading-forwards
+        when "f"
+          move 1 to number-reads-needed
+
+*       when at-start
+       when "s"
+          move low-values to polisxml-rec
+          evaluate arama
+             when 1
+               start polisxml key not < polisxml-adi    invalid
+                     exit paragraph
+               end-start
+             when 2
+               start polisxml key not < polisxml-soyadi    invalid
+                     exit paragraph
+               end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+    end-evaluate.
+
+    perform with test after
+            until kayit-ok
+
+    perform varying i from 1 by 1 until i > number-reads-needed
+    read polisxml next no lock end 
+         set at-end to true
+         exit paragraph
+    end-read
+    end-perform
+
+    move 1 to number-reads-needed
+    move polisxml-dog-gun   to egun
+    move polisxml-dog-ay    to eay
+    move polisxml-dog-yil   to eyil
+
+    move 1 to number-reads-needed
+
+    evaluate arama
+      when 1
+           if polisxml-adi    = det-1 and
+              polisxml-soyadi = det-2 and
+              etarih       = det-3 and
+              polisxml-tckimlikno = det-4
+              set kayit-tekrar to true
+           else
+              set kayit-ok     to true
+           end-if
+      when 2
+           if polisxml-adi    = det-2 and
+              polisxml-soyadi = det-1 and
+              etarih       = det-3 and
+              polisxml-tckimlikno = det-4
+              set kayit-tekrar to true
+           else
+              set kayit-ok     to true
+           end-if
+    end-evaluate
+
+    end-perform
+
+    perform kayit-yerlestir
+
+
+    modify form1-lb-1, item-to-add = form1-lb-1-value
+
+    set reading-forwards to true.
+
+get-prev-item.
+    evaluate state-flag
+       when "b"
+*       when reading-backwards
+          move 1 to number-reads-needed
+*       when at-end
+       when  "e"
+          move high-values to polisxml-rec
+          evaluate arama
+          when 1 
+              start polisxml key not > polisxml-adi    
+                   invalid key      exit paragraph
+              end-start
+          when 2
+              start polisxml key not > polisxml-soyadi   
+                   invalid key      exit paragraph
+              end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+       when "f"
+*       when reading-forwards
+          move kayit-sayisi to number-reads-needed
+       when "s"
+*       when at-start
+          exit paragraph
+    end-evaluate.
+
+    perform with test after
+            until kayit-ok
+
+    perform varying i from 1 by 1 until i > number-reads-needed
+    read polisxml previous no lock end 
+                      set at-end to true
+                      exit paragraph
+    end-read
+    end-perform
+
+    move polisxml-dog-gun   to egun
+    move polisxml-dog-ay    to eay
+    move polisxml-dog-yil   to eyil
+
+    move 1 to number-reads-needed
+
+    evaluate arama
+      when 1
+           if polisxml-adi    = det-1 and
+              polisxml-soyadi = det-2 and
+              etarih       = det-3 and
+              polisxml-tckimlikno = det-4
+              set kayit-tekrar to true
+           else
+              set kayit-ok     to true
+           end-if
+      when 2
+           if polisxml-adi    = det-2 and
+              polisxml-soyadi = det-1 and
+              etarih       = det-3 and
+              polisxml-tckimlikno = det-4
+              set kayit-tekrar to true
+           else
+              set kayit-ok     to true
+           end-if
+    end-evaluate
+
+    end-perform
+
+    perform kayit-yerlestir
+
+    modify form1-lb-1, 
+       insertion-index = 1
+       item-to-add = form1-lb-1-value
+
+    set reading-backwards to true.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Next.
+    perform get-next-item.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prev.
+    perform get-prev-item.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Nextpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prevpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-First.
+     move low-values to polisxml-rec
+     evaluate arama
+     when 1 
+     start polisxml key not < polisxml-adi
+           invalid key    exit paragraph
+     end-start
+     when 2
+     start polisxml key not < polisxml-soyadi   
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Last.
+     move high-values to polisxml-rec
+     evaluate arama
+     when 1 
+     start polisxml, key not > polisxml-adi    
+           invalid key    exit paragraph
+     end-start
+     when 2 
+     start polisxml, key not > polisxml-soyadi   
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+     set reading-backwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Search.
+     inquire form1-lb-1, search-text in arama-kelime
+     evaluate arama
+     when 1 
+     move arama-kelime to polisxml-adi
+     start polisxml key not < polisxml-adi    
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 2 
+     move arama-kelime to polisxml-soyadi
+     start polisxml key not < polisxml-soyadi   
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     end-evaluate.
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0
+     if at-end
+        perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+     end-if.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2000
+
+     when 2001
+        inquire form1-lb-1,selection-index in i
+        inquire form1-lb-1(i),value in form1-lb-1-value
+        evaluate arama
+        when 1 
+        when 2 
+             inquire form1-lb-1(i),value in form1-lb-1-value
+             move lb-1-col-8(1:8)     to polisara-rez-no
+             move lb-1-col-8(10:1)     to polisara-sira-no
+             set exit-pushed to true
+        end-evaluate
+     end-evaluate.
+
+
+ kolon-ayarla.
+     inquire arama-combo, VALUE in arama-combo-value
+     move arama-combo-value(1:1)  to arama
+     evaluate arama
+         when 1
+              modify La-1,
+                title = "Adi"
+              modify La-2,
+                title = "Soyadi"
+         when 2 
+              modify La-1,
+                title = "Soyadi"
+              modify La-2,
+                title = "Adi"
+     end-evaluate
+     display La-1,La-2
+     .
+*
+ arama-combo-Ex-Ntf-Selchange.
+     inquire arama-combo, VALUE in arama-combo-value
+     move arama-combo-value(1:1)  to arama
+     perform kolon-ayarla.
+     perform Form1-Lb-1-Ex-Ntf-Pl-First.
+
+
+ kayit-yerlestir.
+    evaluate arama
+         when 1 
+              move polisxml-adi         to det-1
+              move polisxml-soyadi      to det-2
+              move polisxml-dog-gun     to egun
+              move polisxml-dog-ay      to eay
+              move polisxml-dog-yil     to eyil
+              move etarih               to det-3
+              move polisxml-tckimlikno  to det-4
+              move polisxml-gel-gun     to egun
+              move polisxml-gel-ay      to eay
+              move polisxml-gel-yil     to eyil
+              move etarih               to det-5
+              move polisxml-git-gun     to egun
+              move polisxml-git-ay      to eay
+              move polisxml-git-yil     to eyil
+              move etarih               to det-6
+              move polisxml-odano       to det-7
+              move polisxml-rezno      to det-8
+              move polisxml-sirano     to det-8(10:1)
+              move detay                to form1-lb-1-value
+         when 2
+              move polisxml-adi         to det-2
+              move polisxml-soyadi      to det-1
+              move polisxml-dog-gun   to egun
+              move polisxml-dog-ay    to eay
+              move polisxml-dog-yil   to eyil
+              move etarih            to det-3
+              move polisxml-tckimlikno      to det-4
+              move polisxml-gel-gun     to egun
+              move polisxml-gel-ay      to eay
+              move polisxml-gel-yil     to eyil
+              move etarih            to det-5
+              move polisxml-git-gun     to egun
+              move polisxml-git-ay      to eay
+              move polisxml-git-yil     to eyil
+              move etarih            to det-6
+              move polisxml-odano       to det-7
+              move polisxml-rezno      to det-8
+              move polisxml-sirano     to det-8(10:1)
+              move detay             to form1-lb-1-value
+ 
+    end-evaluate.
+*
+*
+ Form1-Lb-1-Ex-Cmd-Dblclick.
+    move 2001 to key-status.
+    perform  Form1-Ex-Other.
+*
+ Form1-Aft-Routine.
+     close polisxml.
+*
+ 

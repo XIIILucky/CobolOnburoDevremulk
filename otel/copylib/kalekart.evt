@@ -1,0 +1,498 @@
+* kalekart.evt
+* kalekart.evt is generated from D:\asya\acugt.ytl\otel\kalekart.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     call "c$narg" using link-var
+     perform adresleri-tasi
+     open i-o genel
+     move 1 to genel-anahtar
+     read genel no lock invalid 
+                display message box
+                        "Genel parametre tanimsiz ..."
+                        close genel
+                        goback
+          not invalid  continue
+     end-read
+     close genel.
+*
+ Form1-Ex-Other.
+     .
+
+*
+ Form1-Pb-2-Link.
+     set environment "dll-convention" to  0.
+
+     call "@[DISPLAY]:LevelLock.dll".
+     move 5 to sayi. 
+     call "@[DISPLAY]:LV3_InitializeSystem" using by value sayi.
+
+*
+ btn_auth-Link.
+     perform Authanticatesystem
+    .
+
+*
+ InitializeSystem.
+     set environment "dll-convention" to  0
+
+     call "@[DISPLAY]:LevelLock.dll"
+     move 5 to sayi 
+     call "@[DISPLAY]:LV3_InitializeSystem" using by value sayi
+          returning return-sayi
+     if return-sayi <> 0 and 28
+        display message box return-sayi
+     end-if.
+
+*
+ AuthanticateSystem.
+     move 0 to sayi.
+     set adr to address of b.
+     move 11 to smallint                                  
+     call "@[DISPLAY]:LV3_SetAuthCode" using b,
+                                  by value smallint
+                                  by value sayi
+                                  by value sayi
+                                  by value sayi
+                                  by value sayi
+                                  by value sayi
+                                  by value sayi
+     returning return-sayi
+     if return-sayi <> 0 and 23
+        display message box return-sayi
+     end-if.
+*
+ Form1-Pb-3-Link.
+     move all low-values to buf.
+     move 12         to smallint
+     move all high-values to x6 
+     call "@[DISPLAY]:LV3_ReadData" using by reference buf 
+                                          by reference x6,
+                                          by value smallint
+     returning sayi
+     display message box buf,x"0a0d",sayi .     
+*
+ btn_kart_yap-Link.   |Oda Kartý Yapma
+     initialize KaleKilit-Wrk
+     move oda-no     to WrkOdaNo        
+     move gir-gun    to g-gun
+     move gir-ay     to g-ay
+     move gir-yil    to g-yil
+     move gir-tar    to WrkCheckInDate
+     move cik-gun    to g-gun
+     move cik-ay     to g-ay
+     move cik-yil    to g-yil
+     move cik-tar    to WrkCheckOutDate
+*     move "707"                 to WrkOdaNo        
+*     move "201806271100"        to WrkCheckInDate
+*     move "201806301300"        to WrkCheckOutDate
+     
+     perform InitializeSystem    |Sistemi initialize ederek iþleme hazýrlar.
+     perform Authanticatesystem  |Doðrulama iþlemi yapar. Key Cbl içerisinde yazýlý.
+
+     perform ReadRoomStructure   |Bu komutla RoomStructure.lvr dosyasýný açar. RoomStructure.lvr Kale Kilit uygulamasýndan oluþturulur ve içeriðinde tanýmlanabilir odalarý taþýr.
+*     perform IssueGuestCard     |IssueGuestCardByName yerine kullanýlabilir. Ayný yapý, IssueGuestCardByName birisi oda numarasýna göre oluþturuyor.
+     perform IssueGuestCardByName|
+     perform FreeRoomStructure
+     perform FreeRoomSystem   
+     .
+*
+ ReadRoomStructure.
+    call "@[DISPLAY]:LV3_ReadRoomStructure"
+          returning return-sayi
+
+     if return-sayi <> 0
+        display message box return-sayi
+     end-if
+          .
+*
+ IssueGuestCardByName.
+      move WrkOdaNo        to GCBNnumArray1 | Oda numarasý.
+     move all x"00"       to GCBNnumArray2 | Okunan kart bilgisi üzerinde suite'e karþýlýk gelen alan.
+     move all x"00"       to GCBNnumArray6 | Okunan kart bilgisi üzerinde Air Condition,Open Dead Bolt,Time Setting gibi parametreleri taþýr.
+*     move x"01"           to GCBNnumArray6(1:1) |Open Deadbolt ayarý. Eðer x"00" gönderirilirse air condition NO deðerini alýr.x"01" YES deðeri alýr.
+*     move x"02"           to GCBNnumArray6(2:1) |Air Condition ayarý. Eðer x"02" gönderirilirse air condition NO deðerini alýr.x"00" YES deðeri alýr.
+*     move x"04"           to GCBNnumArray6(3:1) |For Safe Box ayarý. Eðer x"04" gönderilirse YES deðerini alýr. x"00" ise NO deðerini alýr.
+*     move x"08"           to GCBNnumArray6(4:1) |Passage Mode ayarý. Eðer x"08" gönderilirse YES deðerini alýr. x"00" ise NO deðerini alýr.
+*     move x"16"           to GCBNnumArray6(5:1) |Replacement ayarý. Eðer x"16" gönderilirse YES deðerini alýr.x"00" ise NO deðerini alýr.
+     move x"80"           to GCBNnumArray6(6:1) |Time Settings ayarý. Eðer x"80"(Yani byte(ASCII) 128 in karþýlýðý) gönderilirse YES deðerini alýr. x"00" ise NO deðerini alýr.
+
+     inspect GCBNnumArray1 replacing trailing spaces by low-values
+     move 0 to sayi                        
+     move WrkCheckInDate  to GCBNnumArray4                              
+     move WrkCheckOutDate to GCBNnumArray5
+     call "@[DISPLAY]:LV3_GuestCardByName" using by reference GCBNnumArray1,
+                                      by reference GCBNnumArray2,
+                                      by reference sayi,
+                                      by reference GCBNnumArray3, 
+                                      by reference GCBNnumArray4,
+                                      by reference GCBNnumArray5,
+                                      by reference GCBNnumArray6,
+                                      by value 0
+     returning return-sayi 
+     if return-sayi <> 0
+        display message box return-sayi
+     end-if
+     perform BeepOk.   
+
+*     stop " " 
+************************** IssueGuestCardByName
+*     move WrkOdaNo        to GCBNnumArray1 | Oda numarasý.
+*     move all x"00"       to GCBNnumArray2 | Okunan kart bilgisi üzerinde suite'e karþýlýk gelen alan.
+*     move all x"00"       to GCBNnumArray6 | Okunan kart bilgisi üzerinde Air Condition,Open Dead Bolt,Time Setting gibi parametreleri taþýr.
+**     move x"01"           to GCBNnumArray6(1:1) |Open Deadbolt ayarý. Eðer x"00" gönderirilirse air condition NO deðerini alýr.x"01" YES deðeri alýr.
+**     move x"02"           to GCBNnumArray6(2:1) |Air Condition ayarý. Eðer x"02" gönderirilirse air condition NO deðerini alýr.x"00" YES deðeri alýr.
+**     move x"04"           to GCBNnumArray6(3:1) |For Safe Box ayarý. Eðer x"04" gönderilirse YES deðerini alýr. x"00" ise NO deðerini alýr.
+**     move x"08"           to GCBNnumArray6(4:1) |Passage Mode ayarý. Eðer x"08" gönderilirse YES deðerini alýr. x"00" ise NO deðerini alýr.
+**     move x"16"           to GCBNnumArray6(5:1) |Replacement ayarý. Eðer x"16" gönderilirse YES deðerini alýr.x"00" ise NO deðerini alýr.
+*     move x"80"           to GCBNnumArray6(6:1) |Time Settings ayarý. Eðer x"80"(Yani byte(ASCII) 128 in karþýlýðý) gönderilirse YES deðerini alýr. x"00" ise NO deðerini alýr.
+**     inspect GCBNnumArray1 replacing trailing spaces by low-values
+*     move 0 to sayi                        
+*     move WrkCheckInDate  to GCBNnumArray4                              
+*     move WrkCheckOutDate to GCBNnumArray5
+*     call "@[DISPLAY]:LV3_GuestCardByName" using by reference GCBNnumArray1,
+*                                                 by reference GCBNnumArray2,
+*                                                 by reference GCBNnumArray3, 
+*                                                 by reference GCBNnumArray4,
+*                                                 by reference GCBNnumArray5,
+*                                                 by reference GCBNnumArray6,
+*                                                 by reference sayi,
+*                                                 by value 0
+*     returning return-sayi 
+*     if return-sayi <> 0
+*        evaluate return-sayi
+*            when 153 
+*                 display message box "The room name not exist"
+*
+*        end-evaluate
+*        perform BeepFailure
+*        display message box return-sayi
+*     else
+*       perform BeepOk     
+*     end-if
+             .   
+*
+ SetGuestCardExtByName.
+************************* SetGuestCardExtByName
+     move WrkOdaNo        to SGCBNnumArray1
+     inspect SGCBNnumArray1 replacing trailing spaces by low-values
+     move WrkCheckInDate  to SGCBNnumArray3
+     move 2               to sayi
+     call "@[DISPLAY]:LV3_SetGuestCardExtByName" using by reference SGCBNnumArray1
+                                                       by reference SGCBNnumArray2
+                                                       by reference SGCBNnumArray3
+                                                       by reference SGCBNnumArray4
+                                                       by value sayi   
+     returning return-sayi 
+     if return-sayi <> 0
+        display message box return-sayi
+     end-if.
+*
+ IssueGuestCard.
+************************* IssueGuestCard
+     move x"01"           to numArray1(1:1)
+     move x"01"           to numArray1(2:1)
+     move x"05"           to numArray1(3:1)
+     move x"11"           to numArray1(4:1) 
+     move 0               to sayi                        
+     move WrkCheckInDate  to starttime
+     move WrkCheckOutDate to endtime
+
+
+     call "@[DISPLAY]:LV3_IssueGuestCard" using by reference numArray1,
+                                                by reference numArray2, 
+                                                by reference sayi, 
+                                                by reference numArray3, 
+                                                by reference StartTime,
+                                                by reference EndTime, 
+                                                by reference numArray6,
+                                                by value 0
+     returning return-sayi 
+     if return-sayi <> 0
+        display message box return-sayi
+     end-if.
+*
+ FreeRoomStructure.
+     call "@[DISPLAY]:LV3_FreeRoomStructure".
+*
+ FreeRoomSystem.
+     call "@[DISPLAY]:LV3_FreeSystem".
+*
+ BeepOk.
+           call "@[DISPLAY]:LV3_BeepOk".
+*   
+ BeepFailure.
+           call "@[DISPLAY]:LV3_BeepFailure".
+   
+
+****************************************
+****************************************
+****************************************
+****************************************
+*
+ Form1-Pb-4-Link.
+     perform InitializeSystem    |Sistemi initialize ederek iþleme hazýrlar.
+     perform Authanticatesystem  |Doðrulama iþlemi yapar. Key Cbl içerisinde yazýlý.
+     move 0                to sayi
+     move "0"              to byt
+     call "@[DISPLAY]:LV3_ReadCardInfo" using 
+                         by value sayi,
+                         by reference byt,
+                         by reference buf
+     returning return-sayi 
+     display message box buf,x"0a0d",return-sayi.     
+     .
+ ifasf.
+        move 0 to sayi
+        MOVE "0" TO BYT
+     call "@[DISPLAY]:LV3_ReadCardInfo" using by value sayi   ,
+             by reference byt
+             by reference buf
+             returning sayi
+             inspect buf replacing all low-values by spaces
+     display message box buf,x"0a0d",sayi.
+*
+ Form1-Pb-5-Link.
+     call "@[DISPLAY]:LV3_IssueBlankCard".
+     call "@[DISPLAY]:LV3_BeepFailure".
+     call "@[DISPLAY]:LV3_BeepAlarm".
+     .
+*
+ Form1-Pb-1-Link.
+*           call "@[DISPLAY]:LV3_BeepOk"
+*           call "C$SLEEP" USING 2
+
+
+
+           call "@[DISPLAY]:LV3_BeepFailure"
+
+
+*           call "C$SLEEP" USING 2
+*           call "@[DISPLAY]:LV3_BeepAlarm"
+     .
+*
+ button-bos-kart-yarat-Link.
+     perform InitializeSystem
+     perform Authanticatesystem
+*     stop " "
+     set environment "dll-convention" to  0
+
+     move 0 to sayi 
+     call "@[DISPLAY]:LV3_IssueBlankCard" using by value sayi
+          returning return-sayi
+     if return-sayi <> 0
+        display message box return-sayi
+     else 
+        perform Beepok
+     end-if     .
+*
+ button-kart-oku-link.
+     perform InitializeSystem    |Sistemi initialize ederek iþleme hazýrlar.
+     perform Authanticatesystem  |Doðrulama iþlemi yapar. Key Cbl içerisinde yazýlý.
+*     stop " "
+     move 0                to sayi
+     move "0"              to byt
+     call "@[DISPLAY]:LV3_ReadCardInfo" using 
+                         by value sayi,
+                         by reference byt,
+                         by reference buf
+     returning return-sayi 
+     display message box buf,x"0a0d",return-sayi.     
+
+*
+ button-kart-olustur-Link.
+     initialize takvim-hata
+     evaluate spaces 
+         when oda-no  
+              display message box "Oda no bos gecilemez.."
+                            title "Uyari"    
+              move 4 to accept-control
+              move 1 to control-id
+
+         when mis-adi
+         when mis-soyadi
+              display message box "C-in olmamis misafir kart olusturulacaktir.."
+                            title "Dikkat"
+     end-evaluate  
+     evaluate 0
+         when gir-gun
+         when gir-ay
+         when gir-yil
+              display message box "C-in tarihi tanimsiz"
+                            title "Uyari"  
+              move 1  to takvim-hata
+              move 4  to accept-control
+              move 15 to control-id
+              
+         when cik-gun
+         when cik-ay
+         when cik-yil
+              display message box "C-out tarihi tanimsiz"
+                            title "Uyari"    
+              move 1  to takvim-hata
+              move 4  to accept-control
+              move 19 to control-id
+     end-evaluate  
+     if takvim-hata <> 1
+        open input takvim
+        initialize takvim-rec
+        move gir-yil to takvim-anah(1:4)
+        move gir-ay  to takvim-anah(5:2)
+        move gir-gun to takvim-anah(7:2)
+        read takvim no lock invalid
+              display message box "C-in tarihi tanimsiz"
+                            title "Uyari"  
+              move 1  to takvim-hata
+              move 4  to accept-control
+              move 15 to control-id
+        end-read
+        if takvim-hata <>1
+           initialize takvim-rec
+           move cik-yil to takvim-anah(1:4)
+           move cik-ay  to takvim-anah(5:2)
+           move cik-gun to takvim-anah(7:2)
+           read takvim no lock invalid
+                display message box "C-out tarihi tanimsiz"
+                              title "Uyari"    
+                move 1  to takvim-hata
+                move 4  to accept-control
+                move 19 to control-id
+           end-read
+        end-if
+        close takvim 
+     end-if
+     initialize KaleKilit-Wrk
+     move oda-no     to WrkOdaNo        
+     move gir-gun    to g-gun
+     move gir-ay     to g-ay
+     move gir-yil    to g-yil
+     move gir-tar    to WrkCheckInDate
+     move cik-gun    to c-gun
+     move cik-ay     to c-ay
+     move cik-yil    to c-yil
+     move cik-tar    to WrkCheckOutDate
+     
+     perform InitializeSystem    |Sistemi initialize ederek iþleme hazýrlar.
+     perform Authanticatesystem  |Doðrulama iþlemi yapar. Key Cbl içerisinde yazýlý.
+     perform ReadRoomStructure   |Bu komutla RoomStructure.lvr dosyasýný açar. RoomStructure.lvr Kale Kilit uygulamasýndan oluþturulur ve içeriðinde tanýmlanabilir odalarý taþýr.
+*     perform IssueGuestCard
+     perform Issueguestcardbyname|
+*     perform SetGuestCardExtByName
+     perform FreeRoomStructure
+     perform FreeRoomSystem   
+
+     .
+*
+ acc-oda-no-Aft-Procedure.
+     open input konuk
+     initialize konuk-rec konuk-bulundu
+     move oda-no to konuk-odano
+     move "I"    to konuk-durumu
+     start konuk key not < konuk-oda invalid       
+           continue
+     not invalid
+     perform with test after until fs-konuk = "10"
+     read konuk next no lock end move "10" to fs-konuk
+     not at end 
+         if konuk-fol-kodu <> "R" or
+            konuk-durumu   <> "I" 
+            exit perform cycle
+         end-if
+         if konuk-odano <> oda-no  
+            exit perform 
+         end-if
+
+          add 1 to konuk-bulundu
+         move konuk-adi     to mis-adi
+         move konuk-soyadi  to mis-soyadi
+         move konuk-gel-gun to gir-gun
+         move konuk-gel-ay  to gir-ay
+         move konuk-gel-yil to gir-yil
+         move konuk-git-gun to cik-gun
+         move konuk-git-ay  to cik-ay
+         move konuk-git-yil to cik-yil
+         display acc-mis-adi acc-mis-soyadi
+                 acc-gir-gun acc-gir-ay acc-gir-yil
+                 acc-cik-gun acc-cik-ay acc-cik-yil
+     end-read
+     end-perform
+     end-start
+     close konuk
+     if konuk-bulundu <> 1
+        initialize mis-adi mis-soyadi
+                   gir-gun gir-ay gir-yil
+                   cik-gun cik-ay cik-yil
+        display acc-mis-adi acc-mis-soyadi
+                acc-gir-gun acc-gir-ay acc-gir-yil
+                acc-cik-gun acc-cik-ay acc-cik-yil
+        open input odalar
+        initialize odalar-rec
+        move oda-no to odalar-anah 
+        read odalar no lock invalid
+             display message box "Tanimsiz oda no.."
+                           title "Uyari"
+             move 4 to accept-control
+             move 1 to control-id
+       end-read
+       close odalar
+     end-if
+
+     .
+*
+ Form1-Aft-Initdata.
+     if link-var = 1 
+        open input rez konuk
+        initialize rez-rec konuk-rec
+        move link-kart-rezno to rez-anah 
+        read rez no lock invalid
+             Display message box "Rezervasyon Tanimsizz.." 
+        not invalid
+            if rez-durumu <> "I"
+               display message box "Silinmis Rezervasyon.."
+               close rez konuk
+               exit paragraph
+            end-if
+            if rez-k-g-b <> "K"
+               display message box "Onaylanmamýs Rezervasyon.."
+               close rez konuk
+               exit paragraph
+            end-if
+            move rez-folio to konuk-folio
+            read konuk no lock invalid
+                 display message box "Rezervasyon C-in olmamis.."
+                 move rez-odano   to oda-no
+                 move rez-adi     to mis-adi
+                 move rez-soyadi  to mis-soyadi
+                 move rez-gir-gun to gir-gun
+                 move rez-gir-ay  to gir-ay
+                 move rez-gir-yil to gir-yil
+                 move rez-cik-gun to cik-gun
+                 move rez-cik-ay  to cik-ay
+                 move rez-cik-yil to cik-yil
+                 display acc-mis-adi acc-mis-soyadi acc-oda-no
+                         acc-gir-gun acc-gir-ay acc-gir-yil
+                         acc-cik-gun acc-cik-ay acc-cik-yil
+            not invalid
+                move konuk-odano to oda-no
+                close konuk
+                display acc-oda-no
+                perform acc-oda-no-aft-procedure
+                open input konuk
+*                exit paragraph
+            end-read
+        end-read
+        close rez konuk
+        
+        perform Button-Kart-Olustur-Link  
+
+        perform Button-Kart-Oku-Link
+     end-if
+     .
+
+ 

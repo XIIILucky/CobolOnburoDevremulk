@@ -1,0 +1,576 @@
+* aceyasg.evt
+* aceyasg.evt is generated from D:\asya\acugt.ytl\otel\aceyasg.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM grd1-Ev-Other
+     .
+
+ grd1-Exception-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Create.
+      perform adresleri-tasi.
+     .             
+*
+ Form1-Aft-Initdata.
+      initialize grd1-record
+      move "Kodu" to gd1-acenta-kodu
+      move "Acenta"      to gd1-acenta
+      move "Hepsi"       to gd1-acenta-tik
+      move "Anlasma"     to gd1-anlasma
+      move "Secili"      to gd1-anlasma-tik
+      modify grd1,record-to-add(grd1-record)
+
+     accept bas-tar from century-date
+     display a-bas-gun a-bas-ay a-bas-yil
+     accept bit-tar from century-date
+     display a-bit-gun a-bit-ay a-bit-yil
+     .
+*
+ Form1-Ex-Other.
+       evaluate key-status
+         when 2
+         perform islem-basla
+         when 3
+         perform oku-kaydet
+         
+
+         when 1
+         if  control-id = 17 
+                 initialize t-acenta-kodu
+                 call "/asya/ytl/obj/otel/grupara.asy" 
+                          using "A", t-acenta-grup-kodu
+                          on exception 
+                             perform callerr-proc
+                          not on exception
+                             display a-acenta-grup-kodu
+                  end-call
+                  move 4 to accept-control
+                  move 17 to control-id
+          end-if
+          if control-id = 1014 
+        initialize odeme-cagir
+     
+         call "/asya/ytl/obj/otel/yasara.asy" using odeme-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/yasara.asy" 
+         end-call
+         if odeme-kodu-cagir not = spaces then 
+             move odeme-cagir     to t-yas-kodu
+        end-if
+              display a-yas-kodu
+              move 4 to accept-control
+              move 1014 to control-id
+        end-if
+     .
+*
+ a-acenta_kodu-Aft-Procedure.
+    
+
+     .
+
+*
+islem-basla.
+
+        if t-acenta-grup-kodu  = spaces or t-yas-kodu  = spaces then
+                 display message box "Lutfen Gerekli Alanlari Doldurunuz !"
+                 exit paragraph
+        end-if
+
+         open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to ekran-fis-1
+                   move ekran-fis-1 to takas1-no
+                   add 1 to ekran-fis-1
+                   move ekran-fis-1 to takas2-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+        close genelfis
+
+        open input  grup aceanlas
+        open output takas1  takas2
+        initialize  grup-anah
+        move t-acenta-grup-kodu to GRUP-KODU
+        move "A"                to GRUP-TIPI
+        start grup key not < GRUP-TIP-KOD
+        invalid continue
+        not invalid
+        perform until fs-grup = "10"
+        read grup next no lock end move "10" to fs-grup
+        not end
+             if GRUP-KODU not = t-acenta-grup-kodu  then
+                exit perform
+             end-if
+                   
+             initialize aceanlas-ANAH
+             move grup-alt to aceanlas-acenta     
+             start aceanlas key not <  aceanlas-ANAH
+             invalid continue
+             not invalid
+             perform until fs-aceanlas = "10"
+             read aceanlas next no lock end move "10" to fs-aceanlas 
+             not end
+
+               if aceanlas-acenta not = grup-alt then
+                  exit perform 
+               end-if
+
+               if aceanlas-kabul-bas not > bas-tar and aceanlas-kabul-bit not < bit-tar
+                   exit perform cycle
+               end-if
+               initialize takas1-rec
+               move aceanlas-acenta          to takas1-acenta
+               move aceanlas-anlasma         to takas1-anlasma
+               move aceanlas-anlasma-sira    to takas1-anlasma-sira
+
+               if aceanlas-yassinir not = t-yas-kodu then
+                    move 0 to  takas1-anlasma-tik
+               else
+                    move 1 to  takas1-anlasma-tik
+               end-if
+
+              write takas1-rec end-write
+
+
+             end-read
+             end-perform
+             end-start
+             
+
+        end-read
+        end-perform
+        end-start
+          close grup aceanlas takas1 takas2 
+
+          open i-o takas2
+          open input takas1
+
+              initialize aceanlas-var aceanlas-yok ilk-aceanlas
+              initialize takas1-anahtar  
+              move 1 To ilk-aceanlas
+              start takas1 key not < takas1-anahtar
+              invalid continue
+              not invalid
+              perform until fs-takas1  = "10"
+              read takas1 next no  lock end move "10" to fs-takas1
+              not end
+           
+               if   ilk-aceanlas = 1  then
+
+                   if  takas1-anlasma-tik = 0  then
+                      move 1 to aceanlas-yok
+                  end-if
+                  if  takas1-anlasma-tik = 1  then
+                      move 1 to aceanlas-var
+                  end-if
+                   move 0 to ilk-aceanlas 
+
+               else
+                 if takas1-acenta = eski-aceanlas 
+              
+                  if  takas1-anlasma-tik = 0  then
+                      move 1 to aceanlas-yok
+                  end-if
+                  if  takas1-anlasma-tik = 1  then
+                      move 1 to aceanlas-var
+                  end-if
+                   move 0 to ilk-aceanlas 
+
+                   move aceanlas-yok to eski-yok
+                  move aceanlas-var to eski-var
+              else
+              
+                 initialize takas2-rec
+                  if aceanlas-yok = 1 and  aceanlas-var = 1  then
+                      move "K" to takas2-acenta-durum
+                  end-if 
+                  if aceanlas-yok = 0 and  aceanlas-var = 1  then
+                      move "E" to takas2-acenta-durum
+                  end-if 
+                  if aceanlas-yok = 1 and  aceanlas-var = 0  then
+                      move "H" to takas2-acenta-durum
+                  end-if 
+                  move eski-aceanlas to takas2-acenta
+                  write takas2-rec invalid
+                  rewrite takas2-rec
+                  end-rewrite
+                  end-write
+
+                  initialize aceanlas-yok  aceanlas-var
+
+                  if  takas1-anlasma-tik = 0  then
+                      move 1 to aceanlas-yok
+                  end-if
+                  if  takas1-anlasma-tik = 1  then
+                      move 1 to aceanlas-var
+                  end-if
+
+
+              end-if
+
+
+               end-if
+
+
+              move takas1-acenta to eski-aceanlas
+
+              end-read
+              end-perform
+              end-start
+*****************bittiktyen sonra son kayit*******
+
+                 initialize takas2-rec
+                  if eski-yok = 1 and  eski-var = 1  then
+                      move "K" to takas2-acenta-durum
+                  end-if 
+                  if eski-yok = 0 and  eski-var = 1  then
+                      move "E" to takas2-acenta-durum
+                  end-if 
+                  if eski-yok = 1 and  eski-var = 0  then
+                      move "H" to takas2-acenta-durum
+                  end-if 
+                  move eski-aceanlas to takas2-acenta
+                  write takas2-rec invalid
+                  rewrite takas2-rec
+                  end-rewrite
+                  end-write
+               
+****************************************
+            close takas2 takas1
+           perform grid-guncelle
+        .
+*
+grid-guncelle.
+    
+             open input takas1 takas2 acenta kodlar02 
+
+**************gride yukle
+              modify grd1 , RESET-GRID = 1
+              initialize grd1-record   satir2 satir
+              move "Kodu" to gd1-acenta-kodu
+              move "Acenta"      to gd1-acenta
+              move "Hepsi"       to gd1-acenta-tik
+              move "Anlasma"     to gd1-anlasma
+              move "Secili"      to gd1-anlasma-tik
+              modify grd1,record-to-add(grd1-record) 
+              add 1 to satir 
+              add 1 to satir2 
+              initialize takas1-anahtar  
+              start takas1 key not < takas1-anahtar
+              invalid continue
+              not invalid
+              perform until fs-takas1  = "10"
+              read takas1 next no  lock end move "10" to fs-takas1
+              not end
+              add 1 to satir2 
+                if takas1-acenta not = eski-aceanlas or ilk-aceanlas = 1
+         
+                      initialize grd1-record ACENTA-ANAHTAR
+         
+                      move takas1-acenta to takas2-acenta
+                      read takas2 no lock invalid continue
+                      end-read
+                     
+                      move takas2-acenta to gd1-acenta-kodu
+                      move takas2-acenta to ACENTA-ANAHTAR
+
+                      read acenta no lock invalid
+                      not invalid
+                      move acenta-adi           to gd1-acenta
+                      end-read
+
+                      if takas2-acenta-durum = "E" then
+                      modify grd1(satir2,3), 
+                                     bitmap = yes-bmp
+                                     bitmap-width = 16
+                                     bitmap-number = 1
+                                     bitmap-trailing = 1
+
+                      end-if
+                      if takas2-acenta-durum = "H" then
+                      modify grd1(satir2,3), 
+                                       bitmap = no-bmp
+                                       bitmap-width = 16
+                                       bitmap-number = 1
+                                       bitmap-trailing = 1
+
+                      end-if
+                     if takas2-acenta-durum = "K" then
+                      modify grd1(satir2,3), 
+                                       bitmap = soru-bmp
+                                       bitmap-width = 16
+                                       bitmap-number = 1
+                                       bitmap-trailing = 1
+
+                      end-if
+                      initialize KODLAR02-ANAH
+                      move "D"            to KODLAR02-TIPI
+                      move takas1-anlasma to KODLAR02-KODU
+                      read kodlar02 no lock invalid continue
+                      not invalid
+                      move KODLAR02-ADI       to gd1-anlasma
+                      end-read
+                      
+
+                      modify grd1,record-to-add(grd1-record)
+                       add 1 to satir 
+ 
+                      if takas1-anlasma-tik = 1 then  
+                      modify grd1(satir,5),  hidden-data = 1
+                      modify grd1(satir,5), 
+                                     bitmap = yes-bmp
+                                     bitmap-width = 16
+                                     bitmap-number = 1
+                                     bitmap-trailing = 1
+                     
+                     else
+                      modify grd1(satir,5),  hidden-data = 0
+                      modify grd1(satir,5),
+                                       bitmap = no-bmp
+                                       bitmap-width = 16
+                                       bitmap-number = 1
+                                       bitmap-trailing = 1
+
+                      end-if
+
+                       modify grd1(satir,1), 
+                           hidden-data = takas1-anahtar
+                      move 0 to ilk-aceanlas
+                       
+                 else
+                      initialize grd1-record
+                
+                      initialize KODLAR02-ANAH
+                      move "D"            to KODLAR02-TIPI
+                      move takas1-anlasma to KODLAR02-KODU
+                      read kodlar02 no lock invalid continue
+                      not invalid
+                      move KODLAR02-ADI       to gd1-anlasma
+                      end-read
+                      
+                   
+                      modify grd1,record-to-add(grd1-record) 
+                      add 1 to satir
+                     
+                       if takas1-anlasma-tik = 1 then  
+                      modify grd1(satir,5),  hidden-data = 1
+                      modify grd1(satir,5), 
+                                     bitmap = yes-bmp
+                                     bitmap-width = 16
+                                     bitmap-number = 1
+                                     bitmap-trailing = 1
+                     
+                     else
+                      modify grd1(satir,5),  hidden-data = 0
+                      modify grd1(satir,5),
+                                       bitmap = no-bmp
+                                       bitmap-width = 16
+                                       bitmap-number = 1
+                                       bitmap-trailing = 1
+
+                      end-if
+
+                      modify grd1(satir,1), 
+                           hidden-data = takas1-anahtar
+                  end-if
+
+               move takas1-acenta to eski-aceanlas
+              end-read
+              end-perform
+              end-start
+
+          close  takas1 takas2   acenta  kodlar02  .
+*
+ oku-kaydet.
+     open i-o aceanlas 
+     open input takas1 takas2
+   
+              initialize takas1-anahtar  takas1-rec
+              start takas1 key not < takas1-anahtar
+              invalid continue
+              not invalid
+              perform until fs-takas1  = "10"
+              read takas1 next no  lock end move "10" to fs-takas1
+              not end
+                
+
+                 if takas1-anlasma-tik = 1 then
+                  initialize aceanlas-rec
+                 move takas1-anahtar to aceanlas-ANAH
+                 read aceanlas no lock invalid stop " "        
+                 not invalid
+                    move t-yas-kodu      to aceanlas-yassinir
+                    rewrite aceanlas-rec
+                 end-rewrite
+                  end-read
+                 end-if
+
+
+              end-read
+              end-perform
+              end-start
+
+
+     close takas1 takas2 aceanlas  .
+
+*
+ grd1-Ev-Other.
+        evaluate event-type
+          when msg-begin-entry
+          move event-action-fail  to event-action
+          open i-o takas1
+
+          initialize secili-res-hidden secili-satir  secili-anahtar  secili-acenta
+          inquire grd1 , y in secili-satir x in secili-sutun
+          inquire grd1(secili-satir,1) , hidden-data in secili-anahtar
+          inquire grd1(secili-satir,1) , cell-data  in secili-acenta
+          inquire grd1(secili-satir,1), hidden-data in secili-res-hidden
+
+          if secili-sutun = 3 and secili-acenta not = spaces then
+             
+                  initialize takas1-anahtar eski-var eski-yok
+                  start takas1 key not < takas1-anahtar
+                  invalid continue
+                  not invalid
+                  perform until fs-takas1 ="10"
+                  read takas1 next no lock end move "10" to fs-takas1
+                  not end
+                       
+                     if  secili-anahtar(1:4) = takas1-acenta then
+                          if  takas1-anlasma-tik = 0  then
+                              move 1 to eski-yok
+                          end-if
+                          if  takas1-anlasma-tik = 1  then
+                              move 1 to eski-var 
+                          end-if    
+                       else
+                                     exit perform cycle
+                     end-if
+        
+                  end-read
+                  end-perform
+                  end-start
+             
+                   move secili-satir to secili-acenta-satir
+                  initialize takas1-anahtar
+                  start takas1 key not < takas1-anahtar
+                  invalid continue
+                  not invalid
+                   perform until fs-takas1 ="10"
+                  read takas1 next no lock end move "10" to fs-takas1
+                  not end
+                  if  secili-anahtar(1:4) = takas1-acenta then
+                 
+                 
+                  if eski-yok = 1 and  eski-var = 1  then
+                   
+                      move 1 to deger
+                     
+                      modify grd1(secili-satir,5),  hidden-data = 1
+                      modify grd1(secili-satir,5), 
+                                     bitmap = yes-bmp
+                                     bitmap-width = 16
+                                     bitmap-number = 1
+                                     bitmap-trailing = 1
+                   modify grd1(secili-acenta-satir,3), 
+                                     bitmap = yes-bmp
+                                     bitmap-width = 16
+                                     bitmap-number = 1
+                                     bitmap-trailing = 1
+                  end-if 
+                  if eski-yok = 0 and  eski-var = 1  then
+                   move 0 to deger
+                   modify grd1(secili-satir,5),  hidden-data = 0
+                      modify grd1(secili-satir,5),
+                                       bitmap = no-bmp
+                                       bitmap-width = 16
+                                       bitmap-number = 1
+                                       bitmap-trailing = 1
+
+                  modify grd1(secili-acenta-satir,3), 
+                                     bitmap = no-bmp
+                                     bitmap-width = 16
+                                     bitmap-number = 1
+                                     bitmap-trailing = 1
+                  end-if 
+                  if eski-yok = 1 and  eski-var = 0  then
+                      move 1 to deger
+     
+                      modify grd1(secili-satir,5),  hidden-data = 1
+                      modify grd1(secili-satir,5), 
+                                     bitmap = yes-bmp
+                                     bitmap-width = 16
+                                     bitmap-number = 1
+                                     bitmap-trailing = 1                    
+                 modify grd1(secili-acenta-satir,3), 
+                                     bitmap = yes-bmp
+                                     bitmap-width = 16
+                                     bitmap-number = 1
+                                     bitmap-trailing = 1
+                  end-if 
+
+                  move deger to takas1-anlasma-tik
+                  rewrite takas1-rec
+                  end-rewrite
+                  add 1 to secili-satir
+
+                  else
+                     exit perform cycle
+                  end-if
+                  end-read
+                  end-perform
+                  end-start
+
+          end-if
+
+          if  secili-res-hidden = 1 and  secili-sutun = 5 then
+          move 0 to deger
+               modify grd1(secili-satir,5),  hidden-data = 0
+                      modify grd1(secili-satir,5),
+                                       bitmap = no-bmp
+                                       bitmap-width = 16
+                                       bitmap-number = 1
+                                       bitmap-trailing = 1
+
+          end-if
+          if  secili-res-hidden = 0 and  secili-sutun = 5  then
+          move 1 to deger
+          modify grd1(secili-satir,5),  hidden-data = 1
+                      modify grd1(secili-satir,5), 
+                                     bitmap = yes-bmp
+                                     bitmap-width = 16
+                                     bitmap-number = 1
+                                     bitmap-trailing = 1
+                     
+                     
+          end-if
+
+           move secili-anahtar to takas1-anahtar
+           read takas1 no lock invalid continue
+           not invalid
+           move deger to takas1-anlasma-tik
+           rewrite takas1-rec
+           end-rewrite
+          end-read
+
+
+
+        close takas1
+       end-evaluate
+     .
+
+ 

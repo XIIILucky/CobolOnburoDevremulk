@@ -1,0 +1,269 @@
+* takvim.evt
+* takvim.evt is generated from D:\asya\acugt.ytl\otel\takvim.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ combo-ay-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM Takvim-Guncelle
+        END-EVALUATE
+     END-IF
+     .
+
+ combo-yil-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM Takvim-Guncelle
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Bitmap-Dblclick
+        PERFORM grid-1-Ev-Msg-Bitmap-Dblclick
+     WHEN Other
+        PERFORM grid-1-Ev-Other
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+      modify combo-ay,
+             reset-list  =1 
+             mass-update =1
+      perform varying i from 1 by 1 until i > 12
+             move aylar(i) to combo-ay-value
+             modify combo-ay,
+                    item-to-add(combo-ay-value)
+      end-perform.
+      move aylar(ay-tasi) to combo-ay-value.
+      modify combo-ay,
+             mass-update = 0
+             value combo-ay-value.
+
+      modify combo-yil, 
+             reset-list = 1
+             mass-update = 1.   
+      open input takvim.
+      perform varying i from 1998 by 1 until i > 2020
+              initialize takvim-rec
+              move 01     to takvim-gun takvim-ay
+              move i      to takvim-yil
+              start takvim key = takvim-anah invalid
+                    continue
+              not invalid
+              read takvim next no lock end
+                   continue
+              not at end
+                  if takvim-yil = i 
+                     modify combo-yil,
+                            item-to-add(takvim-yil)
+                  end-if
+              end-read
+              end-start
+      end-perform
+      close takvim.
+      move yil-tasi        to combo-yil-value.
+      modify combo-yil,
+             mass-update = 0
+             value combo-yil-value.
+
+      modify grid-1,
+             reset-grid = 1
+             mass-update = 0
+      move "Pzt"           to gd-1-col-1
+      move "Sal"           to gd-1-col-2
+      move "Crs"           to gd-1-col-3
+      move "Per"           to gd-1-col-4
+      move "Cum"           to gd-1-col-5
+      move "Cmt"           to gd-1-col-6
+      move "Paz"           to gd-1-col-7
+      modify grid-1,
+             record-to-add(grid-1-record-data)
+      modify grid-1,
+             mass-update = 0.
+      perform takvim-guncelle.
+      move 4 to accept-control
+      move 5 to control-id.
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi.
+ takvim-guncelle.
+      modify grid-1,
+             mass-update = 1.
+      perform varying matrix-i from 2 by 1 until matrix-i > 7
+              after matrix-ii from 1 by 1 until matrix-ii > 7
+                    modify grid-1,
+                           y           = matrix-i
+                           x           = matrix-ii
+                           record-data = " "
+                           hidden-data = " "
+                           bitmap      = null
+      end-perform
+      open input takvim.
+      evaluate combo-ay-value
+             when "Ocak"        move 01 to ay-i
+             when "Subat"       move 02 to ay-i
+             when "Mart"        move 03 to ay-i
+             when "Nisan"       move 04 to ay-i
+             when "Mayis"       move 05 to ay-i
+             when "Haziran"     move 06 to ay-i
+             when "Temmuz"      move 07 to ay-i
+             when "Agustos"     move 08 to ay-i
+             when "Eylul"       move 09 to ay-i
+             when "Ekim"        move 10 to ay-i
+             when "Kasim"       move 11 to ay-i
+             when "Aralik"      move 12 to ay-i
+      end-evaluate.
+      move 01                to takvim-gun
+      move ay-i              to takvim-ay
+      move combo-yil-value   to takvim-yil
+      read takvim no lock invalid
+           display message box
+                   "Tanimsiz tarih"
+                   icon mb_error_icon
+                   title "Hata",
+                   close takvim
+                   exit paragraph
+      end-read.
+      initialize ii matrix-i matrix-ii
+      perform varying i from 1 by 1 until i > 31
+              move i               to takvim-gun
+              move ay-i            to takvim-ay
+              move combo-yil-value to takvim-yil
+              read takvim no lock invalid
+                   modify grid-1,
+                          y = matrix-i
+                          x = matrix-ii
+                          bitmap = null
+                          hidden-data = " " 
+                          record-data = " "
+              not invalid
+                   add 1 to ii
+                   perform bmp-boy-set
+                   if ii = 1 
+                      move 2              to matrix-i
+                      move takvim-gun-adi to matrix-ii
+                      modify grid-1,
+                             y = matrix-i
+                             x = matrix-ii
+                             bitmap = num-bmp
+                             bitmap-trailing = 2 
+                             bitmap-number = takvim-gun
+                             bitmap-width = bmp-width
+                             hidden-data  = i
+                             record-data = x"ff"
+                   else
+                      add 1 to matrix-ii
+                      if matrix-ii > 7
+                         add  1 to matrix-i
+                         move 1 to matrix-ii
+                      end-if
+                      modify grid-1,
+                             y = matrix-i
+                             x = matrix-ii
+                             bitmap = num-bmp
+                             bitmap-trailing = 1 
+                             bitmap-number = takvim-gun
+                             bitmap-width = bmp-width
+                             hidden-data = i
+                             record-data = x"ff"
+                   end-if
+                   if takvim-gun = 01
+                      move matrix-i    to eski-y
+                      move matrix-ii   to eski-x
+                      move takvim-gun  to eski-gun
+                      modify grid-1,
+                             y               = eski-y
+                             x               = eski-x
+                             bitmap          = num-reverse-bmp
+                             bitmap-trailing = 1
+                             bitmap-number   = yeni-gun
+                             hidden-data     = i
+                             record-data     = x"ff"
+                   end-if
+              end-read
+      end-perform.
+      close takvim.
+      modify grid-1,
+             mass-update = 0.
+ bmp-boy-set.
+      evaluate takvim-gun
+               when 01 move 18 to bmp-width
+               when 02 move 21 to bmp-width
+               when 03 move 22 to bmp-width
+               when 04 move 23 to bmp-width
+               when 05 move 23 to bmp-width
+               when 06 move 23 to bmp-width
+               when other 
+                       move 23 to bmp-width
+      end-evaluate.
+*
+ grid-1-Ev-Other.
+      evaluate event-type
+        when msg-begin-entry
+             move event-action-fail to event-action
+             exit paragraph
+        when msg-goto-cell
+        when msg-goto-cell-mouse
+        when msg-begin-drag
+        when msg-end-drag
+        when msg-goto-cell-drag
+             initialize bilgi
+             inquire grid-1,
+                     y           in yeni-y
+                     x           in yeni-x
+                     hidden-data in yeni-gun
+                     record-data in bilgi
+             if bilgi <> x"ff" exit paragraph end-if
+             if yeni-y < 2 
+                move 2 to yeni-y eski-y
+             end-if
+             if yeni-x < 1 
+                move 1 to yeni-x eski-x
+             end-if
+             if yeni-gun < 01
+                exit paragraph
+             end-if
+             modify grid-1,
+                    y               = eski-y
+                    x               = eski-x
+                    bitmap          = num-bmp
+                    bitmap-trailing = 1
+                    bitmap-number   = eski-gun
+             modify grid-1,
+                    y               = yeni-y
+                    x               = yeni-x
+                    bitmap          = num-reverse-bmp
+                    bitmap-trailing = 1
+                    bitmap-number   = yeni-gun
+             move yeni-gun          to eski-gun
+             move yeni-x            to eski-x
+             move yeni-y            to eski-y
+    end-evaluate.
+      
+     
+     .
+*
+ grid-1-Ev-Msg-Bitmap-Dblclick.
+     inquire grid-1,
+             record-data in bilgi
+             hidden-data in yeni-gun
+     if bilgi <> x"ff" exit paragraph end-if
+     if yeni-gun < 1 or yeni-gun > 31
+        exit paragraph.
+     move yeni-gun        to gun
+     move ay-i            to ay
+     move combo-yil-value to yil
+     set exit-pushed to true.
+ 

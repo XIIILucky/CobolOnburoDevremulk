@@ -1,0 +1,710 @@
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     call "c$narg" using link-var
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid 
+         continue
+     end-read
+     close genel.
+     move tarih-tasi   to ilk-tar son-tar
+
+     move "/asya/ytl/data/otel/standart/depekhiz" to depekhiz-acuserve-dosya 
+     move rez-dosya                               to rez-acuserve-dosya      yedek-rez-dosya
+     move doviz-dosya                             to doviz-acuserve-dosya    yedek-doviz-dosya
+     move depkod-dosya                            to depkod-acuserve-dosya   yedek-depkod-dosya
+     move isyeri-adres-tasi                       to yuzde1-dosya-adres.
+   
+*
+ Form1-Aft-Initdata.
+      perform depkod-liste-getir.
+     .
+*
+ Form1-Ex-Other.
+        .
+*
+ Form1-Pb-1-Link.
+     exit paragraph.
+      display message box
+              "Tum ekstra gelir departmanlari %8 KDV ile transfer edilecek !!!" x"0a0d"
+              "Devam etmek istediginize emin misiniz?"
+              icon mb-yes-no
+              type 2
+              default 2
+              returning return-code
+              if return-code = 2
+                 exit paragraph
+              end-if
+      stop " "
+      move depkod-dosya-adres   to edepkod-dosya-adres edepkod2-dosya-adres
+      accept edepkod-tarih from century-date
+      accept edepkod-zaman from time
+      accept edepkod2-tarih from century-date
+      accept edepkod2-zaman from time
+      initialize copy-status
+      call "c$copy" using depkod-dosya,edepkod-dosya giving copy-status
+      
+      if copy-status <> 0
+         display message box 
+                 "from : ",depkod-dosya,x"0a0d",
+                 "to : ",edepkod-dosya,x"0a0d",
+                 "<hesap> dosya yedekleme basarisiz !!!",x"0a0d",
+                 x"0a0d",
+                 "Islem iptal ediliyor ...."
+                 icon mb_error_icon
+                 title "Hata"
+                 exit paragraph
+      end-if
+
+      initialize copy-status
+      call "c$copy" using depkod2-dosya,edepkod2-dosya giving copy-status
+      if copy-status <> 0
+         display message box 
+                 "from : ",depkod2-dosya,x"0a0d",
+                 "to : ",edepkod2-dosya,x"0a0d",
+                 "<hesap> dosya yedekleme basarisiz !!!",x"0a0d",
+                 x"0a0d",
+                 "Islem iptal ediliyor ...."
+                 icon mb_error_icon
+                 title "Hata"
+                 exit paragraph
+      end-if
+
+      open output yuzde1 close yuzde1 open i-o yuzde1 with mass-update
+      open i-o depkod depkod2
+      initialize dolu-dep-occurs bos-dep-occurs
+      perform varying dep-i
+      from 1
+      by 1
+      until dep-i = 999
+
+         initialize depkod-rec
+         move dep-i                to depkod-anah
+         read depkod no lock invalid
+              move "B"             to bos-dep(dep-i)
+         not invalid
+             move "D"              to dolu-dep(dep-i)
+         end-read
+
+      end-perform
+
+      perform varying dep-i
+      from 1
+      by 1
+      until dep-i = 999
+
+         initialize depkod-rec depkod2-rec
+         move dep-i                to depkod-anah
+         read depkod no lock invalid
+              exit perform cycle
+         not invalid
+             initialize depkod2-rec
+             move depkod2-anah        to depkod2-anah
+             read depkod no lock invalid
+                  continue
+             end-read
+         end-read
+         if depkod-tipi <> 3
+            exit perform cycle
+         end-if
+
+         perform varying dep-o
+         from 1
+         by 1
+         until dep-o = 999
+
+            if bos-dep(dep-o) <> "B"
+               exit perform cycle
+            end-if
+
+            move dep-o        to depkod-anah depkod2-anah
+            move 8            to depkod-kdv
+
+            inspect depkod-adi replacing trailing spaces by low-values
+            string depkod-adi
+                   " " delimited by low-values
+                   "%8" delimited by low-values
+                   into depkod-adi
+            inspect depkod-adi replacing all low-values by spaces
+            write depkod-rec invalid
+                display message box
+                        "Kayit depkoda yazilirken hata." x"0a0d"
+                        "Program durdurulacak.Yedekten datayi geri yukleyiniz."
+                        title "Hata"
+                        icon mb-error-icon
+                stop "depkod yazma hatasi" 
+            end-write
+
+            write depkod2-rec invalid
+                 display message box
+                        "Kayit depkod2 ye yazilirken hata." x"0a0d"
+                        "Program durdurulacak.Yedekten datayi geri yukleyiniz."
+                        title "Hata"
+                        icon mb-error-icon
+                stop "depkod2 yazma hatasi" 
+            end-write
+
+            move " "          to bos-dep(dep-o)
+
+            initialize yuzde1-rec
+            move dep-i                to yuzde1-anah
+            move dep-o                to yuzde1-yeni-dep
+            write yuzde1-rec invalid rewrite yuzde1-rec end-rewrite end-write
+            exit perform
+            
+         end-perform
+
+      end-perform
+      close depkod depkod2 yuzde1
+      display message box
+              "Transfer islemi tamamlandi."
+
+     .
+*
+ depekhiz-yaz. 
+     exit paragraph   
+     initialize rez-rec
+     move rezweb-anah to rez-anah
+     read rez no lock invalid
+          continue 
+     not invalid 
+         move rez-gir-tar      to depekhiz-tarih
+     end-read 
+     move 0                    to depekhiz-tipi(1:1)
+     move rez-doviz            to depekhiz-doviz
+     move rezweb-extra-dv-tutar(i) to depekhiz-tutar
+     move rez-durumu           to depekhiz-durumu
+     move rezweb-extra-aciklama(i) to depekhiz-aciklama  
+     move "ASYA"               to depekhiz-staf
+     accept depekhiz-isl-tarih from century-date
+     move " "                  to depekhiz-islem-durumu
+     write depekhiz-rec invalid 
+         continue
+     end-write.
+*
+ depekhiz-yaz-2.
+     exit paragraph
+     compute depekhiz-sira = depekhiz-sira + 1
+     initialize rez-rec
+     move rezweb-anah to rez-anah
+     read rez no lock invalid
+          continue 
+     not invalid 
+         move rez-cik-tar      to depekhiz-tarih
+     end-read 
+     move 1                    to depekhiz-tipi(1:1)
+     move rez-doviz            to depekhiz-doviz
+     move rezweb-extra-dv-tutar(i) to depekhiz-tutar
+     move rez-durumu           to depekhiz-durumu
+     move rezweb-extra-aciklama(i) to depekhiz-aciklama  
+     move "ASYA"               to depekhiz-staf
+     accept depekhiz-isl-tarih from century-date
+     move " "                  to depekhiz-islem-durumu
+     write depekhiz-rec invalid 
+         continue
+     end-write.
+*
+ Form2-Aft-Initdata.
+     open i-o yuzde1 depkod
+     modify form2-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form2-gd-1-record
+     move "Eski"                to gd-1-col-1
+     move "Yeni"                to gd-1-col-3
+     modify form2-gd-1,record-to-add(form2-gd-1-record)
+     initialize yuzde1-rec
+     start yuzde1 key not < yuzde1-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-yuzde1 = "10"
+     read yuzde1 next no lock end move "10" to fs-yuzde1
+     not at end
+
+         initialize depkod-rec
+         move yuzde1-eski-dep        to depkod-anah
+         read depkod no lock invalid
+              continue
+         end-read
+
+         initialize form2-gd-1-record
+         move yuzde1-eski-dep        to gd-1-col-1
+         move depkod-adi             to gd-1-col-2
+
+         initialize depkod-rec
+         move yuzde1-yeni-dep        to depkod-anah
+         read depkod no lock invalid
+              continue
+         end-read
+
+         move yuzde1-yeni-dep        to gd-1-col-3
+         move depkod-adi             to gd-1-col-4
+         modify form2-gd-1,record-to-add(form2-gd-1-record)
+
+
+
+     end-read
+     end-perform
+     end-start
+     close yuzde1 depkod
+     modify form2-gd-1,mass-update = 0
+     .
+*
+ Form1-Pb-2-Link.
+     perform acu-form2-routine
+     .
+
+*
+ depkod-liste-getir.
+ 
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     move 2 to grid-sira
+     initialize form1-gd-1-record
+     move "Kod"                to gd-2-col-1
+     move "Ad"                 to gd-2-col-2
+     move "KDV"                to gd-2-col-3
+     move "*"                  to gd-2-col-4
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+     open i-o depkod yuzde1
+     initialize depkod-rec
+     start depkod key not < depkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-depkod = "10"
+     read depkod next no lock end move "10" to fs-depkod
+     not at end
+**/*****ramazan ekleme ALACAK OLUP depkod-tipi 3 olan departman gelirse sorun olabilir
+         if depkod-ba <> "B"
+             exit perform cycle 
+         end-if 
+**/*****ramazan ekleme ALACAK OLUP depkod-tipi 3 olan departman gelirse sorun olabilir
+         if depkod-tipi <> 3
+            exit perform cycle
+         end-if
+
+         if depkod-kullanma = 1
+            exit perform cycle
+         end-if
+
+         initialize form1-gd-1-record
+         move depkod-kodu                to gd-2-col-1
+         move depkod-adi                 to gd-2-col-2
+         move depkod-kdv                 to gd-2-col-3
+         modify form1-gd-1,record-to-add(form1-gd-1-record)
+
+         initialize yuzde1-rec
+         move depkod-anah        to yuzde1-eski-dep
+         read yuzde1 no lock invalid
+              continue
+         not invalid
+             modify form1-gd-1(grid-sira),
+                    row-color = 432
+             modify form1-gd-1(grid-sira,1),
+                    hidden-data = "P"
+         end-read
+
+         initialize yuzde1-rec
+         move depkod-anah        to yuzde1-yeni-dep
+         read yuzde1 key yeni-dep invalid
+              continue
+         not invalid
+             modify form1-gd-1(grid-sira),
+                    row-color = 432
+             modify form1-gd-1(grid-sira,1),
+                    hidden-data = "R"
+         end-read
+
+
+         add 1 to grid-sira
+
+
+     end-read
+     end-perform
+     end-start
+     close depkod yuzde1
+     modify form1-gd-1,mass-update = 0.
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+        move event-action-fail        to event-action
+        inquire form1-gd-1(event-data-2,1),
+                hidden-data in gizli-bilgi
+        if gizli-bilgi = "P" or
+           gizli-bilgi = "R"
+           display message box
+                   "Daha once transfer edilmis departman," x"0a0d"
+                   "Tekrar transfer edilemez."
+                   title "Uyari"
+                   icon mb-warning-icon
+           exit paragraph
+        end-if
+        inquire form1-gd-1(event-data-2,4),
+                hidden-data in gizli-bilgi
+        if gizli-bilgi = " "
+           modify form1-gd-1(event-data-2,4),
+                  hidden-data = "E"
+                  bitmap = yes-bmp
+                  bitmap-number = 1
+                  bitmap-width = 16
+        else
+           modify form1-gd-1(event-data-2,4),
+                  hidden-data = " "
+                  bitmap = bos-bmp
+                  bitmap-number = 1
+                  bitmap-width = 16
+        end-if
+     end-evaluate
+     .
+*
+ Form1-Mn-1-MI-TumunuSec-Link.
+     inquire form1-gd-1,last-row in son-satir
+     perform varying i
+     from 2
+     by 1
+     until i > son-satir
+           inquire form1-gd-1(i,1),
+                   hidden-data in gizli-bilgi
+
+           if gizli-bilgi = "P" or
+              gizli-bilgi = "R"
+              exit perform cycle
+           end-if
+
+           modify form1-gd-1(i,4),
+                  hidden-data = "E"
+                  bitmap = yes-bmp
+                  bitmap-number = 1
+                  bitmap-width = 16        
+
+     end-perform
+     .
+*
+ Form1-Pb-3-Link.
+      display message box
+              "Secili gelir departmanlari %8 KDV ile transfer edilecek !!!" x"0a0d"
+              "Devam etmek istediginize emin misiniz?"
+              icon mb-yes-no
+              type 2
+              default 2
+              returning return-code
+              if return-code = 2
+                 exit paragraph
+              end-if
+      stop " "
+      move depkod-dosya-adres   to edepkod-dosya-adres edepkod2-dosya-adres
+      accept edepkod-tarih from century-date
+      accept edepkod-zaman from time
+      accept edepkod2-tarih from century-date
+      accept edepkod2-zaman from time
+      initialize copy-status
+      call "c$copy" using depkod-dosya,edepkod-dosya giving copy-status
+      
+      if copy-status <> 0
+         display message box 
+                 "from : ",depkod-dosya,x"0a0d",
+                 "to : ",edepkod-dosya,x"0a0d",
+                 "<hesap> dosya yedekleme basarisiz !!!",x"0a0d",
+                 x"0a0d",
+                 "Islem iptal ediliyor ...."
+                 icon mb_error_icon
+                 title "Hata"
+                 exit paragraph
+      end-if
+
+      initialize copy-status
+      call "c$copy" using depkod2-dosya,edepkod2-dosya giving copy-status
+      if copy-status <> 0
+         display message box 
+                 "from : ",depkod2-dosya,x"0a0d",
+                 "to : ",edepkod2-dosya,x"0a0d",
+                 "<hesap> dosya yedekleme basarisiz !!!",x"0a0d",
+                 x"0a0d",
+                 "Islem iptal ediliyor ...."
+                 icon mb_error_icon
+                 title "Hata"
+                 exit paragraph
+      end-if
+
+      open i-o depkod depkod2 yuzde1
+      initialize dolu-dep-occurs bos-dep-occurs
+      perform varying dep-i
+      from 1
+      by 1
+      until dep-i = 999
+
+         initialize depkod-rec
+         move dep-i                to depkod-anah
+         read depkod no lock invalid
+              move "B"             to bos-dep(dep-i)
+         not invalid
+             move "D"              to dolu-dep(dep-i)
+         end-read
+
+      end-perform
+
+      inquire form1-gd-1,last-row in son-satir
+      perform varying dep-i
+      from 2
+      by 1
+      until dep-i > son-satir
+
+         inquire form1-gd-1(dep-i,4),hidden-data in gizli-bilgi
+
+         if gizli-bilgi <> "E"
+            exit perform cycle
+         end-if
+
+
+         inquire form1-gd-1(dep-i,1),cell-data in eski-dep-kod
+
+         initialize depkod-rec depkod2-rec
+         move eski-dep-kod                to depkod-anah
+         read depkod no lock invalid
+              exit perform cycle
+         not invalid
+             initialize depkod2-rec
+             move depkod-anah        to depkod2-anah
+             read depkod2 no lock invalid
+                  continue
+             end-read
+         end-read
+
+         if depkod-tipi <> 3
+            exit perform cycle
+         end-if
+
+         perform varying dep-o
+         from 1
+         by 1
+         until dep-o = 999
+
+            if bos-dep(dep-o) <> "B"
+               exit perform cycle
+            end-if
+
+            move dep-o        to depkod-anah depkod2-anah
+            move 8            to depkod-kdv
+
+            inspect depkod-adi replacing trailing spaces by low-values
+            string depkod-adi
+                   " " delimited by low-values
+                   "%8" delimited by low-values
+                   into depkod-adi
+            inspect depkod-adi replacing all low-values by spaces
+            move depkod-adi                to depkod2-adi
+            write depkod-rec invalid
+                display message box
+                        "Kayit depkoda yazilirken hata." x"0a0d"
+                        "Program durdurulacak.Yedekten datayi geri yukleyiniz."
+                        title "Hata"
+                        icon mb-error-icon
+                stop "depkod yazma hatasi" 
+            end-write
+
+            write depkod2-rec invalid
+                 display message box
+                        "Kayit depkod2 ye yazilirken hata." x"0a0d"
+                        "Program durdurulacak.Yedekten datayi geri yukleyiniz."
+                        title "Hata"
+                        icon mb-error-icon
+                stop "depkod2 yazma hatasi" 
+            end-write
+
+            move " "          to bos-dep(dep-o)
+
+            initialize yuzde1-rec
+            move eski-dep-kod         to yuzde1-anah
+            move dep-o                to yuzde1-yeni-dep
+            write yuzde1-rec invalid rewrite yuzde1-rec end-rewrite end-write
+
+******************************** Eski departmani kullanimdan kaldir
+            initialize depkod-rec
+            move eski-dep-kod                to depkod-anah
+            read depkod no lock invalid      
+                 continue
+            not invalid
+                move 1 to depkod-kullanma
+                rewrite depkod-rec invalid 
+                   display message box
+                           "Depkod kullanimdan kaldirlirken hata."
+                           "Departman Kodu :" depkod-anah
+                end-rewrite
+            end-read
+******************************** Eski departmani kullanimdan kaldir
+            exit perform
+            
+         end-perform
+
+      end-perform
+      close depkod depkod2 yuzde1
+      display message box
+              "Transfer islemi tamamlandi."
+     .
+*
+ Form2-Pb-1-Link.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+         accept print-no from time
+     not invalid
+         add 1 to print-no
+         rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis             
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+
+     initialize dokumer-rec detay
+     move "W"                    to det-dokumer-20(1:)
+     move "Eski-Yeni Departman Kodlari" to det-filler
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                    to det-dokumer-20(1:)
+     move "Eski-Yeni Departman Kodlari" to det-filler
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+     move "B"                    to det-dokumer-20(1:)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "O"                    to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLRRRRRRRRRRRRRRRRRRRRRRRLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D1"         to det-dokumer-20(1:) 
+     inquire form2-gd-1(01),record-data in form2-gd-1-record
+
+             move Gd-1-Col-1       to det-1  
+             move Gd-1-Col-2       to det-2
+             move Gd-1-Col-3       to det-3  
+             move Gd-1-Col-4       to det-4
+             move Gd-1-Col-5       to det-5
+   
+
+     move all "|" to fil-1 fil-2 fil-3 fil-4 fil-5
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+     move "D2"         to det-dokumer-20(1:)     
+     move "-"          to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5
+     write dokumer-rec from detay
+     inquire form1-gd-1,last-row in son-satir
+     perform varying i
+     from 2
+     by 1
+     until i > son-satir
+          initialize dokumer-rec detay form1-gd-1-record
+          inquire form2-gd-1(i),record-data in form2-gd-1-record
+
+ 
+             move Gd-1-Col-1       to det-1  
+             move Gd-1-Col-2       to det-2
+             move Gd-1-Col-3       to det-3  
+             move Gd-1-Col-4       to det-4
+             move Gd-1-Col-5       to det-5
+
+
+          write dokumer-rec from detay
+
+     end-perform
+     initialize dokumer-rec detay
+     move "-"          to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5
+     write dokumer-rec from detay
+     close dokumer
+     call dokumer-prog on exception
+          perform callerr-proc
+     not on exception
+          cancel dokumer-prog
+     end-call
+     delete file dokumer.
+*
+ Form1-Mn-1-MI-TumunuKaldir-Link.
+     inquire form1-gd-1,last-row in son-satir
+     perform varying i
+     from 2
+     by 1
+     until i > son-satir
+           inquire form1-gd-1(i,1),
+                   hidden-data in gizli-bilgi
+
+           if gizli-bilgi = "P" or
+              gizli-bilgi = "R"
+              exit perform cycle
+           end-if
+
+           modify form1-gd-1(i,4),
+                  hidden-data = " "
+                  bitmap = bos-bmp
+                  bitmap-number = 1
+                  bitmap-width = 16        
+
+     end-perform.
+*
+ Form1-Pb-4-Link.
+     perform acu-form3-routine
+     perform depkod-borc-yukle
+     .
+
+*
+ depkod-borc-yukle.
+ 
+
+     modify frm-grid-1,reset-grid = 1
+                       mass-update = 1
+
+     move 2 to grid-sira
+     initialize grd-record
+     move "Secim"              to gd-col-1
+     move "Kod"                to gd-col-2
+     move "Adi"                to gd-col-3
+     move "Kdv"                to gd-col-4
+     move "Yeni Kod"           to gd-col-5
+     move "Yeni Kdv"           to gd-col-6
+     modify form1-gd-1,record-to-add(grd-record)
+     open i-o depkod 
+     initialize depkod-rec
+     start depkod key not < depkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-depkod = "10"
+     read depkod next no lock end move "10" to fs-depkod
+     not at end
+
+         if depkod-ba <> "B"
+             exit perform cycle 
+         end-if 
+
+        |if depkod-tipi <> 3
+        |   exit perform cycle
+        |end-if
+
+         if depkod-kullanma = 1
+            exit perform cycle
+         end-if
+
+         initialize grd-record
+         move depkod-kodu                to gd-col-2
+         move depkod-adi                 to gd-col-3
+         move depkod-kdv                 to gd-col-4
+         modify form1-gd-1,record-to-add(grd-record)
+
+         add 1 to grid-sira
+
+     end-read
+     end-perform
+     end-start
+     close depkod 
+     modify frm-grid-1,mass-update = 0.

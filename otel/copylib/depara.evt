@@ -1,0 +1,313 @@
+* depara.evt
+* depara.evt is generated from D:\asya\acugt.ytl\otel\depara.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ arama-combo-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM arama-combo-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Lb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM Form1-Lb-1-Ex-Cmd-Dblclick
+        WHEN Ntf-Pl-First
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-First
+        WHEN Ntf-Pl-Last
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Last
+        WHEN Ntf-Pl-Next
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Next
+        WHEN Ntf-Pl-Nextpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Nextpage
+        WHEN Ntf-Pl-Prev
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prev
+        WHEN Ntf-Pl-Prevpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prevpage
+        WHEN Ntf-Pl-Search
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Search
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+*
+ Form1-Aft-Initdata.
+     modify arama-combo,reset-list = 1 
+                        mass-update = 1
+     modify arama-combo,
+            item-to-add("1-Ada gore","2-Koda gore")
+     move "1-Ada gore"  to arama-combo-value.
+     move 1 to arama.
+     modify arama-combo,mass-update = 0
+                        value = arama-combo-value.
+
+     open input depkod.
+     perform kolon-ayarla.
+     Perform  Form1-Lb-1-Ex-Ntf-Pl-First
+     modify form1-lb-1, selection-index = 1
+                        mass-update = 0.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+get-next-item.
+    evaluate state-flag
+*       when reading-backwards
+        when "b"
+             move kayit-sayisi to number-reads-needed
+*       when at-end
+        when "e"
+             exit paragraph
+*       when reading-forwards
+        when "f"
+          move 1 to number-reads-needed
+
+*       when at-start
+       when "s"
+          move low-values to depkod-adi depkod-anah
+          evaluate arama
+             when 1
+               start depkod key not < depkod-adi   invalid
+                     exit paragraph
+               end-start
+             when 2
+               start depkod key not < depkod-anah invalid
+                     exit paragraph
+               end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+    end-evaluate.
+
+    perform varying i from 1 by 1 until i > number-reads-needed
+        read depkod next no lock end 
+                      set at-end to true
+                      exit paragraph
+        not at end
+               if (depkod-cagri-tipi <> "T" and depkod-cagri-tipi <> spaces)
+               if depkod-ba <> depkod-cagri-tipi
+                  if (i > 1) or (number-reads-needed = 1)
+                     subtract 1 from i
+                  end-if
+               end-if
+               end-if
+        end-read
+    end-perform
+    perform kayit-yerlestir
+
+
+    modify form1-lb-1, item-to-add = form1-lb-1-value
+
+    set reading-forwards to true.
+
+get-prev-item.
+    evaluate state-flag
+       when "b"
+*       when reading-backwards
+          move 1 to number-reads-needed
+*       when at-end
+       when  "e"
+          move high-values to depkod-adi depkod-anah
+          evaluate arama
+          when 1 
+              start depkod key not > depkod-adi
+                   invalid key      exit paragraph
+              end-start
+          when 2
+              start depkod key not > depkod-anah 
+                   invalid key      exit paragraph
+              end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+       when "f"
+*       when reading-forwards
+          move kayit-sayisi to number-reads-needed
+       when "s"
+*       when at-start
+          exit paragraph
+    end-evaluate.
+
+    perform varying i from 1 by 1 until i > number-reads-needed
+        read depkod previous no lock end 
+                      set at-end to true
+                      exit paragraph
+        not at end
+               if (depkod-cagri-tipi <> "T" and depkod-cagri-tipi <> spaces)
+               if depkod-ba <> depkod-cagri-tipi
+               
+                  if (i > 1) or (number-reads-needed = 1)
+                     subtract 1 from i
+                  end-if
+               end-if
+               end-if
+        end-read
+    end-perform
+
+    perform kayit-yerlestir
+
+    modify form1-lb-1, 
+       insertion-index = 1
+       item-to-add = form1-lb-1-value
+
+    set reading-backwards to true.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Next.
+    perform get-next-item.
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prev.
+    perform get-prev-item.
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Nextpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+     
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prevpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-First.
+     move low-values to depkod-adi depkod-anah
+     evaluate arama
+     when 1 
+     start depkod key not < depkod-adi
+           invalid key    exit paragraph
+     end-start
+     when 2
+     start depkod key not < depkod-anah
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Last.
+     move high-values to depkod-adi depkod-anah
+     evaluate arama
+     when 1 
+     start depkod, key not > depkod-adi 
+           invalid key    exit paragraph
+     end-start
+     when 2 
+     start depkod, key not > depkod-anah
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+     set reading-backwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Search.
+     inquire form1-lb-1, search-text in arama-kelime
+     evaluate arama
+     when 1 
+     move arama-kelime to depkod-adi
+     start depkod key not < depkod-adi
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 2 
+     move arama-kelime to depkod-anah
+     start depkod key not < depkod-anah
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     end-evaluate.
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0
+     if at-end
+        perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+     end-if.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2000
+
+     when 2001
+        inquire form1-lb-1,selection-index in i
+        evaluate arama
+        when 1 
+             inquire form1-lb-1(i),value in ada-gore
+             move ada-gore-kodu     to depkod-dep-kodu
+             set exit-pushed to true
+        when 2
+             inquire form1-lb-1(i),value in koda-gore
+             move koda-gore-kodu    to depkod-dep-kodu
+             set exit-pushed to true
+        end-evaluate
+     end-evaluate.
+
+ kolon-ayarla.
+     evaluate arama
+         when 1 
+              modify form1-lb-1,data-columns = 0
+                                display-columns = 0
+                                data-columns(1,31)
+                                display-columns(1,32)
+         when 2 
+              modify form1-lb-1,data-columns = 0
+                                display-columns = 0
+                                data-columns(1,4)
+                                display-columns(1,5)
+     end-evaluate.
+*
+ arama-combo-Ex-Ntf-Selchange.
+     if arama-combo-value(1:1) = "1"
+        move 1 to arama
+     else
+        move 2 to arama
+     end-if.
+     perform kolon-ayarla.
+     perform Form1-Lb-1-Ex-Ntf-Pl-First.
+
+ kayit-yerlestir.
+    evaluate arama
+         when 1 
+              move depkod-adi    to ada-gore-adi
+              move depkod-kodu   to ada-gore-kodu
+              move ada-gore     to form1-lb-1-value
+         when 2
+              move depkod-kodu   to koda-gore-kodu
+              move depkod-adi    to koda-gore-adi
+              move koda-gore    to form1-lb-1-value
+    end-evaluate.
+*
+*
+ Form1-Lb-1-Ex-Cmd-Dblclick.
+    move 2001 to key-status.
+    perform  Form1-Ex-Other.
+
+*
+ Form1-Aft-Routine.
+     close depkod.
+ 

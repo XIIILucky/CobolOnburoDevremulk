@@ -1,0 +1,371 @@
+* smsgond.evt
+* smsgond.evt is generated from D:\asya\acugt.ytl\otel\smsgond.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Create.
+      perform adresleri-tasi
+
+       call "c$narg" using link-var
+      if link-var = 4
+      open input devremulk musteri
+
+          perform musteri-telno-bul
+          if gsm-no(1:2) = "+09" then   
+                move gsm-no(4:12) to txt-gonderilecek-telefon
+          else
+             if gsm-no(1:2) = "+9" then 
+                 move gsm-no(3:13) to txt-gonderilecek-telefon
+             else
+                move gsm-no to txt-gonderilecek-telefon
+             end-if
+             
+          end-if
+          display Form1-Ef-1 
+
+      close devremulk musteri
+      end-if
+     .
+* 
+musteri-telno-bul.
+
+          move link-devremulk-no to devremulk-no
+          read devremulk no lock invalid
+                  continue
+          end-read
+          initialize musteri-rec
+          move DEVREMULK-profil-sirket        to musteri-sirket              
+          move DEVREMULK-profil-no            to musteri-no 
+          read musteri no lock invalid 
+                initialize musteri-rec
+                continue
+          end-read
+
+          initialize gsm-no
+          if musteri-gsm not = spaces then
+             move musteri-gsm to gsm-no
+             exit paragraph
+          end-if
+          if musteri-tel1 not = spaces
+             move musteri-tel1 to gsm-no
+             exit paragraph
+          end-if
+          if musteri-tel2 not = spaces
+             move musteri-tel2 to gsm-no
+             exit paragraph
+          end-if
+          if musteri-tel3 not = spaces
+             move musteri-tel3 to gsm-no
+             exit paragraph
+          end-if
+  
+         .
+*
+ Form1-Aft-Initdata.
+
+      open i-o smsliste smstan close smsliste  smstan
+      open input smstan 
+              modify sc-sms-kalip , reset-list = 1 
+              modify sc-sms-kalip , item-to-add("0000-OZEL SMS")
+              move "0000-OZEL SMS" to sms-kalip-value
+              display sc-sms-kalip
+
+              initialize smstan-rec
+              move "D" to smstan-tip
+              start smstan key not < smstan-anah invalid
+                      continue
+              not invalid
+              perform until fs-smstan = "10"
+              read smstan next no lock end move "10" to fs-smstan
+              not end
+                     if smstan-tip not = "D" then
+                           exit perform 
+                     end-if
+                     initialize sms-string
+                     string sms-string
+                         smstan-kodu delimited by spaces
+                         "-" delimited by size 
+                         smstan-baslik
+                      into sms-string  
+                     modify sc-sms-kalip , item-to-add(sms-string)
+              end-read
+              end-perform
+              end-start               
+      close smstan 
+     .
+*
+ Form1-Ex-Other.
+      evaluate key-status
+         when 2
+                if txt-sms-kalip = spaces  then
+              display message box "Lutfen Gonderilecek Sms Alanini Doldurunuz !"
+                      title "[ Asyasoft Sms Gonderim ]"
+              exit paragraph
+           end-if
+           if txt-gonderilecek-telefon = spaces  then
+              display message box "Lutfen Gonderilecek GSM Numarasini Giriniz !"
+                      title "[ Asyasoft Sms Gonderim ]"
+              exit paragraph
+           end-if
+ 
+           open i-o smsliste  devremulk musteri
+                 initialize smsliste-rec
+                  move txt-gonderilecek-telefon to smsliste-gon-numara
+                  move txt-sms-kalip            to smsliste-gon-mesaj 
+                  move link-devremulk-no        to smsliste-anah(1:8)
+                  move link-sms-nereden         to smsliste-nereden
+                  move "S"                      to smsliste-tip
+                  accept smsliste-zaman from time
+                  move link-tutar               to smsliste-tutar
+                  
+                  move link-tarih               to smsliste-sms-tar
+                  move k-kodu-tasi              to smsliste-staf
+                  move 0                        to smsliste-gonderildi-mi 
+                  move txt-gonderilecek-telefon to smsliste-gon-numara
+                  move link-devremulk-no to devremulk-no
+                  read devremulk no lock invalid
+                          continue
+                  end-read
+                  initialize musteri-rec
+                  move DEVREMULK-profil-sirket        to musteri-sirket              
+                  move DEVREMULK-profil-no            to musteri-no 
+                  read musteri no lock invalid 
+                        move "      " to musteri-adi musteri-soyadi
+                  end-read 
+                  string string-deger
+                       musteri-adi delimited by spaces " "
+                       " " delimited by size 
+                       musteri-soyadi
+                  into string-deger     
+                  move string-deger                   to smsliste-gon-kisi
+                  write smsliste-rec  invalid
+                          stop " "
+                  end-write
+              close smsliste  devremulk musteri
+                 display message box "Mesaj " txt-gonderilecek-telefon " No lu GSM Abonesine Iletilmek Uzere SMS Havuzuna Gonderilmistir." 
+                      title "[ Asyasoft Sms Gonderim ]"
+                      set exit-pushed to true
+
+         when 4
+            if txt-sms-kalip = spaces  then
+              display message box "Lutfen Gonderilecek Sms Alanini Doldurunuz !"
+                      title "[ Asyasoft Sms Gonderim ]"
+              exit paragraph
+           end-if
+           if txt-gonderilecek-telefon = spaces  then
+              display message box "Lutfen Gonderilecek GSM Numarasini Giriniz !"
+                      title "[ Asyasoft Sms Gonderim ]"
+              exit paragraph
+           end-if
+    
+          display message box "Mesaj " txt-gonderilecek-telefon " No lu GSM Abonesine Gonderilecektir. Eminmisiniz ?" 
+          title "[ Asyasoft Sms Gonderim ]"
+          type 2
+          default 1
+          returning return-code 
+          
+          if return-code not = 1 then
+              exit paragraph
+          end-if
+
+           |||manuel sms gonderme
+          open i-o smsliste  musteri devremulk
+
+             move link-devremulk-no to devremulk-no
+             read devremulk no lock invalid
+                     initialize devremulk-rec
+                     continue
+             end-read
+
+             move smsliste-tutar to z-tutar
+             inspect txt-sms-kalip replacing
+                     all "[SOZLESME]"   by  devremulk-sozlesme-no
+
+             inspect txt-sms-kalip  replacing
+                      all "[GONTUTAR]"  by z-tutar
+
+           move txt-sms-kalip             to sms-url-mesaj
+           move txt-gonderilecek-telefon  to sms-url-numara
+           move sms-url                   to tarayici-value
+           display tarayici
+
+           perform sms-drek-gonder
+
+           if function numval(buf) = 4  then
+                 display message box "Hatali Telefon Numarasi !" new-line
+                 "Mesaj Iletilemedi ! , Tekrar Deneyiniz ... "
+                 title "[ Asyasoft Sms Gonderim ]"
+                 icon 3
+                 close  smsliste  musteri devremulk
+                 exit paragraph
+           end-if
+           ||||
+         
+                 initialize smsliste-rec
+                  move txt-gonderilecek-telefon to smsliste-gon-numara
+                  move txt-sms-kalip            to smsliste-gon-mesaj 
+                  move link-devremulk-no        to smsliste-anah(1:8)
+                  move link-sms-nereden         to smsliste-nereden
+                  move "S"                      to smsliste-tip
+                  accept smsliste-zaman from time
+                  accept smsliste-gon-zaman from time
+                  accept smsliste-gon-tar   from century-date
+                  move link-tutar               to smsliste-tutar
+                  move link-tarih               to smsliste-sms-tar
+                  move k-kodu-tasi              to smsliste-staf
+                  move function numval(buf)     to z-buf
+                  move z-buf                    to smsliste-donus-kodu 
+                  move 1                        to smsliste-gonderildi-mi 
+                  move link-devremulk-no        to devremulk-no
+                  move txt-gonderilecek-telefon to smsliste-gon-numara
+                  read devremulk no lock invalid
+                          continue
+                  end-read
+                  initialize musteri-rec
+                  move DEVREMULK-profil-sirket        to musteri-sirket              
+                  move DEVREMULK-profil-no            to musteri-no 
+                  read musteri no lock invalid 
+                        move "      " to musteri-adi musteri-soyadi
+                  end-read 
+                  string string-deger
+                       musteri-adi delimited by spaces " "
+                       " " delimited by size 
+                       musteri-soyadi
+                  into string-deger     
+                  move string-deger                   to smsliste-gon-kisi
+                  write smsliste-rec  invalid
+                          stop " "
+                  end-write
+           close smsliste  devremulk musteri
+
+          display message box "Mesaj " txt-gonderilecek-telefon " No lu GSM Abonesine Gonderilmistir." 
+          title "[ Asyasoft Sms Gonderim ]"
+           set exit-pushed to true
+      end-evaluate
+     .
+*
+ sc-sms-kalip-Aft-Procedure.
+     open input smstan
+             initialize smstan-anah
+             move "D" to smstan-tip
+             move sms-kalip-value(1:4) to smstan-kodu
+             read smstan no lock invalid   
+                      initialize txt-sms-kalip
+                       modify Form1-Ef-1a ,enabled = true 
+                      continue
+             not invalid
+                 move smstan-gon-ileti to txt-sms-kalip
+                  modify Form1-Ef-1a ,enabled = false 
+             end-read
+                 display Form1-Ef-1a
+     close smstan
+     .
+*
+ sms-drek-gonder.
+     call "c$sleep" using 0.1.
+     modify tarayici, clear-selection(1)
+     modify tarayici, select-all(1).
+     modify tarayici, copy-selection(1).
+     if is-remote
+        perform clipboard-islem
+     else
+        perform clipboard-islem-yerel
+     end-if
+               .
+*
+ clipboard-islem.
+     initialize buf
+     call "@[DISPLAY]:C:\windows\system32\user32.dll" 
+     on exception
+           display message box "user32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph
+     end-call      .
+     call "@[DISPLAY]:C:\windows\system32\kernel32.dll" on exception
+           display message box "kernel32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:C:\windows\system32\msvcrt.dll" on exception
+           display message box "msvcrt.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:OpenClipboard" using by value 0
+          giving hwnd.
+
+     call "@[DISPLAY]:GetClipboardData" using by value cf_text
+                                        giving hglobal.
+
+     call "@[DISPLAY]:GlobalLock" using by value hglobal
+                                  returning ptr
+
+     call "@[DISPLAY]:lstrlenA" using by value ptr 
+                               returning boy.
+
+     if boy > 0
+     call "@[DISPLAY]:RtlMoveMemory" using by reference buf
+                                     by value ptr
+                                     by value boy
+     end-call
+
+     call "@[DISPLAY]:GlobalUnlock" using hglobal.
+     call "@[DISPLAY]:CloseClipboard".
+     cancel "@[DISPLAY]:user32.dll".
+     cancel "@[DISPLAY]:kernel32.dll".
+     cancel "@[DISPLAY]:msvcrt.dll".
+*/
+ clipboard-islem-yerel.
+     initialize buf
+     call "user32.dll" 
+     on exception
+           display message box "user32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph
+     end-call      .
+     call "kernel32.dll" on exception
+           display message box "kernel32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "msvcrt.dll" on exception
+           display message box "msvcrt.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "OpenClipboard" using by value 0
+          giving hwnd.
+
+     call "GetClipboardData" using by value cf_text
+                                        giving hglobal.
+
+     call "GlobalLock" using by value hglobal
+                                  returning ptr
+
+     call "lstrlenA" using by value ptr 
+                               returning boy.
+
+     if boy > 0
+     call "RtlMoveMemory" using by reference buf
+                                     by value ptr
+                                     by value boy
+     end-call
+
+     call "GlobalUnlock" using hglobal.
+     call "CloseClipboard".
+     cancel "user32.dll".
+     cancel "kernel32.dll".
+     cancel "msvcrt.dll".
+*
+ Form1-Bef-Routine.
+     
+     .
+
+ 

@@ -1,0 +1,1364 @@
+* webkont.evt
+* webkont.evt is generated from D:\asya\acugt.ytl\otel\webkont.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     PERFORM Form1-Ev-Other
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM grd1-Ev-Other
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form3-Event-Proc.
+     .
+
+ Form3-Gd-1-Event-Proc.
+     PERFORM grd2-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+         call "c$narg" using link-var.
+       perform adresleri-tasi
+       move tarih-tasi to bas-tar bit-tar
+       add 1 to bit-ay
+       if bit-ay > 12 then move 1 to bit-ay add 1 to bit-yil end-if
+       display sc-tar1 sc-tar2 sc-tar3 sc-tar4 sc-tar5 sc-tar6
+       open i-o webkont close webkont
+        open input kllnc 
+        move k-kodu-tasi to k-kodu
+        read kllnc no lock invalid continue
+          not invalid 
+          move  k-ayrac-degistir to v-ayrac
+         
+        end-read
+       
+        close kllnc
+        display ac-ayrac
+
+         if link-var = 1 then 
+           move link-acenta to txt-acenta-kodu
+           display  sc-acenta
+
+
+
+         end-if
+        if link-var = 2 
+           move link-acenta to txt-acenta-kodu
+
+          move  lFIYATANA-ILK-TARIH to bas-tar 
+          move  bas-tar to bit-tar
+          if bit-ay = 12 
+               move 1 to bit-tar
+                add 1 to bit-yil
+             else
+                add 1 to bit-ay
+          end-if
+
+        
+            display form1
+
+           move 2001 to key-status 
+           perform Form1-Ex-Other
+
+
+       
+          
+
+
+        end-if
+
+     .
+
+*
+ Form1-Ex-Other.
+      evaluate key-status
+       when 1
+          if control-id = 6 then
+             initialize acenta-cagir
+             call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+                 on exception perform callerr-proc
+                 not on exception
+                 cancel "/asya/ytl/obj/otel/acenara.asy" 
+              end-call
+              move acenta-cagir    to txt-acenta-kodu  
+              display sc-acenta
+          end-if
+          if control-id = 7 then
+              initialize pansiyon-cagir
+              move "A" to pansiyon-tipi-cagir
+              call "/asya/ytl/obj/otel/panara.asy" using pansiyon-cagir
+                    on exception perform callerr-proc
+                       not on exception
+                       cancel "/asya/ytl/obj/otel/panara.asy" 
+               end-call
+               move pansiyon-kodu-cagir     to txt-pansiyon-kodu 
+               Display sc-pansiyon-kodu
+          end-if
+       when 2
+            
+            inquire grd1(1,1),cell-data = deger
+            if deger = spaces then
+                  exit paragraph
+            end-if
+            display message box "Kontenjan Tablosu Kaydedilecektir ! Devam Etmek Istiyor musunuz ?"
+            title "Asya-Soft Yazilim"
+            type 2
+            default 2
+            returning return-code
+            if return-code <> 1 then
+                 exit paragraph
+            end-if
+  
+            open i-o twebkont webkont 
+            initialize twebkont-rec   takas-satir
+            start twebkont key not < twebkont-anah invalid
+                    continue
+            not invalid
+            perform until fs-twebkont = "10"
+            read twebkont next no lock end move "10" to fs-twebkont
+            not end
+                initialize webkont-rec
+                move twebkont-anah          to webkont-anah
+                ||||||||||||||||| *bos kayit gitmesin dataya diye konuldu 
+                read webkont no lock invalid
+                     if twebkont-kontenjan = zeroes  then
+                         exit perform cycle
+                     end-if
+                not invalid
+                    if twebkont-kontenjan = zeroes 
+                       if webkont-kontenjan = zeroes then
+                          exit perform cycle
+                       end-if
+                    end-if
+                end-read
+                ||||||||||||||||
+                move twebkont-rec          to webkont-rec
+                accept twebkont-ISL-TARIH  from century-date
+                accept twebkont-ISL-ZAMAN  from time
+                move k-kodu-tasi            to webkont-ISL-STAF 
+                write webkont-rec  invalid
+                     rewrite webkont-rec  invalid
+                             stop " "
+                      end-rewrite   
+                end-write
+                add 1 to takas-satir
+                    ||| ****log kaydet
+                |    initialize webflog-rec
+                |    move twebkont-ACENTA     to webflog-acenta
+                |    move twebkont-TARIH      to webflog-tarih
+                |    move twebkont-konum      to webflog-konum
+                |    accept WEBFLOG-LOG-TARIH  from century-date
+                |    accept WEBFLOG-LOG-ZAMAN  from time 
+                |    MOVE Twebkont-kontenjan      to webflog-fiyat
+                |    move k-kodu-tasi          to WEBFLOG-LOG-STAF
+                |    
+                |    write webflog-rec invalid
+                |            rewrite webflog-rec invalid
+                |                    continue
+                |            end-rewrite
+                |    end-write
+                    |||
+            end-read
+            end-perform
+            end-start
+            close twebkont webkont 
+            if takas-satir >= 1 then
+                   display message box "Kayit Islemi Tamamlandi ! "
+            end-if
+                
+       when 2003
+              perform Acu-Form3-Routine
+       when 2002
+              modify grd1,reset-grid = 1
+              delete file twebkont
+              modify sc-acenta,enabled = true
+              modify sc-pansiyon-kodu,enabled = true
+              modify sc-tar1,enabled = true
+              modify sc-tar2,enabled = true
+              modify sc-tar3,enabled = true
+              modify sc-tar4,enabled = true
+              modify sc-tar5,enabled = true
+              modify sc-tar6,enabled = true
+
+              move 6 to control-id
+              move 4 to accept-control
+       when 2001
+              
+              open input acenta
+                      initialize acenta-rec
+                      move txt-acenta-kodu  to acenta-kodu
+                      read acenta no lock invalid
+                              display message box "Lutfen Tanimli Bir Acenta Giriniz ! ..."
+                              icon 3
+                              close acenta
+                              move 6 to control-id
+                              move 4 to accept-control
+                              exit paragraph
+                      end-read
+              close acenta
+                            
+              open input takvim
+                      initialize takvim-rec
+                      move bas-tar to takvim-anah
+                      read takvim no lock invalid
+                              display message box "Tanimsiz Tarih Girdiniz ! ... "
+                              icon 3
+                              move 8 to control-id
+                              move 4 to accept-control
+                              close takvim
+                              exit paragraph
+                      end-read
+                      initialize takvim-rec
+                      move bit-tar to takvim-anah
+                      read takvim no lock invalid
+                              display message box "Tanimsiz Tarih Girdiniz ! ... "
+                              icon 3
+                              move 11 to control-id
+                              move 4 to accept-control
+                              close takvim
+                              exit paragraph
+                      end-read
+              close takvim
+
+              if bit-tar not >= bas-tar then
+                              display message box "Baslangic Tarihi Bitis Tarihinden Buyuk Olamaz ! ... "
+                              icon 3
+                              exit paragraph 
+              end-if
+
+              modify sc-acenta,enabled = false
+              modify sc-pansiyon-kodu,enabled = false
+              modify sc-tar1,enabled = false
+              modify sc-tar2,enabled = false
+              modify sc-tar3,enabled = false
+              modify sc-tar4,enabled = false
+              modify sc-tar5,enabled = false
+              modify sc-tar6,enabled = false
+
+              open i-o genelfis
+                  initialize genelfis-rec
+                  read genelfis no lock invalid
+                          continue
+                  not invalid
+                          compute EKRAN-FIS-1 = EKRAN-FIS-1 + 1
+                          rewrite genelfis-rec  invalid
+                                  stop " "
+                          end-rewrite
+                          move EKRAN-FIS-1 to twebkont-no
+                  end-read
+              close genelfis
+
+              open output twebkont
+              close twebkont
+
+              modify grd1,reset-grid = 1 , mass-update = 1 
+              open input konum
+                 initialize konum-rec kolon-say web-konum 
+                 start konum key not < konum-anahtar invalid
+                         continue
+                 not invalid
+                 perform until fs-konum = "10"
+                 read konum next no lock end move "10" to fs-konum
+                 not end
+                         if KONUM-WEBTE-SATIS <> 1 then
+                               exit perform cycle
+                         end-if
+                         if  kolon-say > 30 then
+                               exit perform
+                         end-if
+                         add 3 to kolon-say
+
+                         modify grd1(1,1), cell-data = "Tarih"
+                         modify grd1(1,kolon-say), cell-data = konum-adi
+                         modify grd1(1,kolon-say), hidden-data = KONUM-ANAHTAR
+                         move KONUM-ANAHTAR to web-konum-dizi(kolon-say) || 
+                         ||||******kont ve kalan alanlarý yazdýrýlýyo0rrr
+                         modify grd1(1,kolon-say - 1 ), cell-data = "Kont" ,hidden-data = KONUM-ANAHTAR
+                         modify grd1(1,kolon-say + 1 ), cell-data = "Kalan" ,hidden-data = KONUM-ANAHTAR
+                         
+                 end-read
+                 end-perform
+                 end-start
+              close konum
+
+              open input takvim webkont rez cast acenhrk 
+              open i-o twebkont 
+                 initialize takvim-rec satir-say
+                 move 1 to satir-say
+                 move bas-tar     to takvim-anah
+                 start takvim key not < takvim-anah invalid
+                         continue
+                 not invalid
+                 perform until fs-takvim = "10"
+                 read takvim next no lock end move "10" to fs-takvim
+                 not end
+
+                         if takvim-anah > bit-tar
+                               exit perform
+                         end-if
+
+                         add 1 to satir-say
+                         initialize grd1-record
+                         move takvim-gun to x-gun
+                         move takvim-ay  to x-ay
+                         move takvim-yil to x-yil
+                         move x-tarih    to grd1-col0
+                                 
+                         |||||kontenjannn
+                                      
+*                         initialize cast-rec web-konum-sat 
+*                         move takvim-anah to cast-anah
+*                         start cast key not < cast-anah invalid
+*                                 continue
+*                         not invalid
+*                         perform until fs-cast ="10"
+*                         read cast next no lock end move "10" to fs-cast
+*                         not end
+*                                 if cast-tarih <> takvim-anah then
+*                                        exit perform
+*                                 end-if
+*                              
+*                                 initialize rez-rec
+*                                 move cast-rez-no to rez-no
+*                                read rez no lock invalid
+*                                        exit perform cycle
+*                                end-read
+*
+*                                if rez-k-g-b <> "K" then
+*                                      exit perform cycle
+*                                end-if
+*
+*                                if rez-durumu = "S" then
+*                                      exit perform cycle
+*                                end-if
+*
+*                                if rez-cik-tar = takvim-anah then
+*                                     exit perform cycle
+*                              end-if
+*
+*                              if rez-acenta <> txt-acenta-kodu then
+*                                    exit perform cycle
+*                              end-if
+*                                
+*                
+*                                 perform varying i from 3 by 3 until i > 60
+*                                         if web-konum-dizi(i) = CAST-ODA-KONUMU then
+*                                                 add 1 to web-konum-satilan(i)
+*                                         end-if
+*                                 end-perform
+*                               
+*
+*                        end-read
+*                        end-perform
+*                        end-start
+                        |||||||||||||||||||||||||||||
+                    
+                         initialize acenhrk-rec web-konum-sat 
+                         move takvim-anah     to ACENHRK-TARIH
+                         move txt-acenta-kodu to ACENHRK-acenta
+                         start acenhrk key not < acenhrk-anah invalid
+                                 continue
+                         not invalid
+                         perform until fs-acenhrk ="10"
+                         read acenhrk next no lock end move "10" to fs-acenhrk
+                         not end
+                                 if ACENHRK-acenta <> txt-acenta-kodu then
+                                     exit perform
+                                 end-if
+                                 if ACENHRK-TARIH <> takvim-anah  then
+                                     exit perform 
+                                 end-if
+
+                                 perform varying i from 3 by 3 until i > 60
+                                     if web-konum-dizi(i) = ACENHRK-ODA-KONUMU then
+                                           if ACENHRK-S-D-T-G = 5 then
+                                                move ACENHRK-SAT-ODA to web-konum-satilan(i)
+                                           end-if
+                                     end-if
+                                 end-perform
+
+                         end-read
+                         end-perform
+                         end-start
+
+
+                           initialize satir-renkleri
+                           perform varying i from 3 by 3 until i > 60
+                                 if web-konum-dizi(i) = spaces then
+                                       exit perform cycle
+                                 end-if
+
+                                 |||||||||||
+                                 initialize webkont-rec twebkont-rec
+                                 move txt-acenta-kodu     to webkont-acenta
+                                 move takvim-anah         to webkont-tarih
+                                 move web-konum-dizi(i)   to webkont-KONUM
+                                 read webkont no lock invalid
+                                         initialize webkont-rec 
+                                 not invalid
+                                        initialize twebkont-rec
+                                        move webkont-rec to twebkont-rec
+                                        write twebkont-rec  invalid
+                                                stop " "
+                                        end-write
+                                 end-read
+                                 initialize kont-kalan
+                                 evaluate i
+                                      when 3
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col1
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col2
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i) 
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan       to z-4  move z-4 to grd1-col3
+                                         end-if
+                                      when 6
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col4
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col5
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col6
+                                         end-if
+                                      when 9
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col7
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col8
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col9
+                                         end-if                                       
+                                      when 12
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col10
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col11
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col12
+                                         end-if                                        
+                                      when 15
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col13
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col14
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col15
+                                         end-if                                         
+                                      when 18
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col16
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col17
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col18
+                                         end-if            
+                                      when 21
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col19
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col20
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col21
+                                         end-if                                        
+                                      when 24
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col22
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col23
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col24
+                                         end-if      
+                                      when 27
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col25
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col26
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col27
+                                         end-if  
+                                      when 30
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col28
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col29
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan       to z-4  move z-4 to grd1-col30
+                                         end-if 
+                                      when 33
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col31
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col32
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan       to z-4  move z-4 to grd1-col33
+                                         end-if                                         
+                                      when 36
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col34
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col35
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col36
+                                         end-if            
+                                      when 39
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col37
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col38
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col39
+                                         end-if                                        
+                                      when 42
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col40
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col41
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col42
+                                         end-if      
+                                      when 45
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col43
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col44
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col45
+                                         end-if  
+                                      when 48
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col46
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col47
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col48
+                                         end-if  
+                                      when 51
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col49
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col50
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col51
+                                         end-if                                         
+                                      when 54
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col52
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col53
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col54
+                                         end-if            
+                                      when 57
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col55
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col56
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col57
+                                         end-if                                        
+                                      when 60
+                                         move twebkont-kontenjan    to z-4  move z-4 to grd1-col58
+                                         move web-konum-satilan(i)  to z-4  move z-4 to grd1-col59
+                                         compute kont-kalan = twebkont-kontenjan - web-konum-satilan(i)
+                                         if  twebkont-kontenjan <> zeroes then
+                                              move kont-kalan        to z-4  move z-4 to grd1-col60
+                                         end-if                     
+                                  end-evaluate
+                                         |\\****************
+                                         if  twebkont-kontenjan <> 0 
+                                                move 481 to kol-kont(i)
+                                         end-if
+                                         if twebkont-kontenjan = zeroes then
+                                                move 0   to kol-kont(i)
+                                         end-if
+                                         if  kont-kalan > 0
+                                                move 299 to kol-kalan(i)
+                                         else
+                                                move 176 to kol-kalan(i)
+                                         end-if
+                                         if  kont-kalan = 0 then move 0 to kol-kalan(i) end-if
+                                         if twebkont-kontenjan = 0 then
+                                                 move 0 to kol-kalan(i) kol-sat(i)
+                                         end-if
+                                         if web-konum-satilan(i) <> zeroes then
+                                                 move 208 to kol-sat(i)
+                                         end-if
+                                      
+                                         |\***************
+                         end-perform
+                    
+                         modify grd1,record-to-add(grd1-record)
+                         modify grd1(satir-say,1), hidden-data = takvim-anah
+                         perform varying i from 3 by 3 until i > 60
+                                modify grd1(satir-say,i - 1 ), cell-color =  kol-kont(i)
+                                modify grd1(satir-say,i     ), cell-color =  kol-sat(i)
+                                modify grd1(satir-say,i + 1 ), cell-color =  kol-kalan(i)
+                         end-perform
+
+                 end-read
+                 end-perform
+                 end-start
+              close takvim webkont twebkont rez cast acenhrk
+
+              modify grd1, mass-update = 0
+      end-evaluate.
+  
+*
+ sc-acenta-Aft-Procedure.
+     open input acenta
+        move txt-acenta-kodu to acenta-kodu
+        read acenta no lock invalid
+             move "Tanimsiz ..."    to txt-acenta-adi 
+        not invalid
+             move acenta-adi        to txt-acenta-adi  
+             display lbl-acenta
+        end-read
+     close acenta
+     .
+*
+ Form1-Ef-1a-Aft-Procedure.
+       open input kodlar02
+       initialize kodlar02-rec 
+       move "A"              to kodlar02-tipi
+       move txt-pansiyon-kodu    to kodlar02-kodu
+       read kodlar02         no lock invalid 
+               move "Tanimsiz ...."        to txt-pansiyon-adi
+       not invalid 
+               continue 
+       end-read   
+       close kodlar02
+       move kodlar02-adi       to txt-pansiyon-adi
+       display lbl-pansiyon.
+*
+ Form1-Ev-Other.
+     
+     .
+*
+ grd1-Ev-Other.
+       evaluate event-type  
+            when 16396
+               modify grd1,start-x = 0 , start-y = 0  
+            when msg-begin-entry
+               modify grd1,start-x = 0 , start-y = 0
+               if event-data-1  = 3 
+               or event-data-1  = 6
+               or event-data-1  = 9
+               or event-data-1  = 12
+               or event-data-1  = 15
+               or event-data-1  = 18
+               or event-data-1  = 21
+               or event-data-1  = 24
+               or event-data-1  = 27
+               or event-data-1  = 30
+               or event-data-1  = 33
+               or event-data-1  = 36
+               or event-data-1  = 39
+               or event-data-1  = 42 
+               or event-data-1  = 45
+               or event-data-1  = 48
+               or event-data-1  = 51
+               or event-data-1  = 54
+               or event-data-1  = 57
+               or event-data-1  = 60
+                       move event-action-fail to event-action
+               end-if
+            when msg-finish-entry
+               perform grid-deger-oku-yaz
+       end-evaluate
+     .
+
+*
+ grid-deger-oku-yaz.
+     
+            inquire grd1, x in sutun , y in satir
+
+                 inquire grd1(1,sutun), Cell-Data deger
+                 if deger = "Kont" then
+                         inquire grd1(satir,sutun + 1 ), cell-data secili-sat 
+                         inquire grd1(satir,sutun + 2 ), cell-data secili-kal
+                         inquire grd1(satir,sutun     ), Cell-Data secili-kon
+
+                         compute secili-kal = secili-kon - secili-sat
+                         if secili-kon = zeroes then move 0 to secili-kal end-if 
+                         move secili-kon to z-4
+                         modify  grd1(satir,sutun), cell-data z-4
+                         move secili-kal to z-4
+                         modify  grd1(satir,sutun + 2 ), cell-data z-4
+                 end-if
+                 if deger = "Kalan" then
+                         inquire grd1(satir,sutun - 1 ), cell-data secili-sat 
+                         inquire grd1(satir,sutun     ), cell-data secili-kal
+                         inquire grd1(satir,sutun - 2 ), Cell-Data secili-kon
+
+                         compute secili-kon  = secili-sat + secili-kal 
+                         move secili-kon to z-4
+                         modify  grd1(satir,sutun - 2 ), cell-data z-4
+                         move secili-kal to z-4
+                         modify  grd1(satir,sutun), cell-data z-4
+
+                 end-if
+
+
+                 open i-o twebkont
+                         initialize twebkont-rec
+                         inquire grd1(satir,1), hidden-data twebkont-TARIH 
+                         inquire grd1(1,sutun), hidden-data twebkont-konum
+                         
+                         if twebkont-konum = zeroes then
+                               modify  grd1(satir,sutun), cell-data " "
+                               close twebkont
+                               exit paragraph
+                         end-if
+
+                         move txt-acenta-kodu       to twebkont-acenta
+                         read twebkont no lock invalid
+                               move secili-kon  to  twebkont-kontenjan
+                               write twebkont-rec invalid
+                                       stop "Kontenjan Yazilamadi"
+                               end-write
+                         not invalid
+                               move secili-kon  to  twebkont-kontenjan
+                               rewrite twebkont-rec invalid
+                                       stop "Kontenjan Yazilamadi"
+                               end-rewrite
+                         end-read
+                         
+                         if  secili-kon <> 0 
+                                move 481 to kol-kont(60)
+                         end-if
+                         if secili-kon = zeroes then
+                                move 0   to kol-kont(60)
+                         end-if
+                         if  secili-kal > 0
+                                move 299 to kol-kalan(60)
+                         else
+                                move 176 to kol-kalan(60)
+                         end-if 
+
+                         if secili-kal = 0 then move 0 to kol-kalan(60) end-if
+                         if secili-kon = 0 then
+                                move 0 to kol-kalan(60) kol-sat(60)
+                         end-if
+                         if secili-sat <> zeroes then
+                                move 208 to kol-sat(60)
+                         end-if
+                          if deger = "Kont" then
+                                 modify grd1(satir,sutun     ), cell-color =  kol-kont(60)
+                                 modify grd1(satir,sutun + 1 ), cell-color =  kol-sat(60)
+                                 modify grd1(satir,sutun + 2 ), cell-color =  kol-kalan(60)
+                         else
+                                 modify grd1(satir,sutun - 2 ), cell-color =  kol-kont(60)
+                                 modify grd1(satir,sutun - 1 ), cell-color =  kol-sat(60)
+                                 modify grd1(satir,sutun     ), cell-color =  kol-kalan(60)
+                         end-if
+                 close twebkont.                  
+*
+ Form1-Mn-1-MI-DegerAta-Link.
+           perform Acu-Form2-Routine
+         .
+*
+ Form2-Pb-1-Link.
+  
+          initialize st-x st-y  end-x end-y 
+          inquire grd1,
+                     start-x          in st-x
+                     start-y          in st-y                     
+                     cursor-x         in end-x
+                     cursor-y         in end-y.
+          if st-x = 0 
+             move end-x       to st-x
+          end-if 
+          if st-y = 0 
+             move end-y       to st-y
+          end-if 
+
+                
+
+          open i-o twebkont
+          perform varying sutun from st-x by 1 until sutun > end-x
+               perform varying satir from st-y by 1 until satir > end-y
+
+
+                        inquire grd1(1,sutun), Cell-Data deger
+                        if deger <> "Kont" 
+                             if deger <> "Kalan" 
+                                exit perform cycle
+                             end-if
+                         END-IF
+
+                         move txt-deg-fiyat to z-4                         
+                         initialize twebkont-rec
+                         inquire grd1(satir,1), hidden-data twebkont-TARIH 
+                         inquire grd1(1,sutun), hidden-data twebkont-konum
+                         if twebkont-konum = zeroes then
+                                    exit perform cycle
+                         end-if
+                         move txt-acenta-kodu       to twebkont-acenta
+                         read twebkont no lock invalid
+                               move z-4  to  twebkont-kontenjan
+                               write twebkont-rec invalid
+                                       stop " "
+                               end-write
+                         not invalid
+                               move z-4  to  twebkont-kontenjan
+                               rewrite twebkont-rec invalid
+                                       stop " "
+                               end-rewrite
+                         end-read
+                         modify grd1(satir,sutun), cell-data z-4
+
+                         if deger = "Kont" then
+                                 inquire grd1(satir,sutun + 1 ), cell-data secili-sat 
+                                 inquire grd1(satir,sutun + 2 ), cell-data secili-kal
+                                 inquire grd1(satir,sutun     ), Cell-Data secili-kon
+        
+                                 compute secili-kal = secili-kon - secili-sat
+                                 if secili-kon = zeroes then move 0 to secili-kal end-if 
+                                 move secili-kon to z-4
+                                 modify  grd1(satir,sutun), cell-data z-4
+                                 move secili-kal to z-4
+                                 modify  grd1(satir,sutun + 2 ), cell-data z-4
+                          end-if
+                          if deger = "Kalan" then
+                                 inquire grd1(satir,sutun - 1 ), cell-data secili-sat 
+                                 inquire grd1(satir,sutun     ), cell-data secili-kal
+                                 inquire grd1(satir,sutun - 2 ), Cell-Data secili-kon
+        
+                                 compute secili-kon  = secili-sat + secili-kal 
+                                 move secili-kon to z-4
+                                 modify  grd1(satir,sutun - 2 ), cell-data z-4
+                                 move secili-kal to z-4
+                                 modify  grd1(satir,sutun), cell-data z-4
+                         end-if 
+
+                         if  secili-kon <> 0 
+                                move 481 to kol-kont(60)
+                         end-if
+                         if secili-kon = zeroes then
+                                move 0   to kol-kont(60)
+                         end-if
+                         if  secili-kal > 0
+                                move 299 to kol-kalan(60)
+                         else
+                                move 176 to kol-kalan(60)
+                         end-if
+                         if secili-kal = 0 then move 0 to kol-kalan(60) end-if
+                         if secili-kon = 0 then
+                                move 0 to kol-kalan(60) kol-sat(60)
+                         end-if
+                         if secili-sat <> zeroes then
+                                move 208 to kol-sat(60)
+                         end-if
+                          if deger = "Kont" then
+                                 modify grd1(satir,sutun     ), cell-color =  kol-kont(60)
+                                 modify grd1(satir,sutun + 1 ), cell-color =  kol-sat(60)
+                                 modify grd1(satir,sutun + 2 ), cell-color =  kol-kalan(60)
+                         else
+                                 modify grd1(satir,sutun - 2 ), cell-color =  kol-kont(60)
+                                 modify grd1(satir,sutun - 1 ), cell-color =  kol-sat(60)
+                                 modify grd1(satir,sutun     ), cell-color =  kol-kalan(60)
+                         end-if
+
+               end-perform
+          end-perform
+         close twebkont
+         set exit-pushed to true
+     .
+*
+ Form1-Mn-1-MI-GridSeciliKopyala-Link.
+          initialize st-x st-y  end-x end-y 
+          inquire grd1,
+                     start-x          in st-x
+                     start-y          in st-y                     
+                     cursor-x         in end-x
+                     cursor-y         in end-y.
+          if st-x = 0 
+             move end-x       to st-x
+          end-if 
+          if st-y = 0 
+             move end-y       to st-y
+          end-if 
+
+          initialize secili-grid-dizi sec-sat-art sec-sut-art
+          perform varying sutun from st-x by 1 until sutun > end-x
+               add 1 to sec-sut-art
+               initialize sec-sat-art
+               perform varying satir from st-y by 1 until satir > end-y            
+                         add 1 to sec-sat-art
+                         inquire grd1(satir,sutun), cell-data z-4
+                         move z-4      
+                         to secili-grid-fiyat-dizi(sec-sat-art,sec-sut-art)
+               end-perform
+          end-perform
+
+     .
+*
+ Form1-Mn-1-MI-GridSeciliYapýþtýr-Link.
+ 
+          initialize st-x st-y  end-x end-y 
+          inquire grd1,
+                     start-x          in st-x
+                     start-y          in st-y                     
+                     cursor-x         in end-x
+                     cursor-y         in end-y 
+         
+       if  st-x = 0 or st-x = 0 then
+               display message box "Lutfen Gridden Veri Aktarilacak Alanlari Seciniz !."
+               modify grd1,start-x = 0 , start-y = 0
+               exit paragraph
+       end-if
+
+          compute satir-fark = (end-y + 1 ) - st-y 
+          compute sutun-fark = (end-x + 1 ) - st-x 
+        
+                |SALIH
+          open i-o twebkont
+          perform varying i from 1 by 1 until i > satir-fark
+               perform varying k from 1 by 1 until k > sutun-fark 
+                        compute init-sutun = st-x - 1 
+                        COMPUTE init-satir = st-y - 1
+                        move secili-grid-fiyat-dizi(i,k) to z-4
+
+                        initialize twebkont-rec
+                        inquire grd1(init-satir + i ,1), hidden-data twebkont-TARIH 
+                        inquire grd1(1, init-sutun + k), hidden-data twebkont-konum
+                        if twebkont-konum = zeroes then
+                                  exit perform cycle
+                        end-if
+        
+                        move txt-acenta-kodu       to twebkont-acenta
+                        read twebkont no lock invalid
+                             move z-4  to  twebkont-kontenjan
+                             write twebkont-rec invalid
+                                     stop " "
+                             end-write
+                        not invalid
+                             move z-4  to  twebkont-kontenjan
+                             rewrite twebkont-rec invalid
+                                     stop " "
+                             end-rewrite
+                        end-read
+
+                        modify grd1(init-satir + i , init-sutun + k) , cell-data = z-4
+               end-perform
+          end-perform
+          close twebkont
+          modify grd1,start-x = 0 , start-y = 0
+     .
+*
+ Form1-Mn-1-MI-Yapistir-Link.
+     if is-remote             
+        perform clipboard-islem 
+     else
+        perform clipboard-islem-yerel
+     end-if.
+*
+ clipboard-islem.
+     modify grd1, mass-update = 1
+
+     initialize buf
+     call "@[DISPLAY]:C:\windows\system32\user32.dll" 
+     on exception
+           display message box "user32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph
+     end-call.
+     call "@[DISPLAY]:C:\windows\system32\kernel32.dll" on exception
+           display message box "kernel32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:C:\windows\system32\msvcrt.dll" on exception
+           display message box "msvcrt.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:OpenClipboard" using by value 0
+          giving hwnd.
+
+     call "@[DISPLAY]:GetClipboardData" using by value cf_text
+                                        giving hglobal.
+
+     call "@[DISPLAY]:GlobalLock" using by value hglobal
+                                  returning ptr
+
+     call "@[DISPLAY]:lstrlenA" using by value ptr 
+                               returning boy.
+
+     if boy > 0
+     call "@[DISPLAY]:RtlMoveMemory" using by reference buf
+                                     by value ptr
+                                     by value boy
+     end-call
+     
+             perform clip-to-grid
+        end-if
+
+     call "@[DISPLAY]:GlobalUnlock" using hglobal.
+     call "@[DISPLAY]:CloseClipboard".
+     cancel "@[DISPLAY]:user32.dll".
+     cancel "@[DISPLAY]:kernel32.dll".
+     cancel "@[DISPLAY]:msvcrt.dll".     
+     modify grd1, mass-update = 0 
+     .
+*
+ clipboard-islem-yerel.
+
+      modify grd1, mass-update = 1
+     initialize buf
+     call "user32.dll" 
+     on exception
+           display message box "user32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph
+     end-call      .
+     call "kernel32.dll" on exception
+           display message box "kernel32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "msvcrt.dll" on exception
+           display message box "msvcrt.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "OpenClipboard" using by value 0
+          giving hwnd.
+
+     call "GetClipboardData" using by value cf_text
+                                        giving hglobal.
+
+     call "GlobalLock" using by value hglobal
+                                  returning ptr
+
+     call "lstrlenA" using by value ptr 
+                               returning boy.
+
+     if boy > 0
+     call "RtlMoveMemory" using by reference buf
+                                     by value ptr
+                                     by value boy
+     end-call
+           
+            perform clip-to-grid
+        end-if
+     call "GlobalUnlock" using hglobal.
+     call "CloseClipboard".
+     cancel "user32.dll".
+     cancel "kernel32.dll".
+     cancel "msvcrt.dll".
+     modify grd1, mass-update = 0.
+
+*
+ clip-to-grid.
+
+
+     initialize  satirm sutunm  konum-tasti tarih-tasti
+            initialize sayac
+            move 1 to sayac
+            perform varying k 
+                    from 1 
+                    by 1 
+                    until k > ust-occ                        
+                         unstring buf delimited by x"0d0a"
+                         into satirx(k)   pointer sayac
+                          if sayac > 100000  then exit perform end-if
+                         
+                            add 1 to satirm
+                         initialize sayac2
+                         move 1 to sayac2
+                         initialize sutunm
+                         
+                         perform varying l 
+                                 from 1 
+                                 by 1 
+                                 until l > 40
+                                
+                                  unstring satirx(k) delimited by x"09"
+                                       into sutunx(k,l)   pointer sayac2
+                                        add 1 to sutunm 
+                                   if sayac2 > 21000  then exit perform end-if
+                                    
+                         end-perform
+            end-perform
+             
+          initialize st-x st-y  end-x end-y 
+          inquire grd1,
+                                        
+                     cursor-x         in st-x
+                     cursor-y         in st-y 
+
+        
+             compute    end-x = st-x    + sutunm  - 1 
+          compute end-y = st-y + satirm  - 1    
+
+          if  st-x = 0 or st-x = 0 then
+               display message box "Lutfen Gridden Veri Aktarilacak Alanlari Seciniz !."
+               modify grd1,start-x = 0 , start-y = 0
+          else
+
+                 
+                   
+                  compute satir-fark = (end-y + 1 ) - st-y 
+                  compute sutun-fark = (end-x + 1 ) - st-x 
+               open i-o twebkont
+                   initialize sec-sat-art sec-sut-art
+                   perform varying m 
+                           from 1 
+                           by 1 
+                           until m > satir-fark            
+                           initialize grd1-record
+                           move m     to zzz
+                           move zzz   to grd1-col1
+        
+                         |  initialize satir-okundu
+                         |  perform varying init from 1 by 1 until init > sutun-fark
+                         |         if function numval(sutunx(m,init)) <> zeroes then
+                         |                move 1 to satir-okundu
+                         |         end-if
+                         |  end-perform
+        
+                         |  if satir-okundu = zeroes then
+                         |     exit perform cycle
+                         | end-if
+                        
+                           initialize init-sutun
+                           perform varying init from 1 by 1 until init > sutun-fark 
+                                  compute init-sutun = init - 1 
+                                  if v-ayrac = 1 
+                                      inspect sutunx(m,init)
+                                                  converting "," to x"01"
+                                          inspect sutunx(m,init)
+                                                  converting "." to ","
+                                          inspect sutunx(m,init)
+                                                  converting x"01" to "."
+
+
+                                  end-if
+
+                             inquire grd1(1,st-x + init-sutun), Cell-Data deger
+                             if deger <> "Kont" 
+                                  if deger <> "Kalan" 
+                                     exit perform cycle
+                                  end-if
+                             END-IF
+                           
+                             move function numval(sutunx(m,init))to copy-fiyat
+
+                                  move copy-fiyat to z-4
+
+                                  initialize twebkont-rec
+                                  inquire grd1(st-y + sec-sat-art,1), hidden-data twebkont-TARIH 
+                                  if twebkont-TARIH not > "20000000" then 
+                                    if tarih-tasti = 0                   
+                                     display message box "Kopyalanan Tarih  tasti " new-line 
+                                                          "Kontrol ediniz.."
+                                         move 1 to tarih-tasti
+                                    end-if
+                                        exit perform cycle
+                                   end-if
+
+                                  inquire grd1(1,st-x + init-sutun),   hidden-data twebkont-konum
+                                  if twebkont-konum = zeroes then
+                                      if konum-tasti = 0
+                                     display message box "Kopyalanan Konum tasti " new-line 
+                                                          "Kontrol ediniz.."
+                                         move 1 to konum-tasti
+                                    end-if
+                                            exit perform cycle
+                                  end-if
+        
+                                  move txt-acenta-kodu       to twebkont-acenta
+                                  read twebkont no lock invalid
+                                       move z-4  to  twebkont-kontenjan
+                                       write twebkont-rec invalid
+                                               stop "Kontenjan Yazilamadi !"
+                                       end-write
+                                  not invalid
+                                       move z-4  to  twebkont-kontenjan
+                                       rewrite twebkont-rec invalid
+                                                stop "Kontenjan Yazilamadi !"
+                                       end-rewrite
+                                  end-read
+        
+                                  modify grd1(st-y + sec-sat-art ,st-x + init-sutun),cell-data = z-4
+                           ||||||||||**********excelden gelen rakamlarý reklendýrme fark bulma
+                             inquire grd1(1,st-x + init-sutun), Cell-Data deger
+                             if deger = "Kont" then
+                                     inquire grd1(st-y + sec-sat-art,st-x + init-sutun + 1 ), cell-data secili-sat 
+                                     inquire grd1(st-y + sec-sat-art,st-x + init-sutun + 2 ), cell-data secili-kal
+                                     inquire grd1(st-y + sec-sat-art,st-x + init-sutun     ), Cell-Data secili-kon
+      
+                                     compute secili-kal = secili-kon - secili-sat 
+                                     if secili-kon = zeroes then move 0 to secili-kal end-if
+                                     move secili-kon to z-4
+                                     modify  grd1(st-y + sec-sat-art,st-x + init-sutun     ), cell-data z-4
+                                     move secili-kal to z-4
+                                     modify  grd1(st-y + sec-sat-art,st-x + init-sutun + 2 ), cell-data z-4
+                             end-if
+                             if deger = "Kalan" then
+                                     inquire grd1(st-y + sec-sat-art,st-x + init-sutun - 1 ), cell-data secili-sat 
+                                     inquire grd1(st-y + sec-sat-art,st-x + init-sutun     ), cell-data secili-kal
+                                     inquire grd1(st-y + sec-sat-art,st-x + init-sutun - 2 ), Cell-Data secili-kon
+                            
+                                     compute secili-kon  = secili-sat + secili-kal 
+                                     move secili-kon to z-4
+                                     modify  grd1(st-y + sec-sat-art,st-x + init-sutun - 2 ), cell-data z-4
+                                     move secili-kal to z-4
+                                     modify  grd1(st-y + sec-sat-art,st-x + init-sutun     ), cell-data z-4
+                             end-if 
+
+                                 if secili-kon <> 0 
+                                        move 481 to kol-kont(60)
+                                 end-if
+                                 if secili-kon = zeroes then
+                                        move 0   to kol-kont(60)
+                                 end-if
+                                 if  secili-kal > 0
+                                        move 299 to kol-kalan(60)
+                                 else
+                                        move 176 to kol-kalan(60)
+                                 end-if
+                                 if secili-kal = 0 then move 0 to kol-kalan(60) end-if
+                                 if secili-kon = 0 then
+                                        move 0 to kol-kalan(60) kol-sat(60)
+                                 end-if
+                                 if secili-sat <> zeroes then
+                                        move 208 to kol-sat(60)
+                                 end-if
+                                 if deger = "Kont" then
+                                         modify grd1(st-y + sec-sat-art,st-x + init-sutun     ), cell-color =  kol-kont(60)
+                                         modify grd1(st-y + sec-sat-art,st-x + init-sutun + 1 ), cell-color =  kol-sat(60)
+                                         modify grd1(st-y + sec-sat-art,st-x + init-sutun + 2 ), cell-color =  kol-kalan(60)
+                                 else
+                                         modify grd1(st-y + sec-sat-art,st-x + init-sutun - 2 ), cell-color =  kol-kont(60)
+                                         modify grd1(st-y + sec-sat-art,st-x + init-sutun - 1 ), cell-color =  kol-sat(60)
+                                         modify grd1(st-y + sec-sat-art,st-x + init-sutun     ), cell-color =  kol-kalan(60)
+                                 end-if
+
+                           ||||||||******************
+                           end-perform
+                           add 1 to sec-sat-art
+                   end-perform
+                close twebkont
+                modify grd1,start-x = 0 , start-y = 0.
+  
+*
+ Form1-Mn-1-MI-Sil-Link.
+        initialize st-x st-y  end-x end-y 
+          inquire grd1,
+                     start-x          in st-x
+                     start-y          in st-y                     
+                     cursor-x         in end-x
+                     cursor-y         in end-y.
+          if st-x = 0 
+             move end-x       to st-x
+          end-if 
+          if st-y = 0 
+             move end-y       to st-y
+          end-if 
+
+          open i-o twebkont
+          perform varying sutun from st-x by 1 until sutun > end-x
+               perform varying satir from st-y by 1 until satir > end-y
+                         move 0 to z-4
+                         initialize twebkont-rec
+                         inquire grd1(satir,1), hidden-data twebkont-TARIH 
+                         inquire grd1(1,sutun), hidden-data twebkont-konum
+                         if twebkont-konum = zeroes then
+                                    exit perform cycle
+                         end-if
+                         move txt-acenta-kodu       to twebkont-acenta
+                         read twebkont no lock invalid
+                               move z-4  to  twebkont-kontenjan
+                               write twebkont-rec invalid
+                                       stop " "
+                               end-write
+                         not invalid
+                               move z-4  to  twebkont-kontenjan
+                               rewrite twebkont-rec invalid
+                                       stop " "
+                               end-rewrite
+                         end-read
+                         modify grd1(satir,sutun), cell-data z-4
+               end-perform
+          end-perform
+         close twebkont
+     .
+*
+ Form2-Aft-Initdata.
+      initialize txt-deg-fiyat
+      display Form2-Ef-1
+     .
+*
+ Form3-Aft-Initdata.
+
+*          open i-o  webflog
+*                 
+*                 modify grd2,reset-grid = 1
+*                 move "Tarih " to grd2-col1
+*                 move "Zaman"  to grd2-col2
+*                move "Staf"   to grd2-col3
+*                 move "Izle"   to grd2-col4
+*                 modify grd2,record-to-add(grd2-record)
+*
+*                 initialize webflog-rec e-tarih e-zaman   log-grid-say
+*                 move 1 to log-grid-say
+*                 MOVE txt-acenta-kodu TO WEBFLOG-ACENTA
+*                 start webflog key not < WEBFLOG-ANAH1 invalid
+*                         continue
+*                 not invalid
+*                 perform until fs-webflog = "10"
+*                 read webflog next no lock end move "10" to fs-webflog
+*                 not end
+*                         if WEBFLOG-ACENTA <> txt-acenta-kodu
+*                               exit perform  
+*                         end-if
+*
+*                         if ( WEBFLOG-LOG-TARIH <> e-tarih or e-tarih = spaces ) or
+*                            ( webflog-log-zaman <> e-zaman or e-zaman = spaces ) then
+*                                 initialize grd2-record 
+*                                 move WEBFLOG-LOG-TARIH-YIL to x-yil
+*                                 move WEBFLOG-LOG-TARIH-ay  to x-ay
+*                                 move WEBFLOG-LOG-TARIH-gun to x-gun
+*                                 move x-tarih               to grd2-col1
+*        
+*                                 move webflog-log-zaman-saat   to x-saat
+*                                 move webflog-log-zaman-dakika to x-dakika
+*                                 move webflog-log-zaman-saniye to x-saniye
+*                                 move x-zaman                  to grd2-col2
+        
+*                                 MOVE webflog-log-staf         to grd2-col3
+*  
+*                                 add 1 to log-grid-say
+*                                 modify grd2(log-grid-say,4),  bitmap = buyut-bmp
+*                                                               bitmap-number = 1
+*                                                               bitmap-width  = 16
+*                                                               color = 0 
+*
+*
+*                                 modify grd2,record-to-add(grd2-record)
+*                                 move WEBFLOG-ANAH    to link-deger
+*                                 modify grd2(log-grid-say,5) hidden-data = link-deger 
+*                         end-if
+*
+*                         move WEBFLOG-LOG-TARIH to e-tarih
+*                         move webflog-log-zaman to e-zaman
+*
+*                 end-read
+*                 end-perform
+*                 end-start
+*                 close webflog.
+*
+ grd2-Ev-Other.
+*       evaluate event-type
+*             when msg-begin-entry
+*                 move event-action-fail to event-action
+*             when msg-bitmap-Dblclick
+*                   initialize link-log-anah
+*                   inquire grd2, y in satir
+*                   inquire grd2(satir,5), hidden-data  =  link-log-anah
+*                   call "/asya/ytl/obj/otel/lwebkont.asy"  using link-log-anah
+*                        on exception 
+*                        perform callerr-proc
+*                        exit paragraph
+*                        not on exception 
+*                   cancel "/asya/ytl/obj/otel/lwebkont.asy"
+*                   end-call                                 
+*       end-evaluate                                         
+        continue.
+
+ 

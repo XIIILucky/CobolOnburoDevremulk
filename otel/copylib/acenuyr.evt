@@ -1,0 +1,471 @@
+* acenuyr.evt
+* acenuyr.evt is generated from D:\asya\acugt.ytl\otel\acenuyr.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     open input genel
+     initialize genel-rec
+     move 1 to genel-anahtar
+     read genel no lock invalid 
+         continue 
+     end-read 
+     close genel.
+*
+ exception-procedure.
+     evaluate key-status
+         when 1
+              if control-id = 16
+                 initialize acenta-cagir
+                 call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+                     on exception perform callerr-proc
+                     not on exception
+                     cancel "/asya/ytl/obj/otel/acenara.asy" 
+                 end-call
+                 move acenta-cagir     to acc-acenta-kodu
+                 display acc-1301
+                 move 4  to accept-control
+                 move 16 to control-id
+              end-if   
+         when 2
+              open i-o acenta aceuyruk
+              if acc-acenta-kodu = spaces 
+                 display message box "Acenta kodu bos gecilemez ..."
+                 move 4  to accept-control
+                 move 16 to control-id
+                 close acenta aceuyruk
+                 exit paragraph
+              else 
+                 initialize acenta-rec 
+                 move acc-acenta-kodu to acenta-kodu
+                 read acenta no lock invalid
+                      display message box "Acenta kodu tanimsiz lutfen kontrol ediniz.."
+                      move 4  to accept-control
+                      move 16 to control-id
+                      close acenta aceuyruk
+                      exit paragraph
+                 not invalid
+                     move kon-bas-tar to tmp-tar
+                     perform tarih-kontrol
+                     if gec-gecme = 0
+                        display message box "Konaklama baslangic tarihi tanimsiz.."
+                        move 4  to accept-control
+                        move 23 to control-id
+                        close acenta aceuyruk
+                        exit paragraph
+                     end-if
+                     move kon-bit-tar to tmp-tar
+                     perform tarih-kontrol
+                     if gec-gecme = 0
+                        display message box "Konaklama bitis tarihi tanimsiz.."
+                        move 4  to accept-control
+                        move 25 to control-id
+                        close acenta aceuyruk
+                        exit paragraph
+                     end-if
+                     move sat-bas-tar to tmp-tar
+                     perform tarih-kontrol
+                     if gec-gecme = 0
+                        display message box "Satis baslangic tarihi tanimsiz.."
+                        move 4  to accept-control
+                        move 12 to control-id
+                        close acenta aceuyruk
+                        exit paragraph
+                     end-if
+                     move sat-bit-tar to tmp-tar
+                     perform tarih-kontrol
+                     if gec-gecme = 0
+                        display message box "Satis bitis tarihi tanimsiz.."
+                        move 4  to accept-control
+                        move 18 to control-id
+                        close acenta aceuyruk
+                        exit paragraph
+                     end-if
+                     if kon-bit-tar < kon-bas-tar
+                        display message box "Konaklama bitis tarihi baslangic tarihinden kucuk olamaz.."
+                        move 4  to accept-control
+                        move 23 to control-id
+                        close acenta aceuyruk
+                        exit paragraph
+                     end-if   
+                     if sat-bit-tar < sat-bas-tar
+                        display message box "Satis bitis tarihi baslangic tarihinden kucuk olamaz.."
+                        move 4  to accept-control
+                        move 12 to control-id
+                        close acenta aceuyruk
+                        exit paragraph
+                     end-if   
+                 end-read
+              end-if
+              initialize secim-durumu son-satir 
+              inquire form1-gd-1,last-row in son-satir 
+*              compute son-satir = son-satir - 1
+              initialize k i   
+              perform varying i from 1 by 1 until i > son-satir
+        
+                 compute k = i + 1
+                 inquire form1-gd-1(k ,1),
+                         hidden-data secim-durumu
+                 inquire form1-gd-1(k ,2),
+                         cell-data tmp-uyruk 
+                 if secim-durumu not = "E"
+                    initialize aceuyruk-rec 
+                    move acc-acenta-kodu to aceuyruk-acenta
+                    move tmp-uyruk       to aceuyruk-uyruk
+                    read aceuyruk no lock invalid       
+                         exit perform cycle
+                    not invalid
+                        delete aceuyruk end-delete
+                    end-read
+                 else
+                    initialize aceuyruk-rec 
+                    move acc-acenta-kodu to aceuyruk-acenta
+                    move tmp-uyruk       to aceuyruk-uyruk
+                    read aceuyruk no lock invalid       
+                         continue
+                    end-read
+                    move kon-bas-tar to aceuyruk-k-bas-tar
+                    move kon-bit-tar to aceuyruk-k-bit-tar
+                    move sat-bas-tar to aceuyruk-s-bas-tar
+                    move sat-bit-tar to aceuyruk-s-bit-tar
+                    write aceuyruk-rec invalid
+                          rewrite aceuyruk-rec end-rewrite 
+                    end-write 
+                 end-if 
+                    
+              end-perform 
+              close acenta aceuyruk
+              display message box "Kayit islemi tamamlandi.."
+         when 4
+              perform raporla
+     end-evaluate.
+*
+ Raporla.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                    to det-dokumer-20(1:)
+     move "Tanimli Acenta Uyruk Raporu" to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                    to det-dokumer-20(1:)
+     move "Tanimli Acenta Uyruk Raporu" to det-filler
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+     move "B"                    to det-dokumer-20(1:)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O"                    to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "RLLLLLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR 
+     initialize dokumer-rec detay
+     move "D1"                      to det-dokumer-20(1:)     
+     move "Acenta"                  to det-1
+     move "Uyruk"                   to det-2
+     move "K.Bas.T."                to det-3
+     move "K.Bit.T."                to det-4
+     move "S.Bas.T."                to det-5
+     move "S.Bit.T."                to det-6
+     move all "|" to fil-1 fil-2 fil-3 
+                     fil-4 fil-5 fil-6  
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"         to det-dokumer-20(1:)     
+     move "-"          to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 
+                     det-4 det-5 det-6 
+     write dokumer-rec from detay
+
+     open input aceuyruk 
+     initialize aceuyruk-rec 
+     start aceuyruk key not < aceuyruk-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-aceuyruk = "10"
+     read aceuyruk next no lock end move "10" to fs-aceuyruk
+     not at end 
+         initialize dokumer-rec detay
+         move aceuyruk-acenta    to det-1
+         move aceuyruk-uyruk     to det-2
+         move aceuyruk-k-bas-tar to det-3
+         move aceuyruk-k-bit-tar to det-4
+         move aceuyruk-s-bas-tar to det-5
+         move aceuyruk-s-bit-tar to det-6
+         write dokumer-rec from detay
+     end-read
+     end-perform 
+     end-start
+
+     initialize dokumer-rec detay
+     move "-"     to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 
+                     det-4 det-5 det-6 
+     write dokumer-rec from detay
+
+     close dokumer aceuyruk 
+     call dokumer-prog on exception
+          perform callerr-proc
+     not on exception
+          cancel dokumer-prog
+     end-call
+     delete file dokumer.
+*
+ tarih-kontrol.
+      open input takvim
+      initialize takvim-rec
+      move tmp-tar to takvim-anah
+      read takvim no lock invalid
+           |move 0 to gec-gecme
+           move 1 to gec-gecme
+      not invalid
+           move 1 to gec-gecme
+      end-read
+      close takvim.
+*
+ form1-aft-initdata.
+      move tarih-tasi  to kon-bas-tar kon-bit-tar
+                          sat-bas-tar sat-bit-tar
+      move 1           to kon-bas-gun kon-bas-ay
+                          sat-bas-gun sat-bas-ay
+      move 12          to kon-bit-ay  sat-bit-ay
+      move 31          to kon-bit-gun sat-bit-gun
+                          
+      display acc-1302 acc-1303 acc-1304 
+              acc-1305 acc-1306 acc-1307    
+              acc-1308 acc-1309 acc-1310
+              acc-1311 acc-1312 acc-1313
+      perform baslik-yukle
+     .
+*
+ acc-1301-Aft-Procedure.
+     if acc-acenta-kodu <> spaces
+        open input acenta 
+        initialize acenta-rec 
+        move acc-acenta-kodu to acenta-kodu
+        read acenta no lock invalid
+             modify lb-1302, title = "Tanimsiz Acenta Kodu.."
+        not invalid
+             modify lb-1302, title = acenta-adi
+        end-read
+        perform baslik-yukle
+        perform grid-yukle
+        open i-o aceuyruk
+        initialize aceuyruk-rec 
+        move acc-acenta-kodu to aceuyruk-acenta
+        start aceuyruk key not < aceuyruk-anah invalid
+              continue
+        not invalid
+        perform with test after until fs-aceuyruk  = "10"
+        read aceuyruk next no lock end move "10" to fs-aceuyruk
+        not at end 
+            if aceuyruk-acenta = acc-acenta-kodu
+               move aceuyruk-k-bas-tar to kon-bas-tar
+               move aceuyruk-k-bit-tar to kon-bit-tar
+               move aceuyruk-s-bas-tar to sat-bas-tar
+               move aceuyruk-s-bit-tar to sat-bit-tar
+               display acc-1302 acc-1303 acc-1304 
+                       acc-1305 acc-1306 acc-1307
+                       acc-1308 acc-1309 acc-1310
+                       acc-1311 acc-1312 acc-1313
+               exit perform
+            else 
+               exit perform 
+            end-if
+        end-read
+        end-perform
+        end-start
+        close acenta aceuyruk
+     else
+        modify lb-1302, title = "Tanimsiz Acenta Kodu.." 
+     end-if
+     .
+*
+ acc-1304-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec 
+     move kon-bas-tar to takvim-anah
+     read takvim no lock invalid
+          display message box "Konaklama baslangic tarihi tanimsiz.."
+          move 4  to accept-control
+          move 23 to control-id
+     end-read
+     close takvim
+     .
+*
+ acc-1307-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec gec-gecme
+     move kon-bit-tar to takvim-anah
+     read takvim no lock invalid
+          |display message box "Konaklama bitis tarihi tanimsiz.."
+          move 4 to accept-control
+          move 25 to control-id
+          move 1 to gec-gecme
+     not invalid
+         move 1 to gec-gecme
+     end-read
+     close takvim
+     if gec-gecme <> 0 and kon-bit-tar < kon-bas-tar
+        |display message box "Konaklama bitis tarihi baslangic tarihinden kucuk olamaz."
+        move 4 to accept-control
+        move 25 to control-id
+     end-if
+     .
+*
+ acc-1310-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec gec-gecme
+     move sat-bas-tar to takvim-anah
+     read takvim no lock invalid
+          |display message box "Satis baslangic tarihi tanimsiz.."
+          move 4  to accept-control
+          move 17 to control-id
+          move 1 to gec-gecme
+     end-read
+     close takvim
+     .
+*
+ acc-1313-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec gec-gecme
+     move sat-bit-tar to takvim-anah
+     read takvim no lock invalid
+          |display message box "Satis bitis tarihi tanimsiz."
+          move 4 to accept-control
+          move 18 to control-id
+     not invalid
+         move 1 to gec-gecme
+     end-read
+     close takvim
+     if gec-gecme <> 0 and sat-bit-tar < sat-bas-tar
+       | display message box "Satis bitis tarihi baslangic tarihinden kucuk olamaz."
+        move 4 to accept-control
+        move 18 to control-id
+     end-if
+      move 1 to gec-gecme
+     .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+         when msg-begin-entry     
+              move event-action-fail to event-action
+              initialize secim-durumu son-satir
+              inquire form1-gd-1,last-row in son-satir
+*              if son-satir not = event-data-2
+                 inquire form1-gd-1(event-data-2,1),hidden-data = secim-durumu
+                 if secim-durumu = "H"
+                    modify form1-gd-1(event-data-2,1),
+                           bitmap = yes-bmp
+                           bitmap-width = 16
+                           bitmap-number = 1
+                           hidden-data = "E"
+                 else
+                    modify form1-gd-1(event-data-2,1),
+                           bitmap = no-bmp
+                           bitmap-width = 16
+                           bitmap-number = 1
+                           hidden-data = "H"
+                 end-if
+*              end-if 
+     end-evaluate
+     .
+* 
+ baslik-yukle.
+     modify form1-gd-1, reset-grid  = 1
+                        mass-update = 1
+     initialize form1-gd-1-record 
+     move "#"               to gd-1-col-1
+     move "Uyruk"           to gd-1-col-2
+     move "Adi"             to gd-1-col-3
+     modify form1-gd-1, record-to-add(form1-gd-1-record)
+     modify form1-gd-1, mass-update = 0.
+
+* 
+ grid-yukle.
+     modify form1-gd-1, mass-update = 1
+     move 2 to xiii
+     open i-o uyruk aceuyruk
+     initialize uyruk-rec 
+     start uyruk key not < uyruk-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-uyruk = "10"
+     read uyruk next no lock end move "10" to fs-uyruk 
+     not at end
+         if uyruk-kodu = spaces 
+            exit perform cycle
+         end-if
+         initialize form1-gd-1-record 
+         move uyruk-kodu          to gd-1-col-2
+         move uyruk-adi           to gd-1-col-3
+         initialize aceuyruk-rec 
+         move acc-acenta-kodu to aceuyruk-acenta
+         move uyruk-kodu      to aceuyruk-uyruk
+         read aceuyruk no lock invalid
+              move "H"      to secim-durumu
+         not invalid
+              move "E"      to secim-durumu
+         end-read
+         modify form1-gd-1, 
+                record-to-add(form1-gd-1-record)
+         modify form1-gd-1(xiii,1),
+                hidden-data = secim-durumu
+         if xiii > 1
+            if secim-durumu = "H" 
+               modify form1-gd-1(xiii,1),
+                      bitmap = no-bmp
+                      bitmap-width = 16
+                      bitmap-number = 1
+            else 
+               modify form1-gd-1(xiii,1),
+                      bitmap = yes-bmp
+                      bitmap-width = 16
+                      bitmap-number = 1
+            end-if
+         end-if
+         add 1 to xiii
+     end-read
+     end-perform
+     end-start
+     close uyruk aceuyruk
+     modify form1-gd-1, mass-update = 0.
+
+
+ 

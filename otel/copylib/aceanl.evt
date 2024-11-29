@@ -1,0 +1,1793 @@
+* aceanl.evt
+* aceanl.evt is generated from D:\asya\acugt.ytl\otel\aceanl.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ cb-odeme-tipi-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-odeme-tipi-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        EVALUATE Event-Control-Id
+        WHEN 78
+           PERFORM gd-2-Ev-Msg-Begin-Entry
+        WHEN 53
+           PERFORM gd-1-Ev-Msg-Begin-Entry
+        END-EVALUATE
+     WHEN Msg-Goto-Cell
+        EVALUATE Event-Control-Id
+        WHEN 78
+           PERFORM gd-2-Ev-Msg-Goto-Cell
+        END-EVALUATE
+     WHEN Msg-Goto-Cell-Mouse
+        EVALUATE Event-Control-Id
+        WHEN 78
+           PERFORM gd-2-Ev-Msg-Goto-Cell-Mouse
+        END-EVALUATE
+     END-EVALUATE
+     .
+
+ gd-3-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM gd-3-Ev-Msg-Begin-Entry
+     END-EVALUATE
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ Form3-Event-Proc.
+     .
+
+ Form3-Exception-Proc.
+     PERFORM Form3-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+
+     perform adresleri-tasi   
+     open i-o aceanlas
+     close aceanlas
+          open i-o yassinir
+     close yassinir
+
+     open input genel           |||Xfirat ekleme 12/2/2021
+     initialize genel-rec 
+     move 1 to genel-anahtar 
+     read genel no lock invalid 
+          continue 
+     end-read 
+     close genel  
+     open input genel2 
+     initialize genel2-rec
+     move 1 to genel2-anah
+     read genel2 no lock invalid
+          continue
+     end-read |||X
+
+          call "c$narg" using link-var
+     open input kllnc
+     initialize kllnc-rec 
+     move k-kodu-tasi    to k-kodu
+     read kllnc no lock invalid  
+         continue
+     not invalid 
+         if k-tfiyat-bas-tar < "19000000"
+               move "20050101" to k-tfiyat-bas-tar
+         end-if
+         if k-tfiyat-bit-tar < "19000000"
+              move "20151231" to k-tfiyat-bit-tar
+         end-if
+     end-read 
+     close kllnc.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 17
+             move aceanlas-dosya         to link-logview-dosya-adi
+             set link-logview-pointer  to address of aceanlas-rec
+             set link-logview-rec-size to size of aceanlas-rec
+             perform logview-call
+             initialize key-status
+     when 12 
+       perform takas-yaz
+       when 112
+             initialize acenta-cagir
+             call "/asya/ytl/obj/otel/aceyasg.asy" using acenta-cagir
+                 on exception perform callerr-proc
+                 not on exception
+                 cancel "/asya/ytl/obj/otel/aceyasg.asy" 
+              end-call
+                    
+     when 4
+       perform Acu-Form2-Routine
+     when 1
+         if control-id = 5
+             initialize acenta-cagir
+             call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+                 on exception perform callerr-proc
+                 not on exception
+                 cancel "/asya/ytl/obj/otel/acenara.asy" 
+              end-call
+              move acenta-cagir     to acc-01-value
+              display acc-01
+              move 4 to accept-control
+              move 5 to control-id            
+         end-if
+           if control-id = 96
+               initialize yas-cagir
+     
+             call "/asya/ytl/obj/otel/yasara.asy" using yas-cagir
+                  on exception perform callerr-proc
+                    not on exception
+                    cancel "/asya/ytl/obj/otel/yasara.asy" 
+               end-call
+             if yas-kodu-cagir not = spaces then 
+                    move yas-cagir     to ekran-yassinir-kodu
+              end-if
+              display acc-22a
+           
+         end-if
+         if control-id = 8
+            initialize infox-cagir
+            move "D"   to infox-tipi-cagir
+            call "/asya/ytl/obj/otel/infoxara.asy" using infox-cagir
+               on exception perform callerr-proc
+                  not on exception
+            cancel "/asya/ytl/obj/otel/infoxara.asy" 
+            end-call
+            move infox-kodu-cagir     to acc-02-value
+            display acc-02
+            move 4 to accept-control
+            move 8 to control-id
+         end-if
+     when 2
+         perform kaydet
+     when 3
+         perform sil
+     when 5
+         perform tumune-uygula
+     when 6
+         perform acu-form3-routine
+     end-evaluate.
+*
+ kaydet.
+     if acc-01-value = spaces or 
+        acc-02-value = spaces 
+        display message box "Acenta yada Anlasma Kodu Bos Gecilemez.."
+                        title "[ Uyari ]"
+                        icon 1
+        exit paragraph
+     end-if
+
+     if anlas-kbl-bit-tarih < anlas-kbl-bas-tarih 
+        display message box "Anlasma Donem Bitis Tarihi" new-line
+                            "Baslangic Tarihinden Buyuk Olamaz"
+        exit paragraph
+        move 4  to accept-control
+        move 23 to control-id
+     end-if          
+
+     if anlas-don-bit-tarih < anlas-don-bas-tarih 
+        display message box "Anlasma Donem Bitis Tarihi" new-line
+                            "Baslangic Tarihinden Buyuk Olamaz"
+        exit paragraph
+        move 4  to accept-control
+        move 23 to control-id
+     end-if          
+     display message box "Kaydetmek Istediginizden Eminmisiniz?"
+                     title "[ Uyari ]"
+                     icon 1
+                     type 2
+                     default 2
+                     returning donus
+     if donus = 2
+        exit paragraph
+     end-if
+     open i-o aceanlas acenta kodlar02
+     initialize aceanlas-rec kodlar02-rec acenta-rec
+     move acc-01-value     to aceanlas-acenta
+     move acc-02-value     to aceanlas-anlasma
+     move acc-55-value     to aceanlas-anlasma-sira 
+     read aceanlas no lock invalid
+          initialize aceanlas-rec
+     end-read
+          move acc-01-value         to aceanlas-acenta
+          move acc-02-value         to aceanlas-anlasma
+          move acc-55-value         to aceanlas-anlasma-sira 
+          move anlas-tarih          to aceanlas-anlasma-tar
+          move anlas-kbl-bas-tarih  to aceanlas-kabul-bas
+          move anlas-kbl-bit-tarih  to aceanlas-kabul-bit
+          move anlas-don-bas-tarih  to aceanlas-donem-bas
+          move anlas-don-bit-tarih  to aceanlas-donem-bit
+          move oncelik-sira         to aceanlas-anlasma-oncelik  
+
+
+
+
+          move d-mvar                to aceanlas-min-max-var     
+          move d-ming                to aceanlas-min-gece       
+          move d-maxg                to aceanlas-max-gece       
+          move d-hs                  to aceanlas-hs   
+          move oda-tutar-sira        to aceanlas-tutar-sira       
+          move d-svar                to aceanlas-sart-var       
+          move d-sovar               to aceanlas-sart-var-online
+          move cb-1301-val           to aceanlas-ace-kom-uygulama
+          move d-syil1               to aceanlas-sart-bas-yil
+          move d-say1                to aceanlas-sart-bas-ay
+          move d-sgun1               to aceanlas-sart-bas-gun
+          move d-syil2               to aceanlas-sart-bit-yil
+          move d-say2                to aceanlas-sart-bit-ay
+          move d-sgun2               to aceanlas-sart-bit-gun
+          move d-sming               to aceanlas-sart-min-gece 
+          move htek                  to aceanlas-haftatek
+          move d-smaxg               to aceanlas-sart-max-gece  
+                                     
+          move d-sarth               to aceanlas-sart-haric   
+          move hs(1:1)               to aceanlas-hs-gun
+          move cb1-val               to aceanlas-anl-zorunlu      
+          move cb2-val               to aceanlas-aks-yok          
+          move cb3-val               to aceanlas-aks-yok-zor      
+          move cb4-val               to aceanlas-spe-yok          
+          move cb5-val               to aceanlas-spe-yok-zor      
+          move cb6-val               to aceanlas-ear              
+          move cb7-val               to aceanlas-ear-zor 
+**************************odeme plani*******************************
+          move eb-odeme-orani        to aceanlas-eb-odeme-orani
+          move eb-odeme-tarihi       to aceanlas-eb-odeme-tarihi
+          move calisma-tipi(1:1)     to aceanlas-eb-calisma-tipi
+          move calisma-kon-tipi(1:1) to aceanlas-calisma-kon-tipi
+          move odeme-tipi(1:1)       to aceanlas-eb-odeme-tipi
+          move odeme-tarihi          to aceanlas-odeme-tarihi
+          move odeme-peryot          to aceanlas-peryot
+          move once-sonra(1:1)       to aceanlas-once-sonra
+          move ekran-yassinir-kodu   to aceanlas-yassinir
+          move ref-val               to aceanlas-referans   |||Xfirat ekleme 12/2/2021
+       write aceanlas-rec invalid
+           rewrite aceanlas-rec end-rewrite 
+       end-write 
+       
+       perform log-operation-aceanlas
+
+       initialize deg2 cb1-val acc-55-value cb2-val cb3-val cb4-val cb5-val cb6-val cb7-val cb-1301-val
+                  eb-odeme-orani eb-odeme-tarihi odeme-tarihi odeme-peryot  bebek-sinir
+                  bir-free-coc1 bir-free-coc2 iki-free-coc1 iki-free-coc2  ekran-yassinir-kodu 
+
+       display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 
+               acc-07 acc-08 acc-09 acc-10 acc-11 acc-12
+               acc-13 acc-14 acc-15 acc-16 acc-17 acc-18
+                acc-hs acc-tsira acc-mvar acc-ming acc-maxg acc-svar acc-svara acc-syil1 acc-say1 acc-sgun1
+                          acc-syil2 acc-say2 acc-sgun2 acc-sming acc-smaxg  acc-sarth  cb-hs cb-1301
+                        acc-ht
+               acc-23 cb1 cb2 acc-22a
+               cb3 cb4 cb5 cb6 cb7 cb-1301 acc-eb-odeme-orani acc-eb-odeme-gun 
+               acc-eb-odeme-ay acc-eb-odeme-yil  acc-55
+               acc-odeme-gun acc-odeme-ay acc-odeme-yil acc-odeme-peryot
+              
+     close aceanlas acenta kodlar02
+     perform acc-01-Aft-Procedure
+     move  4 to accept-control
+     move  8 to control-id.
+
+     .
+*
+ Form1-Bef-Initdata.
+     perform baslik-yukle
+      .
+*
+ baslik-yukle.
+     modify gd-1, RESET-GRID = 1
+                  mass-update = 1
+     initialize gd1-rec
+     move "Ace.Kod"   to gd-1-col-1
+     move "Acenta Adi"to gd-1-col-2
+     move "Anl.Kod"   to gd-1-col-3
+     move "Anl.Adi"   to gd-1-col-4
+     move "A.Tairih"  to gd-1-col-5
+     move "R.K.Bas.T" to gd-1-col-6
+     move "R.K.Bit.T" to gd-1-col-7
+     move "Kon.Bas.T" to gd-1-col-8
+     move "Kon.Bit.T" to gd-1-col-9
+     move "O.Sirasi"  to gd-1-col-10
+     move "1.Coccuk"  to gd-1-col-11
+     move "2.Cocuk"   to gd-1-col-12
+     move "1.Free"    to gd-1-col-13
+     move "2.Free"    to gd-1-col-14
+     move "Y.Siniri"  to gd-1-col-15
+     move "Anlasma"   to gd-1-col-16
+     move "Aksiyon"   to gd-1-col-17
+     move "Zorunlu"   to gd-1-col-18
+     move "Special"   to gd-1-col-19
+     move "Zorunlu"   to gd-1-col-20
+     move "EB"        to gd-1-col-21
+     move "Zorunlu"   to gd-1-col-22
+     move "Donem"     to gd-1-col-23
+     modify gd-1, RECORD-TO-ADD(gd1-rec)
+                  mass-update = 0.
+
+*
+ acc-01-Aft-Procedure.
+*     modify gd-1, RESET-GRID = 1
+*                  mass-update = 1
+     perform baslik-yukle
+     perform acenta-kontrol
+     perform grid-goster.
+*
+ acc-02-Aft-Procedure.
+   
+     .
+*
+ acenta-kontrol.
+     open input acenta
+     initialize acenta-rec
+     move acc-01-value   to acenta-kodu
+     read acenta no lock invalid
+          move "Tanimsiz..."   to lb1-val
+          move 4 to accept-control
+          move 5 to control-id
+     not invalid
+         move acenta-adi       to lb1-val       
+     end-read
+     close acenta
+     display lb1.
+*
+ anlasma-kontrol.
+     modify button-0102a,enabled = true  
+     open input kodlar02
+     initialize kodlar02-rec
+     move "D"            to kodlar02-tipi
+     move acc-02-value   to kodlar02-kodu
+     read kodlar02 no lock invalid
+          move "Tanimsiz..."  to lb2-val
+     not invalid
+         move kodlar02-adi    to lb2-val
+     end-read
+     close kodlar02
+     display lb2.
+*
+ gd-1-Ev-Msg-Begin-Entry.
+     move event-action-fail to event-action
+     inquire gd-1(event-data-2,3),cell-data in ydk-anlasma   
+     inquire gd-1(event-data-2,1),cell-data in ydk-acenta
+     inquire gd-1(event-data-2,23),cell-data in ydk-anlasma-sira   
+     perform kayit-bulundu
+     perform anlasma-kontrol
+     perform acenta-kontrol
+     .
+*
+ kayit-bulundu.
+     open input aceanlas
+     initialize aceanlas-rec
+     move ydk-acenta       to aceanlas-acenta
+     move ydk-anlasma      to aceanlas-anlasma
+     move ydk-anlasma-sira to aceanlas-anlasma-sira 
+     read aceanlas no lock invalid
+             initialize deg2 cb1-val cb2-val cb3-val cb4-val cb5-val cb6-val cb7-val cb-1301-val
+                        eb-odeme-orani eb-odeme-tarihi odeme-tarihi odeme-peryot acc-55-value bebek-sinir   
+                        bir-free-coc1 bir-free-coc2 iki-free-coc1 iki-free-coc2 ekran-yassinir-kodu
+             display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 
+                     acc-07 acc-08 acc-09 acc-10 acc-11 acc-12
+                     acc-13 acc-14 acc-15 acc-16 acc-17 acc-18
+                     a acc-23 cb1 cb2  acc-22a
+                     cb3 cb4 cb5 cb6 cb7  acc-eb-odeme-orani acc-eb-odeme-gun acc-eb-odeme-ay acc-eb-odeme-yil
+                     acc-odeme-gun acc-odeme-ay acc-odeme-yil acc-odeme-peryot acc-55 cb-1301
+                      acc-hs acc-tsira acc-mvar acc-ming acc-maxg acc-svar acc-svara acc-syil1 acc-say1 acc-sgun1
+                          acc-syil2 acc-say2 acc-sgun2 acc-sming acc-smaxg acc-sarth cb-hs acc-ht
+     not invalid
+            move aceanlas-acenta            to acc-01-value 
+            move aceanlas-anlasma           to acc-02-value
+            move aceanlas-anlasma-sira      to acc-55-value
+            move aceanlas-anlasma-tar       to anlas-tarih
+            move aceanlas-kabul-bas         to anlas-kbl-bas-tarih
+            move aceanlas-kabul-bit         to anlas-kbl-bit-tarih
+            move aceanlas-donem-bas         to anlas-don-bas-tarih
+            move aceanlas-donem-bit         to anlas-don-bit-tarih
+            move aceanlas-anlasma-oncelik   to oncelik-sira  
+
+
+            move aceanlas-min-max-var       to d-mvar  
+            move aceanlas-min-gece          to d-ming  
+            move aceanlas-sart-haric        to d-sarth
+*            move aceanlas-hs-gun            to hs
+            if aceanlas-hs = 1 
+               if aceanlas-hs-gun = spaces
+                  modify cb-hs, VALUE = " -Cuma-C.tesi"
+               else
+                  move aceanlas-hs-gun to hs
+                  display cb-hs
+               end-if
+            else
+               initialize hs
+               display cb-hs
+            end-if
+            move aceanlas-max-gece          to d-maxg  
+            move aceanlas-hs                to d-hs    
+            move aceanlas-tutar-sira        to oda-tutar-sira    
+            move aceanlas-sart-var          to d-svar 
+            move aceanlas-sart-var-online   to d-sovar
+            move aceanlas-ace-kom-uygulama  to cb-1301-val
+            move aceanlas-sart-bas-yil      to d-syil1  
+            move aceanlas-sart-bas-ay       to d-say1   
+            move aceanlas-sart-bas-gun      to d-sgun1  
+            move aceanlas-sart-bit-yil      to d-syil2  
+            move aceanlas-sart-bit-ay       to d-say2   
+            move aceanlas-sart-bit-gun      to d-sgun2  
+            move aceanlas-sart-min-gece     to d-sming 
+            move aceanlas-haftatek          to htek
+            move aceanlas-sart-haric        to d-sarth  
+            move aceanlas-hs-gun            to hs                              
+            move aceanlas-sart-max-gece     to d-smaxg  
+            move aceanlas-yassinir          to ekran-yassinir-kodu
+            move aceanlas-referans          to ref-val               |||Xfirat ekleme 12/2/2021
+
+            move aceanlas-anl-zorunlu       to cb1-val     
+            move aceanlas-aks-yok           to cb2-val         
+            move aceanlas-aks-yok-zor       to cb3-val     
+            move aceanlas-spe-yok           to cb4-val         
+            move aceanlas-spe-yok-zor       to cb5-val     
+            move aceanlas-ear               to cb6-val             
+            move aceanlas-ear-zor           to cb7-val
+            
+************odeme plani---**************************
+            move  aceanlas-eb-odeme-orani   to eb-odeme-orani      
+            move  aceanlas-eb-odeme-tarihi  to eb-odeme-tarihi     
+            move  aceanlas-eb-calisma-tipi  to calisma-tipi 
+            move  aceanlas-calisma-kon-tipi to calisma-kon-tipi
+            move  aceanlas-eb-odeme-tipi    to odeme-tipi     
+
+            evaluate aceanlas-eb-odeme-tipi
+            when "S"
+                 modify Form1-La-1ac,  visible = true
+                 modify acc-odeme-gun, visible = true
+                 modify acc-odeme-ay,  visible = true
+                 modify acc-odeme-yil, visible = true
+                 move  aceanlas-odeme-tarihi     to odeme-tarihi        
+            
+                 modify Form1-La-1aba, visible = false
+                 modify acc-odeme-peryot, visible = false
+                 modify cb-once-sonra, visible = false 
+                 display acc-odeme-gun acc-odeme-ay acc-odeme-yil
+            when "C"
+                 modify Form1-La-1ac,  visible = false
+                 modify acc-odeme-gun, visible = false
+                 modify acc-odeme-ay,  visible = false
+                 modify acc-odeme-yil, visible = false
+                 move  aceanlas-odeme-tarihi     to odeme-tarihi        
+            
+                 modify Form1-La-1aba, visible = true
+                 modify acc-odeme-peryot, visible = true
+                 modify cb-once-sonra, visible = true 
+                 move  aceanlas-peryot           to odeme-peryot        
+                 move  aceanlas-once-sonra       to once-sonra    
+                 display acc-odeme-peryot cb-once-sonra
+            when "T"
+                 modify Form1-La-1ac,  visible = false
+                 modify acc-odeme-gun, visible = false
+                 modify acc-odeme-ay,  visible = false
+                 modify acc-odeme-yil, visible = false
+                 move  aceanlas-odeme-tarihi     to odeme-tarihi                    
+                 
+                 modify Form1-La-1aba, visible = true
+                 modify acc-odeme-peryot, visible = true
+                 modify cb-once-sonra, visible = true 
+                 move  aceanlas-peryot           to odeme-peryot        
+                 move  aceanlas-once-sonra       to once-sonra    
+                 display acc-odeme-peryot cb-once-sonra
+            end-evaluate
+
+     end-read
+     perform acc-22a-Aft-Procedure
+     perform t-sira-after
+     close aceanlas
+     display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 |cb-hs
+             acc-07 acc-08 acc-09 acc-10 acc-11 acc-12
+             acc-13 acc-14 acc-15 acc-16 acc-17 acc-18
+             acc-23 cb1 cb2 acc-55 acc-22a cb3 cb4 cb5 cb6 cb7 cb-1301
+             cb-odeme-tipi cb-calisma-tipi cb-calisma-kon-tipi acc-say1 acc-sgun1 
+             acc-eb-odeme-orani acc-eb-odeme-gun acc-eb-odeme-ay acc-eb-odeme-yil  
+             acc-hs acc-tsira acc-mvar acc-ming acc-maxg acc-svar acc-svara acc-syil1 
+             acc-syil2 acc-say2 acc-sgun2 acc-sming acc-smaxg acc-sarth  acc-ht acc-referans  |||Xfirat ekleme 12/2/2021
+                .
+*
+ t-sira-after.
+      initialize tacik
+      if oda-tutar-sira > 0 and oda-tutar-sira < 9 then 
+            perform varying i5 from 1 by 1 until i5 > 40
+             if  xkonum-tutar-sira(i5) > 0 and xkonum-tutar-sira(i5) <= 9 and xkonum-adi(i5) not = spaces 
+               if xkonum-tutar-sira(i5) = oda-tutar-sira
+               string tacik  delimited by "      " 
+                     
+                     xkonum-adi(i5) delimited by "    "
+                     "-" delimited by "   "
+                     
+                   into tacik
+               end-string
+               end-if
+               end-if
+            end-perform
+       end-if
+               if tacik = spaces 
+                  move  0 to oda-tutar-sira
+                  move "Tum Fiyat Konumlarinda " to tacik
+                  display acc-tsira
+                   else
+                   string tacik  delimited by "-           "
+                   " fiyat konumlari" delimited by "   "
+                   into tacik
+               end-if
+               display acc-tacik.
+     
+*
+ sil.
+     if acc-01-value = spaces or 
+        acc-02-value = spaces
+        display message box "Acenta yada Anlasma Kodu Bos Gecilemez.."
+                        title "[ Uyari ]"
+                        icon 1
+        exit paragraph
+     end-if
+     
+     display message box "Silmek Istediginizden EminMisiniz..!!"
+                     title "[ Ikaz ]"
+                     type 2
+                     icon 2
+                     default 2
+                     returning donus
+     if donus <> 1
+        exit paragraph
+     end-if
+     open i-o aceanlas
+     initialize aceanlas-rec
+     move acc-01-value to aceanlas-acenta
+     move acc-02-value to aceanlas-anlasma
+     move acc-55-value to aceanlas-anlasma-sira
+     read aceanlas no lock invalid
+          continue
+     not invalid
+          delete aceanlas end-delete
+          perform log-operation-aceanlas
+     end-read
+     close aceanlas
+     initialize deg2 cb1-val cb2-val cb3-val acc-55-value cb4-val cb5-val cb6-val cb7-val cb-1301-val
+                eb-odeme-orani eb-odeme-tarihi odeme-tarihi odeme-peryot bebek-sinir  ekran-yassinir-kodu  
+
+     display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 
+             acc-07 acc-08 acc-09 acc-10 acc-11 acc-12
+             acc-13 acc-14 acc-15 acc-16 acc-17 acc-18         
+             acc-23 cb1 cb2 acc-55  acc-22a
+             cb3 cb4 cb5 cb6 cb7  acc-eb-odeme-orani acc-eb-odeme-gun acc-eb-odeme-ay acc-eb-odeme-yil
+             acc-odeme-gun acc-odeme-ay acc-odeme-yil acc-odeme-peryot
+               acc-hs acc-tsira acc-mvar acc-ming acc-maxg acc-svar acc-svara acc-syil1 acc-say1 acc-sgun1
+                          acc-syil2 acc-say2 acc-sgun2 acc-sming acc-smaxg acc-sarth cb-hs acc-ht cb-1301.
+*
+ acc-11-Aft-Procedure.
+     if anlas-kbl-bit-tarih < anlas-kbl-bas-tarih 
+        display message box "Anlasma Kabul Bitis Tarihi" new-line
+                            "Baslangic Tarihinden Buyuk Olamaz"
+        exit paragraph
+        move 4  to accept-control
+        move 10 to control-id
+     end-if     
+     .
+*
+ acc-17-Aft-Procedure.
+     if anlas-don-bit-tarih < anlas-don-bas-tarih 
+        display message box "Anlasma Donem Bitis Tarihi" new-line
+                            "Baslangic Tarihinden Buyuk Olamaz"
+        exit paragraph
+        move 4  to accept-control
+        move 23 to control-id
+     end-if          
+     .
+*
+ grid-goster.
+     open input aceanlas acenta kodlar02
+     initialize aceanlas-rec acenta-rec kodlar02-rec gd1-rec
+     move 1                  to satir
+     move acc-01-value       to aceanlas-acenta
+     start aceanlas key not < aceanlas-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-aceanlas = "10"
+     read aceanlas next no lock end move "10" to fs-aceanlas
+     not at end
+            if aceanlas-acenta <> acc-01-value
+               exit perform
+            end-if
+            if (k-tfiyat-bas-tar > aceanlas-donem-bit or 
+                  k-tfiyat-bit-tar < aceanlas-donem-bas )  
+                     exit perform cycle 
+            end-if 
+
+            add 1 to satir   
+            move aceanlas-acenta          to gd-1-col-1 acenta-kodu
+            read acenta no lock invalid
+                 move "Tanimsiz..."       to acenta-adi
+            not invalid
+                 move acenta-adi          to gd-1-col-2
+            end-read
+            initialize kodlar02-rec
+            move aceanlas-anlasma         to gd-1-col-3 kodlar02-kodu
+            move "D"                      to kodlar02-tipi
+            read kodlar02 no lock invalid
+                 move "Tanimsiz..."       to kodlar02-adi
+            not invalid
+                 move kodlar02-adi        to gd-1-col-4
+            end-read
+            move aceanlas-anlasma-gun     to gd-1-col-5(1:2)
+            move "/"                      to gd-1-col-5(3:1)
+            move aceanlas-anlasma-ay      to gd-1-col-5(4:2)
+            move "/"                      to gd-1-col-5(6:1)
+            move aceanlas-anlasma-yil     to gd-1-col-5(7:)
+
+            move aceanlas-kabul-bas-gun   to gd-1-col-6(1:2)
+            move "/"                      to gd-1-col-6(3:1)
+            move aceanlas-kabul-bas-ay    to gd-1-col-6(4:2)
+            move "/"                      to gd-1-col-6(6:1)
+            move aceanlas-kabul-bas-yil   to gd-1-col-6(7:)
+
+            move aceanlas-kabul-bit-gun   to gd-1-col-7(1:2)
+            move "/"                      to gd-1-col-7(3:1)
+            move aceanlas-kabul-bit-ay    to gd-1-col-7(4:2)
+            move "/"                      to gd-1-col-7(6:1)
+            move aceanlas-kabul-bit-yil   to gd-1-col-7(7:)
+
+            move aceanlas-donem-bas-gun   to gd-1-col-8(1:2)
+            move "/"                      to gd-1-col-8(3:1)
+            move aceanlas-donem-bas-ay    to gd-1-col-8(4:2)
+            move "/"                      to gd-1-col-8(6:1)
+            move aceanlas-donem-bas-yil   to gd-1-col-8(7:)
+
+            move aceanlas-donem-bit-gun   to gd-1-col-9(1:2)
+            move "/"                      to gd-1-col-9(3:1)
+            move aceanlas-donem-bit-ay    to gd-1-col-9(4:2)
+            move "/"                      to gd-1-col-9(6:1)
+            move aceanlas-donem-bit-yil   to gd-1-col-9(7:)
+            
+            move aceanlas-anlasma-oncelik to gd-1-col-10 
+         
+            move aceanlas-anlasma-sira    to gd-1-col-23
+
+            if aceanlas-anl-zorunlu = 1
+                modify gd-1(satir,16),
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+            else
+                modify gd-1(satir,16),
+                       bitmap = no-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16               
+            end-if
+
+            if aceanlas-aks-yok = 1
+                modify gd-1(satir,17),
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+            else
+                modify gd-1(satir,17),
+                       bitmap = no-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16               
+            end-if
+
+            if aceanlas-aks-yok-zor = 1
+                modify gd-1(satir,18),
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+            else
+                modify gd-1(satir,18),
+                       bitmap = no-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16               
+            end-if
+
+            if aceanlas-spe-yok = 1
+                modify gd-1(satir,19),
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+            else
+                modify gd-1(satir,19),
+                       bitmap = no-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16               
+            end-if
+
+            if aceanlas-spe-yok-zor = 1
+                modify gd-1(satir,20),
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+            else
+                modify gd-1(satir,20),
+                       bitmap = no-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16               
+            end-if
+
+            if aceanlas-ear = 1
+                modify gd-1(satir,21),
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+            else
+                modify gd-1(satir,21),
+                       bitmap = no-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16               
+            end-if
+
+            if aceanlas-ear-zor = 1
+                modify gd-1(satir,22),
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+            else
+                modify gd-1(satir,22),
+                       bitmap = no-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16               
+            end-if
+            modify gd-1, RECORD-TO-ADD(gd1-rec)
+     end-read
+     end-perform
+     end-start
+     close aceanlas acenta kodlar02
+     modify gd-1,mass-update = 0.
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\* 
+*/     perform takas-yaz.
+     if link-var = 1
+            move gelen-acenta to acc-01-value
+            display acc-01
+            move 5 to key-status
+            perform ACC-01-AFT-PROCEDURE
+            move 8 to control-id
+            move 4 to accept-control
+     end-if. 
+*
+ takas-yaz.
+    initialize frame-degiskenler
+    move 10                to frame-kayit-sayi
+    move 20                to frame-win-line
+    move 20                to frame-win-pos
+    move "Bekleyiniz..."   to frame-title
+    perform frame-ac
+      open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to ekran-fis-1
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+              move ekran-fis-1 to takas-no takas3-no
+    open output takas close takas open i-o takas with mass-update 
+  
+   
+    open input fiyatana kodlar02 acenta 
+    initialize fiyatana-rec
+    start fiyatana key not < fiyatana-anah invalid
+         continue
+    not invalid
+    perform with test after until fs-fiyatana = "10"
+    read fiyatana next no lock end move "10"  to fs-fiyatana
+    not at end 
+               if  ( k-tfiyat-bas-tar > fiyatana-son-tarih or
+                               k-tfiyat-bit-tar < fiyatana-ilk-tarih )
+                   exit perform cycle
+               end-if
+               initialize takas-rec
+               move fiyatana-acenta        to takas-acenta
+               move fiyatana-anlasma       to takas-anlasma
+               read takas no lock invalid
+                  continue
+               end-read
+               if fiyatana-ilk-tarih < takas-rez-kon-bas-tarih  or
+                  takas-rez-kon-bas-tarih  < 2000
+                  move fiyatana-ilk-tarih to takas-rez-kon-bas-tarih
+               end-if
+               if fiyatana-son-tarih > takas-rez-kon-bit-tarih
+                  
+                  move fiyatana-son-tarih to takas-rez-kon-bit-tarih
+               end-if
+
+              if fiyatana-eb-eh = "E"
+                  move fiyatana-eb-eh         to takas-eb-eh               
+                  move fiyatana-eb-bas-tarih  to takas-rez-kabul-bas-tarih
+                  move fiyatana-eb-bit-tarih  to takas-rez-kabul-bit-tarih
+              end-if
+               perform frame-goster
+              write takas-rec invalid 
+                    rewrite takas-rec end-rewrite 
+              end-write 
+    end-read
+    end-perform
+    end-start
+       perform frame-kapat
+       perform grid1-yukle
+
+    close takas fiyatana kodlar02 acenta 
+    .      
+*
+ grid1-yukle.
+    initialize frame-degiskenler
+    move 20                to frame-kayit-sayi
+    move 20                to frame-win-line
+    move 20                to frame-win-pos
+    move "Bekleyiniz..."   to frame-title
+    perform frame-ac
+
+    modify gd-2, RESET-GRID = 1
+                 mass-update = 1
+    initialize g2-rec yedek-takas-acenta
+    move 1 to i
+    move "Acenta"  to gd-2-col-1
+    modify gd-2, RECORD-TO-ADD(g2-rec)
+    initialize takas-rec
+    start takas key not < takas-anahtar invalid
+          continue
+    not invalid
+    perform with test after until fs-takas = "10"
+    read takas next no lock end move "10" to fs-takas
+    not at end
+            if yedek-takas-acenta = spaces
+               move takas-acenta     to yedek-takas-acenta
+            else 
+               if takas-acenta = yedek-takas-acenta 
+                  exit perform cycle
+               end-if
+            end-if
+            initialize acenta-rec
+            move takas-acenta  to acenta-kodu
+            read acenta no lock invalid
+                 move "Tanimsiz Acenta..." to acenta-adi
+            end-read
+         
+
+            if arama-acenta <> spaces
+               move function upper-case(acenta-adi) to kelime
+               move function upper-case(arama-acenta)  to aranan-kelime
+               move 0 to aranan-i aranan-kelime-boy
+               inspect aranan-kelime tallying aranan-kelime-boy
+                       for trailing spaces
+               compute aranan-kelime-boy = function length(aranan-kelime) -
+                                           aranan-kelime-boy           
+               inspect kelime tallying aranan-i
+                       for all aranan-kelime(1:aranan-kelime-boy)
+               if aranan-i = 0
+                  exit perform cycle
+               end-if
+            end-if
+
+            perform frame-goster
+            add 1 to i
+            move takas-acenta  to yedek-takas-acenta 
+            initialize g2-rec
+            move takas-acenta  to gd-2-col-1
+
+            initialize acenta-rec
+            move takas-acenta  to acenta-kodu
+            read acenta no lock invalid
+                 move "Tanimsiz Acenta..." to acenta-adi
+            end-read
+                 move acenta-adi           to gd-2-col-1           
+            modify gd-2, RECORD-TO-ADD(g2-rec)
+            modify gd-2(i,1), hidden-data(takas-acenta)
+    end-read
+    end-perform
+    end-start
+      perform frame-kapat
+    modify gd-2, MASS-UPDATE = 0.      
+*
+ cb-odeme-tipi-Ex-Ntf-Selchange.
+       evaluate odeme-tipi(1:1)
+       when "S"
+            modify Form1-La-1ac,  visible = true
+            modify acc-odeme-gun, visible = true
+            modify acc-odeme-ay,  visible = true
+            modify acc-odeme-yil, visible = true
+
+            modify Form1-La-1aba, visible = false
+            modify acc-odeme-peryot, visible = false
+            modify cb-once-sonra, visible = false 
+       when "C"
+            modify Form1-La-1ac,  visible = false
+            modify acc-odeme-gun, visible = false
+            modify acc-odeme-ay,  visible = false
+            modify acc-odeme-yil, visible = false
+
+            modify Form1-La-1aba, visible = true
+            modify acc-odeme-peryot, visible = true
+            modify cb-once-sonra, visible = true 
+       when "T"
+            modify Form1-La-1ac,  visible = false
+            modify acc-odeme-gun, visible = false
+            modify acc-odeme-ay,  visible = false
+            modify acc-odeme-yil, visible = false
+
+            modify Form1-La-1aba, visible = true
+            modify acc-odeme-peryot, visible = true
+            modify cb-once-sonra, visible = true 
+       end-evaluate.
+*
+ tumune-uygula.
+*       if eb-odeme-orani = zeroes
+*          display message box "EB Odeme Orani Giriniz..."
+*                          title "[ Uyari ]"
+*                          icon 1
+*          exit paragraph                          
+*       end-if
+
+*       if eb-odeme-tarihi = zeroes
+*          display message box "EB Odeme Tarihi Giriniz..."
+*                          title "[ Uyari ]"
+*                          icon 1
+*          exit paragraph                          
+*       end-if
+
+       display message box "Tum Anlasmalara Uygulanacaktir..." new-line
+                           "Eminmisiniz.?"
+                       title "[ Uyari ]"
+                       icon 1
+                       type 2
+                       default 2
+                       returning donus 
+       if donus = 2
+          exit paragraph
+       end-if          
+       open i-o aceanlas
+       initialize aceanlas-rec
+       move acc-01-value      to aceanlas-acenta
+       start aceanlas key not < aceanlas-anah invalid
+             continue
+       not invalid
+       perform with test after until fs-aceanlas = "10"
+       read aceanlas next no lock end move "10"  to fs-aceanlas
+       not at end
+           if aceanlas-acenta not = acc-01-value
+              exit perform 
+           end-if
+           if aceanlas-anlasma = acc-02-value
+              exit perform cycle
+           end-if
+           if (k-tfiyat-bas-tar > aceanlas-donem-bit or 
+              k-tfiyat-bit-tar < aceanlas-donem-bas )  
+              exit perform cycle 
+           end-if 
+           move d-mvar         to aceanlas-min-max-var     
+           move d-ming         to aceanlas-min-gece       
+           move d-maxg         to aceanlas-max-gece       
+           move d-hs           to aceanlas-hs 
+            
+           move oda-tUtar-sira to aceanlas-tutar-sira 
+           move d-svar         to aceanlas-sart-var       
+           move d-sovar        to aceanlas-sart-var-online
+           move cb-1301-val    to aceanlas-ace-kom-uygulama
+           move d-syil1        to aceanlas-sart-bas-yil
+           move d-say1         to aceanlas-sart-bas-ay
+           move d-sgun1        to aceanlas-sart-bas-gun
+           move d-syil2        to aceanlas-sart-bit-yil
+           move d-say2         to aceanlas-sart-bit-ay
+           move d-sgun2        to aceanlas-sart-bit-gun
+           move d-sming        to aceanlas-sart-min-gece 
+           move htek           to aceanlas-haftatek 
+           move d-smaxg        to aceanlas-sart-max-gece  
+           move d-sarth        to aceanlas-sart-haric     
+           move hs(1:1)        to aceanlas-hs-gun           
+           move cb-1301-val    to aceanlas-ace-kom-uygulama
+           rewrite aceanlas-rec end-rewrite 
+           perform log-operation-aceanlas
+       end-read
+       end-perform
+       end-start
+       close aceanlas
+       display message box "Odeme Plani Butun Anlasmalara Uygulanmistir.."new-line
+                           "Lutfen Kontrol Ediniz..."
+                       title "[ Uyari ]"
+                       icon 1.
+*
+ Form2-Ex-Other.
+       evaluate key-status
+       when 2
+          perform rapor-goster
+       end-evaluate
+     
+     .
+*
+ rapor-goster.
+              open input aceanlas acenta kodlar02
+              
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Acenta Kabul Girisi Raporu" to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Acenta Kabul Girisi Raporu" to det-filler
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+     initialize dokumer-rec detay
+     move "D1"             to det-dokumer-20(1:2)     
+     move "1"          to det-dokumer-20(10:1)
+     move "Kodu"           to det-1
+     move "A.K"            to det-1-0
+     move "Anlasma "       to det-1-1
+     move "Adi"            to det-2
+     move "Rez.K.Bas.Tar"  to det-3
+     move "Rez.K.Bit.Tar"  to det-4
+     move "Konak.Bas.Tar"  to det-5
+     move "Konak.Bit.Tar"  to det-6
+     move "Anlasma Tarihi" to det-7
+     move "EB Ode. Orani " to det-8
+     move "EB Odeme Tarihi" to det-9
+     move "Cal.Tipi"           to det-10
+     move "Odeme Tipi"          to det-11
+     move "Odeme Tarihi"          to det-12
+     move "Vade Tarihi"  to det-13
+     move "Gun" to det-14
+     move "Oncelik"        to det-15 
+     move "Fiyat Durumu"  to det-16
+ 
+
+     move "|" to fil-1   fil-1-0 fil-1-1 fil-2 fil-3 fil-4 fil-5 fil-6
+              fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-14
+              fil-15  fil-16   
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"  to det-1   det-1-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8
+                      det-9 det-10 det-11 det-12 det-13 det-14 det-15 det-16  det-1-0
+                        
+     write dokumer-rec from detay
+       open output takas3 close takas3 open i-o takas3 with mass-update 
+
+
+
+      
+            initialize fs-aceanlas  aceanlas-rec
+            initialize aceanlas-rec
+               move   rp-1 to ACEANLAS-acenta
+              start aceanlas key not < aceanlas-anah invalid
+                    continue
+                    not invalid
+               perform with test after until fs-aceanlas = "10"
+                read aceanlas next no lock 
+                   end 
+                       move "10" to fs-aceanlas
+                   not at end
+                      if aceanlas-acenta not = rp-1 and 
+                         rp-1 not = spaces
+                           exit perform 
+                      end-if
+                       if (k-tfiyat-bas-tar > aceanlas-donem-bit or 
+                         k-tfiyat-bit-tar < aceanlas-donem-bas )  
+                     exit perform cycle 
+                   end-if 
+                      initialize takas3-rec
+                       move aceanlas-acenta        to takas3-acenta
+                       move aceanlas-anlasma      to takas3-anlasma
+                        move  aceanlas-anlasma-sira        to  takas3-anlasma-sira
+                      read takas3 no lock invalid continue 
+                      end-read
+                      move 1 to takas3-anlasma-var
+                      write takas3-rec invalid rewrite takas3-rec
+                      end-write
+
+                 end-read
+              end-perform 
+            end-start
+
+
+            initialize takas3-rec
+            start takas3 key > takas3-anahtar invalid continue
+                 not invalid 
+                 perform until fs-takas3 = "10" 
+                    read takas3 next no lock end move "10" to fs-takas3
+                        not end
+                        if takas3-acenta = spaces then 
+                          exit perform cycle
+                        end-if
+                          initialize dokumer-rec detay 
+                        initialize aceanlas-rec
+                       move  takas3-acenta     to    aceanlas-acenta 
+                       move  takas3-anlasma    to    aceanlas-anlasma 
+                         move  takas3-anlasma-sira        to  aceanlas-anlasma-sira
+                    
+                    
+                       read aceanlas no lock invalid 
+                       continue
+                       not invalid
+                            move aceanlas-kabul-bas-yil  to eyil
+                      move aceanlas-kabul-bas-ay   to eay
+                      move aceanlas-kabul-bas-gun  to egun
+                      move etarih                  to det-3
+
+                      move aceanlas-kabul-bit-yil  to eyil
+                      move aceanlas-kabul-bit-ay   to eay
+                      move aceanlas-kabul-bit-gun  to egun
+                      move etarih                  to det-4
+
+                      move aceanlas-donem-bas-yil  to eyil
+                      move aceanlas-donem-bas-ay   to eay
+                      move aceanlas-donem-bas-gun  to egun
+                      move etarih                  to det-5
+                      
+
+                      move aceanlas-donem-bit-yil  to eyil
+                      move aceanlas-donem-bit-ay   to eay
+                      move aceanlas-donem-bit-gun  to egun
+                      move etarih                  to det-6
+
+                      move aceanlas-anlasma-yil    to eyil
+                      move aceanlas-anlasma-ay     to eay
+                      move aceanlas-anlasma-gun    to egun
+                      move etarih                  to det-7
+
+                      move aceanlas-eb-odeme-orani to eoran
+                      move eoran                   to det-8
+
+                      move aceanlas-eb-odeme-yil   to eyil
+                      move aceanlas-eb-odeme-ay    to eay
+                      move aceanlas-eb-odeme-gun   to egun
+                      move etarih                  to det-9
+
+                      evaluate aceanlas-eb-calisma-tipi
+                      when "D"
+                           move "Doviz"        to det-10
+                      when "T"
+                           move "TL"           to det-10
+                      end-evaluate
+
+   
+                      evaluate aceanlas-eb-odeme-tipi
+                      when "S"
+                           move "Sabit"        to det-11
+                      when "C"
+                           move "C/In"         to det-11
+                      when "T"
+                           move "C/Out"        to det-11
+                      end-evaluate
+                      
+                      move aceanlas-odeme-yil   to eyil
+                      move aceanlas-odeme-ay    to eay
+                      move aceanlas-odeme-gun   to egun
+                      move etarih               to det-12
+
+                      move aceanlas-vade-yil   to eyil
+                      move aceanlas-vade-ay    to eay
+                      move aceanlas-vade-gun   to egun
+                      move etarih              to det-13
+
+                      move aceanlas-peryot     to eperyot 
+                      move eperyot             to det-14
+                      evaluate aceanlas-once-sonra
+                      when "O"
+                            move "Once"        to det-15
+                      when "S"
+                            move "Sonra"       to det-15
+                      end-evaluate
+
+                       end-read
+                     
+                       move aceanlas-acenta    to det-1
+                     
+
+
+                      initialize kodlar02-rec 
+                      move aceanlas-anlasma   to kodlar02-kodu det-1-0
+                      move "D"                to kodlar02-tipi
+                      read kodlar02 no lock invalid
+                           move "Tanimsiz..."  to det-1-1
+                      end-read
+                          move kodlar02-adi    to det-1-1
+                      initialize acenta-rec    
+                      move aceanlas-acenta    to acenta-kodu
+                      read acenta no lock invalid
+                           move "Tanimsiz..." to det-2
+                      end-read
+                          move acenta-adi     to det-2
+
+                       
+                     
+                      write dokumer-rec from detay
+              end-read
+              end-perform
+            end-start
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close aceanlas acenta kodlar02 takas3
+              delete file dokumer  takas3.
+     
+     .
+*
+ Form2-Bef-Create.
+         move acc-01-value     to rp-1
+     
+     .
+*
+ gd-2-Ev-Msg-Begin-Entry.
+       perform grid-2-doldur
+     
+     .
+*
+ grid-2-doldur.
+    open input takas kodlar02
+    move event-action-fail to event-action
+    modify gd-3, RESET-GRID = 1
+                 mass-update = 1
+    initialize g3-rec yedek-takas-acenta
+    move 1 to i
+    move "Anlasma"  to gd-3-col-1
+    modify gd-3, RECORD-TO-ADD(g3-rec)
+    initialize takas-rec
+
+    inquire gd-2(event-data-2,1), hidden-data in takas-acenta
+    move takas-acenta to yedek-takas-acenta
+
+    start takas key not < takas-anahtar invalid
+          continue
+    not invalid
+    perform with test after until fs-takas = "10"
+    read takas next no lock end move "10" to fs-takas
+    not at end
+            if takas-acenta = yedek-takas-acenta
+               move takas-acenta     to yedek-takas-acenta
+            else
+               move "10" to fs-takas
+               exit perform 
+            end-if
+
+            add 1 to i
+            initialize g3-rec kodlar02-rec
+            move takas-anlasma            to kodlar02-kodu
+            move "D"                      to kodlar02-tipi
+            read kodlar02 no lock invalid
+                 move "Tanimsiz..."       to kodlar02-adi
+            not invalid
+                 move kodlar02-adi        to gd-3-col-1
+            end-read          
+            modify gd-3, RECORD-TO-ADD(g3-rec)
+            
+            modify gd-3(i,1), hidden-data(takas-anahtar)
+    end-read
+    end-perform
+    end-start
+    
+    modify gd-3, MASS-UPDATE = 0
+    close takas kodlar02 .
+*
+ gd-3-Ev-Msg-Begin-Entry.
+    open input takas
+    initialize takas-rec
+    move event-action-fail to event-action
+    inquire gd-3(event-data-2,1), hidden-data in takas-anahtar
+    move takas-acenta   to acc-01-value
+    move takas-anlasma  to acc-02-value
+    read takas no lock invalid
+         continue 
+    end-read
+        if takas-eb-eh = "E"
+           move 1                         to cb6-val
+           move takas-rez-kabul-bas-tarih to anlas-kbl-bas-tarih
+           move takas-rez-kabul-bit-tarih to anlas-kbl-bit-tarih
+        else 
+           move 0                         to cb6-val
+           initialize anlas-kbl-bas-tarih anlas-kbl-bit-tarih
+        end-if
+
+        move takas-rez-kon-bas-tarih      to anlas-don-bas-tarih
+        move takas-rez-kon-bit-tarih      to anlas-don-bit-tarih
+    close takas
+    display acc-01 acc-02 acc-06 acc-07 acc-08 acc-09 acc-10 acc-11
+            acc-12 acc-13 acc-14 acc-15 acc-16 acc-17
+    perform acc-02-Aft-Procedure
+    perform acenta-kontrol.
+*
+ gd-2-Ev-Msg-Goto-Cell.
+
+     
+     .
+*
+ gd-2-Ev-Msg-Goto-Cell-Mouse.
+
+     
+     .
+*
+ Form3-Aft-Initdata.
+     move acc-01-value  to kaynak-acenta
+     display acc-kaynak
+     perform kaynak-acenta-oku
+     .
+*
+ acc-kaynak-Aft-Procedure.
+     perform kaynak-acenta-oku
+     .
+
+*
+ acc-hedef-Aft-Procedure.
+     perform hedef-acenta-oku
+     .
+*
+ acc-kaynak-anlasma-Aft-Procedure.
+     perform kaynak-anlasma-oku
+     .
+*
+ kaynak-acenta-oku.
+     open input acenta
+     initialize acenta-rec
+     move kaynak-acenta  to acenta-kodu
+     read acenta no lock invalid
+          move "Tanimsiz Acenta..."  to acenta-adi
+          move 4 to accept-control
+          move 4 to control-id
+     end-read
+         move acenta-adi             to kaynak-adi
+     close acenta 
+     display acc-kaynak-adi.
+*
+ kaynak-anlasma-oku.
+       open input kodlar02.
+       initialize kodlar02-rec.
+       move "D"                 to kodlar02-tipi.
+       move kaynak-anlasma      to kodlar02-kodu
+       read kodlar02         no lock invalid 
+            move "Anlasmalarin Tumu..." to kodlar02-adi
+            not invalid continue 
+       end-read
+       close kodlar02.
+       move kodlar02-adi        to kaynak-anlasma-adi.
+       display acc-kaynak-anlasma-adi.
+*
+ hedef-acenta-oku.
+     open input acenta
+     initialize acenta-rec
+     move hedef-acenta  to acenta-kodu
+     read acenta no lock invalid
+          move "Tanimsiz Acenta..."  to acenta-adi
+          move 4 to accept-control
+          move 4 to control-id
+     end-read
+         move acenta-adi             to hedef-adi
+     close acenta 
+     display acc-hedef-adi.
+*
+ Form3-Ex-Other.
+     evaluate key-status
+         when 1301
+              perform coklu-acenta-ara
+         when 5
+              if hedef-acenta = "XXXX"
+                 perform coklu-kopyala-kaydet
+              else
+                 perform kopyala-kaydet
+              end-if
+         when 1
+              evaluate control-id
+                  when 4
+                       initialize acenta-cagir
+                       call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+                           on exception perform callerr-proc
+                           not on exception
+                           cancel "/asya/ytl/obj/otel/acenara.asy" 
+                       end-call
+                       move acenta-cagir     to kaynak-acenta
+                       display acc-kaynak
+                       move 4 to accept-control
+                       move 4 to control-id             
+                  when 5
+                       initialize acenta-cagir
+                       call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+                            on exception perform callerr-proc
+                         not on exception
+                            cancel "/asya/ytl/obj/otel/acenara.asy" 
+                       end-call
+                       move acenta-cagir     to hedef-acenta
+                       display acc-hedef
+                       move 4 to accept-control
+                       move 5 to control-id    
+                  when 11
+                       initialize infox-cagir
+                       move "D"   to infox-tipi-cagir
+                       call "/asya/ytl/obj/otel/infoxara.asy" using infox-cagir
+                          on exception perform callerr-proc
+                             not on exception
+                       cancel "/asya/ytl/obj/otel/infoxara.asy" 
+                       end-call
+                       move infox-kodu-cagir     to kaynak-anlasma
+                       display acc-kaynak-anlasma
+                       move 4 to accept-control
+                       move 11 to control-id
+              end-evaluate
+     end-evaluate
+     
+     .
+*
+ coklu-kopyala-kaydet.
+     display message box "Kopyalamak Istediginizden Eminmisiniz?"
+                     title "[ Uyari ]"
+                     icon 1
+                     type 2
+                     default 2
+                     returning donus
+     if donus = 2
+        exit paragraph
+     end-if
+     move hedef-acenta to tmp-hedef
+     perform varying i 
+                from 1
+                by 1 
+                until i > 500
+                if fil-coklu-acenta1(i) = spaces  
+                     exit perform 
+                else 
+                   move fil-coklu-acenta1(i) to hedef-acenta
+                   perform kopyala-kaydet
+                end-if 
+     end-perform
+     move tmp-hedef to hedef-acenta
+     display message box "Kopyalama Islemi Tamamlanmistir.."new-line
+                         "Lutfen Kontrol Ediniz..."
+                   title "[ Uyari ]"
+                    icon 1
+     .
+*
+ kopyala-kaydet.
+     if kaynak-acenta = hedef-acenta
+        display message box "Hedef Acenta Kodu ile Kaynak Acenta Kodu Ayni "new-line
+                            "Lutfen Degistiriniz..."
+                        title "[ Uyari ]" 
+                        icon 1
+        exit paragraph
+                        
+     end-if
+     if tmp-hedef not = "XXXX"
+        display message box "Kopyalamak Istediginizden Eminmisiniz?"
+                     title "[ Uyari ]"
+                     icon 1
+                     type 2
+                     default 2
+                     returning donus
+        if donus = 2
+           exit paragraph
+        end-if
+     end-if
+     open i-o aceanlas
+     initialize aceanlas-rec
+     move kaynak-acenta        to aceanlas-acenta 
+     if kaynak-anlasma <> spaces 
+        move kaynak-anlasma       to aceanlas-anlasma          | firat anlasmalasma girilirse filtrele 08/08/2020
+     end-if
+     start aceanlas key not < aceanlas-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-aceanlas = "10"
+     read aceanlas next no lock end move "10" to fs-aceanlas
+     not at end 
+            if aceanlas-acenta not = kaynak-acenta
+               exit perform
+            end-if
+
+            if kaynak-anlasma not = spaces and
+               aceanlas-anlasma not = kaynak-anlasma
+               exit perform cycle
+            end-if
+
+            if (k-tfiyat-bas-tar > aceanlas-donem-bit or 
+                k-tfiyat-bit-tar < aceanlas-donem-bas )  
+                exit perform cycle 
+            end-if
+ 
+            initialize xaceanlas-rec
+            move hedef-acenta              to xaceanlas-acenta
+            move aceanlas-anlasma          to xaceanlas-anlasma
+            move aceanlas-kabul-bas        to xaceanlas-kabul-bas
+            move aceanlas-kabul-bit        to xaceanlas-kabul-bit
+            move aceanlas-donem-bas        to xaceanlas-donem-bas
+            move aceanlas-donem-bit        to xaceanlas-donem-bit
+            move aceanlas-anlasma-tar      to xaceanlas-anlasma-tar
+            move aceanlas-anlasma-oncelik  to xaceanlas-anlasma-oncelik
+            move aceanlas-anl-zorunlu      to xaceanlas-anl-zorunlu
+            move aceanlas-aks-yok          to xaceanlas-aks-yok         
+            move aceanlas-aks-yok-zor      to xaceanlas-aks-yok-zor     
+            move aceanlas-spe-yok          to xaceanlas-spe-yok         
+            move aceanlas-spe-yok-zor      to xaceanlas-spe-yok-zor     
+            move aceanlas-ear              to xaceanlas-ear             
+            move aceanlas-ear-zor          to xaceanlas-ear-zor 
+            move aceanlas-min-max-var      to xaceanlas-min-max-var     
+            move aceanlas-min-gece         to xaceanlas-min-gece       
+            move aceanlas-max-gece         to xaceanlas-max-gece       
+            move aceanlas-hs               to xaceanlas-hs             
+            move aceanlas-sart-var         to xaceanlas-sart-var 
+            move aceanlas-sart-var-online  to xaceanlas-sart-var-online 
+            move aceanlas-sart-bas         to xaceanlas-sart-bas       
+            move aceanlas-sart-bit         to xaceanlas-sart-bit       
+            move aceanlas-sart-min-gece    to xaceanlas-sart-min-gece  
+            move aceanlas-sart-max-gece    to xaceanlas-sart-max-gece  
+            move aceanlas-haftatek         to xaceanlas-haftatek      
+            move aceanlas-tutar-sira       to xaceanlas-tutar-sira    
+            move aceanlas-eb-odeme-orani   to xaceanlas-eb-odeme-orani  
+            move aceanlas-eb-odeme-tarihi  to xaceanlas-eb-odeme-tarihi 
+            move aceanlas-eb-calisma-tipi  to xaceanlas-eb-calisma-tipi 
+            move aceanlas-calisma-kon-tipi to xaceanlas-calisma-kon-tipi
+            move aceanlas-eb-odeme-tipi    to xaceanlas-eb-odeme-tipi   
+            move aceanlas-odeme-tarihi     to xaceanlas-odeme-tarihi    
+            move aceanlas-vade-tarih       to xaceanlas-vade-tarih      
+            move aceanlas-peryot           to xaceanlas-peryot          
+            move aceanlas-once-sonra       to xaceanlas-once-sonra 
+            move aceanlas-anlasma-sira     to xaceanlas-anlasma-sira 
+            move aceanlas-yassinir         to xaceanlas-yassinir 
+            move aceanlas-referans         to xaceanlas-referans    |||Xfirat ekleme 12/2/2021
+
+            move xaceanlas-rec             to aceanlas-rec
+            write aceanlas-rec invalid 
+               display message box aceanlas-acenta " kodlu acentanin " aceanlas-anlasma " kodlu anlasma defaultu  tanimlanmis" new-line 
+                                "Onceden tanimlanan anlasma degistirilmedi yani bu anlasma kodu icin KOPYALAMA YAPILMADI"
+            end-write
+            perform log-operation-aceanlas
+
+            move kaynak-acenta to aceanlas-acenta
+            start aceanlas key not < aceanlas-anah invalid
+                  continue
+            not invalid
+            read aceanlas next no lock end 
+               continue 
+            end-read
+            end-start
+   
+     end-read
+     end-perform
+     end-start
+     close aceanlas
+     if tmp-hedef not = "XXXX"
+        display message box "Kopyalama Islemi Tamamlanmistir.."new-line
+                         "Lutfen Kontrol Ediniz..."
+                     title "[ Uyari ]"
+                     icon 1
+     end-if
+     .
+*
+ acc-arama-Aft-Procedure.
+     perform takas-yaz
+     .
+*
+ acc-55-Aft-Procedure.       
+     perform anlasma-kontrol
+     open input aceanlas
+     initialize aceanlas-rec
+     move acc-01-value     to aceanlas-acenta
+     move acc-02-value     to aceanlas-anlasma
+     move acc-55-value     to aceanlas-anlasma-sira 
+     read aceanlas no lock invalid
+             initialize deg2 cb1-val cb2-val cb3-val cb4-val cb5-val  cb7-val cb-1301-val
+                        eb-odeme-orani eb-odeme-tarihi   odeme-tarihi odeme-peryot bebek-sinir    
+                           
+
+             display acc-01 acc-03 acc-04 acc-05 acc-06 
+                     acc-07 acc-08 acc-09 acc-10 acc-11 acc-12
+                     acc-13 acc-14 acc-15 acc-16 acc-17 acc-18
+                     acc-23 cb1 cb2
+                     cb3  cb5 cb6 cb7  acc-eb-odeme-orani acc-eb-odeme-gun acc-eb-odeme-ay acc-eb-odeme-yil
+                     acc-odeme-gun acc-odeme-ay acc-odeme-yil acc-odeme-peryot 
+                         acc-hs acc-tsira acc-mvar acc-ming acc-maxg acc-svar acc-svara acc-syil1 acc-say1 acc-sgun1
+                          acc-syil2 acc-say2 acc-sgun2 acc-sming acc-smaxg  acc-sarth cb-hs acc-ht cb-1301
+     not invalid
+            move aceanlas-acenta           to acc-01-value 
+            move aceanlas-anlasma          to acc-02-value
+            move aceanlas-anlasma-sira     to acc-55-value
+            move aceanlas-anlasma-tar      to anlas-tarih
+            move aceanlas-kabul-bas        to anlas-kbl-bas-tarih
+            move aceanlas-kabul-bit        to anlas-kbl-bit-tarih
+            move aceanlas-donem-bas        to anlas-don-bas-tarih
+            move aceanlas-donem-bit        to anlas-don-bit-tarih
+            move aceanlas-anlasma-oncelik  to oncelik-sira  
+
+            move aceanlas-min-max-var      to d-mvar   
+            move aceanlas-min-gece         to d-ming   
+            move aceanlas-max-gece         to d-maxg   
+            move aceanlas-hs               to d-hs  
+            move aceanlas-tutar-sira       to oda-tutar-sira 
+            move aceanlas-sart-var         to d-svar 
+            move aceanlas-sart-var-online  to d-sovar
+            move aceanlas-ace-kom-uygulama to cb-1301-val    
+            move aceanlas-sart-bas-yil     to d-syil1   
+            move aceanlas-sart-bas-ay      to d-say1    
+            move aceanlas-sart-bas-gun     to d-sgun1   
+            move aceanlas-sart-bit-yil     to d-syil2   
+            move aceanlas-sart-bit-ay      to d-say2    
+            move aceanlas-sart-bit-gun     to d-sgun2   
+            move aceanlas-sart-min-gece    to d-sming   
+            move aceanlas-haftatek         to htek 
+            move aceanlas-sart-max-gece    to d-smaxg   
+            move aceanlas-sart-haric       to d-sarth   
+            move aceanlas-hs-gun           to hs
+
+
+         
+            move aceanlas-anl-zorunlu      to cb1-val     
+            move aceanlas-aks-yok          to cb2-val         
+            move aceanlas-aks-yok-zor      to cb3-val     
+            move aceanlas-spe-yok          to cb4-val         
+            move aceanlas-spe-yok-zor      to cb5-val     
+            move aceanlas-ear              to cb6-val             
+            move aceanlas-ear-zor          to cb7-val
+                                           
+************odeme plani---**************************
+            move  aceanlas-eb-odeme-orani   to eb-odeme-orani      
+            move  aceanlas-eb-odeme-tarihi  to eb-odeme-tarihi     
+            move  aceanlas-eb-calisma-tipi  to calisma-tipi
+            move  aceanlas-calisma-kon-tipi to calisma-kon-tipi
+            move  aceanlas-eb-odeme-tipi    to odeme-tipi     
+
+            evaluate aceanlas-eb-odeme-tipi
+            when "S"
+                 modify Form1-La-1ac,  visible = true
+                 modify acc-odeme-gun, visible = true
+                 modify acc-odeme-ay,  visible = true
+                 modify acc-odeme-yil, visible = true
+                 move  aceanlas-odeme-tarihi     to odeme-tarihi        
+            
+                 modify Form1-La-1aba, visible = false
+                 modify acc-odeme-peryot, visible = false
+                 modify cb-once-sonra, visible = false 
+                 display acc-odeme-gun acc-odeme-ay acc-odeme-yil
+            when "C"
+                 modify Form1-La-1ac,  visible = false
+                 modify acc-odeme-gun, visible = false
+                 modify acc-odeme-ay,  visible = false
+                 modify acc-odeme-yil, visible = false
+                 move  aceanlas-odeme-tarihi     to odeme-tarihi        
+            
+                 modify Form1-La-1aba, visible = true
+                 modify acc-odeme-peryot, visible = true
+                 modify cb-once-sonra, visible = true 
+                 move  aceanlas-peryot           to odeme-peryot        
+                 move  aceanlas-once-sonra       to once-sonra    
+                 display acc-odeme-peryot cb-once-sonra
+            when "T"
+                 modify Form1-La-1ac,  visible = false
+                 modify acc-odeme-gun, visible = false
+                 modify acc-odeme-ay,  visible = false
+                 modify acc-odeme-yil, visible = false
+                 move  aceanlas-odeme-tarihi     to odeme-tarihi                    
+                 
+                 modify Form1-La-1aba, visible = true
+                 modify acc-odeme-peryot, visible = true
+                 modify cb-once-sonra, visible = true 
+                 move  aceanlas-peryot           to odeme-peryot        
+                 move  aceanlas-once-sonra       to once-sonra    
+                 display acc-odeme-peryot cb-once-sonra
+            end-evaluate
+     end-read
+     close aceanlas
+     display acc-01 acc-03 acc-04 acc-05 acc-06 
+             acc-07 acc-08 acc-09 acc-10 acc-11 acc-12 acc-55
+             acc-13 acc-14 acc-15 acc-16 acc-17 acc-18
+           acc-23 cb1 cb2 cb-1301
+             cb3 cb4 cb5 cb6 cb7  acc-eb-odeme-orani acc-eb-odeme-gun acc-eb-odeme-ay acc-eb-odeme-yil
+             acc-odeme-gun acc-odeme-ay acc-odeme-yil acc-odeme-peryot
+                 acc-hs acc-tsira acc-mvar acc-ming acc-maxg acc-svar acc-svara acc-syil1 acc-say1 acc-sgun1
+                          acc-syil2 acc-say2 acc-sgun2 acc-sming acc-smaxg acc-sarth cb-hs acc-ht
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     
+     .
+*
+ acc-22a-Aft-Procedure.
+       open input yassinir.
+       move ekran-yassinir-kodu  to yassinir-kodu
+       read yassinir no lock invalid continue
+       end-read
+       display Form1-La-4
+       close yassinir.
+      
+     .
+*
+ coklu-acenta-ara.
+      initialize link-arama-turu link-arananlar-donus hedef-acenta hedef-adi 
+      move 01                 to link-arama-turu
+      move fil-coklu-acenta   to link-arananlar-donus
+      call "/asya/ytl/obj/otel/cokluara.asy" 
+             using link-arama-turu link-arananlar-donus   
+             on exception 
+             perform callerr-proc
+             exit paragraph
+             not on exception 
+       cancel "/asya/ytl/obj/otel/cokluara.asy"
+       end-call
+       move link-arananlar-donus  to fil-coklu-acenta
+       move 1         to p
+       perform varying i 
+               from 1 
+               by 1 
+               until i > 500
+                  if link-arananlar(i) = spaces 
+                     exit perform 
+                  end-if
+                     string link-arananlar(i) delimited by "  "
+                            "," delimited by size 
+                     into hedef-adi pointer p              
+       end-perform
+       move "XXXX" to hedef-acenta
+       display acc-hedef acc-hedef-adi.
+
+
+ 

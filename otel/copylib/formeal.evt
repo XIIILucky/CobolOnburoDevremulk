@@ -1,0 +1,602 @@
+* formeal.evt
+* formeal.evt is generated from D:\asya\acugt.ytl\otel\formeal.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi.
+      move tarih-tasi      to tarih son-tar
+      open input genel
+      initialize genel-rec
+      move 1         to genel-anahtar 
+      read genel no lock invalid 
+           continue 
+      end-read 
+      close genel
+      open input genel2
+      move 1 to genel2-anah 
+      read genel2 no lock invalid continue
+           not invalid continue
+      end-read
+      close genel2              
+
+      if genel2-rapor-comp-durumu = spaces 
+         move 2 to tumu
+      else 
+         move genel2-rapor-comp-durumu to tumu
+      end-if
+     .
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 1
+         evaluate control-id
+         when 11
+             perform acenta-ara
+         when 13
+             perform firma-ara
+         when 9
+             perform pansiyon-ara
+         end-evaluate
+      when 2
+         perform takas-basla
+
+         perform rapor-basla
+         perform acenta-oku
+         perform firma-oku
+         perform pansiyon-oku
+      end-evaluate.
+*
+ takas-basla.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+**************************
+ 
+     move print-no         to takas-no 
+     open output takas close takas open i-o takas 
+
+       open input takvim takvim2 rez firma
+                  cast  grup aksiyhrk gruplar grupfiy acenta 
+                  formul fiyat fiyatana kur konuk  kodlar02 cast3 odalar     
+     
+     initialize cast-rec 
+     move tarih   to cast-tarih
+     start cast key not < cast-tarih invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-cast = "10"
+     read cast next no lock end move "10"  to fs-cast
+     not at end
+          if cast-tarih > son-tar
+              exit perform 
+          end-if
+           
+          if cast-pan-tipi not = acc-pans and
+             acc-pans not = spaces
+                exit perform cycle
+          end-if
+            
+          initialize rez-rec durum durumlar
+                     kahtop
+                     ogltop
+                     akstop
+
+          move cast-rez-no      to rez-no
+          read rez no lock invalid
+              display message box rez-no "'nolu Rezervasyon Bulunamadi..."  cast-tarih
+                              title "[ Uyari ]"
+                              icon 1
+               exit perform cycle 
+          end-read
+          if rez-durumu = "S"
+              exit perform cycle
+          end-if
+          if rez-k-g-b  not = "K"
+             exit perform cycle
+          end-if
+          if rez-durumu not = "I"
+             exit perform cycle
+          end-if
+          if rez-acenta not = acc-acenta and
+             acc-acenta not = spaces
+                exit perform cycle
+          end-if
+          if rez-firma not = acc-firma and
+             acc-firma not = spaces
+               exit perform cycle
+          end-if
+            if onkpara-referans-var = 1 then 
+               perform ref-filtre
+               if  not ref-gecti then 
+                   exit perform cycle 
+               end-if
+            end-if
+           if tumu > 1 then
+                  initialize kodlar02-rec
+                  move "B"            to kodlar02-tipi
+                  move rez-odeme-tipi to kodlar02-kodu
+                  read kodlar02 no lock invalid 
+                       move spaces to kodlar02-adi
+                  end-read
+                  if ( ode-tipi = "D" or  ode-tipi = "F" or  ode-tipi = "O")   and tumu = 2 then
+                      exit perform cycle
+                  end-if
+                  if ( ode-tipi not = "D" and ode-tipi not = "F" and ode-tipi not = "O") and tumu = 3 then
+                     exit perform cycle 
+                  end-if
+            
+            end-if
+                  initialize kodlar02-rec
+          move rez-pan-tipi     to kodlar02-kodu
+          move "A"              to kodlar02-tipi
+          read kodlar02 no lock invalid
+              display message box rez-pan-tipi "'nolu Pansiyon Kodu Bulunamadi..."
+                              title "[ Uyari ]"
+                              icon 1
+                  exit perform cycle 
+          end-read        
+**********************************************************************************
+          if rez-gir-tar = cast-tarih
+             move "G"           to durum
+          end-if
+          if rez-cik-tar = cast-tarih
+             move "C"           to durum
+          end-if
+          if durum not = "G" and  
+             durum not = "C"
+             move "K"           to durum
+          end-if
+          compute rez-tkisi = rez-buyuk + rez-kucuk + rez-free
+*          move durum            to det-11
+************************************************************************************
+          if durum = "G" and pan-kahvalti-giris = "X"
+             move rez-tkisi           to giris-kah
+          end-if
+          if durum = "G" and pan-oglen-giris = "X"
+             move rez-tkisi           to giris-ogle
+          end-if
+          if durum = "G" and pan-aksam-giris = "X"
+             move rez-tkisi          to giris-aksam
+          end-if
+**********************************************************************************
+          if durum = "C" and pan-kahvalti-cikis = "X"
+             move rez-tkisi            to cikis-kah
+          end-if
+          if durum = "C" and pan-oglen-cikis = "X"
+             move rez-tkisi             to cikis-ogle
+          end-if
+          if durum = "C" and pan-aksam-cikis = "X"
+             move rez-tkisi           to cikis-aksam
+          end-if
+**********************************************************************************
+          if durum = "K" and pan-kahvalti-kalis = "X"
+             move rez-tkisi           to kalis-kah             
+          end-if
+          if durum = "K" and pan-oglen-kalis = "X"
+             move rez-tkisi            to kalis-ogle             
+          end-if
+          if durum = "K" and pan-aksam-kalis = "X"
+             move rez-tkisi            to kalis-aksam             
+          end-if
+
+          compute kahtop = kahtop + giris-kah + cikis-kah + kalis-kah
+          compute ogltop = ogltop + giris-ogle + cikis-ogle + kalis-ogle
+          compute akstop = akstop + giris-aksam + cikis-aksam + kalis-aksam
+           
+          initialize takas-rec 
+          move cast-tarih              to takas-tarih
+          move durum                   to takas-durum
+          read takas no lock invalid
+               initialize takas-rec 
+               move cast-tarih              to takas-tarih
+               move durum                   to takas-durum
+    
+               move kahtop                  to takas-sabah-adet
+               move ogltop                  to takas-ogle-adet
+               move akstop                  to takas-aksam-adet
+               write takas-rec end-write 
+          not invalid 
+               add kahtop                  to takas-sabah-adet
+               add ogltop                  to takas-ogle-adet
+               add akstop                  to takas-aksam-adet
+               move durum                   to takas-durum
+         
+               rewrite takas-rec end-rewrite 
+          end-read 
+          
+       
+           
+     end-read 
+     end-perform
+     end-start
+
+       move tarih to takas-blok-bas-tar
+       move son-tar to takas-blok-bit-tar
+       move 1         to takas-blok-konumlu
+       if beklenen-grup = 1 
+          perform grup-takas-al
+          perform gruplari-takasa-ekle
+      end-if
+
+       close takvim takvim2 rez  firma
+                  cast   grup aksiyhrk gruplar grupfiy acenta 
+                  formul fiyat fiyatana kur konuk   kodlar02 cast3 takas odalar 
+
+     .
+
+*
+ gruplari-takasa-ekle2.
+          initialize  durum durumlar
+                     kahtop
+                     ogltop
+                     akstop
+      
+     if takas-blok-konumlu = 1 then 
+     move takas-blok-konum to rez-oda-konumu rez-fiyat-konumu
+      if onkpara-referans-var = 1 then 
+       perform ref-filtre
+       if  not ref-gecti then 
+           exit paragraph
+       end-if
+      end-if
+     end-if
+  
+    
+   
+    if acc-acenta not = spaces and gruplar-acenta not = acc-acenta, exit paragraph
+    end-if
+    
+    
+    if tumu > 1 then
+          move "B" to kodlar02-tipi
+          move gruplar-odeme  to kodlar02-kodu
+          read kodlar02 no lock invalid 
+              move spaces to kodlar02-adi
+          end-read
+         if ( ode-tipi = "D" or  ode-tipi = "F" or  ode-tipi = "O")   and tumu = 2 then
+          exit paragraph
+          end-if
+          if ( ode-tipi not = "D" and ode-tipi not = "F" and ode-tipi not = "O") and tumu = 3 then
+            exit paragraph
+          end-if
+    end-if
+   
+
+*** Grup Filtresi
+
+
+     move takas-blok-tarih to takas-tarih
+
+
+          initialize kodlar02-rec
+          move gruplar-pan-tipi     to kodlar02-kodu
+          move "A"                  to kodlar02-tipi
+          read kodlar02 no lock invalid
+              display message box gruplar-pan-tipi "'nolu Pansiyon Kodu Bulunamadi..."
+                              title "[ Uyari ]"
+                              icon 1
+                
+          end-read        
+**********************************************************************************
+          if gruplar-gel-tar = takas-blok-tarih
+             move "G"           to durum
+          end-if
+          if gruplar-git-tar = takas-blok-tarih
+             move "C"           to durum
+          end-if
+          if durum not = "G" and  
+             durum not = "C"
+             move "K"           to durum
+          end-if
+     move durum                   to takas-durum
+     read takas no lock invalid 
+             stop " " 
+     end-read 
+
+       
+      compute geklenecek-oda = takas-blok-ayrilan-oda  - takas-blok-satilan-oda
+     if geklenecek-oda < 0 then 
+         move 0 to geklenecek-oda
+     end-if
+      compute geklenecek-pax = takas-blok-ayrilan-pax - takas-blok-satilan-pax 
+       if   gruplar-kalanlar-double = 1 then 
+             compute geklenecek-pax = takas-blok-kalan-oda * 2
+        end-if
+     if geklenecek-pax < 0 then 
+         move 0 to geklenecek-pax
+     end-if
+       
+******** ara pazar toplamlari
+*       compute g-takas3-oda   = g-takas3-oda  +  geklenecek-oda
+*       compute g-takas3-pax   = g-takas3-pax  +  geklenecek-pax
+
+*      evaluate gruplar-grup-statu   
+*         when "1"
+*          add geklenecek-oda    to   sS-TAKAS3-p                   
+*         when "2"                                     
+*           add geklenecek-oda    to   sS-TAKAS3-O                                            
+*         when "3"                                   
+*           add geklenecek-oda    to   sS-TAKAS3-t     
+*         when other
+*           add geklenecek-oda    to    sS-TAKAS3-d   
+*      end-evaluate
+*      add geklenecek-pax    to         sS-TAKAS3-tpax 
+
+          compute rez-tkisi = geklenecek-pax  
+ 
+************************************************************************************
+          if durum = "G" and pan-kahvalti-giris = "X"
+             move rez-tkisi           to giris-kah
+          end-if
+          if durum = "G" and pan-oglen-giris = "X"
+             move rez-tkisi           to giris-ogle
+          end-if
+          if durum = "G" and pan-aksam-giris = "X"
+             move rez-tkisi          to giris-aksam
+          end-if
+**********************************************************************************
+          if durum = "C" and pan-kahvalti-cikis = "X"
+             move rez-tkisi            to cikis-kah
+          end-if
+          if durum = "C" and pan-oglen-cikis = "X"
+             move rez-tkisi             to cikis-ogle
+          end-if
+          if durum = "C" and pan-aksam-cikis = "X"
+             move rez-tkisi           to cikis-aksam
+          end-if
+**********************************************************************************
+          if durum = "K" and pan-kahvalti-kalis = "X"
+             move rez-tkisi           to kalis-kah             
+          end-if
+          if durum = "K" and pan-oglen-kalis = "X"
+             move rez-tkisi            to kalis-ogle             
+          end-if
+          if durum = "K" and pan-aksam-kalis = "X"
+             move rez-tkisi            to kalis-aksam             
+          end-if
+
+          compute kahtop = kahtop + giris-kah + cikis-kah + kalis-kah
+          compute ogltop = ogltop + giris-ogle + cikis-ogle + kalis-ogle
+          compute akstop = akstop + giris-aksam + cikis-aksam + kalis-aksam
+
+               add kahtop                  to takas-sabah-adet
+               add ogltop                  to takas-ogle-adet
+               add akstop                  to takas-aksam-adet
+
+      rewrite takas-rec invalid write takas-rec end-rewrite.
+*
+ rapor-basla.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi 
+     open output dokumer 
+     open i-o takas 
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Yemek Listesi" to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Meal Plan" to det-filler
+     move "ilk Tarih:"     to det-filler(41:10)
+     move gun        to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ay         to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move yil        to det-filler(57:04)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "                " to det-filler
+     move "Son Tarih:"     to det-filler(41:10)
+     move son-gun        to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move son-ay         to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move son-yil        to det-filler(57:04)
+     write dokumer-rec from detay
+     
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LRLLLLLLLLLRRRRRLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"                          to det-dokumer-20(1:2)     
+     move "Tarih"                       to det-1
+     move "SABAH"                       to det-2 
+     move "OGLEN"                       to det-3 
+     move "AKSAM"                       to det-4 
+     move "|" to fil-1 fil-2 fil-3 fil-4  
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4  
+     write dokumer-rec from detay
+**************************
+     initialize fs-takas buyuk kucuk free bebek kahtop akstop ogltop
+     perform with test after until fs-takas = "10"
+     read takas next no lock end move "10" to fs-takas
+     not at end
+          if takas-tarih > son-tar
+               exit perform
+          end-if
+
+          initialize dokumer-rec detay 
+ 
+          move takas-gun        to egun
+          move takas-ay         to eay
+          move takas-yil        to eyil
+          move etar             to det-1
+          move takas-sabah-adet to z-kahtop
+          move z-kahtop         to det-2
+
+          move takas-ogle-adet to z-ogltop
+          move z-ogltop         to det-3
+
+          move takas-aksam-adet to z-akstop
+          move z-akstop         to det-4
+
+          write dokumer-rec from detay
+
+        
+     end-read
+     end-perform
+          perform toplam-detay
+     close dokumer
+     call dokumer-prog on exception
+          perform callerr-proc
+     not on exception
+          cancel dokumer-prog
+     end-call
+     close takas
+     delete file dokumer takas. 
+*
+ toplam-detay.
+     .
+*
+ acenta-ara.
+     initialize acenta-cagir
+     call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+         on exception perform callerr-proc
+         not on exception
+         cancel "/asya/ytl/obj/otel/acenara.asy" 
+     end-call
+     move acenta-cagir     to acc-acenta
+     display acc-4
+     move 4 to accept-control
+     move 11 to control-id.
+*
+ firma-ara.
+     initialize firma-cagir
+     call "/asya/ytl/obj/otel/firmara.asy" using firma-cagir
+         on exception perform callerr-proc
+         not on exception
+         cancel "/asya/ytl/obj/otel/firmara.asy" 
+     end-call
+     move firma-cagir     to acc-firma
+     display acc-5
+     move 4 to accept-control
+     move 13 to control-id.
+*
+ pansiyon-ara.
+     initialize pansiyon-cagir
+     move "A" to pansiyon-tipi-cagir
+     call "/asya/ytl/obj/otel/panara.asy" using pansiyon-cagir
+          on exception perform callerr-proc
+          not on exception
+     cancel "/asya/ytl/obj/otel/panara.asy" 
+     end-call
+     move pansiyon-kodu-cagir     to acc-pans
+     display acc-6
+     move 4 to accept-control
+     move 9 to control-id.
+*
+ acenta-oku.
+     open input acenta
+     initialize acenta-rec
+     move acc-acenta       to acenta-kodu
+     read acenta no lock invalid
+          move "Tanimsiz Acenta..."   to lb-acenta-adi
+     not invalid
+          move acenta-adi             to lb-acenta-adi
+     end-read
+     close acenta
+     if acc-acenta = spaces
+        move "Tumu"        to lb-acenta-adi
+     end-if
+     display lb-acenta.
+*
+ firma-oku.
+     open input firma
+     initialize firma-rec
+     move acc-firma       to firma-kodu
+     read firma no lock invalid
+          move "Tanimsiz Firma..."   to lb-firma-adi
+     not invalid
+          move firma-adi             to lb-firma-adi
+     end-read
+     close firma
+     if acc-firma = spaces
+        move "Tumu"        to lb-firma-adi
+     end-if
+     display lb-firma.
+*
+ pansiyon-oku.
+     open input kodlar02
+     initialize kodlar02-rec
+     move "A"          to kodlar02-tipi
+     move acc-pans     to kodlar02-kodu
+     read kodlar02 no lock invalid
+          move "Tanimsiz Pansiyon "     to lb-pans-adi
+     not invalid
+          move kodlar02-adi             to lb-pans-adi
+     end-read
+     close kodlar02
+     if acc-pans = spaces
+        move "Tumu"    to lb-pans-adi
+     end-if
+     display lb-pans.
+*
+ acc-4-Aft-Procedure.
+     perform acenta-oku.
+*
+ acc-5-Aft-Procedure.
+     perform firma-oku.
+*
+ acc-6-Aft-Procedure.
+     perform pansiyon-oku.
+
+
+ 

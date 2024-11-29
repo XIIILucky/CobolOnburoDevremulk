@@ -1,0 +1,119 @@
+* efatgun.evt
+* efatgun.evt is generated from D:\asya\acugt.ytl\otel\efatgun.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      call "c$narg" using link-var. 
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 2
+         
+        display message box "E-Fatura Kullanicilari Guncellenecektir." new-line
+                             "Eminmisiniz."
+                         title "Uyari"
+                         icon 1
+                         type 2
+                         default 2
+                         returning return-code 
+         if return-code = 2
+             exit paragraph
+         end-if 
+
+         perform yedek-al
+         perform dosya-kopyala
+         set exit-pushed to true 
+      end-evaluate.
+*
+ yedek-al.
+      call "c$copy" using "/asya/ytl/data/otel/standart/efatci","/asya/ytl/data/otel/standart/yedek_efatci".
+*
+ dosya-kopyala.
+      call "C$COPY" using "/asya/ytl/exe/EFATCI.exe",
+                          "@[DISPLAY]:C:\Acucorp\Acucbl701\AcuGT\bin\EFATCI.exe"                                                       
+                    returning donus-kodu
+      if donus-kodu <> 0
+         display message box "Netsis Entegrasyon Dosyasi Kopyalanamadi..."
+                         title "Uyari"
+                         icon 1
+      else 
+         perform dosya-exe-calistir         
+      end-if.
+*
+ dosya-exe-calistir.  
+      call "c$system" using "C:\Acucorp\Acucbl701\AcuGT\bin\EFATCI.exe",CSYS-DESKTOP 
+      call "c$copy" using "@[DISPLAY]:C:\Acucorp\Acucbl701\AcuGT\bin\efatci.txt","/asya/ytl/liste/efatci.txt"
+                    returning donus-kodu
+      if donus-kodu <> 0
+         display message box "Netsis Entegrasyon Dosyasi Servere Kopyalanamadi..."
+                         title "Uyari"
+                         icon 1        
+      else
+         perform dosya-oku
+      end-if.
+*
+ dosya-oku.
+     modify Form1-St-1-handle,
+            title = "Aktarim Basliyor."    
+     move "efatci.txt"      to fidetext-adi
+     move "efatci2.txt"     to amontext-adi
+     open output efatci close efatci open i-o efatci
+     open input fidetext  
+     open output amontext   
+     perform until fs-fidetext = "10"
+     initialize fidetext-rec     
+     read fidetext next no lock end move "10" to fs-fidetext
+     not end
+          move 1 to sayac    
+          initialize amontext-rec
+          perform varying k from 1 by 1 until k > 50
+               unstring fidetext-rec 
+                        delimited by x"09"
+               into amontext-det(k) pointer sayac
+          end-perform
+          
+          if amontext-det(1) <> spaces
+             move amontext-det(1)   to durum
+             display acc-durum
+             initialize efatci-rec
+             move amontext-det(1)   to efatci-kodu 
+             read efatci no lock invalid 
+                  continue 
+             end-read 
+                 move amontext-det(3)           to efatci-unvan
+                 move amontext-det(5)(1:2)      to efatci-giris-gun
+                 move amontext-det(5)(4:2)      to efatci-giris-ay
+                 move amontext-det(5)(7:4)      to efatci-giris-yil
+                 move "NTSI"                    to efatci-staf
+                 accept efatci-islem-tarih from century-date 
+                 accept efatci-islem-zaman from time
+
+                 write efatci-rec invalid 
+                     rewrite efatci-rec end-rewrite 
+                 end-write 
+          end-if
+    end-read 
+    end-perform  
+    close fidetext close amontext efatci   
+    modify Form1-St-1-handle,title = "Aktarim Tamamlandi".
+
+
+*
+ Form1-Aft-Initdata.
+    if link-var > 0
+         perform yedek-al
+         perform dosya-kopyala
+         set exit-pushed to true     
+    end-if.
+
+ 

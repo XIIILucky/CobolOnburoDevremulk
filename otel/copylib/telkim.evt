@@ -1,0 +1,389 @@
+* telkim.evt
+* telkim.evt is generated from D:\asya\acugt.ytl\otel\telkim.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ com-01-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Ntf-Selchange
+        PERFORM com-01-Ev-Ntf-Selchange
+     END-EVALUATE
+     .
+
+ Lb-01-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM Lb-01-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+     .
+*
+ acc-01-Bef-Procedure.
+    perform ekran-goster.
+    perform Lb-01-goster.
+     .
+
+ ekran-goster. 
+    display acc-01 acc-02 acc-03 acc-04 com-01.
+*
+ Lb-01-goster.
+    modify lb-01,
+           reset-list  = 1
+           mass-update = 1.
+     open input telkim.
+     initialize telkim-rec
+     start telkim key not < telkim-anah invalid
+           continue
+     not invalid
+     move zeroes to fs-telkim
+     perform with test after until fs-telkim = "10"
+       read telkim next no lock end move "10" to fs-telkim
+         not at end
+           initialize lb-01-value
+           move telkim-telno  to lb-01-col-1
+           move telkim-adi    to lb-01-col-2
+           move telkim-soy    to lb-01-col-3
+           modify lb-01, item-to-add(lb-01-value)
+       end-read
+     end-perform
+     end-start
+     close telkim.
+     initialize telkim-rec
+     modify lb-01,
+            mass-update = 0
+            selection-index = 1
+            thumb-position = 1.     
+     .
+ listbox-eventlar.
+     evaluate event-type
+          when cmd-dblclick
+               inquire lb-01,value in telkim-telno
+               perform acc-01-Aft-Procedure
+               move 4 to accept-control
+               move 3 to control-id
+               exit paragraph
+          when ntf-selchange
+          when cmd-goto
+               inquire lb-01,value in telkim-telno
+               display acc-01,
+               perform acc-01-Aft-Procedure
+     end-evaluate.
+      .
+*
+ acc-01-Aft-Procedure.
+    open input telkim.
+    read telkim no lock invalid 
+        initialize telkim-tipi telkim-aciklama 
+                   telkim-adi telkim-soy
+        perform ekran-goster
+      not invalid
+        move telkim-tipi to com-01-value
+        perform ekran-goster
+    end-read. 
+    close telkim.
+    perform listbox-yer-bul.
+    if i > zeroes
+       modify lb-01,
+              selection-index = i
+    end-if.
+     .
+ listbox-yer-bul.
+     initialize durum tekrar
+     perform varying i from 1 by 1 until (durum = "E" or "H")
+             initialize etelkim-telno
+             modify lb-01,
+                    query-index = i
+             inquire lb-01,
+                    item-value in etelkim-telno
+             if etelkim-telno <> spaces
+                if etelkim-telno = tekrar
+                   move "E" to durum
+                   exit perform
+                else
+                   move etelkim-telno to tekrar
+                end-if
+             end-if
+             if etelkim-telno = spaces
+                move "H" to durum
+                initialize i 
+                exit perform
+             else
+                if etelkim-telno = telkim-telno
+                   move "E" to durum
+                   exit perform
+                end-if
+             end-if
+    end-perform.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+         when 7
+               stop "bu islem telefon numaralarini bosluksuz olarak duzenler...... Devam etmek Icýn g'ye basýnýz!"
+
+                open i-o telkim
+                     initialize telkim-rec
+                     start telkim key not < telkim-anah invalid
+                           continue
+                     not invalid
+                     move zeroes to fs-telkim
+                     perform with test after until fs-telkim = "10"
+                       read telkim next no lock end move "10" to fs-telkim
+                       not at end
+                                inspect TELKIM-TELNO replacing leading spaces by low-values
+                                
+                                initialize telkim-yeni-sira telkim-yeni
+                                perform varying i from 1 by 1 until i > 25
+                                      if TELKIM-TELNO(i:1) = spaces
+                                           exit perform cycle
+                                      end-if
+                                      add 1 to telkim-yeni-sira
+                                      move TELKIM-TELNO(i:1) to telkim-yeni(telkim-yeni-sira:1)
+                                end-perform
+
+                                delete telkim end-delete
+                                move telkim-yeni to TELKIM-TELNO
+
+                                write telkim-rec invalid
+                                        rewrite telkim-rec invalid
+                                                stop " "
+                                        end-rewrite
+                                end-write
+                       end-read
+                     end-perform
+                     end-start
+                 close telkim
+                 display message box "Bitti"
+         when 17 
+             move telkim-dosya         to link-logview-dosya-adi
+             set link-logview-pointer  to address of telkim-rec
+             set link-logview-rec-size to size of telkim-rec
+             perform logview-call
+             initialize key-status
+
+         when 2 
+          initialize telkim-yeni-sira telkim-yeni
+          perform varying i from 1 by 1 until i > 25
+                      if TELKIM-TELNO(i:1) = spaces
+                           exit perform cycle
+                      end-if
+                      add 1 to telkim-yeni-sira
+                      move TELKIM-TELNO(i:1) to telkim-yeni(telkim-yeni-sira:1)
+           end-perform
+           move telkim-yeni to TELKIM-TELNO
+
+           if telkim-telno = spaces 
+             display message box "Telefon Numarasini Giriniz..."
+             exit paragraph
+           end-if
+          
+
+           inquire com-01,value in Telkim-tipi
+           move k-kodu-tasi     to telkim-staf
+           open i-o telkim
+           write telkim-rec invalid 
+              rewrite telkim-rec,
+              end-rewrite,
+           end-write
+           perform log-operation-telkim
+           close telkim
+           initialize telkim-rec
+           perform ekran-goster
+           perform Lb-01-goster
+           move 4 to accept-control
+           move 3 to control-id
+         when 3
+            if telkim-telno = spaces 
+              display message box "Telefon Numarasini Giriniz..."
+              exit paragraph
+            end-if
+            if telkim-telno not = spaces
+              open i-o telkim
+              delete telkim invalid 
+                     display message box "Kayit Silinemedi...",
+              end-delete
+              perform log-operation-telkim
+              close telkim
+              initialize telkim-rec
+              perform ekran-goster
+              perform Lb-01-goster
+              move 4 to accept-control
+              move 3 to control-id
+            end-if
+         when 4
+              open input telkim
+              initialize telkim-rec
+              start telkim key not < telkim-anah invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close telkim
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Telefon Rehberi Raporu"      to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Telefon Rehberi Raporu"      to det-filler
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLLLLLLLLLLLLLLLLL"  to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"                          to det-dokumer-20(1:2)     
+     move "Telefon No" to det-1
+     move "Tipi"       to det-2
+     move "Aciklama"   to det-3
+     move "Adi"        to det-4
+     move "Soyadi"     to det-5
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5
+     write dokumer-rec from detay
+**************************
+
+              initialize fs-telkim
+              perform with test after until fs-telkim = "10"
+                    read telkim next no lock end move "10" to fs-telkim
+                    not at end
+                         initialize dokumer-rec detay
+                         move telkim-telno          to det-1
+                         evaluate telkim-tipi
+                           when "I" move "Is Gorusmesi"  to det-2
+                           when "O" move "Ozel Gorusme"  to det-2
+                           when "D" move "Diger"    to det-2
+                         end-evaluate
+                         move telkim-aciklama       to det-3
+                         move telkim-adi            to det-4
+                         move telkim-soy            to det-5
+                         move "|" to fil-1 fil-2 fil-3 fil-4 fil-5
+                         write dokumer-rec from detay
+                    end-read
+              end-perform
+                  initialize dokumer-rec detay
+                  move "-"            to det-dokumer-20(5:1)
+                  move all "-" to det-1 det-2 det-3 det-4 det-5
+                  write dokumer-rec from detay
+
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close telkim
+              delete file dokumer
+         when 5
+              move 1 to mesaj-no
+              perform mesaj-ver
+              if mesaj-hayir exit paragraph,end-if
+              open input fihrist
+              open i-o telkim
+              initialize fihrist-rec
+              start fihrist key not < fihrist-anahtar invalid continue
+                not invalid
+                read fihrist next no lock end move "10" to fs-fihrist
+                  not end
+                  initialize telkim-rec
+                  move fihrist-telefon to telkim-telno
+                  move fihrist-adi     to telkim-adi
+                  move fihrist-soyadi  to telkim-soy
+                  move "I"             to telkim-tipi
+                  move k-kodu-tasi     to telkim-staf
+                  write telkim-rec invalid 
+                        rewrite telkim-rec,
+                        end-rewrite,
+                  end-write
+                  perform log-operation-telkim
+                end-read
+              end-start
+              close fihrist telkim
+     end-evaluate.
+     .
+*
+ Form1-Bef-Initdata.
+    open input genel.
+    move 1 to genel-anahtar
+    read genel no lock invalid
+         initialize mesaj-link
+         move 17 to mesaj-no
+         perform mesaj-ver
+         goback
+    end-read
+    close genel.
+    initialize telkim-rec.
+    move 4 to accept-control.
+    move 3 to control-id.
+    perform Lb-01-goster.
+    move 0 to com-01-value.
+     .
+*
+ com-01-Ev-Ntf-Selchange.
+     inquire com-01,value in com-01-value
+     move com-01-value(1:1) to mus-tip.
+     perform ekran-goster.
+     .
+*
+ Lb-01-Ex-Ntf-Selchange.
+    perform listbox-eventlar.     
+     .
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+ 

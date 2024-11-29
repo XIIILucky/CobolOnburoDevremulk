@@ -1,0 +1,300 @@
+* wsvsorgu.evt
+* wsvsorgu.evt is generated from D:\asya\acugt.ytl\otel\wsvsorgu.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.    
+     call "c$narg" using link-var.
+     perform adresleri-tasi.
+
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid continue
+          not invalid continue
+     end-read
+     close genel.
+     move CALISMA-TARIHI to tarih-tasi
+    if rezpara-ortak-profil = 1
+       move "standart" to musteri-dosya-adres
+    else
+       move isyeri-adres-tasi to musteri-dosya-adres
+    end-if 
+
+*     open extend wlog
+*
+*     initialize wlog-rec
+*      accept wlog-tarih  from century-date 
+*      accept wlog-zaman  from time 
+*      move "Form1-bef-create"  to wlog-data
+*     write wlog-rec end-write     
+     .
+
+     
+*
+ Form1-Aft-Initdata.   
+     if link-var >= 1 then      
+              
+*          move sorgugweb-gelen-sorgu-voucher to sorguweb-gelen-sorgu-voucher
+*          move sorgugweb-gelen-sorgu-gir-tar to sorguweb-gelen-sorgu-gir-tar
+          move voucgweb-gelen-oda-sorgu to voucweb-gelen-oda-sorgu
+          perform islem 
+          move voucweb-gelen-oda-sorgu to voucgweb-gelen-oda-sorgu
+*          move sorguweb-gelen-sorgu-voucher to sorgugweb-gelen-sorgu-voucher
+*          move sorguweb-gelen-sorgu-gir-tar to sorgugweb-gelen-sorgu-gir-tar
+
+          set exit-pushed  to true
+     end-if .             
+*
+ Exception-Procedure.
+        evaluate key-status 
+          when 2        
+            
+            move sorgu-voucher     to voucweb-gelen-sorgu-voucher
+            move sorgu-giris-tar   to voucweb-gelen-sorgu-gir-tar
+             call "/asya/ytl/obj/otel/wsvsorgu.asy" 
+                        using   voucweb
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                   cancel "/asya/ytl/obj/otel/wsvsorgu.asy"
+            end-call            
+**            move "OK"                    to sorguweb-giden-profil-bilgi-sonuc           
+        end-evaluate.
+*
+ islem.
+*     if voucweb-gelen-sorgu-gir-tar <> tarih-tasi
+*           initialize voucweb-giden-oda-bilgi
+*           move 0      to voucweb-giden-oda-bilgi-rez-no  
+*        exit paragraph
+*     end-if 
+     open input rez yanrez  musteri
+     initialize rez-rec rez-bulundu
+
+     move voucweb-gelen-sorgu-voucher to rez-voucher
+     move "I"                         to rez-durumu
+     start rez key not < REZ-VOUC invalid
+         continue 
+     not invalid 
+     perform until fs-rez = "10"
+     read rez next no lock end move "10"  to fs-rez
+     not at end 
+         if rez-durumu <> "I"
+           exit perform 
+         end-if 
+         if rez-voucher <> voucweb-gelen-sorgu-voucher
+            exit perform
+         end-if 
+         if rez-gir-tar <> voucweb-gelen-sorgu-gir-tar
+            exit perform cycle
+         end-if 
+*         if REZ-C-IN =  "E" 
+*             exit perform cycle
+*         end-if 
+*         if rez-folio > 0 
+*           exit perform cycle
+*         end-if
+*         if rez-odano = spaces
+*           exit perform cycle 
+*         end-if 
+*     initialize wlog-rec
+*      accept wlog-tarih  from century-date 
+*      accept wlog-zaman  from time 
+*      move "voucher buklundu"  to wlog-data
+*     write wlog-rec end-write     
+
+           perform sorgu-gonder
+
+           move 1  to rez-bulundu 
+
+     end-read 
+     end-perform
+     end-start
+
+     if rez-bulundu = 0
+        perform rez-no-ara
+     end-if
+
+     if rez-bulundu = 0
+        perform soyad-ara
+     end-if
+
+     close rez yanrez  musteri.
+*
+ soyad-ara.
+     initialize rez-rec 
+     move "I"                         to rez-durumu
+     move voucweb-gelen-sorgu-voucher to rez-soyadi
+     start rez key not < rez-soy invalid
+           continue
+     not invalid
+     perform with test after until fs-rez = "10"
+     read rez next no lock end move "10" to fs-rez
+     not at end 
+
+         if rez-durumu <> "I"
+            exit perform 
+         end-if
+         if rez-soyadi <> voucweb-gelen-sorgu-voucher 
+            exit perform 
+         end-if
+         if rez-gir-tar <> voucweb-gelen-sorgu-gir-tar
+            exit perform cycle
+         end-if 
+
+         move 1 to rez-bulundu
+         perform sorgu-gonder
+
+     end-read 
+     end-perform 
+     end-start
+     .
+*
+ rez-no-ara.
+     initialize rez-rec 
+     move voucweb-gelen-sorgu-voucher(1:8) to z8
+     move z8                               to rez-no
+     read rez no lock invalid
+          continue
+     not invalid
+         if rez-durumu <> "I"
+           exit paragraph 
+         end-if 
+*         if rez-gir-tar <> voucweb-gelen-sorgu-gir-tar
+*            exit paragraph
+*         end-if 
+         move 1 to rez-bulundu
+         perform sorgu-gonder
+
+     end-read 
+     .
+*
+ sorgu-gonder.
+     initialize voucweb-giden-oda-bilgi
+     move rez-no      to voucweb-giden-oda-bilgi-rez-no
+
+*           if rez-c-in = "E" and rez-folio > 0
+*              move rez-c-in to voucweb-giden-cin-durumu
+*           else
+*              move "H"      to voucweb-giden-cin-durumu
+*           end-if
+
+     move "H"         to voucweb-giden-cin-durumu             
+     if rez-online-cin = 1  
+         move "E"     to voucweb-giden-cin-durumu             
+     end-if 
+     move rez-gir-tar to voucweb-giden-oda-bilgi-gir-tar
+     move rez-cik-tar to voucweb-giden-oda-bilgi-cik-tar
+     move " "         to voucweb-giden-oda-cikis-saati(1:2)
+     move ":"         to voucweb-giden-oda-cikis-saati(3:1)
+     move " "         to voucweb-giden-oda-cikis-saati(4:2)                 
+     if rez-vip <> spaces
+        move rez-vip to voucweb-giden-oda-bilgi-vip-durumu
+     else
+        move "N" to voucweb-giden-oda-bilgi-vip-durumu
+     end-if
+
+     move rez-buyuk to voucweb-giden-oda-buyuk
+
+     if rez-kucuk = 0
+         move 0 to voucweb-giden-oda-kucuk    
+     else
+         move rez-kucuk to voucweb-giden-oda-kucuk    
+     end-if 
+     if rez-free = 0
+         move 0  to voucweb-giden-oda-free        
+     else
+         move rez-free  to voucweb-giden-oda-free
+     end-if 
+     if rez-bebek = 0
+        move 0 to voucweb-giden-oda-bebek    
+     else
+        move rez-bebek to voucweb-giden-oda-bebek    
+     end-if 
+     move rez-odano    to voucweb-giden-oda-no
+     move 1            to rez-bulundu
+     perform yanrez-oku
+     .
+*
+ yanrez-oku.
+     perform varying i from 1 by 1 until i > 10             
+            move "REZ" to voucweb-giden-oda-rez-adi(i)
+            move "YOK" to voucweb-giden-oda-rez-soyadi(i) 
+              
+            move "E"   to voucweb-giden-oda-cinsiyet(i)
+            move " "   to voucweb-giden-oda-email(i)
+            move " " to voucweb-giden-oda-d-tar(i)
+            move "X"  to voucweb-giden-oda-tel(i)
+            move "YOK" to voucweb-giden-oda-uyruk(i)              
+**            move "ANAHYOK" to voucweb-giden-oda-yanrez-anah(i)
+            move "X" to voucweb-giden-oda-yanrez-sira(i)
+            move "X" to voucweb-giden-oda-yanrez-rezno(i)
+     end-perform
+
+     initialize i yanrez-rec 
+     move rez-no    to yanrez-rezno
+     start yanrez key not < yanrez-anah invalid 
+         continue 
+     not invalid 
+     perform until fs-yanrez = "10"
+     read yanrez next no lock end move "10"   to fs-yanrez
+     not at end 
+            if yanrez-rezno <> rez-no
+                exit perform 
+            end-if 
+            if yanrez-adi = spaces
+               exit perform cycle 
+            end-if 
+            if yanrez-soyadi = spaces               
+               exit perform cycle 
+            end-if
+            add 1              to i
+            if i > 10 
+               exit perform cycle 
+            end-if 
+            move yanrez-adi     to voucweb-giden-oda-rez-adi(i)
+            move yanrez-soyadi  to voucweb-giden-oda-rez-soyadi(i)
+            move yanrez-dog-tar to voucweb-giden-oda-d-tar(i)
+            move yanrez-anah    to voucweb-giden-oda-yanrez-anah(i)
+            if yanrez-profil-no > 0 
+               initialize musteri-rec 
+               move yanrez-profil-anah  to m-profil
+               read musteri no lock invalid 
+                   continue 
+               not invalid 
+                  if musteri-e-mail not = spaces
+                     move musteri-e-mail  to voucweb-giden-oda-email(i)
+                  end-if 
+                  if musteri-tel1 not = spaces
+                      move musteri-tel1   to voucweb-giden-oda-tel(i)
+                  end-if
+                  if musteri-dyil > 0
+                     move musteri-d-tarihi to voucweb-giden-oda-d-tar(i)
+                  else 
+                     move yanrez-dog-tar    to voucweb-giden-oda-d-tar(i)
+                  end-if
+                  if musteri-kim-uyruk not = spaces
+                     move musteri-kim-uyruk to voucweb-giden-oda-uyruk(i)
+                  end-if 
+                  if musteri-kim-cinsiyet not = spaces
+                     move musteri-kim-cinsiyet to voucweb-giden-oda-cinsiyet(i)
+                  end-if 
+               end-read 
+            end-if 
+     end-read 
+     end-perform
+     end-start.
+*
+ Form1-Aft-Routine.        
+**     close wlog.
+      .
+
+ 

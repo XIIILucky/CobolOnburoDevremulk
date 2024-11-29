@@ -1,0 +1,186 @@
+* bupglist.evt
+* bupglist.evt is generated from D:\asya\acugt.ytl\otel\bupglist.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     open input genel
+     initialize genel-rec
+     move 1  to genel-anahtar
+     read genel no lock invalid 
+         continue 
+     end-read 
+     close genel
+     perform kayit-kontrol
+     if kac-adet = 1
+        move yedek-blokupg-fis-no  to link-blokupg-fis-no            
+     end-if.
+*
+ kayit-kontrol.
+     open input blokupg
+     initialize blokupg-rec  kac-adet yedek-blokupg-fis-no
+     move link-upg-tar  to blokupg-upgrade-tarih
+     start blokupg key not < blokupg-upgrade-tarih invalid 
+          continue 
+     not invalid 
+     perform until fs-blokupg = "10"
+     read blokupg next no lock end move "10"  to fs-blokupg
+     not at end  
+          if blokupg-upgrade-tarih <> link-upg-tar 
+               exit perform 
+          end-if 
+          if blokupg-rezno <> link-upg-rezno
+              exit perform cycle 
+          end-if 
+          add 1               to kac-adet 
+          move blokupg-fis-no to yedek-blokupg-fis-no
+     end-read 
+     end-perform
+     end-start
+     close blokupg.
+*
+ Form1-Aft-Initdata.    
+      if kac-adet > 1
+        perform grid-baslik-yukle
+        perform grid-yukle
+      else
+         set exit-pushed to true 
+      end-if .
+     
+*
+ grid-baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "Isl No"               to gd-1-col-1
+     move "Tarih"                to gd-1-col-2
+     move "Zaman"                to gd-1-col-3
+     move "Adi"                  to gd-1-col-4
+     move "Soyadi"               to gd-1-col-5
+     move "Oda No"               to gd-1-col-6
+     move "Kullanici Adi"        to gd-1-col-7
+     move "Eski O.Konumu"        to gd-1-col-8
+     move "Yeni O.Konumu"        to gd-1-col-9
+     move "Yetkili Personel"     to gd-1-col-10
+     modify form1-gd-1,record-to-add(form1-gd-1-record).
+* 
+ grid-yukle.
+     open input blokupg rez konum kllnc
+     initialize blokupg-rec kac-adet 
+     move link-upg-tar  to blokupg-upgrade-tarih
+     start blokupg key not < blokupg-upgrade-tarih invalid 
+          continue 
+     not invalid 
+     perform until fs-blokupg = "10"
+     read blokupg next no lock end move "10"  to fs-blokupg
+     not at end  
+          if blokupg-upgrade-tarih <> link-upg-tar 
+               exit perform 
+          end-if 
+          if blokupg-rezno <> link-upg-rezno
+              exit perform cycle 
+          end-if 
+          add 1 to  kac-adet
+                    initialize form1-gd-1-record
+                    move blokupg-fis-no                to efis-no
+                    move efis-no                       to gd-1-col-1
+                    move blokupg-upgrade-yil           to eyil
+                    move blokupg-upgrade-ay            to eay
+                    move blokupg-upgrade-gun           to egun
+                    move etar                          to gd-1-col-2
+                    
+                    move blokupg-upgrade-saat          to esaat
+                    move blokupg-upgrade-dakika        to edakika
+                    move blokupg-upgrade-saniye        to esaniye
+                    move ezaman                        to gd-1-col-3
+
+                    initialize rez-rec
+                    move blokupg-rezno                 to rez-no
+                    read rez no lock invalid
+                        continue 
+                    end-read          
+                       move rez-adi                    to gd-1-col-4
+                       move rez-soyadi                 to gd-1-col-5
+                       move rez-odano                  to gd-1-col-6
+
+                  
+                    initialize konum-rec
+                    move blokupg-eski-konum        to konum-anahtar
+                    read konum no lock invalid 
+                         move "Hata"               to konum-adi
+                    end-read 
+                        move konum-adi             to gd-1-col-8
+                        move KONUM-TUTAR-SIRA      to eski-konum-siralamasi
+
+                    initialize konum-rec
+                    move blokupg-yeni-konum        to konum-anahtar
+                    read konum no lock invalid 
+                         move "Hata"               to konum-adi
+                    end-read 
+                        move konum-adi             to gd-1-col-9
+                        move KONUM-TUTAR-SIRA      to yeni-konum-siralamasi
+                    if eski-konum-siralamasi >= yeni-konum-siralamasi
+                          exit perform cycle
+                    end-if
+
+                    
+
+                    if blokupg-yetkili-sifre-k-kodu not = spaces
+                       initialize kllnc-rec
+                       move blokupg-yetkili-sifre-k-kodu  to k-kodu
+                       read kllnc no lock invalid 
+                            move "          "   to k-adi
+                       end-read 
+                           string gd-1-col-10
+                                k-adi delimited by "    "
+                                " " delimited by size 
+                                k-soyadi delimited by size 
+                           into gd-1-col-10
+                    else
+                       initialize kllnc-rec
+                       move blokupg-kim-yapti   to k-kodu
+                       read kllnc no lock invalid 
+                            move "          "   to k-adi
+                       end-read 
+                           string gd-1-col-7
+                                k-adi delimited by "    "
+                                " " delimited by size 
+                                k-soyadi delimited by size 
+                           into gd-1-col-7                       
+                    end-if                 
+                    modify form1-gd-1,record-to-add(form1-gd-1-record)
+                    modify form1-gd-1(kac-adet,1),hidden-data = blokupg-fis-no
+     end-read 
+     end-perform
+     end-start
+     close blokupg rez konum kllnc
+     modify form1-gd-1,mass-update = 0.
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+     when msg-goto-cell
+     when msg-goto-cell-mouse
+          inquire form1-gd-1(event-data-2,1),hidden-data link-blokupg-fis-no
+     end-evaluate.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+         set exit-pushed to true 
+     end-evaluate.
+
+ 

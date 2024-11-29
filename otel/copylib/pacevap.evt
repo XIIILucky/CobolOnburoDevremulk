@@ -1,0 +1,238 @@
+* pacevap.evt
+* pacevap.evt is generated from D:\asya\acugt.ytl\otel\pacevap.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+         
+          perform adresleri-tasi
+     .
+*
+ Form1-Ex-Other.
+      evaluate key-status
+           when 1
+             if control-id = 13 then
+                   call "/asya/ytl/obj/otel/paceara.asy" using link-pacevap-kodu
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/paceara.asy"
+                         move link-pacevap-kodu to TXT-cevap-kodu
+                         display SC-KODU
+                  end-call
+
+             end-if
+             if control-id = 5 then
+                   initialize link-pacevap-alt-kodu
+                   move TXT-CEVAP-KODU to link-pacevap-kodu 
+                   call "/asya/ytl/obj/otel/paceara2.asy" using link-pacevap-kodu link-pacevap-alt-kodu
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/paceara2.asy"
+                         move link-pacevap-alt-kodu to TXT-CEVAP-ALT-KODU
+                         display sc-kodu-alt
+                  end-call
+
+             end-if
+           when 2
+                perform soru-kaydet 
+           when 3
+                perform soru-sil
+      end-evaluate
+     .
+
+
+*
+ soru-kaydet.
+
+          initialize pacevap-rec
+
+          if txt-cevap-kodu = zeroes then
+                display message box "Bir Cevap Kodu Belirtiniz !"
+                exit paragraph 
+          end-if
+          if txt-cevap-ADI = spaces then
+                     display message box "Lutfen Cevap Adini Doldurunuz !"
+                     exit paragraph
+          end-if
+
+          if txt-cevap-alt-kodu <> zeroes then
+               move 1 to PACEVAP-ALT-CEVAP
+               if txt-ALT-cevap-ADI = spaces then
+                     display message box "Lutfen Alt Cevap Adini Doldurunuz !"
+                     exit paragraph
+               end-if
+          else
+               initialize pacevap-alt-adi PACEVAP-ALT-CEVAP
+          end-if
+
+          open i-o pacevap
+
+              MOVE TXT-cevap-KODU     TO pacevap-kodu
+              MOVE TXT-cevap-alt-KODU TO pacevap-alt-kodu
+              move txt-cevap-adi      TO pacevap-adi
+
+              if TXT-CEVAP-ALT-KODU <> zeroes 
+                    move txt-alt-cevap-adi  TO pacevap-alt-adi  
+              end-if 
+
+              write pacevap-rec invalid
+                      rewrite pacevap-rec invalid
+                              continue
+                      end-rewrite
+              end-write
+              move 13 to control-ID
+              move 4 to accept-control
+              modify sc-adi , enabled = true
+              modify sc-alt-adi , enabled = true
+              initialize paCEVAP-rec pacevap-adi pacevap-alt-adi
+              display sc-kodu sc-kodu-alt sc-adi sc-alt-adi 
+         close pacevap .
+*
+ soru-sil.
+
+         if txt-cevap-kodu = zeroes then
+                 display message box "Silme Islemi Gerceklesemedi !!!" new-line
+                 "Lutfen Bir Cevap Kodu Belirtiniz ! " 
+                 title "Asya-Soft Yazilim"
+                 exit paragraph
+         end-if
+
+         open i-o PACEVAP
+         if txt-cevap-alt-kodu = zeroes then
+              initialize pacevap-rec
+              MOVE TXT-CEVAP-KODU      TO paCEVAP-kodu
+              move txt-cevap-alt-kodu  to pacevap-alt-kodu
+              read PACEVAP no lock invalid
+                     continue
+              not invalid
+                     display message box paCEVAP-kodu "-" paCEVAP-adi " Cevap Tanimalasi  Ve Alt Listesi Silinecektir , Emin misiniz ? "
+                     title "Asya-Soft Yazilim"
+                     type 2
+                     default 2
+                     returning return-code 
+
+                     if return-code <> 1 then
+                           close PACEVAP 
+                           exit paragraph
+                     end-if
+
+                     delete PACEVAP end-delete
+              end-read
+
+              initialize pacevap-rec
+              MOVE TXT-CEVAP-KODU      TO paCEVAP-kodu
+              start pacevap key not < pacevap-anah invalid
+                      continue
+              not invalid
+              perform until fs-pacevap  = "10"
+              read pacevap next no lock end move "10" to fs-pacevap
+              not end
+                      if TXT-CEVAP-KODU <> paCEVAP-kodu then
+                            exit perform
+                      end-if
+                      delete PACEVAP end-delete
+              end-read
+              end-perform
+              end-start
+         else
+              initialize pacevap-rec
+              MOVE TXT-CEVAP-KODU      TO paCEVAP-kodu
+              move txt-cevap-alt-kodu  to pacevap-alt-kodu
+              read PACEVAP no lock invalid
+                     continue
+              not invalid
+                     display message box pacevap-alt-kodu "-" paCEVAP-alt-adi " Alt Cevap Tanimalasi Silinecektir , Emin misiniz ? "
+                     title "Asya-Soft Yazilim"
+                     type 2
+                     default 2
+                     returning return-code 
+
+                     if return-code <> 1 then
+                           close PACEVAP 
+                           exit paragraph
+                     end-if
+
+                     delete PACEVAP end-delete
+              end-read  
+         end-if
+
+          move 13 to control-ID
+          move 4 to accept-control
+          initialize paCEVAP-rec TXT-CEVAP-KODU txt-cevap-alt-kodu txt-cevap-adi txt-alt-cevap-adi
+          display sc-kodu sc-kodu-alt sc-adi sc-alt-adi 
+         close PACEVAP .
+
+*
+ Form1-Aft-Initdata.
+      OPEN I-O pacevap CLOSE pacevap 
+      open i-o pasoru  close pasoru  
+      
+     .
+*
+ sc-kodu-Aft-Procedure.
+         initialize txt-cevap-adi txt-alt-cevap-adi
+         open input PACEVAP  
+              initialize pacevap-rec
+              MOVE TXT-CEVAP-KODU     TO paCEVAP-kodu
+              read PACEVAP no lock invalid
+                      initialize PACEVAP-rec
+              end-read
+              move pacevap-adi     to txt-cevap-adi
+              move pacevap-alt-adi to txt-alt-cevap-adi
+              display sc-kodu sc-kodu-alt sc-adi sc-alt-adi 
+         close PACEVAP 
+     .
+*
+ sc-kodu-alt-Aft-Procedure.
+   
+        open INPUT PACEVAP  
+              initialize txt-alt-cevap-adi
+              initialize pacevap-rec
+              MOVE TXT-CEVAP-KODU     TO paCEVAP-kodu
+              read PACEVAP no lock invalid
+                     if TXT-CEVAP-ALT-KODU <> zeroes then
+                              display message box "Cevap Kodu Tanimlanmadan Alt Cevap Kodu Girilemez !!!"
+                              close PACEVAP   
+                              modify sc-adi , enabled = false
+                              modify sc-alt-adi , enabled = false
+                              exit paragraph
+                     end-if
+              end-read
+
+              initialize pacevap-rec
+              MOVE TXT-CEVAP-KODU     TO paCEVAP-kodu
+              MOVE TXT-CEVAP-ALT-KODU TO paCEVAP-ALT-kodu
+              read PACEVAP no lock invalid
+                      if TXT-CEVAP-ALT-KODU <> zeroes 
+                           modify sc-adi , enabled = false
+                      end-if 
+                      initialize pacevap-rec 
+              not invalid
+                      if PACEVAP-ALT-CEVAP <> zeroes 
+                           modify sc-adi , enabled = false
+                      end-if  
+              end-read
+
+              move pacevap-alt-adi to txt-alt-cevap-adi
+              display sc-kodu sc-kodu-alt sc-adi sc-alt-adi 
+         close PACEVAP 
+     .
+*
+ sc-kodu-alt-Bef-Procedure.
+         modify sc-adi , enabled = true
+         modify sc-alt-adi , enabled = true
+     .
+*
+ sc-kodu-Bef-Procedure.
+       modify sc-adi , enabled = true
+         modify sc-alt-adi , enabled = true
+     .
+
+ 

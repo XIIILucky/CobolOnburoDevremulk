@@ -1,0 +1,690 @@
+* ykontrp2.evt
+* ykontrp2.evt is generated from D:\asya\acugt.ytl\otel\ykontrp2.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     open input genel
+     initialize genel-rec
+     move 1          to genel-anahtar
+     read genel no lock invalid
+         continue 
+     end-read 
+     close genel
+     .
+*
+ Form1-Aft-Initdata.
+     move gun-tasi        to bas-gun   
+     move  ay-tasi        to bas-ay    
+     move yil-tasi        to bas-yil   
+     move gun-tasi        to bit-gun   
+     move  ay-tasi        to bit-ay    
+     move yil-tasi        to bit-yil   
+     display accept-01,accept-02,accept-03,accept-04
+     accept-05,accept-06.
+     move 176 to renk1
+     move 353 to renk2
+     move 480  to renk3
+     move 0.90 to oran
+     move 90 to oran1
+     display a-oran
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Form1-Ex-Other.
+     if key-status = 1 and
+     (control-id = 4 or 20)
+        initialize acenta-cagir
+        call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+        on exception 
+            perform callerr-proc
+        not on exception
+        cancel "/asya/ytl/obj/otel/acenara.asy"
+        end-call
+        if acenta-cagir <> spaces
+           move acenta-cagir   to bas-acenta
+           display acc-1
+        end-if
+        move 4 to accept-control
+        move 4 to control-id
+        exit paragraph
+     end-if.     
+     if key-status = 1001 
+        continue
+     else 
+        exit paragraph
+     end-if.             
+
+     open input takvim
+     move baslangic-tarihi    to takvim-anah
+     read takvim no lock invalid
+          display omitted beep
+          move 4 to accept-control
+          move 9 to control-id
+          close takvim
+          initialize mesaj-link
+          move 13 to mesaj-no
+          perform mesaj-ver
+          exit paragraph
+     move bitis-tarihi        to takvim-anah
+     read takvim no lock invalid
+          display omitted beep
+          move 4 to accept-control
+          move 12 to control-id
+          close takvim
+          initialize mesaj-link
+          move 13 to mesaj-no
+          perform mesaj-ver
+          exit paragraph
+     end-read.
+     close takvim.
+     if baslangic-tarihi > bitis-tarihi
+        display omitted beep
+        move 4 to accept-control
+        move 9 to control-id
+        initialize mesaj-link
+        move 14 to mesaj-no
+        perform mesaj-ver
+        exit paragraph.
+
+         compute oran = oran1 / 100 
+*      ******************ramazan degisiklik************* 
+     open input acenta
+     move bas-acenta to acenta-kodu
+     read acenta no lock invalid
+          display omitted beep
+          move 4 to accept-control
+          move 4 to control-id
+          display message box "Lutfen gecerli bir acenta giriniz " title "Hata"
+          close acenta
+          exit paragraph
+          
+     end-read
+     close acenta.           
+******************ramazan degisiklik*************   
+         initialize link-kontbak
+       move 1 to linkli          
+      move bas-acenta to  link-acenta     
+      move baslangic-tarihi to      link-bas     
+      move bitis-tarihi to       link-bit     
+      call "/asya/ytl/obj/otel/castacen.asy" using link-kontbak
+        on exception 
+            perform callerr-proc
+        not on exception
+        cancel "/asya/ytl/obj/otel/castacen.asy"
+        end-call         
+        perform raporla2.
+     
+
+
+*
+ detay-kontrol.       
+        initialize acenhrk-rec detay-kon
+        move bas-acenta    to acenhrk-acenta
+        move baslangic-tarihi to acenhrk-tarih 
+        start acenhrk key not < acenhrk-anah invalid
+              continue
+        not invalid
+        initialize fs-acenhrk
+        perform with test after until fs-acenhrk = "10"
+            read acenhrk next no lock end move "10" to fs-acenhrk
+            not at end
+                 if acenhrk-acenta not = bas-acenta or
+                    acenhrk-tarih > bitis-tarihi 
+                    move "10" to fs-acenhrk
+                 else
+                    
+                      
+                  
+                    evaluate ACENHRK-S-D-T-G
+                      when 1 
+                         if acenhrk-kontrat-oda < 999  
+                            and acenhrk-oda-konumu  < 41 
+                            and  acenhrk-oda-konumu > 0
+                            move 1 to sin-var(acenhrk-oda-konumu) 
+                         end-if
+                      when 5
+                         if acenhrk-kontrat-oda < 999  
+                             and acenhrk-oda-konumu < 41 
+                             and acenhrk-oda-konumu > 0
+                            move 1 to top-var(acenhrk-oda-konumu) 
+                         end-if
+                    end-evaluate
+ 
+                 end-if
+
+             end-read
+             end-perform
+         end-start.
+
+
+         move 1 to son-yer
+         perform varying i from 1 by 1 until i > 30       | i > 20 + 10   FIRAT LONG BECH COK KONUM VARDI ARTTIRDIM..
+              if son-yer >= 16 then                       | det2-ktop-occ DEGERI DEBUNUNLA AYNI
+                  move 0 to top-var(i)
+              end-if
+              if top-var(i) = 1 then
+                move son-yer to top-yer(i)
+                add 1 to son-yer
+              end-if
+        end-perform
+        perform varying i from 1 by 1 until i > 30        | i > 20 + 10   FIRAT LONG BECH COK KONUM VARDI ARTTIRDIM..
+              if son-yer >= 16 then                       | det2-ktop-occ DEGERI DEBUNUNLA AYNI
+                 move 0 to sin-var(i)
+              end-if
+              if sin-var(i) = 1 then
+                   move son-yer to sin-yer(i)
+                   add 1 to son-yer
+              end-if
+        end-perform .
+
+
+*
+raporla2.
+     
+*********BAKIM YAPPP******25 04 2016
+*     if bas-acenta not = spaces and bas-acenta not = zeroes 
+*             call "/asya/ytl/obj/otel/cast2acen.asy" using bas-acenta
+*             on exception 
+*                   perform callerr-proc
+*             not on exception
+*             cancel "/asya/ytl/obj/otel/acenara.asy"
+*             end-call
+*     end-if
+
+************************************
+     open i-o genelfis.
+     move 1 to genelfis-anahtar.
+     read genelfis no lock invalid
+          accept print-no from time
+     end-read
+     add 1 to print-no
+     rewrite genelfis-rec invalid continue end-rewrite
+     close genelfis.
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+     open input acenhrk kontrat konum
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Acenta  Kontenjan Takip Raporu"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Acenta  Kontenjan Takip Raporu"   to det-filler
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+
+    perform detay-kontrol
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det2-dokumer-20(10:1)
+     move "D1"         to det2-dokumer-20(1:2)
+     move "Tarih"      to det2-tar
+     move "Kontj"      to det2-top      
+     perform varying l from 1 by 1 until l > 41
+        if l < 40 
+           initialize konum-rec
+           move l to konum-anahtar
+           read konum no lock invalid 
+                move l to konum-adi
+           end-read                                      
+        end-if
+        perform varying k from 1 by 1 until k > 5
+           evaluate true
+               when l > 29 and l < 41   | L > 19    +10   FIRAT LONG BECH COK KONUM VARDI ARTTIRDIM..
+                    continue   
+               when l = 41 and k = 5
+                    move "Toplam K" to det2-top 
+                    move "Satilan " to det2-top2 
+                    move " Kalan "  to det2-top3
+               
+               when l = 41
+                    evaluate k
+                        when 1 
+                             move "Single K" to det2-stop
+                             move "Satilan"  to det2-stop2
+                             move "Kalan  "  to det2-stop3
+                        when 2 
+                        when 3 
+                        when 4 
+                             continue
+                    end-evaluate   
+               when k = 5
+                    if top-var(l) = 1 then
+                       move   top-yer(l)      to sut-yer
+                       move konum-adi(1:7)    to det2-ktop(sut-yer)(1:7)
+                       move "Satilan"         to det2-ktop2(sut-yer  )(1:7)
+                       move "Kalan "          to det2-ktop3(sut-yer  )(1:7)
+                    end-if
+               when k = 2 
+               when k = 3
+               when k = 4
+                    continue
+               when other
+                    if sin-var(l) = 1 then
+                       move sin-yer(l) to sut-yer
+                       move "-Sin"             to det2-ktop(sut-yer)(4:4)
+                       move konum-adi          to det2-ktop(sut-yer)(1:3)
+                       move "Satilan"          to det2-ktop2(sut-yer)(1:7)
+                       move "Kalan "          to det2-ktop3(sut-yer)(1:7)
+                    end-if
+                
+           end-evaluate
+        end-perform
+     end-perform   
+
+     perform pip
+
+     write dokumer-rec from detay2
+
+     initialize dokumer-rec detay
+     move "D2"           to det2-dokumer-20(1:2)
+     move "-"            to det2-dokumer-20(5:1)
+     move all "-" to det2-filler
+
+     perform pip
+
+     write dokumer-rec from detay2
+
+     initialize detay2 detay3 dokumer-rec initialize gecler
+     move all spaces to det2-filler det3-filler                       
+     initialize acenhrk-rec veri-var kont-tar
+     move bas-acenta       to acenhrk-acenta
+     move baslangic-tarihi to acenhrk-tarih 
+     start acenhrk key not < acenhrk-anah invalid
+           continue
+     not invalid
+     initialize fs-acenhrk
+     perform with test after until fs-acenhrk = "10"
+     read acenhrk next no lock end move "10" to fs-acenhrk
+     not at end
+         if acenhrk-acenta not = bas-acenta or
+            acenhrk-tarih > bitis-tarihi 
+            move "10" to fs-acenhrk
+         else      
+            if kont-tar not = acenhrk-tarih
+               if veri-var = 1 then 
+                  perform det2-satir 
+               end-if
+               move acenhrk-tarih to kont-tar
+               move acenhrk-gun   to egun
+               move acenhrk-ay    to eay
+               move acenhrk-yil   to eyil
+               move etarih        to det2-tar det3-tar
+               initialize gecler                      
+            end-if
+            move 1 to veri-var
+            move acenhrk-s-d-t-g to k
+            move acenhrk-oda-konumu to l
+            evaluate true
+                when l = 41 and k = 5
+                     if acenhrk-kontrat-oda < 999
+                        move acenhrk-kontrat-oda to det2-top 
+                     end-if
+                     move acenhrk-sat-oda to det2-top2
+                     compute kalan = acenhrk-kontrat-oda - acenhrk-sat-oda
+                     if acenhrk-sat-oda >  acenhrk-kontrat-oda then 
+                        move 1 to toptop-gec
+                        move "C"          to det2-dokumer-20(3:1)
+                        move "1"          to det2-dokumer-20(10:1)
+                        move renk1 to det2-renk1 det2-renkler-mami(1)  
+                                                 det2-renkler-mami(2)  
+                                                 det2-renkler-mami(3)
+                     else
+                        if acenhrk-sat-oda = acenhrk-kontrat-oda and 
+                           acenhrk-kontrat-oda > 0  then 
+                           move "C"          to det2-dokumer-20(3:1)
+                           move "1"          to det2-dokumer-20(10:1)
+                           compute renk-yer  = sut-yer   * 3 + 4
+                           move renk2 to det2-renkler-mami(1) 
+                                         det2-renkler-mami(2)  
+                                         det2-renkler-mami(3)
+                           if det2-renk1 not = renk1 then 
+                              move renk2 to det2-renk1
+                           end-if
+                        else
+                           if acenhrk-sat-oda > acenhrk-kontrat-oda * oran  then 
+                              move "C"          to det2-dokumer-20(3:1)
+                              move "1"          to det2-dokumer-20(10:1)
+                              compute renk-yer  = sut-yer   * 3 + 4
+                              move renk3        to det2-renkler-mami(1) 
+                                                   det2-renkler-mami(2)  
+                                                   det2-renkler-mami(3)
+                              if det2-renk1 not = renk1 and renk2 then 
+                                 move renk3 to det2-renk1
+                              end-if
+                            end-if
+                        end-if
+                     end-if
+                     if kalan < 9990
+                        move kalan  to det2-top3 
+                     end-if
+                when l > 29 and l < 41        | L > 19    +10    FIRAT LONG BECH COK KONUM VARDI ARTTIRDIM..
+                     continue
+                when l = 41 and k = 1
+                     if acenhrk-kontrat-oda < 999
+                        move acenhrk-kontrat-oda to det2-stop 
+                     end-if
+                     move acenhrk-sat-oda to det2-stop2 
+                     if acenhrk-sat-oda > acenhrk-kontrat-oda then 
+                        move 1 to sintop-gec
+                        move "C"          to det2-dokumer-20(3:1)
+                        move "1"          to det2-dokumer-20(10:1)
+                        move renk1 to det2-renk1 det2-renkler-mami(5) 
+                                                 det2-renkler-mami(4) 
+                                                 det2-renkler-mami(6)
+                     else
+                        if acenhrk-sat-oda = acenhrk-kontrat-oda   and acenhrk-kontrat-oda > 0 then 
+                           move "C"          to det2-dokumer-20(3:1)
+                           move "1"          to det2-dokumer-20(10:1)
+                           compute renk-yer  = sut-yer   * 3 + 4
+                           move renk2        to det2-renkler-mami(5) 
+                                                det2-renkler-mami(4)  
+                                                det2-renkler-mami(6)
+                           if det2-renk1 not = renk1 then 
+                              move renk2 to det2-renk1
+                           end-if
+                        else
+                           if acenhrk-sat-oda > acenhrk-kontrat-oda * oran  then 
+                              move "C"          to det2-dokumer-20(3:1)
+                              move "1"          to det2-dokumer-20(10:1)
+                              compute renk-yer  = sut-yer   * 3 + 4
+                              move renk3        to det2-renkler-mami(5) 
+                                                   det2-renkler-mami(4)  
+                                                   det2-renkler-mami(6)
+                              if det2-renk1 not = renk1 and renk2 then 
+                                 move renk3 to det2-renk1
+                              end-if
+                           end-if
+                        end-if
+                     end-if
+                     if acenhrk-kontrat-oda not > 9900 then 
+                        compute kalan = acenhrk-kontrat-oda - acenhrk-sat-oda
+                     else
+                        move 9999 to kalan
+                     end-if
+                     if kalan < 9990
+                        move kalan  to det2-stop3 
+                     end-if
+                when k = 2
+                when k = 3
+                when k = 4
+                when l = 41
+                      continue
+                when k = 5
+                     if top-var(l) = 1 then
+                        move top-yer(l) to sut-yer
+                        if acenhrk-kontrat-oda < 999
+                           move acenhrk-kontrat-oda to det2-ktop(sut-yer) 
+                        end-if
+                        move acenhrk-sat-oda to det2-ktop2(sut-yer ) 
+                        if acenhrk-sat-oda >  acenhrk-kontrat-oda then 
+                           move 1 to sin-gec
+                           move "C"          to det2-dokumer-20(3:1)
+                           move "1"          to det2-dokumer-20(10:1)
+                           compute renk-yer  = sut-yer   * 3 + 4
+                           move renk1        to det2-renk1 det2-renkler-mami(renk-yer)  
+                                                           det2-renkler-mami(renk-yer + 2)  
+                                                           det2-renkler-mami(renk-yer + 1)
+                        else
+                           if acenhrk-sat-oda = acenhrk-kontrat-oda and 
+                              acenhrk-kontrat-oda > 0 then 
+                              move "C"          to det2-dokumer-20(3:1)
+                              move "1"          to det2-dokumer-20(10:1)
+                              compute renk-yer  = sut-yer   * 3 + 4
+                              if det2-renk1 not = renk1 then 
+                                 move renk2 to det2-renk1
+                              end-if
+                              move renk2        to det2-renkler-mami(renk-yer)  
+                                                   det2-renkler-mami(renk-yer + 2) 
+                                                   det2-renkler-mami(renk-yer + 1)
+                           else
+                              if acenhrk-sat-oda > acenhrk-kontrat-oda * oran  then 
+                                 move "C"          to det2-dokumer-20(3:1)
+                                 move "1"          to det2-dokumer-20(10:1)
+                                 compute renk-yer  = sut-yer   * 3 + 4
+                                 move renk3        to det2-renkler-mami(renk-yer)  
+                                                      det2-renkler-mami(renk-yer + 2)
+                                                      det2-renkler-mami(renk-yer + 1)
+                                 if det2-renk1 not = renk1 and renk2 then 
+                                    move renk3 to det2-renk1
+                                 end-if
+                              end-if
+                           end-if
+                        end-if
+                        if acenhrk-kontrat-oda not > 9900 then 
+                           compute kalan = acenhrk-kontrat-oda - acenhrk-sat-oda
+                        else
+                           move 9999 to kalan
+                        end-if
+                        if kalan < 9990
+                           move kalan  to  det2-ktop3(sut-yer )  
+                        end-if
+                     end-if
+                when other
+                     if sin-var(l) = 1 then
+                        move sin-yer(l) to sut-yer
+                        if acenhrk-kontrat-oda < 999
+                           move acenhrk-kontrat-oda to det2-ktop(sut-yer) 
+                        end-if
+                        move acenhrk-sat-oda to det2-ktop2(sut-yer) 
+                        if acenhrk-sat-oda >  acenhrk-kontrat-oda then 
+                           move 1 to sin-gec
+                           move "C"          to det2-dokumer-20(3:1)
+                           move "1"          to det2-dokumer-20(10:1)
+                           compute renk-yer  = sut-yer   * 3 + 4
+                           move renk1 to det2-renk1  det2-renkler-mami(renk-yer)  
+                                                     det2-renkler-mami(renk-yer + 2)  
+                                                     det2-renkler-mami(renk-yer + 1)
+                        else
+                           if acenhrk-sat-oda = acenhrk-kontrat-oda  and acenhrk-kontrat-oda > 0  then 
+                              move "C"          to det2-dokumer-20(3:1)
+                              move "1"          to det2-dokumer-20(10:1)
+                              compute renk-yer  = sut-yer   * 3 + 4
+                              move renk2 to det2-renkler-mami(renk-yer)  
+                                            det2-renkler-mami(renk-yer + 2)  
+                                            det2-renkler-mami(renk-yer + 1)
+
+                              if det2-renk1 not = renk1 then 
+                                move renk2 to det2-renk1
+                              end-if
+                           else
+                              if acenhrk-sat-oda > acenhrk-kontrat-oda * oran  then 
+                                 move "C"          to det2-dokumer-20(3:1)
+                                 move "1"          to det2-dokumer-20(10:1)
+                                 compute renk-yer  = sut-yer   * 3 + 4
+                                 move renk3 to det2-renkler-mami(renk-yer)  
+                                               det2-renkler-mami(renk-yer + 2) 
+                                               det2-renkler-mami(renk-yer + 1)
+                                 if det2-renk1 not = renk1 and renk2 then 
+                                    move renk3 to det2-renk1
+                                 end-if
+                              end-if
+                           end-if
+                        end-if
+                        if acenhrk-kontrat-oda not > 9900 then 
+                           compute kalan = acenhrk-kontrat-oda - acenhrk-sat-oda
+                        else
+                           move 9999 to kalan
+                        end-if
+                        if kalan < 9990
+                           move kalan  to  det2-ktop3(sut-yer )  
+                        end-if
+                     end-if
+            end-evaluate
+         end-if
+      end-read
+      end-perform
+      end-start
+      if veri-var = 1 then 
+         perform det2-satir 
+      end-if
+      close acenhrk kontrat konum
+**********************************************
+     close dokumer
+     call dokumer-prog on exception
+          perform callerr-proc
+     not on exception
+          cancel dokumer-prog
+     end-call
+     delete file dokumer.
+*
+ det2-satir.
+       perform pip
+*       evaluate true
+*         when toptop-gec = 1 
+*          
+*        
+*         
+* **        when sintop-gec = 1 
+* *        
+*         when sin-gec = 1 
+*        
+*         when top-gec = 1 
+*        
+*      end-evaluate
+
+*       move "1"          to det-dokumer-20(10:1)
+*       move 257 to det2-renk1 
+*       move 650 to det3-renk1
+      write dokumer-rec from detay2
+*       write dokumer-rec from detay3
+         initialize dokumer-rec detay2 detay3. 
+          move all spaces to det2-filler det3-filler.
+       
+ 
+ pip.
+      move "|" to fil2-tar fil3-tar  fil3-tip
+                  fil2-top fil2-stop fil2-top2 fil2-stop2 fil3-stop fil2-top3 fil2-stop3 
+      move "|" to fil2-tar fil3-tar
+      perform varying k from 1 by 1 until k > 20
+          move "|" to fil2-ktop(k) fil2-ktop2(k) fil3-ktop(k) fil2-ktop3(k)
+      end-perform  .
+
+ 
+
+*
+ bef-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 4
+              evaluate true
+                  when turkce
+                       move "Acenta Kodunu Seciniz ..." to  mesaj
+                  when ingilizce
+                       move "Acenta Kodunu Seciniz ..." to  mesaj
+                  when almanca
+                       move "Acenta Kodunu Seciniz ..." to  mesaj
+              end-evaluate
+          when 9
+          when 10
+          when 11
+              evaluate true
+                  when turkce
+                       move "Rapor Baslangic Tarihini Giriniz ... " to mesaj
+                  when ingilizce
+                       move "Rapor Baslangic Tarihini Giriniz ... " to mesaj
+                  when almanca
+                       move "Rapor Baslangic Tarihini Giriniz ... " to mesaj
+              end-evaluate
+          when 12
+          when 13
+          when 14
+              evaluate true
+                  when turkce
+                       move "Rapor Bitis Tarihini Giriniz ... " to mesaj
+                  when ingilizce
+                       move "Rapor Bitis Tarihini Giriniz ... " to mesaj
+                  when almanca
+                       move "Rapor Bitis Tarihini Giriniz ... " to mesaj
+              end-evaluate
+
+          when 8
+              evaluate true
+                  when turkce
+                       move "Rapor Kontrat Tipini Seciniz" to mesaj
+                  when ingilizce
+                       move "Rapor Kontrat Tipini Seciniz" to mesaj
+                  when almanca
+                       move "Rapor Kontrat Tipini Seciniz" to mesaj
+              end-evaluate
+          when 19
+              evaluate true
+                  when turkce
+                       move "Rapor Detay Tipini Seciniz" to mesaj
+                  when ingilizce
+                       move "Rapor Detay Tipini Seciniz" to mesaj
+                  when almanca
+                       move "Rapor Detay Tipini Seciniz" to mesaj
+              end-evaluate
+
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 1
+            panel-text = mesaj.
+*
+     .   
+*
+ acc-1-Aft-Procedure.
+     initialize gec-gecme.
+     open input acenta
+     move bas-acenta to acenta-kodu
+     read acenta no lock invalid
+          move 1 to gec-gecme
+          move "Tanimsiz ..."  to acenta-adi
+     end-read
+     close acenta.
+     display lb-acenta-adi.
+      .
+*                                   
+* bakim-yap.
+*     move baslangic-tarihi to bak-ilk-tar
+*     move bitis-tarihi     to bak-son-tar
+*    move bas-acenta       to bak-acenta
+*    perform acenhrk-bakim .
+
+                  
+
+
+      
+
+
+ 

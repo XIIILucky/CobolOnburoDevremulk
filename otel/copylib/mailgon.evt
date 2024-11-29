@@ -1,0 +1,602 @@
+* mailgon.evt
+* mailgon.evt is generated from D:\asya\acugt.ytl\otel\mailgon.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Ex-Other.
+      evaluate key-status
+       when 1006
+          perform dosya-yarat
+       when 2
+          display message box "Transfer islemi Baslayacaktir Eminmisiniz?"
+                    title "Uyari"
+                    type mb_yes-no
+                    returning donus-kodu
+          if donus-kodu = 2 
+             move 4 to accept-control
+             move 5 to control-id
+             exit paragraph
+          end-if
+
+          open i-o maildata mailtipi mailkime
+          initialize maildata-rec mailtipi-rec
+          move tarih                to maildata-dog-tarih
+          move "1900"               to maildata-dog-yil
+          start maildata key not <  maildata-dog-tarih invalid
+                continue
+          not invalid
+          perform with test after until fs-maildata = "10"
+          read maildata next no lock end
+          not at end
+              if ay  not = maildata-dog-ay or
+                 gun not = maildata-dog-gun
+                 perform tum-hazirla
+                 perform tarih-sabit
+                 exit perform cycle
+              end-if
+              
+**********************************************************************
+              move "01"   to mailtipi-kime
+*              perform sablon-kontrol
+              perform tum-hazirla
+              perform tarih-sabit
+              perform dosya-yaz-dogum
+**********************************************************************                
+           end-read
+           end-perform
+           end-start
+
+           initialize maildata-rec
+           move tarih                to maildata-evl-tarih
+           move "1900"               to maildata-evl-yil                
+           start maildata key not < maildata-evl-tarih invalid
+                 continue
+           not invalid
+           perform with test after until fs-maildata = "10"
+           read maildata next no lock end
+           not at end
+               if ay  not = maildata-evl-ay or
+                  gun not = maildata-evl-gun
+                  perform tum-hazirla
+                  perform tarih-sabit
+                  exit perform cycle
+               end-if
+      
+*****************************************************************************
+               move "02"   to mailtipi-kime
+*              perform sablon-kontrol  
+               perform tum-hazirla
+               perform tarih-sabit
+               perform dosya-yaz-evl
+***************************************************************************** 
+                  
+           end-read
+           end-perform
+          end-start
+          close maildata mailtipi mailkime
+          display message box "Transfer islemi Tamamlandi....!"
+                          title "Uyari...!"
+      end-evaluate
+     .
+*
+* sablon-kontrol.
+*    initialize mailtipi-rec
+*    move maildata-ulkesi to mailtipi-ulkesi
+*    move "01"            to mailtipi-kodu
+*    read mailtipi no lock invalid
+*         perform hatali-kontrol
+*    end-read.
+*
+* hatali-kontrol.
+*    modify gd-1, reset-grid = 0
+*    move mailtipi-kodu          to gd-1-col-1
+*    move mailtipi-ulkesi        to gd-1-col-2
+*    move maildata-adi           to gd-1-col-3
+*    move maildata-soyadi        to gd-1-col-4
+*    move "Sablon Tanimlanmamis" to gd-1-col-5
+*    modify gd-1, RECORD-TO-ADD(gd-rec).
+*
+ dosya-yaz-evl.
+    initialize mailkime-rec mailtipi-rec
+    move maildata-ulkesi    to mailtipi-ulkesi
+    move "02"               to mailtipi-kodu
+    read mailtipi no lock invalid
+         continue
+    not invalid
+         move mailtipi-ulkesi      to mailkime-ulkesi
+         move mailtipi-gon-tarih   to mailkime-tarih
+         move "02"                 to mailkime-tip
+         move mailtipi-ekli-dosya  to mailkime-ekli-dosya
+         move mailtipi-baslik      to mailkime-baslik
+         move mailtipi-html-no     to mailkime-html-no
+    end-read
+    move tarih                   to mailkime-tarih
+    move maildata-adi            to mailkime-adi
+    move maildata-soyadi         to mailkime-soyadi
+    move maildata-e-mail         to mailkime-e-mail
+    move "02"                    to mailkime-tip
+    move maildata-ulkesi         to mailkime-ulkesi
+    read mailkime no lock invalid
+         move maildata-adi       to mailkime-adi
+         move maildata-soyadi    to mailkime-soyadi
+         move maildata-e-mail    to mailkime-e-mail
+         move "02"               to mailkime-tip
+         move maildata-ulkesi    to mailkime-ulkesi
+         
+    end-read
+
+    write mailkime-rec invalid
+          rewrite mailkime-rec end-rewrite
+    end-write
+     .    
+*
+ dosya-yaz-dogum.
+    initialize mailkime-rec mailtipi-rec
+    move maildata-ulkesi    to mailtipi-ulkesi
+    move "01"               to mailtipi-kodu
+    read mailtipi no lock invalid
+         continue
+    not invalid
+         move mailtipi-ulkesi    to mailkime-ulkesi
+         move mailtipi-gon-tarih to mailkime-tarih
+         move "01"               to mailkime-tip
+         move mailtipi-ekli-dosya  to mailkime-ekli-dosya
+         move mailtipi-baslik      to mailkime-baslik
+         move mailtipi-html-no     to mailkime-html-no
+    end-read
+    move tarih                   to mailkime-tarih
+    move maildata-adi            to mailkime-adi
+    move maildata-soyadi         to mailkime-soyadi
+    move maildata-e-mail         to mailkime-e-mail
+    move "01"                    to mailkime-tip
+    move maildata-ulkesi         to mailkime-ulkesi
+    
+    read mailkime no lock invalid
+         move maildata-adi       to mailkime-adi
+         move maildata-soyadi    to mailkime-soyadi
+         move maildata-e-mail    to mailkime-e-mail
+         move "01"               to mailkime-tip
+         move maildata-ulkesi    to mailkime-ulkesi
+    end-read
+
+    write mailkime-rec invalid
+          rewrite mailkime-rec end-rewrite
+    end-write
+     .    
+*
+ dosya-yaz-yilbasi.
+    initialize mailkime-rec mailtipi-rec
+    move maildata-ulkesi    to mailtipi-ulkesi
+    move "04"               to mailtipi-kodu
+    read mailtipi no lock invalid
+         continue
+    not invalid
+         move mailtipi-ulkesi    to mailkime-ulkesi
+         move mailtipi-gon-tarih to mailkime-tarih
+         move "04"               to mailkime-tip
+         move mailtipi-ekli-dosya  to mailkime-ekli-dosya
+         move mailtipi-baslik      to mailkime-baslik
+         move mailtipi-html-no     to mailkime-html-no
+    end-read
+    move tarih                   to mailkime-tarih
+    move maildata-adi            to mailkime-adi
+    move maildata-soyadi         to mailkime-soyadi
+    move maildata-e-mail         to mailkime-e-mail
+    move "04"                    to mailkime-tip
+    move maildata-ulkesi         to mailkime-ulkesi
+
+    
+    read mailkime no lock invalid
+         move maildata-adi       to mailkime-adi
+         move maildata-soyadi    to mailkime-soyadi
+         move maildata-e-mail    to mailkime-e-mail
+         move "04"               to mailkime-tip
+         move maildata-ulkesi    to mailkime-ulkesi
+    end-read
+
+    write mailkime-rec invalid
+          rewrite mailkime-rec end-rewrite
+    end-write
+     .
+*
+*
+ dosya-yaz-sabit.
+    initialize mailkime-rec mailtipi-rec
+    move maildata-ulkesi    to mailtipi-ulkesi
+    move "03"               to mailtipi-kodu
+    read mailtipi no lock invalid
+         continue
+    not invalid
+         move mailtipi-ulkesi      to mailkime-ulkesi
+         move mailtipi-gon-tarih   to mailkime-tarih
+         move "03"                 to mailkime-tip
+         move mailtipi-ekli-dosya  to mailkime-ekli-dosya
+         move mailtipi-baslik      to mailkime-baslik
+         move mailtipi-html-no     to mailkime-html-no
+    end-read
+    move tarih                   to mailkime-tarih
+    move maildata-adi            to mailkime-adi
+    move maildata-soyadi         to mailkime-soyadi
+    move maildata-e-mail         to mailkime-e-mail
+    move "03"                    to mailkime-tip
+    move maildata-ulkesi         to mailkime-ulkesi
+
+    
+    read mailkime no lock invalid
+         move maildata-adi       to mailkime-adi
+         move maildata-soyadi    to mailkime-soyadi
+         move maildata-e-mail    to mailkime-e-mail
+         move "03"               to mailkime-tip
+         move maildata-ulkesi    to mailkime-ulkesi
+
+    end-read
+    write mailkime-rec invalid
+          rewrite mailkime-rec end-rewrite
+    end-write.
+
+*
+ tum-hazirla.
+****************sadece yilbasi için**********************************
+*        perform sablon-kontrol
+        initialize mailtipi-rec
+        move "31"            to mailtipi-gon-gun
+        move "12"            to mailtipi-gon-ay
+        move yil-tasi        to mailtipi-gon-yil
+        start mailtipi key not < mailtipi-gon-tarih invalid
+         continue
+        not invalid
+         read mailtipi next no lock end
+          not at end
+           if mailtipi-gon-tarih  = tarih
+              perform dosya-yaz-yilbasi
+           end-if
+         end-read
+        end-start
+        .
+*
+ tarih-sabit.
+*******************tarih sabit durumlarda kurban bayramý ramazan bayramý gibi*****
+        initialize mailtipi-rec
+        move tarih         to mailtipi-gon-tarih
+        start mailtipi key not < mailtipi-gon-tarih invalid
+         continue
+        not invalid
+         read mailtipi next no lock end
+          not at end
+           if mailtipi-kime      = "03" and
+              mailtipi-ulkesi    = maildata-ulkesi and
+              mailtipi-gon-tarih = tarih
+              perform dosya-yaz-sabit
+           end-if
+         end-read
+        end-start.
+*
+ grid-baslik-kontrol.
+       modify gd1, RESET-GRID = 0
+       move " "         to gd-1-col-1
+       move "Adi"       to gd-1-col-2
+       move "Soyadi"    to gd-1-col-3
+       move "E-Mail"    to gd-1-col-4
+       move "D"         to gd-1-col-5
+       move "G.Tarihi"  to gd-1-col-6
+       move "G.Zamani"  to gd-1-col-7
+       modify gd1, RECORD-TO-ADD(gd1-rec).
+*
+ Form1-Bef-Create.
+       perform adresleri-tasi
+       move tarih-tasi to tarih
+        .
+*
+ Form1-Aft-Initdata. 
+      perform grid-baslik-kontrol.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ kopyala.
+      if is-remote
+         move all low-values to fromfile
+         inspect acc-entegre-dosya-adres replacing
+                 trailing spaces by low-values
+         string fromfile
+                "@DISPLAY:"             delimited by low-values
+                acc-entegre-dosya-adres delimited by low-values
+                into fromfile
+         call "c$copy" using fromfile acc-entegre-dosya-adres
+      else
+         move all low-values to send-dosya-adres
+         inspect acc-entegre-dosya-adres replacing
+                 trailing spaces by low-values
+         move xulke               to ulke-anah1
+         read ulke no lock invalid
+           continue
+         end-read
+         inspect ulke-adi replacing trailing spaces by low-values
+         evaluate xtip
+         when 01    move "-DOG-"    to 5-hane
+         when 02    move "-EVL-"    to 5-hane
+         when 03    move "-SAB-"    to 5-hane
+         when 04    move "-YIL-"    to 5-hane
+         when other move "-XXX-"    to 5-hane
+         end-evaluate
+         string acc-entegre-dosya-adres, 
+                gun      delimited by low-values
+                ay       delimited by low-values
+                yil      delimited by low-values
+                5-hane   delimited by low-values
+                ulke-adi delimited by low-values
+                ".txt"   delimited by low-values
+                into send-dosya-adres
+         call "c$copy" using mailhaz-dosya send-dosya-adres
+      end-if
+       .
+*
+ dosya-yarat.
+      initialize xtip mailkime-rec xulke 
+      open i-o mailkime genelfis mailhtml genel.
+      open input ulke
+      move 1 to satir
+      move 0 to kayit
+      move 0 to yuzde
+      perform mail-create
+      move tarih                to mailkime-tarih
+      start mailkime key not < mailkime-key-2 invalid
+            continue
+      not invalid
+      perform with test after until fs-mailkime = "10"
+      read mailkime next no lock end
+      not at end
+            if mailkime-tarih <> tarih
+               exit perform 
+            end-if
+
+            if mailkime-send-durum = "E"
+               exit perform cycle
+            end-if
+           
+            if mailkime-ulkesi   = spaces or 
+               mailkime-tip      = spaces 
+               exit perform cycle
+            end-if
+            if xtip = spaces | ilk kayýt demek
+               move mailkime-tip    to xtip
+               move mailkime-ulkesi to xulke
+               perform create-file
+            else
+               if xtip <> mailkime-tip or | dosyayý kapat yeni dosya yarat
+                  xulke <> mailkime-ulkesi
+                  close mailhaz
+                  perform kopyala
+                  delete file mailhaz
+                  perform create-file
+                  move mailkime-tip      to xtip
+                  move mailkime-ulkesi   to xulke
+               end-if
+            end-if
+            
+            initialize mailhaz-rec
+            move mailkime-adi    to mailhaz-adi
+            move mailkime-soyadi to mailhaz-soyadi
+            move mailkime-e-mail to mailhaz-e-mail
+*           move mailkime-ulkesi to mailhaz-ulkesi
+            write mailhaz-rec from mailhaz-detay
+            add 1    to satir
+            add 1    to kayit
+            add 1    to yuzde
+            perform bar-ekle
+            perform mail-send
+         end-read
+         end-perform
+         if xtip <> spaces
+            close mailhaz
+            perform kopyala
+            delete file mailhaz 
+         end-if
+      end-start      
+      close mailkime ulke genelfis mailhtml genel.
+      delete file mailkime
+      if satir = 1 
+         display message box "Gonderilecek Kayit Bulunamadi...!"
+                         title "[  Dikkat  ]"
+      else
+      display message box "Gonderim Tamamlandi...!"
+                      title "[  Uyari  ]"
+      modify gd1, RESET-GRID = 1
+                  mass-update = 0
+      perform Grid-Baslik-Kontrol
+      move 4 to accept-control
+      move 25 to control-id
+      end-if
+             .
+*
+ create-file.
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid 
+          accept ekran-fis-1 from time 
+     end-read
+     add 1 to ekran-fis-1
+     rewrite genelfis-rec invalid
+             write genelfis-rec end-write
+     end-rewrite
+     move all low-values to  mailhaz-dosya
+     string mailhaz-dosya,
+             "/asya/ytl/liste/mailhazir." delimited by low-values
+             ekran-fis-1                  delimited by low-values
+             into mailhaz-dosya
+      inspect mailhaz-dosya replacing all low-values by spaces
+      open output mailhaz.
+*
+ mail-send.
+     move mailkime-html-no     to mailhtml-anah
+     read mailhtml no lock invalid
+          initialize mailhtml-rec
+     end-read
+     move all low-values to name-format
+     inspect mailkime-adi replacing trailing spaces by low-values,
+     inspect mailkime-soyadi replacing trailing spaces by low-values
+     string name-format 
+            mailkime-adi delimited by low-values
+            " " delimited by low-values
+            mailkime-soyadi delimited by low-values
+     into name-format
+     inspect name-format replacing all low-values by spaces
+     inspect mailhtml-body replacing all "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" by name-format
+     move all low-values to mail-str
+*     string mail-str,
+         move mailhtml-body          to mail-str
+*     '<html><body><img src="cid:i001"><br>Sayin....<br><br><br><br><br><br><br><br><br><br><img src="cid:i002"></body></html>'
+*     delimited by low-values into mail-str
+     inspect mail-str replacing trailing spaces by low-values
+     move 0   to i
+     inspect mail-str tallying i for all low-values
+     compute i = function length(mail-str) - i
+     create mailmessage handle in @message
+
+     modify @message,
+                    @MessageSubject(mailkime-baslik)
+                    @messagebody(mail-str(1:i + 1))
+
+     modify @message,
+                    @MessageBodyFormat("1" as vt_variant)
+     modify @message,
+                    @messagepriority("3" as vt_variant)
+     create mailaddress handle in from1
+     modify from1,
+                 @Address(genel-mail-gonderen-adresi)
+                 @name(genel-mail-gonderen-adi)
+     modify @message,
+                   @sender(from1)
+     create MailAddress handle in recipient
+     modify recipient,
+                    @address(mailkime-e-mail)
+                    @name(name-format)
+
+     modify @message,
+                   @AddRecipient(recipient)
+     create MailAttachment handle in attach1.
+     modify attach1,
+                  @file("c:\alt.jpg")
+                  @inline(1)
+                  @contentid("i002")
+     modify @message,
+                   @AddAttachment(attach1)
+     create MailAttachment handle in attach2.
+     modify attach2,
+                  @file("c:\ust.jpg")
+                  @inline(1)
+                  @contentid("i001")
+     modify @message,
+            @AddAttachment(attach2)
+
+     modify objsmtpmail,
+            @send(@message,1,mail-donus)
+     returning mail-donus.
+     if mail-donus = 0 or mail-donus <> 0
+        perform kontrol-yaz
+     end-if.
+* 
+ kontrol-yaz.
+     accept zaman from time
+     accept g-tarih from century-date
+     if mail-donus = 0
+        move "E"           to MAILKIME-SEND-DURUM         
+     else
+        move "H"           to mailkime-send-durum
+     end-if
+     move g-tarih          to mailkime-send-tarih
+     move zaman            to mailkime-send-zaman
+     write mailkime-rec invalid 
+           rewrite mailkime-rec end-rewrite 
+    end-write
+    perform grid-yukleyiver
+      .
+*
+ grid-yukleyiver.
+      move satir                 to gd-1-col-1
+      move mailkime-adi          to gd-1-col-2
+      move mailkime-soyadi       to gd-1-col-3
+      move mailkime-e-mail       to gd-1-col-4
+      if mail-donus = 0
+        move "E"                 to gd-1-col-5
+        modify gd1(satir,8),
+               hidden-data = "E"
+               bitmap = check-BMP
+               bitmap-number = 2
+               bitmap-width = 16
+      else
+        move "H"                 to gd-1-col-5
+        modify gd1(satir,8),
+               hidden-data = "E"
+               bitmap = check-BMP
+               bitmap-number = 1
+               bitmap-width = 16
+      end-if
+
+      move mailkime-send-tarih   to ydk-tarih
+      move ydk-gun               to gd-1-col-6(1:2)
+      move "/"                   to gd-1-col-6(3:1)
+      move ydk-ay                to gd-1-col-6(4:2)
+      move "/"                   to gd-1-col-6(6:1)
+      move ydk-yil               to gd-1-col-6(7:4)
+
+      move mailkime-send-zaman   to ydk-zaman
+      move ydk-zaman             to gd-1-col-7(1:2)
+      move ":"                   to gd-1-col-7(3:1)
+      move ydk-dakika            to gd-1-col-7(4:2)
+      move ":"                   to gd-1-col-7(6:1)
+      move ydk-saniye            to gd-1-col-7(7:2)
+      inspect gd1-rec replacing all low-values by spaces
+      modify gd1, RECORD-TO-ADD(gd1-rec).
+*
+ mail-create.
+     move "A"       to genel-anahtar
+     read genel no lock invalid
+          initialize genel-rec
+     end-read
+     move genel-rec       to genel-mail-rec-detay
+     modify objSmtpMail, 
+            @SmtpServer(genel-mail-SmtpServer)
+            @smtpport(25)
+            @SmtpUsername(genel-mail-SmtpUsername)
+            @SmtpPassword(genel-mail-SmtpPassword)
+            @smtpssl(0)
+            @smtpspa(0)
+            returning mail-donus
+     if mail-donus = 0
+        modify Form1-St-1-Handle, TITLE = "Oturum Aciliyor...."
+        call "c$sleep" using 1
+        modify Form1-St-1-Handle, TITLE = "Kullanici Adi ve Parola Denetleniyor...."
+        call "c$sleep" using 1
+        modify Form1-St-1-Handle, TITLE = "Oturum Acildi...."
+     else
+        display message box "Oturum Acilamadi Sunucu Ayarlarini Kontrol Ediniz..." 
+        modify Form1-St-1-Handle, 
+                                TITLE = "Oturum Acilamadi Sunucu Ayarlarini Kontrol Ediniz...."
+     end-if.
+*
+ mail-close.
+      .
+*
+ bar-ekle.
+     move yuzde to EYUZDE.
+     modify Form1-Fr-2a, FILL-PERCENT = yuzde,
+                         TITLE = YUZDELE-BASLIK.
+     perform bos 100000 times.
+*
+ bos.
+    .
+
+ 

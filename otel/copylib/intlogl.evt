@@ -1,0 +1,261 @@
+* intlogl.evt
+* intlogl.evt is generated from D:\asya\acugt.ytl\otel\intlogl.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+***   start event editor code   ***
+*
+Form1-Bef-Create.
+     call "c$narg" using link-var
+     accept parametre-kutuphane from command-line 
+     if parametre-kutuphane <> spaces then
+         move parametre-kutuphane  to  isyeri-adres-tasi 
+         perform adresleri-tasi
+     else
+         if link-var > 0
+              perform adresleri-tasi
+         end-if
+     end-if
+    
+     perform genel-oku.
+     .
+
+*
+Form1-Aft-Initdata.
+     perform liste-basla
+     
+     .
+*
+genel-oku.
+     open input genel
+     initialize genel-rec
+     move 1  to genel-anahtar
+     read genel no lock invalid 
+         continue 
+     end-read 
+     close genel.
+*
+liste-basla.     
+    perform genel-oku
+    if parametre-kutuphane <> spaces then
+***** cenk bey isteði üzerine maili var Ramazan                perform c-out-kayit-bul
+                perform c-in-kayit-bul 
+    else
+        if link-var > 0
+           perform internet-kapat-ac
+        end-if 
+    end-if
+
+    set exit-pushed to true.
+
+*
+internet-kapat-ac.
+    open input konuk yanrez polisxml rez 
+    initialize konuk-rec
+    move lik-int-folio       to konuk-folio
+    read konuk no lock invalid
+       continue 
+    not invalid 
+***** cenk bey isteði üzerine maili var Ramazan        move 2  to link-int-tip
+***** cenk bey isteði üzerine maili var Ramazan        perform yanrez-bul       
+        call "c$sleep" using 1
+        move 1  to link-int-tip
+        perform yanrez-bul       
+    
+    end-read 
+    close konuk yanrez polisxml rez
+    .
+*
+c-out-kayit-bul.
+     open input konuk yanrez polisxml rez
+     initialize konuk-rec
+     move "H"            to konuk-durumu
+     move calisma-tarihi to konuk-git-tar
+     start konuk key not < konuk-git invalid 
+         continue 
+     not invalid 
+     perform with test after until fs-konuk = "10"
+     read konuk next no lock end move "10" to fs-konuk
+     not at end  
+           if konuk-durumu <> "H"
+               exit perform 
+           end-if 
+           if konuk-git-tar <> calisma-tarihi
+               exit perform 
+           end-if 
+           if konuk-fol-kodu <> "R"
+              exit perform cycle 
+           end-if        
+           initialize rez-rec
+           move konuk-rez-no   to rez-no
+           read rez no lock invalid 
+               exit perform cycle 
+           not invalid 
+               if rez-durumu <> "I"
+                   exit perform cycle 
+               end-if 
+               if rez-k-g-b <> "K"
+                  exit perform cycle 
+               end-if 
+               if konuk-folio > 0
+                  move 2  to link-int-tip
+                  perform yanrez-bul
+               end-if 
+           end-read 
+     end-read 
+     end-perform
+     end-start                
+     close konuk yanrez polisxml rez.
+*
+c-in-kayit-bul.
+     open input konuk yanrez polisxml rez
+     initialize konuk-rec
+     move "I"            to konuk-durumu
+     move calisma-tarihi to konuk-gel-tar
+     start konuk key not < konuk-gel invalid 
+         continue 
+     not invalid 
+     perform with test after until fs-konuk = "10"
+     read konuk next no lock end move "10" to fs-konuk
+     not at end  
+           if konuk-durumu <> "I"
+               exit perform 
+           end-if 
+           if konuk-gel-tar <> calisma-tarihi
+               exit perform 
+           end-if 
+           if konuk-fol-kodu <> "R"
+              exit perform cycle 
+           end-if 
+
+           initialize rez-rec
+           move konuk-rez-no   to rez-no
+           read rez no lock invalid 
+               exit perform cycle 
+           not invalid 
+               if rez-durumu <> "I"
+                   exit perform cycle 
+               end-if 
+               if rez-k-g-b <> "K"
+                  exit perform cycle 
+               end-if 
+               if konuk-folio > 0
+                  move 1  to link-int-tip
+                  perform yanrez-bul
+               end-if 
+           end-read 
+     end-read 
+     end-perform
+     end-start                
+     close konuk yanrez polisxml rez.
+*
+yanrez-bul.
+     initialize yanrez-rec
+     move konuk-rez-no     to yanrez-rezno
+     start yanrez key not < yanrez-anah invalid 
+         continue 
+     not invalid
+     perform with test after until fs-yanrez = "10"
+     read yanrez next no lock end move "10" to fs-yanrez
+     not at end 
+           if yanrez-rezno <> konuk-rez-no
+               exit perform 
+           end-if
+             initialize link-ip link-username link-password  
+                        link-tipi  link-oda  
+                        link-upwd link-phone
+             call "c$sleep" using 3 
+             initialize polisxml-rec
+             move yanrez-rezno         to polisxml-rezno
+             move yanrez-sirano(2:1)   to polisxml-sirano
+             read polisxml no lock invalid 
+                 exit perform cycle 
+             not invalid                    
+                    if polisxml-uyruk  = "TC" then 
+                       if polisxml-tckimlikno > 0                          
+                          move polisxml-dog-YIL        to link-upwd  | eski hali tc no 
+                          perform web-browser-gonder
+                       end-if 
+                    else
+                       if polisxml-kseri not = spaces
+                          move polisxml-dog-YIL to link-upwd | eski hali pasaport
+                          perform web-browser-gonder
+                       end-if                          
+                    end-if                    
+             end-read 
+     end-read 
+     end-perform
+     end-start.
+*
+ web-browser-gonder.
+           move all low-values to deger
+           if isyeri-adres-tasi(1:4) = "long"
+              move "192.168.10.49" to link-ip
+           end-if 
+           if isyeri-adres-tasi(1:4) = "harm"
+              move "192.168.10.49" to link-ip            
+           end-if 
+           MOVE "manager"      to link-username
+           move "LongBeachH"   to link-password
+           evaluate link-int-tip
+           when 1
+              move "create"       to link-tipi
+           when 2
+              move "delete"       to link-tipi
+           when 3
+              continue 
+           end-evaluate 
+
+
+           move yanrez-anah      to link-phone           
+           inspect link-ip       replacing trailing spaces by low-values
+           inspect link-username replacing trailing spaces by low-values
+           inspect link-password replacing trailing spaces by low-values
+           inspect link-tipi     replacing trailing spaces by low-values
+           inspect link-oda      replacing trailing spaces by low-values
+           inspect link-upwd     replacing trailing spaces by low-values
+           inspect link-phone    replacing trailing spaces by low-values
+           inspect konuk-adi     replacing trailing spaces by low-values
+
+*/long beach cem bey isteði üzerine 17.03.2015 tarihinde kaldýrýldý.      
+*           move link-oda to veri
+*           perform varying i from 1 by 1 until i > 49
+*                   if veri(i:1) = spaces and veri(i:) <> spaces then
+*                         move veri(1 : i - 1) to yeni-veri
+*                         move veri(i + 1:)    to yeni-veri(i:)
+*                         move yeni-veri       to veri
+*                         compute i = i - 1
+*                  end-if
+*           end-perform
+*           move veri           to link-oda
+*/long beach cem bey isteði üzerine 17.03.2015 tarihinde kaldýrýldý.      
+           move konuk-odano    to link-oda(1:4)
+           move link-upwd      to link-oda(5:4)
+           
+           string deger 
+           "http://"                   delimited by low-values
+           link-ip                     delimited by low-values
+           "/Utilities/sms.shtml?adm=" delimited by low-values
+           link-username               delimited by low-values
+           "&pwd="                     delimited by low-values
+           link-password               delimited by low-values
+           "&type="                    delimited by low-values
+           link-tipi                   delimited by low-values
+           "&auto=0"                   delimited by low-values
+           "&uname="                   delimited by low-values
+           link-oda                    delimited by low-values
+           "&upwd="                    delimited by low-values
+           link-upwd                   delimited by low-values
+           "&phone="                   delimited by low-values
+           link-phone                  delimited by low-values
+           "&plan=1&unit=1"            delimited by low-values
+           into deger
+
+           inspect deger replacing trailing low-values by spaces          
+           display Form1-Wb-1
+           initialize lb-adi
+           move yanrez-adi    to lb-adi(1:20)        
+           move yanrez-soyadi to lb-adi(22:)
+           display lb .
+
+
+ 

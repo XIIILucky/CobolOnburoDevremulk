@@ -1,0 +1,181 @@
+* vipistek.evt
+* vipistek.evt is generated from D:\asya\acugt.ytl\otel\vipistek.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     call "c$narg" using link-var
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 1
+        initialize infox-cagir
+         move "V"   to infox-tipi-cagir
+         call "/asya/ytl/obj/otel/vipmlara.asy" using infox-cagir
+            on exception perform callerr-proc
+               not on exception
+         cancel "/asya/ytl/obj/otel/vipmlara.asy" 
+         end-call
+         if infox-kodu-cagir not = spaces
+            move infox-kodu-cagir     to vipistek-sira-no of vipistek         
+            open input kodlar02
+            initialize kodlar02-rec
+            move infox-kodu-cagir             to kodlar02-kodu
+            move "V"                          to kodlar02-tipi
+            read kodlar02 no lock invalid 
+                 continue 
+            not invalid 
+                move kodlar02-adi             to vipistek-malzeme-adi of vipistek
+            end-read 
+            close kodlar02
+            display accept-0102 accept-0103
+         end-if 
+
+     when 2
+        if vipistek-sira-no of vipistek = 0 or spaces or zeroes
+           display message box "Istek Kodu Bos gecilemez.."
+                           title "Uyari"
+                           icon 1
+            exit paragraph 
+          
+        end-if 
+        display message box "Malzeme Kaydedilecek." new-line
+                            "Eminmisiniz?"
+                        title "Uyari"
+                        icon 1
+                        type 2 
+                        default 2
+                        returning return-code 
+        if return-code =2
+            exit paragraph
+        end-if 
+
+        open i-o vipistek
+            write vipistek-rec invalid 
+                rewrite vipistek-rec end-rewrite 
+            end-write 
+        close vipistek
+        perform grid-baslik-yukle
+        perform grid-yukle
+        move 4  to accept-control
+        move 11 to control-id
+     when 3 
+        display message box "Malzeme Silinecektir." new-line 
+                            "Eminmisiniz?"
+                        title "Uyari"
+                        icon 1
+                        type 2 
+                        default 2
+                        returning return-code 
+        if return-code =2
+            exit paragraph
+        end-if 
+
+        open i-o vipistek
+        read vipistek no lock invalid 
+            continue 
+        not invalid 
+            delete vipistek invalid 
+                continue 
+            end-delete 
+        end-read 
+        close vipistek
+        perform grid-baslik-yukle
+        perform grid-yukle
+        move 4  to accept-control
+        move 11 to control-id
+     end-evaluate      
+     .
+*
+ Form1-Aft-Initdata.
+     if link-var > 0
+        open i-o vipistek close vipistek
+        if vipistek-rez-no of vipistek-rec not = zeroes or 
+           vipistek-rez-no of vipistek-rec not = spaces 
+              perform grid-baslik-yukle
+              perform grid-yukle
+        end-if 
+        move link-vipistek-link-no to vipistek-rez-no of vipistek-rec
+        display accept-0101
+     end-if.
+*
+ grid-baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "S"             to gd-1-col-1
+     move "I.Kodu"        to gd-1-col-2
+     move "Malzeme Adi"   to gd-1-col-3
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+      .
+*
+ grid-yukle.
+     open input vipistek
+     initialize vipistek-rec sira fs-vipistek
+     move link-vipistek-link-no   to vipistek-rez-no
+     start vipistek key not < vipistek-anah invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-vipistek = "10"
+     read vipistek next no lock end move "10"  to fs-vipistek
+     not at end 
+             if vipistek-rez-no <> link-vipistek-link-no
+                 exit perform 
+             end-if 
+             add 1                      to sira 
+             initialize form1-gd-1-record
+             move sira                  to z1
+             move z1                    to gd-1-col-1
+             move vipistek-sira-no      to gd-1-col-2
+             move vipistek-malzeme-adi  to gd-1-col-3
+
+             modify form1-gd-1,
+                    record-to-add(form1-gd-1-record)
+     end-read 
+     end-perform
+     end-start
+     close vipistek
+     modify form1-gd-1,mass-update = 0
+      .
+*
+ accept-0102-Aft-Procedure.
+     perform vipistek-oku.
+
+    
+     .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+         move event-action-fail to event-action
+         inquire form1-gd-1(event-data-2,2),cell-data in vipistek-sira-no
+         perform vipistek-oku
+         display accept-0102
+     end-evaluate 
+     
+     .
+*
+ vipistek-oku.
+     open i-o vipistek
+     read vipistek no lock invalid 
+          initialize vipistek-diger
+     end-read 
+     display accept-0103
+     close vipistek
+             .
+
+ 

@@ -1,0 +1,214 @@
+* slaserdok.evt
+* slaserdok.evt is generated from C:\asya\Acugt.ytl\OTEL DEVREMULK\slaserdok.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ combo-fis-tipi-Exception-Proc.
+     .
+***   start event editor code   ***
+*
+ stok-rapor.
+
+*///////// OLAYIN ZIPLADIÐI YER
+*/  report FOOTER'DA PRINT-AFTER-PAGE-FOOTER = FALSE OLACAK YOKSA 1 SAYFA BOÞ VERÝR
+    
+
+    initialize winprint-selection
+    call "Win$printer" using winprint-setup-old
+         returning return-code
+    end-call
+
+
+    call "win$printer" using winprint-get-current-info
+                             winprint-selection
+    end-call
+
+    perform acu-report1-print-tofile
+    if is-remote
+       set environment "dll_convention" to "1" 
+*/ rapor dosyaya gonderildi
+       call "@[DISPLAY]:kernel32.dll" on exception
+                       display message box 
+                               "kernel32.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+                       close ara 
+                       delete file ara
+                       goback
+       end-call
+       move all low-values to win-temp
+       call "@[DISPLAY]:GetEnvironmentVariableA" using by reference env-name
+                                                       by reference win-temp
+                                                       by value 255
+            on exception
+                       display message box 
+                               "kernel32.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+                       close ara 
+                       delete file ara
+                       goback
+       end-call
+
+
+       inspect win-temp replacing trailing spaces by low-values
+       move all low-values to html-rapor
+       string html-rapor
+              "@[DISPLAY]:"     delimited by low-values
+              win-temp          delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into html-rapor
+       call "c$copy" using rapor-dosya html-rapor
+       perform acu-report1-print-para 
+       move all low-values to prt-fullfilename
+       string prt-fullfilename
+              win-temp delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into prt-fullfilename
+
+       call "@[DISPLAY]:AcuBenchPrintDummy" 
+              on exception 
+                 call "@[display]:acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+                       close ara 
+                       delete file ara
+                       goback
+                 end-call 
+       end-call
+       move winprint-name                to acu-printer-name
+       call "@[DISPLAY]:AcuBenchPrintExecWBPrint" using by content prt-fullfilename,
+                                                     omitted,
+                                                     by content print-browser-para,
+                                                     by content acu-paper-header, 
+                                                     by content acu-paper-footer, 
+                                                     by content acu-paper-size, 
+                                                     by value acu-paper-orientationint,
+                                                     by value acu-paper-copies,
+                                                     by content acu-printer-name
+       end-call
+       delete file printf
+       move 0 to acu-setupprint
+    else
+*/ LOCAL ISE
+       perform acu-report1-print-para 
+       move rapor-dosya         to prt-fullfilename
+       inspect prt-fullfilename replacing trailing spaces by low-values
+       inspect prt-fullfilename replacing all "/" by "\"
+   
+       set environment "dll_convention" to "1"
+       call "AcuBenchPrintDummy" 
+              on exception 
+                 call "acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+                       close ara 
+                       delete file ara
+                       goback
+                 end-call 
+       end-call
+       move winprint-name                to acu-printer-name
+       call "AcuBenchPrintExecWBPrint" USING by content prt-fullfilename,
+                                                omitted,
+                                                by content print-browser-para,
+                                                by content acu-paper-header, 
+                                                by content acu-paper-footer, 
+                                                by content acu-paper-size, 
+                                                by value acu-paper-orientationint,
+                                                by value acu-paper-copies,
+                                                by content acu-printer-name
+      end-call
+      move 0 to acu-setupprint
+      delete file printf
+    end-if.
+
+    close ara
+    delete file ara.
+    goback.
+    .
+*
+ rapor-baslik-yaz.
+
+    .
+
+  
+
+   
+
+ detay-ata.
+   
+    move "E"         to rapor-detay1-yazdir
+    perform print-acubench.
+*
+
+
+*
+ lazer-rapor.
+
+    initialize detay-yazdir-deg kdv-dizi
+    move "E"            to rapor-detay1-yazdir.
+
+    perform print-page-footer.
+    .
+
+    perform print-page-detail.
+    perform print-kdv-detail.
+    perform print-envanter-detail.
+    if yuvarlama > 0 
+       perform print-yuvarlama-detail
+    end-if.
+
+*
+ print-page-footer.
+    |||start fln
+    .
+
+*
+ print-page-detail.
+   ||
+   .
+
+*
+ Report1-RF-1-BeforePrint.
+   .
+
+*
+ print-kdv-detail.
+    move "H"    to rapor-detay1-yazdir
+    move "H"    to envanter-detay-yazdir.
+    move "E"    to kdv-detay-yazdir.
+*/alt detay eklenecek......unutmaaa sirket adi teklif tarihi gecerlilik süresi v.s.    
+    perform print-acubench.    
+
+*
+ print-envanter-detail.
+    .
+   
+*
+ print-yuvarlama-detail.
+    move "E"            to yuvarlama-detay-goster
+    move yuvarlama      to tut-11
+    move tut-11         to html-yuvarlama-tutar.
+    perform  print-acubench.
+*
+ print-acubench.
+*/ karakter cevir
+    perform karakter-degistir
+    perform Acu-RPT-Report1-DO-PRINT-RTN  .
+
+*
+ karakter-degistir.
+    inspect html-deg converting  x"989E999A80A6A78D81879F94" to
+                                 x"49534F55434767697563736F".
+
+
+ 

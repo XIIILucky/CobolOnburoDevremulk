@@ -1,0 +1,415 @@
+* lpgsayac.evt
+* lpgsayac.evt is generated from C:\asya\acugt.ets\deli gadirin tüketim takip\17032010otel\lpgsayac.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Pb-1-Exception-Proc.
+     PERFORM Form2-Pb-1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+*       move "timo2008" to isyeri-adres-tasi
+       accept tarih-tasi from century-date
+       move tarih-tasi to lpg-scr-tarih ilk-tarih son-tarih
+       perform adresleri-tasi.
+*
+ Form1-Ex-Other.
+      evaluate key-status
+         when 1001
+              perform carpan-yukle
+              perform lpg-deger-yukle
+              perform takvim-yukle
+              perform grid-yukle
+              perform tuketim-hesapla
+         when 2
+              perform lpg-Deger-Kaydet
+         when 3
+              perform lpg-deger-sil
+         when 1003
+              perform Acu-Form2-Routine
+      end-evaluate.
+
+*
+ lpg-deger-kaydet.
+      if lpg-scr-aig = zeroes and lpg-scr-tsy = zeroes
+         display message box "Tank Seviye ve Ay Ic. Gel. Haneleri ayni anda bos gecilemez..!!"
+         exit paragraph
+      end-if
+      open i-o takip
+      initialize takip-rec
+      set takip-lpg-sayac         to true
+      move lpg-scr-tarih          to takip-tarih
+      read takip no lock invalid
+           continue
+      end-read
+           move lpg-scr-aig       to takip-lpg-aig
+           move lpg-scr-tsy       to takip-lpg-tsy
+           move lpg-scr-tuky      to takip-lpg-tuky
+           move lpg-scr-tukk      to takip-lpg-tukk
+           move lpg-scr-taig      to takip-lpg-taig
+           move lpg-scr-ak        to takip-lpg-ak
+
+      write takip-rec invalid 
+            rewrite takip-rec end-rewrite
+      end-write
+      initialize lpg-scr-aig lpg-scr-tsy
+      display    lscr-aig lscr-tsy
+      move 4  to accept-control
+      move 4  to control-id
+      close takip.
+
+*
+ lpg-deger-yukle.
+      open i-o takip
+      initialize takip-rec
+      set  takip-lpg-sayac         to true
+      move lpg-scr-tarih           to takip-tarih
+      read takip no lock invalid
+           continue
+      end-read
+           move takip-lpg-aig     to lpg-scr-aig
+           move takip-lpg-tsy     to lpg-scr-tsy
+           move takip-lpg-taig    to lpg-scr-taig
+           move takip-lpg-ak      to lpg-scr-ak
+      move 4  to accept-control
+      move 16 to control-id
+      display lscr-aig lscr-tsy lscr-taig lscr-ak
+      close takip.
+     .
+
+*
+ takvim-yukle.
+      open input takvim takip
+      initialize takvim-rec takip-rec
+      initialize yedek-takvim-anah
+      move lpg-scr-tarih to takvim-anah
+      start takvim key not > takvim-anah invalid
+            continue
+      not invalid
+      perform with test after until fs-takvim = "10"
+      read takvim backward no lock end move "10" to fs-takvim 
+      not at end
+          if yedek-takvim-anah = spaces or 
+             yedek-takvim-anah = zeroes
+             move takvim-anah to yedek-takvim-anah             
+          end-if
+          if takvim-anah <> yedek-takvim-anah
+             move takvim-anah   to yedek-anahtar
+             perform dunku-deger-yukle
+             exit perform
+          end-if            
+      end-read
+      end-perform
+      end-start
+      close takvim takip.
+
+*
+ dunku-deger-yukle.
+      move yedek-anahtar          to takip-tarih
+      set  takip-lpg-sayac        to true
+      read takip no lock invalid
+           initialize lpg-scr-aigd lpg-scr-tsyd
+      not invalid
+           move takip-lpg-aig     to lpg-scr-aigd
+           move takip-lpg-tsy     to lpg-scr-tsyd
+
+      end-read
+      display lscr-aigd lscr-tsyd.
+
+*
+ tuketim-hesapla.
+*      compute lpg-scr-htaig = 
+*              (lpg-scr-aigd + lpg-scr-taig)
+*      move lpg-scr-htaig         to lpg-scr-taig
+*      display lscr-taig 
+      open input takip
+      initialize takip-rec lpg-scr-htaig
+      set takip-lpg-sayac to true
+      move lpg-scr-tarih  to takip-tarih
+      start takip key not > takip-anah invalid
+            continue
+      not invalid
+      perform with test after until fs-takip = "10"
+      read takip backward no lock end 
+           move "10" to fs-takip
+      not at end
+           if takip-tipi <> "P  "
+              exit perform
+           end-if
+           compute lpg-scr-htaig = takip-lpg-aig + lpg-scr-htaig
+           move lpg-scr-htaig         to lpg-scr-taig
+      end-read
+      end-perform
+      end-start
+      close takip
+      display lscr-taig 
+
+      compute lpg-scr-tuky = 
+              (lpg-scr-tsyd - lpg-scr-tsy)
+      display lscr-tuky
+      compute lpg-scr-tukk = 
+              (lpg-scr-tuky * lpg-scr-cd)
+      display lscr-tukk
+      .
+
+*
+ lpg-deger-sil.
+      display message box "Kayit Silinsin Mi?"
+                      title"????"
+                      type MB-YES-NO
+                      default 1
+                      returning donus-kodu
+      if donus-kodu = 2
+         exit paragraph
+         else continue
+      end-if
+      open i-o takip
+      initialize takip-rec
+      set  takip-lpg-sayac       to true
+      move lpg-scr-tarih         to takip-tarih
+      read takip no lock invalid
+           close takip
+           exit paragraph
+           continue
+      end-read
+      delete takip
+      end-delete
+      initialize lpg-scr-aig lpg-scr-tsy
+      display lscr-aig lscr-tsy
+      close takip.
+
+*
+ baslik-yukle.
+      move "Tarih"             to gd-1-col-1
+      move "Ay Ic.Gel."        to gd-1-col-2
+      move "Tank Sev.%"        to gd-1-col-3
+      move "Tuketim %"         to gd-1-col-4
+      move "Tuketim KG"        to gd-1-col-5
+      move "Gel.Gaz Top."      to gd-1-col-6
+      move "Ayl.Kulln."        to gd-1-col-7
+      modify gd-lpg, RECORD-TO-ADD(gd-rec-lpg).
+
+*
+ grid-yukle.
+      modify gd-lpg, reset-grid  = 1
+                     mass-update = 0
+      perform    baslik-yukle
+      open i-o   takip
+      initialize takip-rec gd-rec-lpg
+      move 1 to kayit
+      set   takip-lpg-sayac   to true
+      move  lpg-scr-tarih     to takip-tarih
+      start takip key not > takip-anah invalid
+            continue
+      not invalid
+      perform with test after until fs-takip = "10"
+      read takip backward no lock end
+      not at end
+            if takip-tipi <> "P "
+               exit perform
+            end-if
+
+            if takip-ay <> lpg-scr-ay
+               exit perform cycle
+            end-if
+            add 1 to kayit
+            move takip-gun                 to gd-1-col-1(1:2)
+            move "/"                       to gd-1-col-1(3:1)
+            move takip-ay                  to gd-1-col-1(4:2)
+            move "/"                       to gd-1-col-1(6:1)
+            move takip-yil                 to gd-1-col-1(7:4)
+            move takip-lpg-aig             to ydk-takip-lpg-aig
+            move ydk-takip-lpg-aig         to gd-1-col-2
+            if   ydk-takip-lpg-aig not = spaces 
+                 modify gd-lpg(kayit,2), ROW-COLOR = 555
+            end-if
+            move takip-lpg-tsy             to ydk-takip-lpg-tsy
+            move ydk-takip-lpg-tsy         to gd-1-col-3
+            move takip-lpg-tuky            to ydk-lpg-scr-tuky
+            move ydk-lpg-scr-tuky          to gd-1-col-4
+            move takip-lpg-tukk            to ydk-takip-lpg-tukk
+            move ydk-takip-lpg-tukk        to gd-1-col-5
+            modify gd-lpg, RECORD-TO-ADD(gd-rec-lpg)
+     end-read
+     end-perform
+     end-start
+     close takip
+     display lscr-cd
+     modify gd-lpg, reset-grid  = 0
+                    mass-update = 16.
+
+*
+ carpan-yukle.
+     open i-o takip
+     initialize takip-rec
+     move yil-tasi to takip-yil
+     move 00       to takip-ay
+     move 00       to takip-gun
+     set takip-lpg-sayac                to true
+     move lpg-scr-ay                    to takip-sira
+     read takip no lock invalid
+          continue
+     not invalid
+          move takip-lpg-cd             to lpg-scr-cd
+     end-read
+     close takip
+*     move 4 to accept-control
+*     move 17 to control-id
+     display lscr-cd.
+*
+ Form2-Pb-1-Ex-Other.
+     evaluate key-status
+           when 2001
+                perform ilk-tarih-yukle
+                perform son-tarih-yukle
+                perform buyuk-kucuk-bul
+                perform bar-yukle
+     end-evaluate.
+
+*
+ ilk-tarih-yukle.
+
+    open i-o takip
+    initialize takip-rec
+    set takip-lpg-sayac    to true
+    move ilk-tarih         to takip-tarih
+    read takip no lock invalid
+         display message box "Ilk tarihe ait kayit bulunamadi..!!!"
+    end-read
+         move takip-lpg-aig        to ilk-lpg-aig 
+         move takip-lpg-tsy        to ilk-lpg-ts
+         move takip-lpg-tuky       to ilk-lpg-tuky
+         move takip-lpg-tukk       to ilk-lpg-tukk
+    display ilk-tsa ilk-tukya ilk-tukka ilk-aiga
+    close takip.
+   
+*
+ son-tarih-yukle.
+    open i-o takip
+    initialize takip-rec
+    set takip-lpg-sayac    to true
+    move son-tarih         to takip-tarih
+    read takip no lock invalid
+         display message box "Son tarihe ait kayit bulunamadi..!!!"
+    end-read
+         move takip-lpg-aig        to son-lpg-aig 
+         move takip-lpg-tsy        to son-lpg-ts
+         move takip-lpg-tuky       to son-lpg-tuky
+         move takip-lpg-tukk       to son-lpg-tukk
+    display son-tsa son-tukya son-tukka son-aiga
+    close takip.
+
+*
+ buyuk-kucuk-bul.
+    compute lpg-ts-fark = son-lpg-ts - ilk-lpg-ts
+    display ts-farka.
+    if ilk-lpg-ts > son-lpg-ts
+       modify buyuk, VISIBLE = true
+       modify kucuk, VISIBLE = false
+       modify esittir, visible = false
+    else
+       modify kucuk, visible = true
+       modify buyuk, visible = false
+       modify esittir, visible = false
+    end-if.
+    if ilk-lpg-ts = son-lpg-ts
+       modify esittir, VISIBLE = true
+       modify kucuk, visible = false
+       modify buyuk, VISIBLE = false
+    end-if.
+******************************************
+    compute lpg-tuky-fark = son-lpg-tuky - ilk-lpg-tuky
+    display tuky-farka
+    if ilk-lpg-tuky > son-lpg-tuky
+       modify buyuka, VISIBLE = true
+       modify kucuka, VISIBLE = false
+       modify esittira, visible = false
+    else
+       modify kucuka, visible = true
+       modify buyuka, visible = false
+       modify esittira, visible = false
+    end-if.
+    if ilk-lpg-tuky = son-lpg-tuky
+       modify esittira, VISIBLE = true
+       modify kucuka, visible = false
+       modify buyuka, VISIBLE = false
+    end-if.
+******************************************
+    compute lpg-tukk-fark = son-lpg-tukk - ilk-lpg-tukk
+    display tukk-farka
+    if ilk-lpg-tukk > son-lpg-tukk
+       modify buyukaa, VISIBLE = true
+       modify kucukaa, VISIBLE = false
+       modify esittiraa, visible = false
+    else
+       modify kucukaa, visible = true
+       modify buyukaa, visible = false
+       modify esittiraa, visible = false
+    end-if.
+    if ilk-lpg-tukk = son-lpg-tukk
+       modify esittiraa, VISIBLE = true
+       modify kucukaa, visible = false
+       modify buyukaa, VISIBLE = false
+    end-if.
+******************************************
+    compute lpg-aig-fark = son-lpg-aig - ilk-lpg-aig
+    display aig-farka
+    if ilk-lpg-aig > son-lpg-aig
+       modify buyukaaa, VISIBLE = true
+       modify kucukaaa, VISIBLE = false
+       modify esittiraaa, visible = false
+    else
+       modify kucukaaa, visible = true
+       modify buyukaaa, visible = false
+       modify esittiraaa, visible = false
+    end-if.
+    if ilk-lpg-aig = son-lpg-aig
+       modify esittiraaa, VISIBLE = true
+       modify kucukaaa, visible = false
+       modify buyukaaa, VISIBLE = false
+    end-if.
+
+*
+ bar-yukle.
+    move son-lpg-ts to gr1-eyuzde
+    modify gr1, TITLE = gr1-title
+    modify gr1, FILL-PERCENT = son-lpg-ts.
+
+    move ilk-lpg-ts to gr2-eyuzde
+    modify gr2, TITLE = gr2-title
+    modify gr2, FILL-PERCENT = ilk-lpg-ts.
+
+    move lpg-ts-fark to gr3-eyuzde
+    modify gr3, TITLE = gr3-title
+    modify gr3, FILL-PERCENT = lpg-ts-fark.
+
+    move ilk-lpg-tuky to gr4-eyuzde
+    modify gr4, TITLE = gr4-title
+    modify gr4, FILL-PERCENT = ilk-lpg-tuky.
+
+    move son-lpg-tuky to gr5-eyuzde
+    modify gr5, TITLE = gr5-title
+    modify gr5, FILL-PERCENT = son-lpg-tuky.
+
+    move lpg-tuky-fark to gr6-eyuzde
+    modify gr6, TITLE = gr6-title
+    modify gr6, FILL-PERCENT = lpg-tuky-fark.
+*
+ Form2-Aft-Initdata.
+     .
+
+ 

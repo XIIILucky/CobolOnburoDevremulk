@@ -1,0 +1,221 @@
+* vipset.evt
+* vipset.evt is generated from D:\asya\acugt.ytl\otel\vipset.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Screen1-Event-Proc.
+     .
+
+ Screen1-Exception-Proc.
+     PERFORM Screen1-Ex-Other
+     .
+
+ vip-kodu-combo-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM vip-kodu-combo-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Screen1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM Screen1-Gd-1-Ev-Msg-Begin-Entry
+     WHEN Msg-Finish-Entry
+        PERFORM Screen1-Gd-1-Ev-Msg-Finish-Entry
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+ Screen1-Aft-Initdata.
+      perform combo-box-yukle
+       
+      perform load_grid.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ load_grid.
+      modify Screen1-Gd-1, 
+             reset-grid = 1
+             mass-update = 1
+      initialize screen1-gd-1-record
+      move "X"            to gd-1-col-1
+      move "Kd"           to gd-1-col-2
+      move "Adi"          to gd-1-col-3
+      move "#"            to gd-1-col-4
+      modify screen1-gd-1,
+             record-to-add(screen1-gd-1-record).
+
+
+     open input kodlar02
+     initialize kodlar02-rec
+     move "Y"                       to kodlar02-tipi
+     move vip-kodu-combo-value(1:1) to kodlar02-kodu
+     read kodlar02 no lock invalid
+          initialize vip-setup-rec
+     not invalid
+          move kodlar02-vip-setup-rec to vip-setup-rec
+     end-read
+
+
+     perform varying i
+             from 1
+             by 1
+             until i > 30 
+                   initialize screen1-gd-1-record
+                   move i     to gd-1-col-1
+                   if vip-setup-kodu(i) <> spaces
+                       initialize kodlar02-rec
+                       move "V"                to kodlar02-tipi
+                       move vip-setup-kodu(i)  to gd-1-col-2 kodlar02-kodu
+                       read kodlar02 no lock invalid
+                            move "Tanimsiz ...." to kodlar02-adi
+                       end-read
+                       move kodlar02-adi       to gd-1-col-3
+                       move vip-setup-adet(i)  to gd-1-col-4
+                   end-if
+                   modify screen1-gd-1,
+                          record-to-add(screen1-gd-1-record)
+     end-perform.
+     close kodlar02.
+     modify Screen1-Gd-1, 
+            mass-update = 0.
+
+     
+     .
+*
+ Screen1-Bef-Create.
+     perform adresleri-tasi.
+
+     
+     .
+*
+ Screen1-Gd-1-Ev-Msg-Begin-Entry.
+     if event-data-1 = 2 or 
+        event-data-1 = 4 
+            continue else
+                     move event-action-fail to event-action
+                     exit paragraph
+     end-if.
+
+*
+ Screen1-Gd-1-Ev-Msg-Finish-Entry.
+     evaluate event-data-1
+     when 2
+          inquire Screen1-Gd-1(event-data-2,event-data-1),
+                  cell-data in vip-setup-kodu(event-data-2 - 1)
+          if vip-setup-kodu(event-data-2 - 1) = spaces
+             initialize screen1-gd-1-record
+             modify screen1-gd-1
+                    y = event-data-2
+                    x = 2
+                    cell-data = " " 
+                    y = event-data-2
+                    x = 3
+                    cell-data = " " 
+                    y = event-data-2
+                    x = 4
+                    cell-data = " " 
+          else
+             open input kodlar02
+             initialize kodlar02-rec
+             move "V"                                to kodlar02-tipi
+             move vip-setup-kodu(event-data-2 - 1)   to kodlar02-kodu
+             read kodlar02 no lock invalid
+                  move "Tanimsiz ...." to kodlar02-adi
+             end-read
+             close kodlar02
+             modify screen1-gd-1(event-data-2,3),
+                    cell-data = kodlar02-adi
+           end-if
+           perform kaydet
+     when 4
+           inquire Screen1-Gd-1(event-data-2,event-data-1),
+                  cell-data in vip-setup-adet(event-data-2 - 1)
+           perform kaydet
+    end-evaluate.
+
+*
+ kaydet.
+    open i-o kodlar02
+    initialize kodlar02-rec
+    move "Y"                         to kodlar02-tipi
+    move vip-kodu-combo-value(1:1)   to kodlar02-kodu
+    read kodlar02 no lock invalid
+         continue 
+    end-read 
+    move vip-setup-rec               to kodlar02-vip-setup-rec
+    rewrite kodlar02-rec invalid
+            write kodlar02-rec end-write
+    end-rewrite.
+    close kodlar02.
+*
+ vip-kodu-combo-Ex-Ntf-Selchange.
+    perform load_grid.
+     
+     .
+*
+ Screen1-Ex-Other.
+    if key-status <> 1 
+       exit paragraph.
+
+    if control-id <> 4
+       exit paragraph.
+
+    inquire Screen1-Gd-1, 
+            cursor-x in sutun
+            cursor-y in satir.
+
+    initialize pansiyon-cagir
+    call "/asya/ytl/obj/otel/vipmlara.asy" using pansiyon-cagir
+         on exception perform callerr-proc
+         not on exception
+    cancel "/asya/ytl/obj/otel/vipmlara.asy" 
+    end-call.
+
+    if pansiyon-kodu-cagir = spaces 
+       exit paragraph.
+
+    modify screen1-gd-1(satir,sutun),
+           cell-data = pansiyon-kodu-cagir.
+
+    move satir          to event-data-2
+    move 02             to event-data-1.
+
+    perform Screen1-Gd-1-Ev-Msg-Finish-Entry.
+           
+
+*
+ combo-box-yukle.
+    open input kodlar02
+    initialize kodlar02-rec
+    move "v"     to kodlar02-tipi
+    start kodlar02 key not < kodlar02-anah invalid 
+       continue 
+    not invalid 
+    perform with test after until fs-kodlar02 = "10"
+    read kodlar02 next no lock end move "10" to fs-kodlar02 
+    not at end 
+          if kodlar02-tipi <> "v"
+             exit perform 
+          end-if
+          initialize combo-tip
+          move kodlar02-kodu   to combo-tip-1
+          move kodlar02-adi    to combo-tip-adi
+          move combo-tip       to vip-kodu-combo-value
+          modify vip-kodu-combo, ITEM-TO-ADD = vip-kodu-combo-value
+    end-read 
+    end-perform
+    end-start
+    close kodlar02 
+    display vip-kodu-combo
+    .
+
+ 

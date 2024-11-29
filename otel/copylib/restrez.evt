@@ -1,0 +1,2105 @@
+* restrez.evt
+* restrez.evt is generated from D:\asya\acugt.ytl\otel\restrez.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+
+ cb-rest-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-rest-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ rapor-Event-Proc.
+     .
+
+ rapor-Exception-Proc.
+     PERFORM rapor-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      move tarih-tasi to rez-tarih tarih-bugun
+      open input kllnc
+      move k-kodu-tasi to k-kodu
+      read kllnc no lock invalid
+           continue
+      end-read
+*      accept rez-zaman-ilk     from time
+      accept zaman-bugun       from time
+      close kllnc
+     .
+*
+ Form1-Ex-Other.
+
+      evaluate key-status
+          when 1
+              if control-id = 33
+                 perform rest-ara
+              end-if
+              if control-id = 36
+                 perform Oda-Ara
+              end-if
+          when 2
+              if rez-kon-bazli = 1
+
+                 perform gun-gun-yaz
+*                 perform cikti-al2
+              else
+                 perform kaydet
+
+*                 perform cikti-al
+              end-if
+          when 200
+               perform folioya-isle
+          when 9001
+            if rb-deg = 1              
+              open input kodlar02
+              initialize kodlar02-rec rez-zaman-ilk rez-zaman
+              move "Q"          to kodlar02-tipi
+              move rez-restkodu to kodlar02-kodu
+              read kodlar02 no lock invalid
+                   continue
+              not invalid
+                  move ode-bos(1:2)        to bas-saat
+                  move ode-bos(3:2)        to bas-dakika
+                  move ode-bos(5:2)        to bit-saat
+                  move ode-bos(7:2)        to bit-dakika
+
+                  move ode-bos(1:4)        to yedek-bas
+                  move ode-bos(5:4)        to yedek-bit
+
+                  move bas                 to rez-zaman-ilk
+                  move bit                 to rez-zaman-son
+
+              end-read
+              close kodlar02
+              display acc1 acc2
+            end-if
+
+          when 9002
+            if rb-deg = 2              
+              open input kodlar02
+              initialize kodlar02-rec rez-zaman-ilk rez-zaman
+              move "Q"          to kodlar02-tipi
+              move rez-restkodu to kodlar02-kodu
+              read kodlar02 no lock invalid
+                   continue
+              not invalid
+                  move hou-bos(1:2) to bas-saat
+                  move hou-bos(3:2) to bas-dakika
+                  move hou-bos(1:2) to bit-saat
+                  move hou-bos(3:2) to bit-dakika
+
+                  move hou-bos(1:4) to yedek-bas
+                  move hou-bos(1:4) to yedek-bit
+
+                  move bas          to rez-zaman-ilk
+                  move bit          to rez-zaman-son
+
+              end-read
+              close kodlar02
+              display acc1 acc2
+            end-if
+
+          when 9003
+            if rb-deg = 3              
+              open input kodlar02
+              initialize kodlar02-rec rez-zaman-ilk rez-zaman
+              move "Q"          to kodlar02-tipi
+              move rez-restkodu to kodlar02-kodu
+              read kodlar02 no lock invalid
+                   continue
+              not invalid
+                  move kodlar02-bos(1:2)        to bas-saat
+                  move kodlar02-bos(3:2)        to bas-dakika
+                  move kodlar02-bos(5:2)        to bit-saat
+                  move kodlar02-bos(7:2)        to bit-dakika
+
+                  move kodlar02-bos(1:4)        to yedek-bas
+                  move kodlar02-bos(5:4)        to yedek-bit
+
+                  move bas                 to rez-zaman-ilk
+                  move bit                 to rez-zaman-son
+
+              end-read
+              close kodlar02
+              display acc1 acc2
+            end-if
+          when 4
+               perform Acu-rapor-routine
+          when 5 
+          call "/asya/ytl/obj/otel/for09ka.asy" using odeme-cagir
+                on exception perform callerr-proc
+                   not on exception
+                   cancel "/asya/ytl/obj/otel/for09ka.asy" 
+           end-call
+          when 15
+             if k-rest-sup = 1 
+                if rez-kon-bazli = 1
+                   perform GUN-GUN-YAZ
+                else
+                   perform madik-mudik-kaydet
+                end-if
+             else
+               display message box "Alacart Rez icin Rest Rezervasyon Supervisor olmaliniz" new-line
+                                 "Kullanici Kodu Tanimlama--Gelismis seceneginden yetki verilmeli"
+             end-if
+          when 3
+             if rez-kon-bazli = 1
+                perform gun-gun-sil
+             else
+                perform sil
+             end-if
+         when 8
+              if rez-kon-bazli = 1
+                 perform cikti-al2
+              else
+                 perform cikti-al
+              end-if
+      end-evaluate
+     
+     .
+
+*
+ rest-ara.
+     initialize odeme-cagir
+     move "Q" to odeme-tipi-cagir
+     call "/asya/ytl/obj/otel/restara.asy" using odeme-cagir
+        on exception perform callerr-proc
+           not on exception
+           cancel "/asya/ytl/obj/otel/restara.asy" 
+     end-call
+     move odeme-kodu-cagir     to rez-restkodu
+          display scr-restkodu
+          move 4  to accept-control
+          move 33 to control-id
+
+     initialize tanim-kapasite rest-kapasite rest-kalan-kapasite
+     display scr-tanim-kapasite scr-kapasite scr-kalan-kapasite
+     perform restkodu-oku.
+
+*
+ restkodu-oku.
+
+    open input kodlar02
+    initialize kodlar02-rec
+    move "Q"           to kodlar02-tipi
+    move rez-restkodu  to kodlar02-kodu
+    read kodlar02 no lock invalid
+         move "TANIMSIZ..!!" to rez-restadi
+    not  invalid
+         move kodlar02-adi   to rez-restadi
+    end-read
+    close kodlar02
+    display scr-restadi.
+
+   
+
+      
+*
+ scr-restkodu-Aft-Procedure.
+     perform restkodu-oku
+     perform kapasite-hesapla
+     compute rest-kalan-kapasite = tanim-kapasite - rest-kapasite
+     display scr-kalan-kapasite
+     perform rez-kon-bazli-mi
+     perform man-rez-grid-goster.
+
+*
+ oda-ara.
+                
+      initialize oda-cagir.
+         move "D"   to oda-db-cagir
+      call "/asya/ytl/obj/otel/odaara.asy" using oda-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/odaara.asy" 
+      end-call.
+      move odano-cagir     to restrez-odano
+      display scr-odano
+      initialize mus-geceleme konuk-kere
+      display scr-geceleme scr-konukkere.
+
+*
+ folio-ara.
+       initialize folara-cagir
+       move "I" to folara-cagri-tipi
+       move restrez-odano             to folara-odano
+       call "/asya/ytl/obj/otel/folara.asy" using folara-cagir
+            on exception 
+            perform callerr-proc
+            not on exception
+         cancel "/asya/ytl/obj/otel/folara.asy"
+         if folara-no-cagir <> zeroes
+           move folara-no-cagir to rez-foliono
+           display scr-folio-no
+         end-if
+       end-call.
+*
+ scr-odano-Aft-Procedure.
+
+     perform folio-ara
+     .
+
+*
+ ad-soyad-goster.
+   
+     open input konuk
+     initialize konuk-rec
+     move rez-foliono            to KONUK-ANAH
+     read konuk no lock invalid
+          display message box "Tanimsiz Folio Numarasi...!!!!"
+          close konuk
+     not invalid
+          move konuk-adi         to rez-rezadi
+          move konuk-soyadi      to rez-rezsoyadi
+          move konuk-acenta      to form-acenta
+          move konuk-rez-no      to form-rezno
+          move konuk-git-tar     to xkonuk-git-tar
+          move konuk-rez-no      to xrez-no
+     close konuk
+     display scr-adi scr-soyadi.
+
+*
+ kisi-sayisi-goster.
+
+     open input konuk
+     initialize konuk-rec
+     move rez-foliono            to KONUK-ANAH
+     read konuk no lock invalid
+          display message box "Tanimsiz Folio Numarasi...!!!!"
+          close konuk
+     not invalid
+          move konuk-kisi         to rez-kisii
+     close konuk
+     display scr-rez-buyuk scr-rez-kucuk scr-rez-free scr-rez-bebek.
+  
+  
+  
+  
+  
+*
+ scr-folio-no-Aft-Procedure.
+
+     perform ad-soyad-goster
+     perform kisi-sayisi-goster
+     perform geceleme-hesapla
+     perform Kere-Oku
+     perform polisxml-oku
+     .
+
+*
+ kaydet.
+    if konuk-hak = konuk-kere  and isyeri-adres-tasi <> "ralh2011"
+       display message box "Konuk Rez. Hakkini Doldurmus..!!Kayit Yapamazsiniz!!!"
+       exit paragraph
+    end-if
+    open i-o restrez
+    initialize restrez-rec
+    move rez-tarih              to restrez-tarih
+    move rez-restkodu           to restrez-kodu
+    move yedek-bas              to restrez-bas-saat
+    move yedek-bit              to restrez-bit-saat
+    move rez-foliono            to restrez-folio-no
+    if rez-restkodu = spaces
+       display message box "Restaurant Kodu Bos Gecilemez..!!"
+       close restrez
+       exit paragraph
+    end-if
+    if rez-foliono = zeroes
+       display message box "Rezervasyon Icin Gecerli Bir Folio Seciniz.."
+       close restrez
+       exit paragraph
+    end-if
+    move rb-deg            to restrez-zaman
+    if restrez-zamansiz
+       display message box "Rezervasyon zamani seciniz !!!"
+       close restrez
+       exit paragraph
+    end-if
+    if rez-buyukk > rest-kalan-kapasite
+    display message box "Restaurant Kapasitesi Dolu..." new-line
+                        "Bu Restaurant'a Rezervasyon Giremezsiniz!!!"
+    close restrez
+    exit paragraph
+    end-if       
+    read restrez no lock invalid
+         continue
+    end-read
+         move rez-tarih         to restrez-tarih
+         move rez-restkodu      to restrez-kodu
+         move rez-zaman-ilk     to restrez-bas-saat
+         move rez-zaman         to restrez-bit-saat
+         move rez-foliono       to restrez-folio-no
+         move rez-kisii         to restrez-kisi
+         move rez-rezadi        to restrez-adi
+         move rez-rezsoyadi     to restrez-soyadi
+         move rez-kisi          to restrez-kisi
+         move rb-deg            to restrez-zaman
+         move restrez-odano     to restrez-oda-no
+         move rez-buyukk        to restrez-buyuk
+         move rez-kucukk        to restrez-kucuk
+         move rez-freee         to restrez-free
+         move rez-bebekk        to restrez-bebek
+         move musteri-notu      to restrez-not
+         move yedek-bas         to restrez-bas-saat
+         move yedek-bit         to restrez-bit-saat
+         move gel-saat          to restrez-gel-saat
+         move gel-dakika        to restrez-gel-dakika
+         accept restrez-kayit-zaman from time
+*         evaluate key-status
+*         when 1001
+*             if rb-deg = 1
+*                initialize zaman-ilk zaman-son
+*                move "0700"        to zaman-ilk
+*                move "0900"        to zaman-son
+*                move "0700"        to restrez-bas-saat
+*                move "0900"        to restrez-bit-saat
+*                display scr-rezsaatb scr-rezdakikab scr-rezsaataa scr-rezdakikaaa
+*             end-if
+*
+*         when 1002
+*
+*             if rb-deg = 2
+*                initialize zaman-ilk zaman-son
+*                move "1200"        to zaman-ilk
+*                move "1400"        to zaman-son
+*                move "1200"        to restrez-bas-saat
+*                move "1400"        to restrez-bit-saat
+*                display scr-rezsaatb scr-rezdakikab scr-rezsaataa scr-rezdakikaaa
+*             end-if
+*
+*         when 1003
+*             if rb-deg = 3
+**                initialize zaman-ilk zaman-son
+*                move "1930"        to zaman-ilk
+*                move "2130"        to zaman-son
+*                move "1933"        to restrez-bas-saat
+*                move "2130"        to restrez-bit-saat
+*                display scr-rezsaatb scr-rezdakikab scr-rezsaataa scr-rezdakikaaa
+*             end-if
+*     end-evaluate
+     write   restrez-rec invalid
+     rewrite restrez-rec end-rewrite
+     end-write
+     close restrez
+     modify scr-restadi, TITLE = " "
+     MOVE 4 TO  ACCEPT-CONTROL
+     MOVE 33 TO CONTROL-ID
+*     perform cikti-al
+     initialize rez-foliono rez-kisii rez-rezadi rb-deg  
+                rez-rezsoyadi rez-kisi restrez-odano mus-geceleme konuk-kere                    
+                musteri-notu tanim-kapasite rest-kapasite rest-kalan-kapasite rez-kon-bazli
+                rez-zaman-ilk rez-zaman-son gel-saat gel-dakika.
+
+     display    scr-odano scr-rezgun scr-rezay scr-rezyil
+                scr-folio-no scr-adi scr-soyadi scr-rez-buyuk scr-rez-kucuk
+                scr-rez-free scr-rez-bebek scr-sabah scr-ogle scr-aksam
+                scr-konukkere scr-geceleme scr-musteri-notu
+                scr-tanim-kapasite scr-kapasite scr-kalan-kapasite acc1 acc2
+                scr-gel-saat scr-gel-dakika
+     perform  scr-restkodu-Aft-Procedure
+     perform man-rez-grid-goster.
+
+*
+ rez-kon-bazli-mi.
+     open input kodlar02
+     initialize kodlar02-rec
+     move "Q"          to kodlar02-tipi
+     move rez-restkodu to kodlar02-kodu
+     read kodlar02 no lock invalid
+          continue
+     not invalid
+     if kodlar02-alkol = 1
+        move 1 to rez-kon-bazli
+     else
+        move 0 to rez-kon-bazli 
+     end-if
+     end-read
+     close kodlar02.
+
+*
+ gun-gun-yaz.
+     open i-o takvim restrez
+     initialize takvim-rec restrez-rec
+     move rez-tarih     to takvim-anah
+     move rez-gun        to ilk-egun
+     move rez-ay         to ilk-eay
+     move rez-yil        to ilk-eyil
+     start takvim key not < takvim-anah invalid
+           close takvim restrez
+           exit paragraph
+     not invalid
+     perform with test after until fs-takvim = "10"
+     read takvim next no lock end move "10" to fs-takvim
+     not at end
+            move git-gun        to son-egun
+            move git-ay         to son-eay
+            move git-yil        to son-eyil
+            if takvim-anah >= xkonuk-git-tar
+               exit perform
+            end-if
+     
+            move takvim-anah        to rez-tarih    
+*            if konuk-hak = konuk-kere
+*               display message box "Konuk Rez. Hakkini Doldurmus..!!Kayit Yapamazsiniz!!!"
+*               close takvim restrez
+*               exit paragraph
+*            end-if
+            initialize restrez-rec
+            move rez-tarih              to restrez-tarih
+            move rez-restkodu           to restrez-kodu
+            move rez-zaman-ilk          to restrez-bas-saat
+            move rez-zaman              to restrez-bit-saat
+            move rez-foliono            to restrez-folio-no
+            if rez-restkodu = spaces
+               display message box "Restaurant Kodu Bos Gecilemez..!!"
+               close restrez takvim
+               exit paragraph
+            end-if
+            if rez-foliono = zeroes
+               display message box "Rezervasyon Icin Gecerli Bir Folio Seciniz.."
+               close restrez takvim
+               exit paragraph
+            end-if
+            move rb-deg            to restrez-zaman
+            if restrez-zamansiz
+               display message box "Rezervasyon zamani seciniz !!!"
+               close restrez takvim
+               exit paragraph
+            end-if
+
+             if rez-buyukk > rest-kalan-kapasite
+                 display message box "Restaurant Kapasitesi Dolu..." new-line
+                                     "Kapasiteyi Asmak Istiyor Musunuz???"
+                         title"????" 
+                         type MB-YES-NO
+                         default 1
+                         returning donus-kodu
+             end-if
+                 if donus-kodu = 2
+                    close restrez takvim       
+                    exit paragraph
+                 else 
+                    continue
+                 end-if
+
+
+*            if rez-buyukk > rest-kalan-kapasite
+*               display message box "Restaurant Kapasitesi Dolu..." new-line
+*                                "Bu Restaurant'a Rezervasyon Giremezsiniz!!!" 
+*              close restrez takvim
+*              exit paragraph
+*            end-if       
+            read restrez no lock invalid
+                 continue
+            end-read
+                 move rez-tarih         to restrez-tarih
+                 move rez-restkodu      to restrez-kodu
+                 move rez-zaman-ilk     to restrez-bas-saat
+                 move rez-zaman         to restrez-bit-saat
+                 move rez-foliono       to restrez-folio-no
+                 move rez-kisii         to restrez-kisi
+                 move rez-rezadi        to restrez-adi
+                 move rez-rezsoyadi     to restrez-soyadi
+                 move rez-kisi          to restrez-kisi
+                 move rb-deg            to restrez-zaman
+                 move restrez-odano     to restrez-oda-no
+                 move rez-buyukk        to restrez-buyuk
+                 move rez-kucukk        to restrez-kucuk
+                 move rez-freee         to restrez-free
+                 move rez-bebekk        to restrez-bebek
+                 move musteri-notu      to restrez-not
+                 move yedek-bas        to restrez-bas-saat
+                 move yedek-bit        to restrez-bit-saat
+                 move gel-saat         to restrez-gel-saat
+                 move gel-dakika       to restrez-gel-dakika
+                 accept restrez-kayit-zaman from time
+             write   restrez-rec invalid
+             rewrite restrez-rec end-rewrite
+             end-write
+             modify scr-restadi, TITLE = " "
+            
+     end-read
+     end-perform
+     end-start
+     close takvim restrez
+*     perform cikti-al2
+     initialize rez-foliono rez-kisii rez-rezadi rb-deg  
+                rez-rezsoyadi rez-kisi restrez-odano mus-geceleme konuk-kere 
+                rez-zaman-ilk rez-zaman-son
+                musteri-notu tanim-kapasite rest-kapasite rest-kalan-kapasite rez-kon-bazli
+                gel-saat gel-dakika
+     move tarih-tasi to rez-tarih tarih-bugun
+     display    scr-odano scr-rezgun scr-rezay scr-rezyil
+                acc1 acc2
+                scr-folio-no scr-adi scr-soyadi scr-rez-buyuk scr-rez-kucuk
+                scr-rez-free scr-rez-bebek scr-sabah scr-ogle scr-aksam
+                scr-konukkere scr-geceleme scr-musteri-notu
+                scr-tanim-kapasite scr-kapasite scr-kalan-kapasite
+                scr-gel-saat scr-gel-dakika
+                perform  scr-restkodu-Aft-Procedure.
+
+
+*
+ raporla.
+
+             open input restrez kodlar02 konuk
+              initialize restrez-rec
+              start restrez key not < restrez-anah invalid
+                    close restrez kodlar02 konuk
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Alacarte Rezervasyon Raporu"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Alacarte Rezervasyon Raporu"   to det-filler
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "RLRLLLLLLLLLLLLLLLLLLLL"  to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"                  to det-dokumer-20(10:1)
+     move "D1"                 to det-dokumer-20(1:2)
+     move "Rez. Tarihi"        to det-1
+     move "Rest Adi"           to det-2
+     move "B"                  to det-3
+     move "K"                  to det-4
+     move "F"                  to det-5
+     move "B"                  to det-6
+     move "Oda No"             to det-7
+     move "Folio No"           to det-8
+     move "Adi "               to det-9
+     move "Soyadi "            to det-10
+     move "Rez.Saat"           to det-11
+     move "Gel.Saat"           to det-111
+     move "Rezervasyon Notu"   to det-12
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9
+     fil-10 fil-11 fil-111 fil-12
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8 det-9
+     det-10 det-11 det-111 det-12
+     write dokumer-rec from detay
+*********************************
+
+              initialize fs-restrez buyuk-toplam kucuk-toplam free-toplam
+                         bebek-toplam 
+           
+                        perform with test after until fs-restrez = "10"   
+                        read restrez next no lock end move "10" to fs-restrez
+                    not at end
+
+                        if restrez-tarih < tarih-ilk or 
+                           restrez-tarih > tarih-son 
+                           exit perform cycle
+                        end-if
+
+                        if rap-restkodu <> spaces and 
+                           rap-restkodu <> restrez-kodu
+                           exit perform cycle
+                        end-if
+
+                        initialize dokumer-rec detay                        
+                                move REZTREZ-GUN       to egun                        
+                                move REZTREZ-ay        to eay                        
+                                move REZTREZ-yil       to eyil                        
+                                move etarih            to det-1                        
+                        initialize kodlar02-rec
+                                move RESTREZ-KODU      to kodlar02-kodu
+                                move "Q"               to kodlar02-tipi
+                        read kodlar02 no lock invalid
+                             move "Tanimsiz Rest...."     to det-2
+                        not invalid
+                             move kodlar02-adi            to det-2
+                        end-read
+                        compute buyuk-toplam = buyuk-toplam + restrez-buyuk
+                        compute kucuk-toplam = kucuk-toplam + restrez-kucuk
+                        compute free-toplam  = free-toplam  + restrez-free
+                        compute bebek-toplam = bebek-toplam + restrez-bebek
+
+                        move restrez-buyuk                to zbuyuk
+                        move zbuyuk                       to det-3
+                        move restrez-kucuk                to zkucuk
+                        move zkucuk                       to det-4
+                        move restrez-free                 to zfree
+                        move zfree                        to det-5
+                        move restrez-bebek                to zbebek
+                        move zbebek                       to det-6
+*                        move restrez-oda-no               to det-7
+                        move restrez-folio-no             to det-8  konuk-folio
+                        read konuk no lock invalid
+                        not invalid
+                        move konuk-odano                  to det-7
+                        end-read
+
+                        move restrez-adi                  to det-9
+                        move restrez-soyadi               to det-10
+                        if rb-deg <> 0
+                           if restrez-zaman <> rb-deg
+                              exit perform cycle
+                           end-if
+                        end-if
+                        evaluate true
+                        when restrez-sabah
+                             move "Sabah"                   to det-11
+                        when restrez-ogle 
+                             move "Ogle"                    to det-11
+                        when restrez-aksam
+                             move "Aksam"                   to det-11
+                        when other
+                             move all "*"                   to det-11
+                        end-evaluate
+                        initialize bas
+                        move restrez-gel-saat               to bas-saat
+                        move restrez-gel-dakika             to bas-dakika
+                        move bas                            to det-111
+                        move restrez-not                    to det-12
+                        
+                        write dokumer-rec from detay
+                    end-read
+              end-perform
+              initialize dokumer-rec detay
+              move "TOPLAM--->" TO DET-1
+                        move buyuk-toplam                to z-buyuk-toplam
+                        move z-buyuk-toplam              to det-3
+                        move kucuk-toplam                to z-kucuk-toplam
+                        move z-kucuk-toplam              to det-4
+                        move free-toplam                 to z-free-toplam
+                        move z-free-toplam               to det-5
+                        move bebek-toplam                to z-bebek-toplam
+                        move z-bebek-toplam              to det-6
+               move "A"          to det-dokumer-20(3:1)
+               move 481          to det-renk1
+               move "1"          to det-dokumer-20(10:1)
+              write dokumer-rec from detay
+               initialize dokumer-rec detay
+
+
+               move "-"            to det-dokumer-20(5:1)
+               move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7
+               det-8 det-9 det-10 det-11 det-111 det-12
+               write dokumer-rec from detay
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close restrez kodlar02 konuk
+              delete file dokumer.
+     
+*
+ rapor-Ex-Other.
+     evaluate key-status
+     when 1
+         if control-id = 9999
+            perform rap-rest-ara
+         end-if
+     when 6
+         perform raporla
+
+         when 1001
+            if rb-deg = 1              
+              open input kodlar02
+              initialize kodlar02-rec rez-zaman-ilk rez-zaman
+              move "Q"          to kodlar02-tipi
+              move rez-restkodu to kodlar02-kodu
+              read kodlar02 no lock invalid
+                   continue
+              not invalid
+                  move ode-bos(1:2)        to bas-saat
+                  move ode-bos(3:2)        to bas-dakika
+                  move ode-bos(5:2)        to bit-saat
+                  move ode-bos(7:2)        to bit-dakika
+
+                  move ode-bos(1:2)        to yedek-bas(1:2)
+                  move ode-bos(3:2)        to yedek-bas(3:2)
+
+                  move ode-bos(5:2)        to yedek-bit(1:2)
+                  move ode-bos(7:2)        to yedek-bit(3:2)
+
+                  move bas                 to rap-zaman-ilk
+                  move bit                 to rap-zaman-son
+
+              end-read
+              close kodlar02
+              display accr1 accr2
+            end-if
+
+         when 1002
+
+            if rb-deg = 2              
+              open input kodlar02
+              initialize kodlar02-rec rez-zaman-ilk rez-zaman
+              move "Q"          to kodlar02-tipi
+              move rez-restkodu to kodlar02-kodu
+              read kodlar02 no lock invalid
+                   continue
+              not invalid
+                  move hou-bos(1:2)        to bas-saat
+                  move hou-bos(3:2)        to bas-dakika
+                  move hou-bos(1:2)        to bit-saat
+                  move hou-bos(3:2)        to bit-dakika
+
+                  move hou-bos(1:4)        to yedek-bas
+                  move hou-bos(1:4)        to yedek-bit
+                               
+                  move bas                 to rap-zaman-ilk
+                  move bit                 to rap-zaman-son
+
+              end-read
+              close kodlar02
+              display accr1 accr2
+            end-if
+
+         when 1003
+            if rb-deg = 3              
+              open input kodlar02
+              initialize kodlar02-rec rez-zaman-ilk rez-zaman
+              move "Q"          to kodlar02-tipi
+              move rez-restkodu to kodlar02-kodu
+              read kodlar02 no lock invalid
+                   continue
+              not invalid
+                  move kodlar02-bos(1:2)        to bas-saat
+                  move kodlar02-bos(3:2)        to bas-dakika
+                  move kodlar02-bos(5:2)        to bit-saat
+                  move kodlar02-bos(7:2)        to bit-dakika
+
+                  move kodlar02-bos(1:4)        to yedek-bas
+                  move kodlar02-bos(5:4)        to yedek-bit
+
+                  move bas                 to rap-zaman-ilk
+                  move bit                 to rap-zaman-son
+
+              end-read
+              close kodlar02
+              display accr1 accr2
+            end-if
+     end-evaluate
+     .
+
+      
+*
+ rapor-Bef-Create.
+     move tarih-tasi     to tarih-ilk tarih-son
+     initialize rb-deg
+     
+     .
+
+*
+ rap-rest-ara.
+     initialize odeme-cagir
+     move "Q" to odeme-tipi-cagir
+     call "/asya/ytl/obj/otel/restara.asy" using odeme-cagir
+        on exception perform callerr-proc
+           not on exception
+           cancel "/asya/ytl/obj/otel/restara.asy" 
+     end-call
+     move odeme-kodu-cagir     to rap-restkodu
+          display scr-restkodua
+          move 4    to accept-control
+          move 9999 to control-id
+     perform rap-restkodu-oku.
+
+*
+ rap-restkodu-oku.
+
+    open input kodlar02
+    initialize kodlar02-rec
+    move "Q"           to kodlar02-tipi
+    move rap-restkodu  to kodlar02-kodu
+    read kodlar02 no lock invalid
+         move "TANIMSIZ..!!" to rap-restadi
+    not  invalid
+         move kodlar02-adi   to rap-restadi
+    end-read
+    close kodlar02
+    display rap-scr-restadi.
+
+*
+ rapor-ekrani-temizle.
+
+    initialize rap-restkodu rap-restadi rb-deg
+    display    rap-scr-restadi scr-restkodua
+     .
+
+
+*
+ geceleme-hesapla.
+
+      open input takvim
+        initialize takvim-rec
+        move konuk-gel-tar to takvim-anah
+        read takvim no lock invalid continue
+        end-read      
+        move takvim-kacinci to gel-kac
+        initialize takvim-rec
+        move konuk-git-tar to takvim-anah
+        read takvim no lock invalid continue
+        end-read
+        compute geceleme = takvim-kacinci - gel-kac
+        move geceleme      to mus-geceleme
+      close takvim.
+     display scr-geceleme
+     .
+*
+ kere-oku.
+     initialize restrez-rec kere
+     move rez-foliono          to restrez-folio-no
+     open input restrez kodlar02
+     start restrez key not < restrez-alt-1 invalid
+           close restrez kodlar02
+           exit paragraph.
+
+     perform with test after until fs-restrez = "10"
+     read restrez next no lock end move "10" to fs-restrez
+     not at end
+          if restrez-folio-no <> rez-foliono
+             exit perform
+          end-if
+          
+          add 1 to kere
+          evaluate kere
+             when 1
+                initialize kodlar02-rec
+                move restrez-kodu        to kodlar02-kodu
+                read kodlar02 no lock invalid
+                     continue
+                not invalid
+                    continue
+                end-read
+                inspect kodlar02-adi replacing trailing spaces by low-values
+                move all low-values   to ekle-aciklama
+                string ekle-aciklama
+                       kodlar02-adi delimited by low-values
+                       " "   delimited by low-values
+                       "1 kez" delimited by low-values
+                       into ekle-aciklama
+                modify lb11, TITLE = ekle-aciklama 
+             when 2
+                initialize kodlar02-rec
+                move restrez-kodu        to kodlar02-kodu
+                read kodlar02 no lock invalid
+                     continue
+                not invalid
+                    continue
+                end-read
+                inspect kodlar02-adi replacing trailing spaces by low-values
+                move all low-values   to ekle-aciklama
+                string ekle-aciklama
+                       kodlar02-adi delimited by low-values
+                       " "   delimited by low-values
+                       "1 kez" delimited by low-values
+                       into ekle-aciklama
+                modify lb12, TITLE = ekle-aciklama
+             when 3
+                initialize kodlar02-rec
+                move restrez-kodu        to kodlar02-kodu
+                read kodlar02 no lock invalid
+                     continue
+                not invalid
+                    continue
+                end-read
+                inspect kodlar02-adi replacing trailing spaces by low-values
+                move all low-values   to ekle-aciklama
+                string ekle-aciklama
+                       kodlar02-adi delimited by low-values
+                       " "   delimited by low-values
+                       "1 kez" delimited by low-values
+                       into ekle-aciklama
+                modify lb13, TITLE = ekle-aciklama
+             when 4
+                initialize kodlar02-rec
+                move restrez-kodu        to kodlar02-kodu
+                read kodlar02 no lock invalid
+                     continue
+                not invalid
+                    continue
+                end-read
+                inspect kodlar02-adi replacing trailing spaces by low-values
+                move all low-values   to ekle-aciklama
+                string ekle-aciklama
+                       kodlar02-adi delimited by low-values
+                       " "   delimited by low-values
+                       "1 kez" delimited by low-values
+                       into ekle-aciklama
+                modify lb14, TITLE = ekle-aciklama               
+          end-evaluate
+     move kere        to konuk-kere
+     display scr-konukkere
+     end-read
+     end-perform.
+     perform Hak-Hesapla
+     close restrez kodlar02.
+
+     
+*
+ hak-hesapla.
+
+     divide mus-geceleme by 7 giving bolunen remainder kalan
+     if mus-geceleme < 7 
+        move 1 to konuk-hak
+     else
+        move bolunen to konuk-hak
+        if kalan > 0 
+           add 1 to konuk-hak
+        end-if
+     end-if
+*     move 9999 to konuk-hak
+     perform karsilastir
+        .
+     
+*
+ karsilastir.
+
+     if konuk-hak = konuk-kere and isyeri-adres-tasi <> "ralh2011"
+        display message box "Konuk Rezervasyon Hakkini Doldurmus...!!!"
+*        display message box "Bilgiler Kaydedilsin Mi?"
+*                    title"????"
+*                    type MB-YES-NO
+*                    default 1
+*                    returning donus-kodu
+*        if donus-kodu = 2
+*           exit paragraph
+*           else continue
+*        end-if.
+*        move 4  to accept-control
+*        move 11 to control-id
+*        initialize rez-restkodu rez-foliono rez-kisii rez-rezadi rb-deg  
+*                   rez-rezsoyadi rez-kisi restrez-odano mus-geceleme konuk-kere 
+*                   rez-saat-ilk rez-dakika-ilk rez-saat-son rez-dakika-son
+
+*        display    scr-restkodu scr-odano scr-rezgun scr-rezay scr-rezyil
+*                   scr-rezsaat scr-rezdakika scr-rezsaata scr-rezdakikaa
+*                   scr-folio-no scr-adi scr-soyadi scr-rez-buyuk scr-rez-kucuk
+*                   scr-rez-free scr-rez-bebek scr-sabah scr-ogle scr-aksam
+*                   scr-konukkere scr-geceleme
+        exit paragraph
+     end-if.
+
+
+*
+ madik-mudik-kaydet.
+    
+    open i-o restrez
+    initialize restrez-rec
+    move rez-tarih              to restrez-tarih
+    move rez-restkodu           to restrez-kodu
+    move rez-zaman-ilk          to restrez-bas-saat
+    move rez-zaman              to restrez-bit-saat
+    move rez-foliono            to restrez-folio-no
+    if rez-restkodu = spaces
+       display message box "Restaurant Kodu Bos Gecilemez..!!"
+       close restrez
+       exit paragraph
+    end-if
+    if rez-foliono = zeroes
+       display message box "Rezervasyon Icin Gecerli Bir Folio Seciniz.."
+       close restrez
+       exit paragraph
+    end-if
+    move rb-deg            to restrez-zaman
+    if restrez-zamansiz
+       display message box "Rezervasyon zamani seciniz !!!"
+       close restrez
+       exit paragraph
+    end-if
+*    if rest-kapasite = tanim-kapasite
+*        display message box "Bilginize..!!!Rest. Kapasitesi Dolu..."
+*        close restrez
+*        exit paragraph
+*     end-if
+       
+    read restrez no lock invalid
+         continue
+    end-read
+            if  isyeri-adres-tasi <> "ralh2011"
+                 display message box "Konuk Rezervasyon Hakkini Doldurmus" new-line
+                                     "Buna Ragmen Kayit Etmek Ister Misiniz?" 
+                             title"????"
+                             type MB-YES-NO
+                             default 1
+                             returning donus-kodu
+                 if donus-kodu = 2
+                    exit paragraph
+                    else continue
+                 end-if
+           end-if
+
+             if rez-buyukk > rest-kalan-kapasite
+         display message box "Restaurant Kapasitesi Dolu..." new-line
+                             "Kapasiteyi Asmak Istiyor Musunuz???"
+                 title"????" 
+                 type MB-YES-NO
+                 default 1
+                 returning donus-kodu
+         end-if
+         if donus-kodu = 2
+            close restrez        
+            exit paragraph
+         else 
+            continue
+         end-if
+         move rez-tarih         to restrez-tarih
+         move rez-restkodu      to restrez-kodu
+         move rez-zaman-ilk     to restrez-bas-saat
+         move rez-zaman         to restrez-bit-saat
+         move rez-foliono       to restrez-folio-no
+         move rez-kisii         to restrez-kisi
+         move rez-rezadi        to restrez-adi
+         move rez-rezsoyadi     to restrez-soyadi
+         move rez-kisi          to restrez-kisi
+         move rb-deg            to restrez-zaman
+         move restrez-odano     to restrez-oda-no
+         move rez-buyukk        to restrez-buyuk
+         move rez-kucukk        to restrez-kucuk
+         move rez-freee         to restrez-free
+         move rez-bebekk        to restrez-bebek
+         MOVE musteri-notu      to restrez-not
+         move yedek-bas         to restrez-bas-saat
+         move yedek-bit         to restrez-bit-saat
+         move gel-saat          to restrez-gel-saat
+         move gel-dakika        to restrez-gel-dakika
+         accept restrez-kayit-zaman from time
+     write   restrez-rec invalid
+     rewrite restrez-rec end-rewrite
+     end-write
+     close restrez
+     modify scr-restadi, TITLE = " "
+     MOVE 4 TO  ACCEPT-CONTROL
+     MOVE 33 TO CONTROL-ID
+     
+     initialize rez-foliono rez-kisii rez-rezadi rb-deg  
+                rez-rezsoyadi rez-kisi restrez-odano mus-geceleme konuk-kere 
+                rez-zaman-ilk rez-zaman-son
+                musteri-notu tanim-kapasite rest-kapasite rest-kalan-kapasite
+                gel-saat gel-dakika
+
+     display    scr-odano scr-rezgun scr-rezay scr-rezyil
+                acc1 acc2
+                scr-folio-no scr-adi scr-soyadi scr-rez-buyuk scr-rez-kucuk
+                scr-rez-free scr-rez-bebek scr-sabah scr-ogle scr-aksam
+                scr-konukkere scr-geceleme scr-musteri-notu
+                scr-tanim-kapasite scr-kapasite scr-kalan-kapasite
+                scr-gel-saat scr-gel-dakika
+                perform  scr-restkodu-Aft-Procedure.
+
+
+*
+ scr-soyadi-Aft-Procedure.
+
+    
+    initialize rez-restkodu rez-foliono rez-kisii rez-rezadi rb-deg  
+               rez-rezsoyadi rez-kisi restrez-odano mus-geceleme konuk-kere 
+               rez-zaman-ilk rez-zaman-son
+
+    display    scr-restkodu scr-odano scr-rezgun scr-rezay scr-rezyil
+               acc1 acc2
+               scr-folio-no scr-adi scr-soyadi scr-rez-buyuk scr-rez-kucuk
+               scr-rez-free scr-rez-bebek scr-sabah scr-ogle scr-aksam
+               scr-konukkere scr-geceleme
+    move 4  to accept-control
+    move 33 to control-id    
+
+     .
+*
+ Form1-Aft-Initdata.
+     open i-o restrez kllnc
+     move k-kodu-tasi      to k-kodu 
+     read kllnc no lock invalid
+          move "Tanimsiz Kullanici....."       to form-adi-soyadi
+     not invalid
+         move k-adi                      to form-adi
+         move k-soyadi                   to form-soyadi
+     end-read
+     close restrez kllnc
+     perform restoran-yukle
+     modify lb1, title = " "
+     modify lb2, title = " "
+     modify lb3, title = " "
+     modify lb4, title = " "
+     modify lb5, title = " "     .
+
+*
+ gun-gun-sil.
+     open input konuk
+                initialize konuk-rec
+                move restrez-folio-no to konuk-folio
+                read konuk no lock invalid
+                        display message box "konuk bulunmadi!!!!!"
+                        icon 3
+                        exit paragraph
+                end-read
+     close konuk
+     open i-o takvim restrez
+     initialize takvim-rec restrez-rec
+     move rez-tarih      to takvim-anah
+     start takvim key not < takvim-anah invalid
+           close takvim
+           exit paragraph
+     not invalid
+     perform with test after until fs-takvim = "10"
+     read takvim next no lock end move "10" to fs-takvim
+     not at end
+                     if takvim-anah >= konuk-git-tar
+                          exit perform
+                     end-if 
+ 
+        
+                     initialize restrez-rec
+                     move rez-foliono     to restrez-folio-no
+                     move takvim-anah         to restrez-tarih
+                     start restrez key not < restrez-alt-1 invalid
+                           continue
+                     not invalid
+                     perform with test after until fs-restrez = "10"
+                     read restrez next no lock end move "10" to fs-restrez
+                     not at end
+                             if restrez-folio-no <>  rez-foliono
+                                   exit perform
+                             end-if
+                             if restrez-tarih <> takvim-anah
+                                   exit perform  
+                             end-if
+                             delete restrez end-delete
+                     end-read
+                     end-perform
+                     end-start
+     end-read
+     end-perform
+     end-start
+     close takvim restrez
+          display message box "Kayit Silindi...!!"
+          title "Bilginize.."
+          icon MB-WARNING-ICON
+          move 4  to accept-control
+          move 33 to control-id
+
+     initialize rez-foliono rez-kisii rez-rezadi rb-deg  
+                rez-rezsoyadi rez-kisi restrez-odano mus-geceleme konuk-kere 
+                rez-zaman-ilk rez-zaman-son
+                tanim-kapasite rest-kapasite rest-kalan-kapasite gel-saat gel-dakika
+
+     display    scr-odano scr-rezgun scr-rezay scr-rezyil
+                acc1 acc2
+                scr-folio-no scr-adi scr-soyadi scr-rez-buyuk scr-rez-kucuk
+                scr-rez-free scr-rez-bebek scr-sabah scr-ogle scr-aksam
+                scr-konukkere scr-geceleme scr-tanim-kapasite scr-kapasite 
+                scr-kalan-kapasite scr-gel-saat scr-gel-dakika
+                perform  scr-restkodu-Aft-Procedure.
+     
+
+*
+  sil.
+
+      display message box "Kayit Silinsin Mi?"
+              title"????"
+              type MB-YES-NO
+              default 1
+              returning donus-kodu
+      if donus-kodu = 2
+         exit paragraph
+         else continue
+      end-if
+      open i-o restrez
+          move rez-restkodu        to restrez-kodu
+          move rez-foliono         to restrez-folio-no
+          move rez-tarih           to restrez-tarih
+          move rez-zaman-ilk(1:2)  to esaat
+          move rez-zaman-ilk(4:2)  to edakika
+          move ezaman              to restrez-bas-saat
+          move rez-zaman-son(1:2)  to esaat
+          move rez-zaman-son(4:2)  to edakika
+          move ezaman              to restrez-bit-saat
+          
+      read   restrez no lock invalid
+             continue
+             not invalid
+      delete restrez 
+      end-delete
+          display message box "Kayit Silindi...!!"
+          title "Bilginize.."
+          icon MB-WARNING-ICON
+          move 4  to accept-control
+          move 33 to control-id
+      end-read
+
+      close restrez
+      perform man-rez-grid-goster
+
+     initialize rez-foliono rez-kisii rez-rezadi rb-deg  
+                rez-rezsoyadi rez-kisi restrez-odano mus-geceleme konuk-kere 
+                rez-zaman-ilk rez-zaman-son
+                tanim-kapasite rest-kapasite rest-kalan-kapasite gel-saat gel-dakika
+
+     display    scr-odano scr-rezgun scr-rezay scr-rezyil
+                acc1 acc2
+                scr-folio-no scr-adi scr-soyadi scr-rez-buyuk scr-rez-kucuk
+                scr-rez-free scr-rez-bebek scr-sabah scr-ogle scr-aksam
+                scr-konukkere scr-geceleme scr-tanim-kapasite scr-kapasite 
+                scr-kalan-kapasite scr-gel-saat scr-gel-dakika
+                perform  scr-restkodu-Aft-Procedure.
+
+
+*
+ kapasite-hesapla.
+    move ode-indirim of kodlar02 to tanim-kapasite
+    display scr-tanim-kapasite
+    open i-o restrez
+    initialize restrez-rec kapasite
+    move rez-restkodu          to restrez-kodu
+    move rez-tarih             to restrez-tarih
+    start restrez key not < restrez-alt-1 invalid
+           close restrez
+           exit paragraph.
+     perform with test after until fs-restrez = "10"
+     read restrez next no lock end move "10" to fs-restrez
+     not at end
+          if restrez-tarih not = rez-tarih
+             exit perform cycle
+          end-if
+          if restrez-kodu not = rez-restkodu
+             exit perform cycle
+          end-if
+     compute  toplam-kisi  = restrez-buyuk + restrez-kucuk + restrez-free
+          add toplam-kisi to kapasite
+     move kapasite        to rest-kapasite
+     display scr-kapasite
+     end-read
+     end-perform.
+     close restrez.
+
+*
+ cikti-al.
+    perform basla.
+*
+ basla.
+       open i-o genelfis acenta
+       move 1 to genelfis-anahtar
+       read genelfis no lock invalid
+            accept print-no from time
+       not invalid
+           add 1 to print-no
+           rewrite genelfis-rec end-rewrite
+       end-read
+       close genelfis
+
+       initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                  dokumer-dosya
+
+       set  dokumer-asya-set to true
+       set  dokumer-yazici-text to true
+       move print-no         to dokumer-dosya-adi
+
+       open output dokumer
+       initialize dokumer-rec detay1
+       move "H"   to dokumer-genel-baslik-yaz
+       move "M E K A N  R E Z E R V A S Y O N"  to det-filler1(30:)
+       write dokumer-rec from detay1
+
+       initialize dokumer-rec detay1
+       move "O" to det-dokumer1-20(1:)
+       move "E" to dokumer-oto-sayfa-basi
+       move 56  to dokumer-oto-sayfa-satir
+       move "|" to dokumer-detay-kolon-ayirici
+       move "LLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+       move dokumer-ozellikler-rec     to det-filler1
+       write dokumer-rec from detay1
+       perform rapor-liste-yazdir.
+*
+ rapor-liste-yazdir.    
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    move all "-" to det-det.
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+
+    move "Reserv.No:"             to det-det(50:15).
+    move form-rezno              to det-det(67:08)
+    move "Date:            "      to det-det(01:15).
+    move rez-gun         to det-det(16:02).
+    move "/"             to det-det(18:01).
+    move rez-ay          to det-det(19:02).
+    move "/"             to det-det(21:01).
+    move rez-yil         to det-det(22:04).
+
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+
+    move "Place:         "        to det-det(01:15).
+    move rez-restadi         to det-det(16:10)
+    move "Agency:"                to det-det(50:15).
+    move form-acenta              to ACENTA-ANAHTAR
+    read acenta no lock invalid
+         move "Tanimsiz Acenta...."   to det-det(67:15)
+    not invalid
+         move acenta-adi              to det-det(67:15)
+    end-read
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move "Name/Surname:           "          to det-det(01:15).
+    move rez-rezadi                to det-det(16:15).
+    move rez-rezsoyadi             to det-det(34:15).
+
+    move "Start Time:"            to det-det(50:15).
+    move bas                      to det-det(67:5)
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move "Room No:    "           to det-det(01:15).
+    move restrez-odano            to det-det(16:4)
+    move "End Time:"              to det-det(50:15).
+    move bit                      to det-det(67:5)
+
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+
+    move "Total Pax: "            to det-det(01:15).
+    move "B:"                     to det-det(16:2)
+    move rez-buyukk               to zbuyuk
+    move zbuyuk                   to det-det(18:2)
+
+    move "K:"                     to det-det(21:2)
+    move rez-kucukk               to zkucuk
+    move zkucuk                   to det-det(23:2)
+
+    move "F:"                     to det-det(26:2)
+    move rez-freee                to zfree
+    move zfree                    to det-det(29:2)
+
+    move "Reserved By:"           to det-det(50:15)
+    move form-adi                 to det-det(66:20)
+    move form-soyadi              to det-det(86:20)
+
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move "Note:  "                to det-det(01:15).
+    move musteri-notu             to det-det(16:20)
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    move "Gentelman are requested to wear long trousers for this Restaurant." to det-det(15:70)
+    write dokumer-rec from detay1
+*/2 tane cýkmasý için yapýlmýþdý isteyen olursa yýldýzý kaldýrýnnnnnnnnnnnnnnnnn
+*        perform rapor-liste-yazdir-2
+    close dokumer acenta
+    call dokumer-prog on exception
+         perform callerr-proc
+         not on exception
+    cancel dokumer-prog
+    end-call
+    delete file dokumer.
+
+
+*
+ rapor-liste-yazdir-2.
+    initialize dokumer-rec detay1.
+    write dokumer-rec from detay1
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    move all "-" to det-det.
+    write dokumer-rec from detay1.
+
+    initialize dokumer-rec detay1
+    move "M E K A N  R E Z E R V A S Y O N"  to det-filler1(30:)
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move all "-" to det-det.
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    move "Date:            "      to det-det(01:15).
+    move rez-gun         to det-det(16:02).
+    move "/"             to det-det(18:01).
+    move rez-ay          to det-det(19:02).
+    move "/"             to det-det(21:01).
+    move rez-yil         to det-det(22:04).
+    move "Reserv.No:"             to det-det(50:15).
+    move form-rezno               to det-det(67:08)
+
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+
+    move "Place:         "        to det-det(01:15).
+    move rez-restadi         to det-det(16:10)
+    move "Agency:"                to det-det(50:15).
+    move form-acenta              to acenta-anahtar
+    read acenta no lock invalid
+         move "Tanimsiz Acenta..."   to det-det(67:15)
+    not invalid
+         move acenta-adi             to det-det(67:15)
+    end-read
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move "Name/Surname:           "          to det-det(01:15).
+    move rez-rezadi                to det-det(16:15).
+    move rez-rezsoyadi             to det-det(34:15).
+
+    move "Start Time:"            to det-det(50:15).
+    move bas                      to det-det(67:5)
+
+
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move "Room No:    "            to det-det(01:15).
+    move restrez-odano             to det-det(16:4)
+    move "End Time:"               to det-det(50:15).
+    move bit                       to det-det(67:5)
+    
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+
+    move "Total Pax: "            to det-det(01:15).
+    move "B:"                     to det-det(16:2)
+    move rez-buyukk               to zbuyuk
+    move zbuyuk                   to det-det(18:2)
+
+    move "K:"                     to det-det(21:2)
+    move rez-kucukk               to zkucuk
+    move zkucuk                   to det-det(23:2)
+
+    move "F:"                     to det-det(26:2)
+    move rez-freee                to zfree
+    move zfree                    to det-det(29:2)
+    move "Reserved By:"                  to det-det(50:15).
+    move form-adi                 to det-det(66:20)
+    move form-soyadi              to det-det(86:20)
+
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move "Note:  "                to det-det(01:15).
+    move musteri-notu             to det-det(16:20)
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1.
+    move "Gentelman are requested to wear long trousers for this Restaurant." to det-det(15:70)
+    write dokumer-rec from detay1.
+
+*
+ cikti-al2.
+       perform basla2.
+
+*
+ basla2.
+       open i-o genelfis acenta
+       move 1 to genelfis-anahtar
+       read genelfis no lock invalid
+            accept print-no from time
+       not invalid
+           add 1 to print-no
+           rewrite genelfis-rec end-rewrite
+       end-read
+       close genelfis
+
+       initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                  dokumer-dosya
+
+       set  dokumer-asya-set to true
+       set  dokumer-yazici-text to true
+       move print-no         to dokumer-dosya-adi
+
+       open output dokumer
+       initialize dokumer-rec detay1
+       move "H"   to dokumer-genel-baslik-yaz
+       move "M E K A N  R E Z E R V A S Y O N"  to det-filler1(30:)
+       write dokumer-rec from detay1
+
+       initialize dokumer-rec detay1
+       move "O" to det-dokumer1-20(1:)
+       move "E" to dokumer-oto-sayfa-basi
+       move 56  to dokumer-oto-sayfa-satir
+       move "|" to dokumer-detay-kolon-ayirici
+       move "LLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+       move dokumer-ozellikler-rec     to det-filler1
+       write dokumer-rec from detay1
+       perform rapor-liste-yazdir3.
+*
+ rapor-liste-yazdir3.    
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    move all "-" to det-det.
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+
+    move "Reserv.No:"             to det-det(50:15).
+    move form-rezno              to det-det(67:08)
+    move "Date:            "      to det-det(01:15).
+    move rez-gun         to det-det(16:02).
+    move "/"             to det-det(18:01).
+    move rez-ay          to det-det(19:02).
+    move "/"             to det-det(21:01).
+    move rez-yil         to det-det(22:04).
+
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+
+    move "Place:         "        to det-det(01:15).
+    move rez-restadi         to det-det(16:10)
+    move "Agency:"                to det-det(50:15).
+    move form-acenta              to ACENTA-ANAHTAR
+    read acenta no lock invalid
+         move "Tanimsiz Acenta...."   to det-det(67:15)
+    not invalid
+         move acenta-adi              to det-det(67:15)
+    end-read
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move "Name/Surname:           "          to det-det(01:15).
+    move rez-rezadi                to det-det(16:15).
+    move rez-rezsoyadi             to det-det(34:15).
+
+    move "Start Time:"            to det-det(50:15).
+    move bas                      to det-det(67:5)
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move "Room No:    "           to det-det(01:15).
+    move restrez-odano            to det-det(16:4)
+    move "End Time:"              to det-det(50:15).
+    move bit                      to det-det(67:5)
+
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+
+    move "Total Pax: "            to det-det(01:15).
+    move "B:"                     to det-det(16:2)
+    move rez-buyukk               to zbuyuk
+    move zbuyuk                   to det-det(18:2)
+
+    move "K:"                     to det-det(21:2)
+    move rez-kucukk               to zkucuk
+    move zkucuk                   to det-det(23:2)
+
+    move "F:"                     to det-det(26:2)
+    move rez-freee                to zfree
+    move zfree                    to det-det(29:2)
+
+    move "Reserved By:"           to det-det(50:15)
+    move form-adi                 to det-det(66:20)
+    move form-soyadi              to det-det(86:20)
+
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    move "Note:  "                to det-det(01:15).
+    move musteri-notu             to det-det(16:20)
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    move "Gentelman are requested to wear long trousers for this Restaurant." to det-det(15:70)
+    write dokumer-rec from detay1
+    initialize dokumer-rec detay1
+    move " "                                                                  to det-det(14:1)
+    move ilk-etarih                                                           to det-det(15:10)
+    move " - "                                                                to det-det(25:3)
+    move son-etarih                                                           to det-det(28:10)
+    move " tarihleri arasinda restorandan yararlanabilir"                     to det-det(38:50)
+    write dokumer-rec from detay1
+*/ tane cýkmasý için yapýlmýþdý isteyen olursa yýldýzý kaldýrýnnnnnnnnnnnnnnnnn
+*        perform rapor-liste-yazdir-2
+    close dokumer acenta
+    call dokumer-prog on exception
+         perform callerr-proc
+         not on exception
+    cancel dokumer-prog
+    end-call
+    delete file dokumer.
+
+*
+ folioya-isle.
+    initialize dokcagir-tasi
+    set dokcagir-tasi-call-cekgir3   to true
+    move rez-foliono                 to dokcagir-konuk-folio
+    move "2"                         to dokcagir-pencere
+    open input kodlar02
+    initialize kodlar02-rec
+    move "Q"          to kodlar02-tipi
+    move rez-restkodu to kodlar02-kodu
+    read kodlar02 no lock invalid
+         continue
+    end-read
+    close kodlar02
+    move kahvalti-dep                to dokcagir-dep-kodu
+    move rest-rez-fiyat              to dokcagir-cout-tutar
+    perform dokcagir-call.
+
+*
+  dokcagir-call.
+     call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+          on exception 
+             perform callerr-proc
+          not on exception
+             cancel "/asya/ytl/obj/otel/dokcagir.asy"
+     end-call.
+
+*
+ rb-after.
+      .
+
+
+*
+ man-rez-grid-goster.
+     open i-o genelfis
+     read genelfis no lock invalid
+              move 1 to ekran-fis-1
+     end-read
+        add 1 to ekran-fis-1
+     rewrite genelfis-rec invalid
+     write genelfis-rec end-write
+     end-rewrite
+     close genelfis
+    
+     move ekran-fis-1   to    takas-no
+     open output takas close takas open i-o takas with mass-update
+
+     modify form1-gd-1,reset-grid  = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+     move "Rez. Tarihi"         to gd-1-col-1
+     move "Rest Adi"            to gd-1-col-2
+     move "Zaman"               to gd-1-col-3
+     move "B"                   to gd-1-col-4  
+     move "K"                   to gd-1-col-5
+     move "F"                   to gd-1-col-6                     
+     move "B"                   to gd-1-col-7
+     move "Oda"                 to gd-1-col-8
+     move "Folio"               to gd-1-col-12
+     move "Adi "                to gd-1-col-9
+     move "Soyadi "             to gd-1-col-10
+     move "Not"                 to gd-1-col-11
+*     move "Rez.Saat"            to gd-1-col-11 
+
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+
+     open input restrez kodlar02
+     initialize restrez-rec 
+     start restrez key not < restrez-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-restrez = "10"   
+     read restrez next no lock end move "10" to fs-restrez
+     not at end
+          if restrez-tarih < rez-tarih
+             exit perform cycle
+          end-if
+          if restrez-tarih > rez-tarih
+             exit perform cycle
+          end-if
+          if rez-restkodu <> spaces
+             if restrez-kodu <> rez-restkodu
+                exit perform cycle
+             end-if
+          else
+             if cb-value(1:2) <> "00"
+                if restrez-kodu <> cb-value(1:2)
+                   exit perform cycle
+                end-if
+             end-if
+          end-if
+
+     move restrez-rec        to takas-rec
+     write takas-rec invalid rewrite takas-rec end-rewrite end-write
+
+     end-read
+     end-perform
+     end-start
+     initialize takas-rec
+     start takas key not < takas-alt-1 invalid
+           continue
+     not invalid
+     perform with test after until fs-takas = "10"
+     read takas next no lock end move "10" to fs-takas
+     not at end
+************************** oda-ara
+         if oda-adi-value <> spaces
+            move takas-oda-no         to ykelime
+            move oda-adi-value        to yaranan-kelime
+            move 0 to yaranan-i yaranan-kelime-boy
+            inspect yaranan-kelime tallying yaranan-kelime-boy
+                    for trailing spaces
+            compute yaranan-kelime-boy = function length(yaranan-kelime) -
+                                        yaranan-kelime-boy
+            inspect ykelime tallying yaranan-i
+                    for all yaranan-kelime(1:yaranan-kelime-boy)
+            if yaranan-i = 0
+               exit perform cycle
+            end-if
+         end-if
+**************************
+
+************************** isim-ara
+         if misafir-adi-value <> spaces
+            move takas-adi            to ykelime
+            move misafir-adi-value    to yaranan-kelime
+            move 0 to yaranan-i yaranan-kelime-boy
+            inspect yaranan-kelime tallying yaranan-kelime-boy
+                    for trailing spaces
+            compute yaranan-kelime-boy = function length(yaranan-kelime) -
+                                        yaranan-kelime-boy
+            inspect ykelime tallying yaranan-i
+                    for all yaranan-kelime(1:yaranan-kelime-boy)
+            if yaranan-i = 0
+               exit perform cycle
+            end-if
+         end-if
+**************************
+
+************************** soyisim-ara
+         if misafir-soyadi-value <> spaces
+            move takas-soyadi               to ykelime
+            move misafir-soyadi-value       to yaranan-kelime
+            move 0 to yaranan-i yaranan-kelime-boy
+            inspect yaranan-kelime tallying yaranan-kelime-boy
+                    for trailing spaces
+            compute yaranan-kelime-boy = function length(yaranan-kelime) -
+                                        yaranan-kelime-boy
+            inspect ykelime tallying yaranan-i
+                    for all yaranan-kelime(1:yaranan-kelime-boy)
+            if yaranan-i = 0
+
+               exit perform cycle
+            end-if
+         end-if
+**************************
+
+
+
+
+          move takas-gun               to egun
+          move takas-ay                to eay
+          move takas-yil               to eyil
+          move etarih                    to gd-1-col-1
+
+          move "Q"          to kodlar02-tipi
+          move takas-kodu to kodlar02-kodu
+          read kodlar02 no lock invalid
+               continue
+          not invalid
+              move kodlar02-adi          to gd-1-col-2
+          end-read
+          
+          if takas-sabah
+             move "Sabah"                to gd-1-col-3
+          end-if
+
+          if takas-ogle        
+             move "Ogle"                 to gd-1-col-3
+          end-if
+
+          if takas-aksam
+             move "Aksam"                to gd-1-col-3
+          end-if
+
+          move takas-buyuk             to z2
+          move z2                        to gd-1-col-4
+
+          move takas-kucuk             to z2
+          move z2                        to gd-1-col-5
+
+          move takas-free              to z2
+          move z2                        to gd-1-col-6
+
+          move takas-bebek             to z2
+          move z2                        to gd-1-col-7
+
+          move takas-oda-no            to gd-1-col-8
+
+          move takas-folio-no          to gd-1-col-12
+           
+          
+          move takas-adi               to gd-1-col-9
+          move takas-soyadi            to gd-1-col-10
+
+          move takas-not               to gd-1-col-11
+          move takas-kayit-saat        to ekran-saat
+          move takas-kayit-dak         to ekran-dakika
+          move takas-kayit-san         to ekran-saniye
+          move ekran-zaman             to gd-1-col-13
+
+         modify form1-gd-1,record-to-add(form1-gd-1-record)
+           
+     end-read
+     end-perform
+     end-start
+     close restrez kodlar02 takas
+     modify form1-gd-1,mass-update = 0
+     delete file takas.
+
+
+*
+ Form1-Gd-1-Ev-Other.
+    evaluate event-type 
+         when msg-goto-cell
+         when msg-goto-cell-mouse
+              continue
+         when msg-begin-entry
+           move event-action-fail to event-action
+           inquire Form1-Gd-1, x in i y in ii
+           inquire Form1-Gd-1(ii,1) cell-data in tarih
+           move tarih(1:2)        to gd-gun
+           move tarih(4:2)        to gd-ay
+           move tarih(7:4)        to gd-yil
+           inquire Form1-Gd-1(ii,9) cell-data in gd-folio
+           perform rez-getir
+
+    end-evaluate.
+
+*
+ rez-getir.
+
+    open input restrez
+    initialize restrez-rec rb-deg
+    display scr-sabah scr-ogle scr-aksam
+    move gd-tar          to restrez-tarih
+    move gd-folio        to restrez-folio-no folio
+    start restrez key not < restrez-alt-1 invalid
+          continue
+    not invalid
+    perform with test after until fs-restrez = "10"
+    read restrez next no lock end move "10" to fs-restrez
+    not at end
+        if restrez-tarih <> gd-tar
+           exit perform cycle 
+        end-if
+        if restrez-folio-no <> folio
+           exit perform cycle
+        end-if
+
+        move restrez-tarih     to rez-tarih        
+        move restrez-kodu      to rez-restkodu      
+        move restrez-bas-saat(1:2) to bas-saat
+        move restrez-bas-saat(3:2) to bas-dakika
+        move bas                   to rez-zaman-ilk
+
+        move restrez-bit-saat(1:2) to bit-saat
+        move restrez-bit-saat(3:2) to bit-dakika
+        move bit                   to rez-zaman-son
+
+        move restrez-folio-no   to rez-foliono       
+        move restrez-kisi       to rez-kisii         
+        move restrez-adi        to rez-rezadi        
+        move restrez-soyadi     to rez-rezsoyadi     
+        move restrez-kisi       to rez-kisi          
+        move restrez-zaman      to rb-deg            
+        move restrez-oda-no     to restrez-odano     
+        move restrez-buyuk      to rez-buyukk        
+        move restrez-kucuk      to rez-kucukk        
+        move restrez-free       to rez-freee         
+        move restrez-bebek      to rez-bebekk        
+        move restrez-not        to musteri-notu
+        move restrez-gel-saat   to gel-saat
+        move restrez-gel-dakika to gel-dakika
+     
+         
+          
+
+    end-read
+    end-perform
+    end-start
+    close restrez
+    display    scr-odano scr-rezgun scr-rezay scr-rezyil
+               acc1 acc2 scr-restkodu
+               scr-folio-no scr-adi scr-soyadi scr-rez-buyuk scr-rez-kucuk
+               scr-rez-free scr-rez-bebek scr-sabah scr-ogle scr-aksam
+               scr-konukkere scr-geceleme scr-tanim-kapasite scr-kapasite 
+               scr-kalan-kapasite scr-musteri-notu scr-gel-saat scr-gel-dakika
+    perform restkodu-oku.
+
+*
+ restoran-yukle.
+       modify cb-rest, RESET-LIST = 1
+                     mass-update = 1
+      modify cb-rest, ITEM-TO-ADD("00->TUMU")
+      open input kodlar02
+      initialize kodlar02-rec 
+      move "Q"          to kodlar02-tipi
+      start kodlar02 key not < kodlar02-anah invalid
+            continue
+      not invalid
+      perform with test after until fs-kodlar02 = "10"
+      read kodlar02 next no lock end move "10" to fs-kodlar02
+      not at end
+              if kodlar02-tipi not = "Q"
+                 exit perform cycle
+              end-if
+
+              move kodlar02-kodu        to cb-rest-kodu
+              move kodlar02-adi         to cb-rest-adi
+              modify cb-rest, ITEM-TO-ADD(cb-rest-kod-ad)
+      end-read
+      end-perform
+      end-start
+      close kodlar02
+      modify cb-rest,
+                  mass-update = 0.
+*
+ cb-rest-Aft-Procedure.
+     perform man-rez-grid-goster
+     .
+*
+ cb-rest-Ex-Ntf-Selchange.
+     perform man-rez-grid-goster     
+     .
+
+*
+ polisxml-oku.
+    modify lb1, title = " "
+    modify lb2, title = " "
+    modify lb3, title = " "
+    modify lb4, title = " "
+    modify lb5, title = " "
+    if xrez-no <> zeroes
+    open input polisxml
+    move xrez-no        to polisxml-rezno
+    start polisxml key not < polisxml-anah invalid
+          continue
+    not invalid
+    perform with test after until fs-polisxml = "10"
+    read polisxml next no lock end move "10" to fs-polisxml
+    not at end
+        
+        if polisxml-rezno <> xrez-no
+           exit perform
+        end-if
+        evaluate polisxml-sirano
+           when 1
+              move polisxml-dog-gun        to pgun
+              move polisxml-dog-ay         to pay
+              move polisxml-dog-yil        to pyil
+              modify lb1, title = ptar
+           when 2
+              move polisxml-dog-gun        to pgun
+              move polisxml-dog-ay         to pay
+              move polisxml-dog-yil        to pyil
+              modify lb2, title = ptar
+           when 3
+              move polisxml-dog-gun        to pgun
+              move polisxml-dog-ay         to pay
+              move polisxml-dog-yil        to pyil
+              modify lb3, title = ptar
+           when 4
+              move polisxml-dog-gun        to pgun
+              move polisxml-dog-ay         to pay
+              move polisxml-dog-yil        to pyil
+              modify lb4, title = ptar
+           when 5
+              move polisxml-dog-gun        to pgun
+              move polisxml-dog-ay         to pay
+              move polisxml-dog-yil        to pyil
+              modify lb5, title = ptar
+        end-evaluate
+
+    end-read
+    end-perform
+    end-start
+    close polisxml
+    end-if.
+*
+ Form1-Ef-1-Aft-Procedure.
+      perform man-rez-grid-goster
+     .
+*
+ acc-misafir-adi-value-Aft-Procedure.
+      perform man-rez-grid-goster     
+     .
+*
+ acc-misafir-soyadi-valuea-Aft-Procedure.
+      perform man-rez-grid-goster     
+     .
+
+ 

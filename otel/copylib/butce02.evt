@@ -1,0 +1,2837 @@
+* butce02.evt
+* butce02.evt is generated from D:\asya\acugt.ytl\otel\butce02.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-2-Event-Proc.
+     PERFORM Form1-Gd-2-Ev-Other
+     .
+
+ Form1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+
+ Form1-Cm-2-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM secili-kur-degisti
+        END-EVALUATE
+     END-IF
+     .
+
+ formkur-Exception-Proc.
+     PERFORM formkur-Ex-Other
+     .
+
+ formkur-Gd-1-Event-Proc.
+     PERFORM formkur-Gd-1-Ev-Other
+     .
+
+ Screen1-Event-Proc.
+     .
+
+ ekle-Exception-Proc.
+     PERFORM ekle-Ex-Other
+     .
+
+ ac-Event-Proc.
+     PERFORM ac-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open i-o genel.
+     initialize genel-rec.
+     move 1 to genel-anahtar.
+     read genel no lock invalid
+          continue
+     end-read
+     close genel.
+    open input takvim takvim2 acenta konum kodlar02 nt fiyat fiyatana.   
+    open i-o   bilbord.
+    open i-o genelfis
+        move 1 to genelfis-anahtar
+        read genelfis no lock invalid
+             accept print-no from time
+        not invalid
+             add 1 to print-no
+             rewrite genelfis-rec end-rewrite
+        end-read
+        close genelfis.
+        move print-no to takasb-no takas8-no butgr-no 
+            kurgr-no bgunluk-no gbutce-no takasfiyat-no
+     
+
+
+     .
+
+*
+*
+ kurlari-bul.
+         .
+     open input kur
+     move tarih-tasi to kur-tarih 
+     move "87" to kur-banka
+     start kur key > kur-kodu 
+        invalid
+          continue
+        not invalid 
+          perform until fs-kur = "10"
+           read kur next no lock 
+             end
+              move "10" to fs-kur
+             not end
+              if tarih-tasi not = kur-tarih or 
+                 kur-banka not = 87
+                  move "10" to fs-kur
+                 else
+                  if doviz-alis > 0.01 then 
+                    initialize takasb-rec
+                     move "M" to takasb-tip
+                      move kur-doviz to takasb-data
+                      write takasb-rec invalid rewrite takasb-rec end-write
+                  end-if
+               end-if
+            end-read
+           end-perform 
+     end-start
+         close kur.
+        
+     open input doviz.
+       perform varying i from 1 by 1 until i > 99
+          move i to doviz-kodu
+         read doviz no lock
+          invalid
+           continue
+          not invalid
+
+          evaluate D-MERKEZ-BANKA-KODU 
+              when "EUR"
+              when "USD"
+              when "CHF"
+              when "GBP"
+              when "TRY"
+              when "YTL"
+              when "TL"
+                 initialize takasb-rec
+                     move "M" to takasb-tip
+                      move doviz-kodu to takasb-data
+                      write takasb-rec invalid rewrite takasb-rec end-write
+
+           end-evaluate
+         end-read
+       end-perform
+         close doviz.
+          .
+ Form1-Aft-Initdata.
+    move tarih-tasi to bas-tar bit-tar.
+    move "20070901" to bas-tar
+    move "20070930" to bit-tar
+
+    display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06.
+      initialize konum-rec
+      start konum key > konum-anahtar
+         invalid
+          continue
+         not invalid
+          perform varying m from 1 by 1 until fs-konum ="10"
+             read konum next no lock 
+                end
+                  move "10" to fs-konum
+                not end
+                  move konum-adi to konumadi(konum-anahtar)
+             end-read
+          end-perform 
+       end-start.
+         open output takasb 
+       
+        close takasb  .
+        open i-o takasb
+        perform acentalari-bul
+         perform anlasma-bul
+         perform konumlari-bul.
+         perform kurlari-bul.
+          perform degiskene-at.
+          move 1 to gunluk-tip.
+          close takasb 
+          perform pariteleri-bul
+         display dadi-ef1 dadi-ef2  dadi-ef3  dadi-ef4  dadi-ef5
+         dadi-ef6 
+         .
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Form1-Gd-1-Bef-Procedure.
+
+*
+ Form1-Gd-1-Ev-Other.
+    evaluate event-type 
+         when msg-begin-entry
+           inquire Form1-Gd-1, cursor-x in i cursor-y in ii
+           perform eski-satir-al
+          EVALUATE I
+            WHEN  1  when 2 when 3 
+              display message box "Ilk Uc Kolon Satir Anahtaridir " new-line
+                               "Satiri Silip yeniden eklemeyi deneyin"
+              move event-action-fail to event-action,
+            when 4
+               display message box "Kontenjani Kontenjan girislerinden girabilirsiniz" new-line
+                               "Toplam satirinin  toplam sutunu buraya otomatik gelecektir"
+              move event-action-fail to event-action,
+            when 5
+                  display message box "Kontenjan gerceklesme orani otomatik hesaplanacaktir" new-line
+                               "Giris Yapamazsiniz"
+              move event-action-fail to event-action,
+            
+            when 06
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-oda-reel
+                 move zbutgr-oda-reel to  butgr-oda-reel
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-oda-reel  
+              
+            when 07
+                inquire Form1-Gd-1(ii,i) cell-data in zbutgr-dbl-occ
+                 move zbutgr-dbl-occ to  butgr-dbl-occ
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-dbl-occ
+              
+            when 08
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-pax-gun
+                 move zbutgr-pax-gun to  butgr-pax-gun
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-pax-gun
+                 
+              
+            when 09
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-gun1
+                 move zbutgr-gun1 to  butgr-gun1
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-gun1  
+              
+            when 10
+                inquire Form1-Gd-1(ii,i) cell-data in zbutgr-gun2
+                 move zbutgr-gun2 to  butgr-gun2
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-gun2 
+              
+            when 11
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-gun3
+                 move zbutgr-gun3 to  butgr-gun3
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-gun3  
+           when 12
+                 perform satirdan-al 
+                 if butgr-gun1 = 0 then 
+                     display message box "Once Peryod acin"
+                     move event-action-fail to event-action,
+                 end-if
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-pax1
+                 move zbutgr-pax1 to  butgr-pax1
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-pax1
+           when 13
+                 perform satirdan-al 
+                  if butgr-gun2 = 0 then 
+                     display message box "Once Peryod acin"
+                      move event-action-fail to event-action,
+                   end-if 
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-pax2
+                 move zbutgr-pax2 to  butgr-pax2
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-pax2
+           when 14
+                   perform satirdan-al 
+                  if butgr-gun3 = 0 then 
+                     display message box "Once Peryod acin"
+                      move event-action-fail to event-action,
+                   end-if
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-pax3
+                 move zbutgr-pax3 to  butgr-pax3
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-pax3  
+           when 15
+                 perform satirdan-al 
+                 
+                  if butgr-gun1 = 0 then 
+                     display message box "Once Peryod acin"
+                      move event-action-fail to event-action,
+                   end-if 
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-oda1
+                 move zbutgr-oda1 to  butgr-oda1
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-oda1
+           when 16
+                 perform satirdan-al 
+                  if butgr-gun2 = 0 then 
+                     display message box "Once Peryod acin"
+                      move event-action-fail to event-action,
+                   end-if
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-oda2
+                 move zbutgr-oda2 to  butgr-oda2
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-oda2
+           when 17
+                   perform satirdan-al 
+                  if butgr-gun3 = 0 then 
+                     display message box "Once Peryod acin"
+                      move event-action-fail to event-action,
+                   end-if
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-oda3
+                 move zbutgr-oda3 to  butgr-oda3
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-oda3   
+           when 18
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-price-pp1
+                 move zbutgr-price-pp1 to  butgr-price-pp1
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-price-pp1
+           when 19
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-price-pp2
+                 move zbutgr-price-pp2 to  butgr-price-pp2
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-price-pp2
+           when 20
+                 inquire Form1-Gd-1(ii,i) cell-data in zbutgr-price-pp3
+                 move zbutgr-price-pp3 to  butgr-price-pp3
+                 modify Form1-Gd-1(ii,i) cell-data = butgr-price-pp3
+ 
+            when 21
+               display message box "Otomatik hesaplanacaktir.." title "Degistiremezsiniz"
+                move event-action-fail to event-action
+*                inquire Form1-Gd-1(ii,i) cell-data in zbutgr-price-total
+*                 move zbutgr-price-total to  butgr-price-total
+*                 modify Form1-Gd-1(ii,i) cell-data = butgr-price-total
+            WHEN 37 
+            WHEN  38 
+                display message box "Sayfayi Tazelediginizde Kendisi Otomatik Toplam Alacaktir "
+                
+                 move event-action-fail to event-action,
+*           when other
+*                inquire Form1-Gd-1(ii, 2 ), cell-data in eski-oda
+            
+           end-evaluate
+         when msg-finish-entry
+            
+             inquire Form1-Gd-1, cursor-x in i cursor-y in ii
+
+             evaluate i
+              when 06
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-oda-reel
+                 move butgr-oda-reel to  zbutgr-oda-reel
+                 modify Form1-Gd-1(ii,i) cell-data = zbutgr-oda-reel  
+                    perform satirdan-al 
+                  perform ana-degiskenler-degisti
+            when 07
+                inquire Form1-Gd-1(ii,i) cell-data in butgr-dbl-occ
+                 move butgr-dbl-occ to  zbutgr-dbl-occ
+                 modify Form1-Gd-1(ii,i) cell-data = zbutgr-dbl-occ
+                  perform satirdan-al 
+                 perform ana-degiskenler-degisti
+            when 08
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-pax-gun
+                 move butgr-pax-gun to  zbutgr-pax-gun
+                 modify Form1-Gd-1(ii,i) cell-data = zbutgr-pax-gun
+                   perform satirdan-al 
+                  compute butgr-oda-reel rounded = 
+                        butgr-pax-gun / butgr-dbl-occ 
+                 perform ana-degiskenler-degisti
+              
+             
+             
+             
+             
+             when 09
+                 
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-gun1
+                 move butgr-gun1   to  zbutgr-gun1
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-gun1
+                 perform satirdan-al 
+                 perform gun-degisti
+               when 10
+                  inquire Form1-Gd-1(ii,i) cell-data in butgr-gun2
+                 move butgr-gun2   to  zbutgr-gun2
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-gun2
+                 perform satirdan-al 
+                 perform gun-degisti
+               when 11
+                  inquire Form1-Gd-1(ii,i) cell-data in butgr-gun3
+                 move butgr-gun3   to  zbutgr-gun3
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-gun3
+                 perform satirdan-al 
+                 perform gun-degisti
+              when 12
+                 
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-pax1
+                 move butgr-pax1   to  zbutgr-pax1
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-pax1
+                 perform satirdan-al 
+                 perform pax-degisti
+                 perform pax-oda-degisti
+               when 13
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-pax2
+                 move butgr-pax2   to  zbutgr-pax2
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-pax2
+                 perform satirdan-al 
+                 perform pax-degisti
+                 perform pax-oda-degisti
+               when 14
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-pax3
+                 move butgr-pax3   to  zbutgr-pax3
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-pax3
+                 perform satirdan-al 
+                 perform pax-degisti
+                  perform pax-oda-degisti
+             
+             
+             
+             
+             
+               when 15
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-oda1
+                 move butgr-oda1   to  zbutgr-oda1
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-oda1
+                 perform satirdan-al 
+                 perform oda-degisti
+                 perform pax-oda-degisti
+               when 16
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-oda2
+                 move butgr-oda2   to  zbutgr-oda2
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-oda2
+                 perform satirdan-al 
+                 perform oda-degisti
+                 perform pax-oda-degisti
+               when 17
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-oda3
+                 move butgr-oda3   to  zbutgr-oda3
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-oda3
+                 perform satirdan-al 
+                 perform oda-degisti
+                  perform pax-oda-degisti
+               when 18
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-price-pp1
+                 move butgr-price-pp1   to  zbutgr-price-pp1
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-price-pp1
+                 perform satirdan-al 
+                 perform fiyat-hesapla
+
+               when 19
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-price-pp2
+                 move butgr-price-pp2   to  zbutgr-price-pp2
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-price-pp2
+                 perform satirdan-al 
+                 perform fiyat-hesapla
+               when 20
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-price-pp3
+                 move butgr-price-pp3  to  zbutgr-price-pp3
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-price-pp3
+                 perform satirdan-al 
+                 perform fiyat-hesapla
+             
+               when 21
+                 inquire Form1-Gd-1(ii,i) cell-data in butgr-price-total
+                 move butgr-price-total   to  zbutgr-price-total
+                 modify Form1-Gd-1(ii,i)  cell-data = zbutgr-price-total
+
+             end-evaluate
+    end-evaluate.
+     .
+*
+ gun-degisti.
+         
+         perform until butgr-gun1 + butgr-gun2 + butgr-gun3  =  toplam-gun
+           if butgr-gun1 + butgr-gun2 + butgr-gun3  >  toplam-gun
+               if butgr-gun3 > 0 
+                 subtract 1 from butgr-gun3 
+                 else
+                  if butgr-gun2 > 0 
+                     subtract 1 from butgr-gun2 
+                    else
+                    subtract 1 from butgr-gun1
+                  end-if
+                end-if
+              else
+               add 1 to butgr-gun3 
+           end-if
+         end-perform
+         if butgr-gun1  = 0 then
+            initialize butgr-pax1   butgr-oda1 
+         end-if.
+         if butgr-gun2  = 0 then
+            initialize butgr-pax2   butgr-oda2 
+         end-if.
+         if butgr-gun3  = 0 then
+            initialize butgr-pax3   butgr-oda3
+         end-if.
+         move butgr-gun1   to zbutgr-gun1
+         move butgr-gun2   to zbutgr-gun2
+         move butgr-gun3   to zbutgr-gun3
+         
+         modify Form1-Gd-1(ii,09)  cell-data = zbutgr-gun1                        
+         modify Form1-Gd-1(ii,10)  cell-data = zbutgr-gun2                      
+         modify Form1-Gd-1(ii,11)  cell-data = zbutgr-gun3. 
+          perform pax-oda-degisti
+             .
+
+*
+ ana-degiskenler-degisti.
+
+        
+ 
+        compute butgr-pax-gun  rounded = 
+                        butgr-dbl-occ * butgr-oda-reel
+        compute butgr-pax1 rounded = butgr-pax-gun * butgr-gun1
+        compute butgr-pax2 rounded = butgr-pax-gun * butgr-gun2
+        compute butgr-pax3 rounded = butgr-pax-gun * butgr-gun3
+        perform pax-degisti
+        perform pax-oda-degisti   .
+     
+       
+             
+*
+ oda-degisti.
+         compute butgr-pax1 rounded = butgr-oda1 * butgr-dbl-occ                  
+         compute butgr-pax2 rounded = butgr-oda2 * butgr-dbl-occ                  
+         compute butgr-pax3 rounded = butgr-oda3 * butgr-dbl-occ. 
+        
+*
+ pax-degisti.
+         compute butgr-oda1 rounded = butgr-pax1 / butgr-dbl-occ                  
+         compute butgr-oda2 rounded = butgr-pax2 / butgr-dbl-occ                  
+         compute butgr-oda3 rounded = butgr-pax3 / butgr-dbl-occ. 
+               
+             
+*
+ pax-oda-degisti.
+         
+ 
+         compute butgr-oda-total rounded = butgr-oda1 + butgr-oda2 + butgr-oda3 
+         compute butgr-pax-total rounded = butgr-pax1 + butgr-pax2 + butgr-pax3
+         compute butgr-pax-gun   rounded =  butgr-pax-total / toplam-gun
+         compute butgr-oda-reel   rounded =  butgr-oda-total / toplam-gun
+         if  butgr-oda-total > 0 
+               compute butgr-dbl-occ  
+                   rounded = butgr-pax-total / butgr-oda-total 
+         end-if
+         move butgr-pax1        to zbutgr-pax1
+         move butgr-pax2        to zbutgr-pax2
+         move butgr-pax3        to zbutgr-pax3
+         move butgr-oda1        to zbutgr-oda1
+         move butgr-oda2        to zbutgr-oda2
+         move butgr-oda3        to zbutgr-oda3
+         move butgr-oda-total   to zbutgr-oda-total  
+         move  butgr-pax-total  to zbutgr-pax-total  
+         move  butgr-pax-gun    to zbutgr-pax-gun    
+         move  butgr-dbl-occ    to zbutgr-dbl-occ    
+         move  butgr-oda-reel   to zbutgr-oda-reel
+        
+         modify Form1-Gd-1(ii,6)   cell-data = zbutgr-oda-reel 
+         modify Form1-Gd-1(ii,8)   cell-data = zbutgr-pax-gun    
+         modify Form1-Gd-1(ii,7)   cell-data = zbutgr-dbl-occ  
+     
+
+         modify Form1-Gd-1(ii,12)  cell-data = zbutgr-pax1                        
+         modify Form1-Gd-1(ii,13)  cell-data = zbutgr-pAX2                      
+         modify Form1-Gd-1(ii,14)  cell-data = zbutgr-pax3. 
+         modify Form1-Gd-1(ii,15)  cell-data = zbutgr-oda1                        
+         modify Form1-Gd-1(ii,16)  cell-data = zbutgr-oda2                      
+         modify Form1-Gd-1(ii,17)  cell-data = zbutgr-oda3.
+         modify Form1-Gd-1(ii,22)  cell-data = zbutgr-pAX-TOTAL 
+        perform fiyat-hesapla.
+*
+ fiyat-hesapla.
+        
+        compute butgr-price1 rounded = butgr-pax1 * butgr-price-pp1
+        compute butgr-price2 rounded = butgr-pax2 * butgr-price-pp2
+        compute butgr-price3 rounded = butgr-pax3 * butgr-price-pp3
+        compute butgr-price-total rounded = butgr-price1 + butgr-price2 + butgr-price3
+        
+        compute butgr-price-ort rounded = butgr-price-total / butgr-pax-total
+       
+
+        move butgr-price-ort  to zbutgr-price-ort
+        move butgr-price-total  to zbutgr-price-total 
+          .
+         
+         modify Form1-Gd-1(ii,21)  cell-data = zbutgr-price-TOTAL                        
+                               
+         modify Form1-Gd-1(ii,23)  cell-data = zbutgr-price-ORT.
+         perform yeni-satir-al.
+          
+*
+*
+ Form1-Aft-Routine.
+      close bilbord takvim takvim2 acenta konum kodlar02 nt fiyat fiyatana.
+     
+     .
+ grid-kaydet.
+       inquire form1-gd-1(1,1)  last-row in kayit-sayi
+       perform varying ii from 2 by 1  until ii > kayit-sayi  
+           perform satirdan-al
+            rewrite butgr-rec
+              invalid display message box " kontrol ediniz --hata -- 000200"
+               stop " "
+               write butgr-rec end-write
+            end-rewrite
+            
+       end-perform .
+*
+ butce-ac.
+      perform takas-ac.
+      perform pariteleri-bul
+      open i-o butce butgr bgunluk
+       
+   
+      initialize butce-rec son-butce-rec butgr-rec   butgr-toplamlar
+       move "deneme" to b-dosya-adi
+       move b-dosya-adi to butce-adi
+       move bas-tar     to butce-tarih
+      start butce key > butce-acen-anah
+          invalid
+           continue
+         not invalid
+           perform until fs-butce = "10"
+             read butce next 
+               end move "10" to fs-butce
+               not end
+                  if butce-adi not =  b-dosya-adi
+                     move "10" to fs-butce
+                     else
+                       if  bit-tar < butce-tarih
+                             move "10" to fs-butce
+                          end-if
+                       if bas-tar <= butce-tarih and 
+                          bit-tar >= butce-tarih
+                            if butce-tek-satir  not =
+                                  son-butce-tek-satir
+                                 perform butgr-tek-kaydet
+                               move 0 to peryod-sayisi
+                               initialize butgr-rec
+                                else 
+                               continue
+                            end-if
+                            if butce-price-pp1  not =  son-butce-price-pp1  or 
+                               peryod-sayisi = 0
+                                add 1 to peryod-sayisi 
+                            end-if
+                            perform  butgr-ekle
+                          else
+                          continue | tarih disi
+                       end-if
+                   end-if
+                 move butce-rec to son-butce-rec
+
+             end-read     
+           end-perform
+
+     end-start
+     perform butgr-tek-kaydet
+     close butce butgr bgunluk.
+     perform gride-yukle.
+     perform butgr-toplamlar-cevir.
+*
+ butgr-tek-kaydet.
+       if butgr-acenta = spaces then 
+             continue
+          else
+         compute toplam-gun = butgr-gun1 + butgr-gun2 + butgr-gun3
+         compute butgr-oda-total rounded = butgr-oda1 + butgr-oda2 + butgr-oda3 
+         compute butgr-pax-total rounded = butgr-pax1 + butgr-pax2 + butgr-pax3
+         compute butgr-pax-gun   rounded =  butgr-pax-total / toplam-gun
+         compute butgr-oda-reel   rounded =  butgr-oda-total / toplam-gun
+         if  butgr-oda-total > 0 
+               compute butgr-dbl-occ  
+                   rounded = butgr-pax-total / butgr-oda-total 
+         end-if
+        compute butgr-price-pp1 rounded =  butgr-price1 / butgr-pax1 
+        compute butgr-price-pp2 rounded =  butgr-price2 / butgr-pax2 
+        compute butgr-price-pp3 rounded =  butgr-price3 / butgr-pax3 
+       
+        compute butgr-price-total rounded = butgr-price1 + butgr-price2 + butgr-price3
+        compute butgr-price-ort rounded = butgr-price-total / butgr-pax-total
+          write butgr-rec invalid 
+             if hata = 0 then 
+                stop " "
+              end-if
+          end-write
+     end-if  .
+       
+*
+ butgr-ekle.
+       move butce-doviz    to    butgr-doviz   
+       move butce-acenta   to    butgr-acenta  
+       move butce-anlasma  to    butgr-anlasma 
+       move butce-konum    to    butgr-konum  
+     
+       evaluate peryod-sayisi 
+         when 0
+           display message box "hata 0 hatasi"
+         when 1
+             add 1 to butgr-gun1
+             if  1 < butgr-gun1 and ( butce-oda-gun  not =  son-butce-oda-gun
+                   or  butce-pax-gun  not =  son-butce-pax-gun )
+                 move 1 to butgr-tablo
+             end-if
+               add butce-oda-gun to butgr-oda1 
+               add butce-pax-gun to butgr-pax1 
+               compute butgr-price1 rounded = butgr-price1 +
+                ( butce-pax-gun   *   butce-price-pp1 ) 
+         when 2
+             add 1 to butgr-gun2
+             if  1 < butgr-gun2 and ( butce-oda-gun  not =  son-butce-oda-gun
+                   or  butce-pax-gun  not =  son-butce-pax-gun )
+                 move 1 to butgr-tablo
+             end-if
+               add butce-oda-gun to butgr-oda2
+               add butce-pax-gun to butgr-pax2 
+               compute butgr-price2 rounded = butgr-price2 +
+                ( butce-pax-gun   *   butce-price-pp1 ) 
+         
+         when other
+            if peryod-sayisi > 3 then 
+                  move 1 to butgr-tablo
+            end-if
+            add 1 to butgr-gun3
+             if  1 < butgr-gun3 and ( butce-oda-gun  not =  son-butce-oda-gun
+                   or  butce-pax-gun  not =  son-butce-pax-gun )
+                 move 1 to butgr-tablo
+             end-if
+               add butce-oda-gun to butgr-oda3 
+               add butce-pax-gun to butgr-pax3 
+               compute butgr-price3 rounded = butgr-price3 +
+                ( butce-pax-gun   *   butce-price-pp1 ) 
+       
+         
+         
+      end-evaluate
+        initialize  bgunluk-rec
+        move butce-tarih  to    bgunluk-tar
+      read bgunluk no lock 
+        invalid  continue
+      end-read
+       move  doviz-yer(butce-doviz) to kacinci-doviz
+      add  butce-pax-gun to bgunluk-paxtop
+      add  butce-oda-gun to bgunluk-odatop
+      compute bgunluk-pricetop(kacinci-doviz) rounded = 
+           bgunluk-pricetop(kacinci-doviz) + ( butce-price-pp1 * 
+            butce-pax-gun )
+     
+      evaluate butce-konum 
+        when tum-konum(1)
+            add  butce-pax-gun   to bgunluk-pax1
+            add  butce-oda-gun   to bgunluk-oda1
+           compute bgunluk-price1(kacinci-doviz) rounded = 
+                   bgunluk-price1(kacinci-doviz) + ( butce-price-pp1 * 
+                   butce-pax-gun )
+        when tum-konum(2)
+            add  butce-pax-gun to bgunluk-pax2
+            add  butce-oda-gun to bgunluk-oda2
+           compute bgunluk-price2(kacinci-doviz) rounded = 
+                   bgunluk-price2(kacinci-doviz) + ( butce-price-pp1 * 
+                   butce-pax-gun )
+        when tum-konum(3)
+            add  butce-pax-gun to bgunluk-pax3
+            add  butce-oda-gun to bgunluk-oda3
+           compute bgunluk-price3(kacinci-doviz) rounded = 
+                   bgunluk-price3(kacinci-doviz) + ( butce-price-pp1 * 
+                   butce-pax-gun )
+        when tum-konum(4) 
+            add  butce-pax-gun to bgunluk-pax4
+            add  butce-oda-gun to bgunluk-oda4
+           compute bgunluk-price4(kacinci-doviz) rounded = 
+                   bgunluk-price4(kacinci-doviz) + ( butce-price-pp1 * 
+                   butce-pax-gun )
+        when tum-konum(5) 
+            add  butce-pax-gun to bgunluk-pax5
+            add  butce-oda-gun to bgunluk-oda5
+           compute bgunluk-price5(kacinci-doviz) rounded = 
+                   bgunluk-price5(kacinci-doviz) + ( butce-price-pp1 * 
+                   butce-pax-gun )
+        when tum-konum(6)
+            add  butce-pax-gun to bgunluk-pax6
+            add  butce-oda-gun to bgunluk-oda6
+           compute bgunluk-price6(kacinci-doviz) rounded = 
+                   bgunluk-price6(kacinci-doviz) + ( butce-price-pp1 * 
+                   butce-pax-gun )
+        when tum-konum(7)
+            add  butce-pax-gun to bgunluk-pax7
+            add  butce-oda-gun to bgunluk-oda7
+           compute bgunluk-price7(kacinci-doviz) rounded = 
+                   bgunluk-price7(kacinci-doviz) + ( butce-price-pp1 * 
+                   butce-pax-gun )
+      end-evaluate
+       rewrite bgunluk-rec   invalid write bgunluk-rec end-rewrite
+     .
+ butce-kaydet.
+    
+      open i-o butce butgr
+       perform grid-kaydet
+          move "deneme" to b-dosya-adi
+       move "deneme" to  butce-adi
+   
+      initialize butgr-rec
+      start butgr key > butgr-anah
+          invalid
+           continue
+         not invalid
+           perform until fs-butgr = "10"
+             read butgr next 
+               end move "10" to fs-butgr
+               not end
+                  perform tek-satir-kaydet
+             end-read     
+           end-perform
+
+     end-start
+     close butce butgr
+      .
+ tek-satir-kaydet.
+       move bas-tar to takvim-anah
+       initialize gun-sirasi
+       start takvim key = takvim-anah 
+          invalid
+           continue
+          not invalid
+              perform until fs-takvim = "10"
+                read takvim next no lock
+                  end move "10" to fs-takvim
+                  not end
+                   if takvim-anah > bit-tar
+                       move "10" to fs-takvim
+                       else
+                        add 1 to gun-sirasi
+                       perform tek-tarih-kaydet
+                   end-if
+                 end-read
+              end-perform
+       end-start.
+      .
+*
+ tek-tarih-kaydet.
+       move b-dosya-adi   to butce-adi
+       move takvim-anah   to butce-tarih
+       move butgr-doviz   to butce-doviz
+       move butgr-acenta  to butce-acenta
+       move butgr-anlasma to butce-anlasma
+       move butgr-konum   to butce-konum
+       evaluate true
+          when gun-sirasi <=  butgr-gun1
+                compute butce-oda-gun rounded = butgr-oda1 / butgr-gun1
+                compute butce-pax-gun rounded = butgr-pax1 / butgr-gun1
+                compute butce-price-pp1 rounded = butgr-price-pp1 
+          
+          when gun-sirasi >  butgr-gun1 
+             and  gun-sirasi <=  butgr-gun1 +  butgr-gun2
+                compute butce-oda-gun rounded = butgr-oda2 / butgr-gun2
+                compute butce-pax-gun rounded = butgr-pax2 / butgr-gun2
+                compute butce-price-pp1 rounded = butgr-price-pp2 
+
+          when gun-sirasi >  butgr-gun1 +  butgr-gun2 
+            and  gun-sirasi <=  butgr-gun1 +  butgr-gun2 + butgr-gun3 
+               compute butce-oda-gun rounded = butgr-oda3 / butgr-gun3
+               compute butce-pax-gun rounded = butgr-pax3 / butgr-gun3
+               compute butce-price-pp1 rounded = butgr-price-pp3 
+          when other 
+                display message box "hata--7868768" butce-rec "---" gun-sirasi
+       end-evaluate
+       write butce-rec invalid rewrite butce-rec end-write.
+      .
+
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 7 
+         if control-id = 2
+          perform acu-ekle-routine
+         end-if
+      when 3 
+         if control-id = 2
+          perform gridden-satir-sil
+         end-if
+      when 1 
+         if gr-boy =  2 then
+           move 1 to  gr-boy
+             modify Form1-Gd-1, size 102 , 
+           else
+            move 2 to  gr-boy
+             modify Form1-Gd-1, size  58,
+         end-if
+      when 2 
+           perform butce-kaydet
+      when 6 
+          perform acu-ac-routine
+               perform butce-ac
+           
+            
+      when 4
+           perform dokumere-yolla
+      when 5 
+          perform  bos-grid-ac
+      when 55
+            perform gerceklesen-al
+      when 11 
+          
+          perform butce-kur-gir
+
+      when 5001 
+           if gunluk-tip not = 0 then
+             move 1 to gunluk-tip
+               open i-o bgunluk
+           
+                perform gunluk-update
+               close bgunluk
+            end-if
+      when 5002 
+           if gunluk-tip not = 0 then
+             move 2 to gunluk-tip
+              open i-o bgunluk
+           
+                perform gunluk-update
+               close bgunluk
+            end-if
+      when 5003
+           if gunluk-tip not = 0 then
+             move 3 to gunluk-tip
+               open i-o bgunluk
+           
+                perform gunluk-update
+               close bgunluk
+            end-if
+      when 5004
+          
+           if gunluk-tip not = 0 then
+             move 4 to gunluk-tip
+               open i-o bgunluk
+           
+                perform gunluk-update
+               close bgunluk
+            end-if
+      when 5005
+          
+           if gunluk-tip not = 0 then
+             move 5 to gunluk-tip
+               open i-o bgunluk
+           
+                perform gunluk-update
+               close bgunluk
+            end-if  
+       when 5006
+          
+           if gunluk-tip not = 0 then
+             move 6 to gunluk-tip
+               open i-o bgunluk
+           
+                perform gunluk-update
+               close bgunluk
+            end-if
+     
+       
+      end-evaluate.
+
+*
+ butce-kur-gir.
+       
+       open input doviz takasb.
+       initialize takasb-rec doviz-sayi
+       move "M" to takasb-tip
+       start takasb key > takasb-anah
+          invalid 
+            continue
+          not invalid
+            perform until fs-takasb = "10"
+              read takasb next 
+                end  move "10" to fs-takasb
+                not end 
+                  if takasb-tip not = "M" 
+                      move "10" to fs-takasb
+                      else
+                      add 1 to doviz-sayi
+                      move takasb-data(1:2) to doviz-kodu
+                      read doviz no lock 
+                         invalid
+                           display message box "jhkjhk"
+                           stop " "
+                      end-read
+                      move doviz-kodu to tum-dovizler(doviz-sayi)
+                      move D-KISA-ADI to tum-dovizler-adi(doviz-sayi)
+                      move doviz-sayi to doviz-yer(doviz-kodu)
+                  end-if
+              end-read   
+            end-perform
+       end-start
+       close doviz takasb 
+       if doviz-sayi > 0 then
+          perform acu-formkur-routine
+       end-if
+
+       .
+
+       
+*
+ takas-ac.
+       
+       
+        open output takas8 
+        open output butgr bgunluk 
+        close takas8 butgr bgunluk  .
+       
+          move 1 to gunluk-tip.
+
+ acentalari-bul.
+        
+
+       initialize acenta-rec
+       
+       start acenta key > acenta-kodu
+         invalid
+          continue
+         not invalid
+          perform varying m from 1 by 1 until fs-acenta ="10"
+             read acenta next no lock 
+                end
+                  move "10" to fs-acenta
+                not end
+                  move "A" to takasb-tip
+
+                  move acenta-butce to takasb-data
+                  rewrite takasb-rec invalid 
+                  write takasb-rec
+                 
+                  end-rewrite
+
+             end-read
+          end-perform 
+       end-start.
+       
+*
+ konumlari-bul.
+      initialize konum-rec
+      
+       start konum key > konum-anahtar
+         invalid
+          continue
+         not invalid
+          perform varying m from 1 by 1 until fs-konum ="10"
+             read konum next no lock 
+                end
+                  move "10" to fs-konum
+                not end
+                  move "K" to takasb-tip
+                  if konum-satis = 1 then 
+                 
+                  move konum-anahtar to takasb-data
+                  move konum-adi to konumadi(konum-anahtar)
+                  
+                  rewrite takasb-rec invalid 
+                  write takasb-rec
+                  
+                  end-rewrite
+                  end-if
+                  move konum-adi to konumadi(konum-anahtar)
+             end-read
+          end-perform 
+       end-start.
+      
+      .
+*
+ anlasma-bul.
+      
+       initialize kodlar02-rec
+       move "D" to kodlar02-tipi
+      
+       start kodlar02 key > kodlar02-anah
+         invalid
+          continue
+         not invalid
+          perform varying m from 1 by 1 until fs-kodlar02 ="10"
+             read kodlar02 next no lock 
+                end
+                  move "10" to fs-kodlar02
+                not end
+                  if kodlar02-tipi not = "D" then 
+                     move "10" to fs-kodlar02
+                    else
+                     if KODLAR02-anl-butce not = spaces then 
+                     move "D" to takasb-tip
+                     move KODLAR02-anl-butce(1:4) to takasb-data
+                     rewrite takasb-rec invalid 
+                       write takasb-rec
+                     end-rewrite
+                     end-if
+                  end-if
+             end-read
+          end-perform 
+       end-start.
+       
+      .
+
+*
+ degiskene-at.
+         
+      
+      initialize takasb-rec  tum-degisken
+      start takasb key > takasb-anah
+       invalid
+         continue
+       not invalid 
+          perform until fs-takasb = "10"
+           read takasb next  no lock
+              end move "10" to fs-takasb
+              not end
+              if takasb-data not = spaces 
+                evaluate takasb-tip
+                  when "A"
+                   add 1 to acenta-sayi
+                   move takasb-data to tum-acenta(acenta-sayi) ekle-acenta-sec(1:4) acenta-kodu
+                   read acenta no lock invalid
+                      move acenta-kodu to acenta-adi
+                   end-read
+                    move acenta-adi to ekle-acenta-sec(5:15) 
+                     modify ekle-acenta-cb item-to-add  ekle-acenta-sec
+                  when "D"
+                    add 1 to anlasma-sayi
+                    move takasb-data to tum-anlasma(anlasma-sayi) ekle-anlasma-sec(1:4)
+                     modify ekle-anlasma-cb item-to-add  ekle-anlasma-sec
+                  when "K"
+                    add 1 to konum-sayi
+                    move takasb-data(1:2) to tum-konum(konum-sayi) konum-anahtar ekle-konum-sec(1:2)
+                    move konumadi(konum-anahtar)  to   ekle-konum-sec(4:5)
+                    move konum-sayi(2:1) to konum-yer(konum-anahtar)
+                    modify ekle-anlasma-cb item-to-add  ekle-anlasma-sec
+                end-evaluate
+              end-if
+           end-read
+         end-perform
+       end-start
+        open input doviz .
+       initialize takasb-rec doviz-sayi
+       move "M" to takasb-tip
+       start takasb key > takasb-anah
+          invalid 
+            continue
+          not invalid
+            perform until fs-takasb = "10"
+              read takasb next 
+                end  move "10" to fs-takasb
+                not end 
+                  if takasb-tip not = "M" 
+                      move "10" to fs-takasb
+                      else
+                      add 1 to doviz-sayi
+                      move takasb-data(1:2) to doviz-kodu
+                      read doviz no lock 
+                         invalid
+                           display message box "jhkjhk"
+                           stop " "
+                      end-read
+                       move bos-alan to secili-kur
+                       initialize  ekle-doviz-sec
+                      move doviz-kodu to tum-dovizler(doviz-sayi) ekle-doviz-sec(1:2)
+                      move D-KISA-ADI to tum-dovizler-adi(doviz-sayi) bos-alan(3:5) ekle-doviz-sec(4:5)
+                      move doviz-sayi(2:1) to doviz-yer(doviz-kodu)  bos-alan(1:1)
+                      move "-" to bos-alan(2:1) ekle-doviz-sec(3:1)
+                      modify Form1-Cm-2 item-to-add  bos-alan(1:7)
+                      modify ekle-doviz-cb item-to-add  ekle-doviz-sec
+                                        
+                  end-if
+              end-read   
+            end-perform
+       end-start
+       display  Form1-Cm-2
+       close doviz.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ bos-grid-ac.
+       perform takas-ac.
+      
+       perform bos-butce-ac.
+       perform gride-yukle.
+       perform butgr-toplamlar-cevir.
+*
+ bos-butce-ac.
+      
+     perform pariteleri-bul
+     initialize butgr-toplamlar
+     open i-o butgr
+     perform varying acen-no from 1 by 1 until acen-no > acenta-sayi
+
+       initialize takas8-rec
+        move tum-acenta(acen-no) to takas8-acenta
+        perform peryod-tarih-bul
+         move takas8-doviz  to butgr-doviz
+         move takas8-acenta to butgr-acenta
+         move takas8-gun1   to butgr-gun1
+         move takas8-gun2   to butgr-gun2
+         move takas8-gun3   to butgr-gun3
+         move 2.2           to butgr-dbl-occ
+         perform varying anlasma-no from 1 by 1 until anlasma-no > anlasma-sayi
+            move tum-anlasma(anlasma-no) to butgr-anlasma 
+            perform varying konum-no from 1 by 1 until konum-no > konum-sayi
+              move tum-konum(konum-no) to butgr-konum
+              write butgr-rec 
+                 invalid 
+                   display message box "Hata----dkfdglkhdfk"
+                   stop " "
+               end-write
+            end-perform 
+         end-perform 
+
+     end-perform. 
+     close butgr .
+*
+ gride-yukle.
+     open i-o butgr takasb bgunluk
+     initialize butgr-rec
+     perform grid-ilk
+     
+     start butgr key > butgr-anah 
+        invalid
+          continue
+       not invalid
+      perform until fs-butgr = "10"
+        read butgr next 
+          end
+           move "10" to fs-butgr
+          not end
+            initialize takasb-rec
+            move "M" to takasb-tip
+            move butgr-doviz to takasb-data
+            write takasb-rec invalid rewrite takasb-rec end-write
+            perform satir-ekle
+        end-read
+      end-perform 
+      
+     end-start .
+       modify form1-gd-1,  mass-update = 0
+     perform gunluk-ilk-update
+     close butgr takasb bgunluk.
+
+*
+ grid-ilk.
+    initialize kayit-sayi
+    modify form1-gd-1, reset-grid  = 1 mass-update = 1.
+     modify form1-gd-1,record-to-add(gr-rec)
+    move 1 to kayit-sayi.
+        modify form1-gd-1(1,1),cell-data =  "Acenta      "   
+        modify form1-gd-1(1,2),cell-data =  "Anlasma      "      
+        modify form1-gd-1(1,3),cell-data =  "Konum       "        
+        modify form1-gd-1(1,4),cell-data =  " "       
+        modify form1-gd-1(1,5),cell-data =  " "         
+        modify form1-gd-1(1,6),cell-data =  "Roda          "      
+        modify form1-gd-1(1,7),cell-data =  "DblOcc       "       
+        modify form1-gd-1(1,8),cell-data =  "PaxG        "      
+        modify form1-gd-1(1,9),cell-data =  "Gn1         "       
+        modify form1-gd-1(1,10),cell-data = "Gn2          "       
+        modify form1-gd-1(1,11),cell-data = "Gn3          "       
+        modify form1-gd-1(1,12),cell-data = "Pax1           "      
+        modify form1-gd-1(1,13),cell-data = "Pax2         "      
+        modify form1-gd-1(1,14),cell-data = "Pax3        "      
+        modify form1-gd-1(1,15),cell-data ="Oda1        "        
+        modify form1-gd-1(1,16),cell-data = "Oda2        "      
+        modify form1-gd-1(1,17),cell-data = "Oda3        "           
+        modify form1-gd-1(1,18),cell-data = "PpFiy1"      
+        modify form1-gd-1(1,19),cell-data = "PpFiy2      "      
+        modify form1-gd-1(1,20),cell-data = "PpFiy3      "      
+        modify form1-gd-1(1,21),cell-data = "Toplamfiyat     "     
+        modify form1-gd-1(1,22),cell-data = "Toppax          "          
+        modify form1-gd-1(1,23),cell-data = " pp Ort".
+    
+     
+***
+ satir-ekle.
+*************** toplamlari bul
+         move  doviz-yer(butgr-doviz) to kacinci-doviz
+         compute butgr-ttutar(kacinci-doviz) rounded = 
+                 butgr-ttutar(kacinci-doviz) + 
+                 butgr-price1 + butgr-price2 + butgr-price3
+         compute butgr-toda rounded = 
+                 butgr-toda + 
+                 butgr-oda1 + butgr-oda2 + butgr-oda3
+         compute butgr-tpax rounded = 
+                 butgr-tpax + 
+                 butgr-pax1 + butgr-pax2 + butgr-pax3
+***************************************       
+        initialize gr-rec
+        initialize acenta-rec
+        move butgr-acenta to acenta-kodu
+          read acenta no lock 
+            invalid move acenta-kodu to acenta-adi
+          end-read
+
+        move acenta-adi       to  gr-acenta 
+        move butgr-anlasma    to   gr-acenta(10:)
+        move butgr-konum to konum-anahtar  
+        
+        move konumadi(konum-anahtar)   to    gr-acenta(15:)
+        move "-" to  gr-acenta(9:1)    gr-acenta(14:1)
+        move butgr-oda-reel    to  zbutgr-oda-reel    move zbutgr-oda-reel    to  gr-roda         
+        move butgr-dbl-occ     to  zbutgr-dbl-occ     move zbutgr-dbl-occ     to  gr-dblocc       
+        move butgr-pax-gun     to  zbutgr-pax-gun     move zbutgr-pax-gun     to  gr-paxg         
+        move butgr-gun1        to  zbutgr-gun1        move zbutgr-gun1        to  gr-g1           
+        move butgr-gun2        to  zbutgr-gun2        move zbutgr-gun2        to  gr-g2           
+        move butgr-gun3        to  zbutgr-gun3        move zbutgr-gun3        to  gr-g3           
+        move butgr-pax1        to  zbutgr-pax1        move zbutgr-pax1        to  gr-pax1         
+        move butgr-pax2        to  zbutgr-pax2        move zbutgr-pax2        to  gr-pax2         
+        move butgr-pax3        to  zbutgr-pax3        move zbutgr-pax3        to  gr-pax3         
+        move butgr-oda1        to  zbutgr-oda1        move zbutgr-oda1        to  gr-oda1         
+        move butgr-oda2        to  zbutgr-oda2        move zbutgr-oda2        to  gr-oda2         
+        move butgr-oda3        to  zbutgr-oda3        move zbutgr-oda3        to  gr-oda3         
+        move butgr-price-pp1   to  zbutgr-price-pp1   move zbutgr-price-pp1   to  gr-pp1          
+        move butgr-price-pp2   to  zbutgr-price-pp2   move zbutgr-price-pp2   to  gr-pp2          
+        move butgr-price-pp3   to  zbutgr-price-pp3   move zbutgr-price-pp3   to  gr-pp3          
+        move butgr-price-total to  zbutgr-price-total move zbutgr-price-total to  gr-ftot         
+        move butgr-pax-total   to  zbutgr-pax-total   move zbutgr-pax-total   to  gr-ptot         
+        move butgr-price-ort   to  zbutgr-price-ort   move zbutgr-price-ort   to  gr-pport        
+
+    modify form1-gd-1,record-to-add(gr-rec)
+    add 1 to kayit-sayi.
+    modify form1-gd-1(kayit-sayi,1) hidden-data = butgr-anah .
+    modify form1-gd-1(kayit-sayi,2) hidden-data = butgr-tablo.
+    if butgr-tablo = 1 then 
+       stop " "
+      modify  form1-gd-1(kayit-sayi) row-color = 432
+    end-if.
+
+*
+ satirdan-al.
+        
+          inquire Form1-Gd-1(ii) RECORD-data in gr-REC
+
+          inquire Form1-Gd-1(ii,1)   hidden-data in butgr-anah
+          inquire Form1-Gd-1(ii,2)   hidden-data in butgr-tablo
+
+        move gr-roda    to  zbutgr-oda-reel    move zbutgr-oda-reel    to    butgr-oda-reel       
+        move gr-dblocc  to  zbutgr-dbl-occ     move zbutgr-dbl-occ     to    butgr-dbl-occ        
+        move gr-paxg    to  zbutgr-pax-gun     move zbutgr-pax-gun     to    butgr-pax-gun        
+        move gr-g1      to  zbutgr-gun1        move zbutgr-gun1        to    butgr-gun1           
+        move gr-g2      to  zbutgr-gun2        move zbutgr-gun2        to    butgr-gun2           
+        move gr-g3      to  zbutgr-gun3        move zbutgr-gun3        to    butgr-gun3           
+        move gr-pax1    to  zbutgr-pax1        move zbutgr-pax1        to    butgr-pax1           
+        move gr-pax2    to  zbutgr-pax2        move zbutgr-pax2        to    butgr-pax2           
+        move gr-pax3    to  zbutgr-pax3        move zbutgr-pax3        to    butgr-pax3           
+        move gr-oda1    to  zbutgr-oda1        move zbutgr-oda1        to    butgr-oda1           
+        move gr-oda2    to  zbutgr-oda2        move zbutgr-oda2        to    butgr-oda2           
+        move gr-oda3    to  zbutgr-oda3        move zbutgr-oda3        to    butgr-oda3           
+        move gr-pp1     to  zbutgr-price-pp1   move zbutgr-price-pp1   to    butgr-price-pp1      
+        move gr-pp2     to  zbutgr-price-pp2   move zbutgr-price-pp2   to    butgr-price-pp2      
+        move gr-pp3     to  zbutgr-price-pp3   move zbutgr-price-pp3   to    butgr-price-pp3      
+        move gr-ftot    to  zbutgr-price-total move zbutgr-price-total to    butgr-price-total    
+        move gr-ptot    to  zbutgr-pax-total   move zbutgr-pax-total   to    butgr-pax-total      
+        move gr-pport   to  zbutgr-price-ort   move zbutgr-price-ort   to    butgr-price-ort   
+        .
+
+*
+ satir-ac.
+         
+*
+ peryod-tarih-bul.
+     move takas8-acenta to fiyat-acenta
+
+      
+     initialize not-rec 
+     move "ACE" to not-dos
+     move "Default" to not-dos-anah.
+     move takas8-acenta  to not-dos-anah(8:)
+     read nt no lock 
+        invalid
+           initialize acen-dft
+           move  REZPARA-BANKA      to acen-dft-banka
+           move  REZPARA-DOVIZ      to acen-dft-doviz
+           move  REZPARA-PAN-TIPI   to acen-dft-pan-tipi
+           move  REZPARA-ODEME-TIPI to acen-dft-odeme-tipi
+           move  rezpara-anlasma    to acen-dft-anlasma
+           move  REZPARA-ULKE       to acen-dft-ulke
+           move  rezpara-pazar      to acen-dft-pazar
+        not invalid 
+          move not1 to acen-dft
+     end-read
+     
+
+       move   acen-dft-banka         to FIYATANA-BANKA 
+     
+       move   acen-dft-doviz         to FIYATANA-doviz takas8-doviz 
+           
+     
+     
+       move bas-tar       to fiyat-tarih
+       move 1 to FIYATANA-REZ-TIPI 
+       move REZPARA-PAN-TIPI  to FIYATANA-PAN-TIPI 
+      move rezpara-anlasma to FIYATANA-ANLASMA  
+       move  bit-tar to takas8-bit-tar3
+       start fiyat key > fiyat-anah
+          invalid 
+            continue
+          not invalid
+          perform until fs-fiyat = "10" 
+           read fiyat next  no lock 
+             end move "10" to fs-fiyat
+             not end
+             if fiyat-tarih > bit-tar 
+                 move "10" to fs-fiyat
+               else
+                 if fiyat-anlasma not = REZPARA-ANLASMA  or fiyat-buyuk not = 2 
+                   or fiyat-kucuk not = 0 then 
+                   exit perform cycle
+                 end-if
+                   if fiyat-bit-tarih > bit-tar
+                     move bit-tar to fiyat-bit-tarih
+                   end-if
+                   if fiyat-bit-tarih > takas8-bit-tar1 
+                     and  takas8-bit-tar1 = 0  
+                      
+                     move  fiyat-bit-tarih to takas8-bit-tar1
+                    
+
+                    else 
+                      if fiyat-bit-tarih > takas8-bit-tar1 and 
+                      fiyat-bit-tarih > takas8-bit-tar2 and 
+                      takas8-bit-tar2 = 0  
+                         move  fiyat-bit-tarih to takas8-bit-tar2 
+                           move "10" to fs-fiyat
+                        
+                      end-if  
+                   end-if
+                   
+                 end-if
+              
+           end-read
+          end-perform
+          initialize takvim2-rec
+          move bas-tar to takvim2-anah
+           initialize toplam-gun
+          start takvim2 key = takvim2-anah 
+            invalid
+              stop " "
+            not invalid
+                perform until fs-takvim2 = "10" 
+                or takvim2-anah > bit-tar
+                  read takvim2  next no lock 
+                    end move "10" to fs-takvim2
+                    not end
+                      
+                      evaluate true
+                        when takvim2-anah  <= takas8-bit-tar1
+                        add 1 to toplam-gun
+                              add 1 to takas8-gun1
+                        when takvim2-anah  <= takas8-bit-tar2
+                        add 1 to toplam-gun
+                              add 1 to takas8-gun2
+                        when takvim2-anah  <= takas8-bit-tar3
+                        add 1 to toplam-gun
+                              add 1 to takas8-gun3
+ 
+                      end-evaluate
+                      end-read
+                end-perform 
+
+          end-start
+       end-start.
+
+ 
+ dokumere-yolla.
+          .
+*
+ formkur-Aft-Initdata.
+      initialize takvim-rec kurgr-rec son-kurgr-rec .
+      perform kur-al.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+ kur-al.
+      open output kurgr
+      close kurgr
+      open i-o kurgr
+      open input kur
+      initialize kurgr-rec takvim-rec son-kurgr-rec
+      start takvim key > takvim-anah
+          invalid continue
+          not invalid
+          perform until fs-takvim = "10"
+              read takvim next no lock 
+                end move "10" to fs-takvim
+                not end
+                  perform varying m from 1 by 1 until m > doviz-sayi
+                     initialize kur-rec
+                     move takvim-anah to kur-tarih
+                     move "87" to kur-banka
+                     move tum-dovizler(m) to kur-doviz
+                     read kur no lock 
+                       invalid continue
+                     end-read
+                      evaluate m 
+                         when 1
+                              move DOVIZ-ALIS to son-kurgr-data1
+                         when 2
+                              move DOVIZ-ALIS to son-kurgr-data2
+                         when 3
+                              move DOVIZ-ALIS to son-kurgr-data3
+                         when 4
+                              move DOVIZ-ALIS to son-kurgr-data4
+                         when 5
+                              move DOVIZ-ALIS to son-kurgr-data5
+                         when 6
+                              move DOVIZ-ALIS to son-kurgr-data6
+                      end-evaluate
+                     end-perform 
+                     if kurgr-yil1 = 0 then 
+                       move takvim-yil to kurgr-yil1  kurgr-yil2  
+                       move takvim-ay  to kurgr-ay1   kurgr-ay2  
+                       move takvim-gun to kurgr-gun1  kurgr-gun2 
+                       move son-kurgr-datalar to kurgr-datalar
+                     end-if
+                     if  son-kurgr-datalar not = kurgr-datalar
+                       
+                         write kurgr-rec invalid
+                               display message box "Kontrol -6354362"
+                          end-write
+                          move takvim-yil to kurgr-yil1  kurgr-yil2  
+                          move takvim-ay  to kurgr-ay1   kurgr-ay2  
+                          move takvim-gun to kurgr-gun1  kurgr-gun2 
+                          move son-kurgr-datalar to kurgr-datalar
+                         
+                        else
+                       move takvim-yil to  kurgr-yil2  
+                       move takvim-ay  to   kurgr-ay2  
+                       move takvim-gun to   kurgr-gun2 
+                     end-if
+                  
+              end-read
+          end-perform 
+      end-start
+      
+       write kurgr-rec invalid
+            display message box "Kontrol -6354362"
+        end-write
+       perform kur-gride-yukle
+      close kur kurgr.
+*
+ kur-gride-yukle.
+    
+     initialize kurgr-rec
+     perform kur-grid-ilk
+     
+     start kurgr key > kurgr-anah 
+        invalid
+          continue
+       not invalid
+      perform until fs-kurgr = "10"
+        read kurgr next 
+          end
+           move "10" to fs-kurgr
+          not end
+            perform kur-satir-ekle
+        end-read
+      end-perform 
+      modify formkur-gd-1,  mass-update = 0
+     end-start .
+     .
+
+*
+ kur-grid-ilk.
+    initialize kurkayit-sayi
+    modify formkur-gd-1, reset-grid  = 1 mass-update = 1.
+     modify formkur-gd-1,record-to-add(kur-gr-rec)
+      move 1 to kurkayit-sayi.
+        modify formkur-gd-1(1,1),cell-data = "Ba"   
+        modify formkur-gd-1(1,2),cell-data ="s "      
+        modify formkur-gd-1(1,3),cell-data = "Tar."        
+        modify formkur-gd-1(1,4),cell-data =" "       
+        modify formkur-gd-1(1,5),cell-data = "Bi"         
+        modify formkur-gd-1(1,6),cell-data = "t "      
+        modify formkur-gd-1(1,7),cell-data ="Tar."       
+        modify formkur-gd-1(1,8),cell-data = " "      
+        modify formkur-gd-1(1,9),cell-data =  tum-dovizler-adi(1)     
+        modify formkur-gd-1(1,10),cell-data = tum-dovizler-adi(2)     
+        modify formkur-gd-1(1,11),cell-data = tum-dovizler-adi(3)    
+        modify formkur-gd-1(1,12),cell-data = tum-dovizler-adi(4)     
+        modify formkur-gd-1(1,13),cell-data = tum-dovizler-adi(5)    
+        modify formkur-gd-1(1,14),cell-data = tum-dovizler-adi(6)     
+        modify formkur-gd-1(1,15),cell-data = tum-dovizler-adi(7)     
+          .        
+    
+     
+*
+ kur-satir-ekle.
+        initialize kur-gr-rec
+
+        move kurgr-gun1      to    kur-gr-gun1       
+        move kurgr-ay1       to    kur-gr-ay1        
+        move kurgr-yil1      to    kur-gr-yil1       
+        move kurgr-gun2      to    kur-gr-gun2       
+        move kurgr-ay2       to    kur-gr-ay2        
+        move kurgr-yil2      to    kur-gr-yil2       
+        move kurgr-data1     to    kur-gr-data1      
+        move kurgr-data2     to    kur-gr-data2      
+        move kurgr-data3     to    kur-gr-data3      
+        move kurgr-data4     to    kur-gr-data4      
+        move kurgr-data5      to   kur-gr-data5      
+        move kurgr-data6      to   kur-gr-data6      
+        move kurgr-data7      to   kur-gr-data7      
+
+
+
+
+
+    modify formkur-gd-1,record-to-add(kur-gr-rec)
+    add 1 to kurkayit-sayi.
+    modify formkur-gd-1(kurkayit-sayi,1) hidden-data = kurgr-anah .
+ 
+
+
+*
+ Formkur-Gd-1-Ev-Other.
+    evaluate event-type 
+         when msg-begin-entry
+           inquire Formkur-Gd-1, cursor-x in i cursor-y in ii
+          EVALUATE I
+           
+            when 4 when 8
+             
+              move event-action-fail to event-action,
+           
+            when 09
+                 inquire Formkur-Gd-1(ii,i) cell-data in kur-gr-data1
+                  move kur-gr-data1 to kurgr-data1
+                 modify Formkur-Gd-1(ii,i) cell-data = kurgr-data1  
+             when 10
+                 inquire Formkur-Gd-1(ii,i) cell-data in kur-gr-data2
+                  move kur-gr-data2 to kurgr-data2
+                 modify Formkur-Gd-1(ii,i) cell-data = kurgr-data2  
+             when 11
+                 inquire Formkur-Gd-1(ii,i) cell-data in kur-gr-data3
+                  move kur-gr-data3 to kurgr-data3
+                 modify Formkur-Gd-1(ii,i) cell-data = kurgr-data3  
+             when 12
+                 inquire Formkur-Gd-1(ii,i) cell-data in kur-gr-data4
+                  move kur-gr-data4 to kurgr-data4
+                 modify Formkur-Gd-1(ii,i) cell-data = kurgr-data4  
+             when 13
+                 inquire Formkur-Gd-1(ii,i) cell-data in kur-gr-data5
+                  move kur-gr-data5 to kurgr-data5
+                 modify Formkur-Gd-1(ii,i) cell-data = kurgr-data5  
+             when 14
+                 inquire Formkur-Gd-1(ii,i) cell-data in kur-gr-data6
+                  move kur-gr-data6 to kurgr-data6
+                 modify Formkur-Gd-1(ii,i) cell-data = kurgr-data6  
+              
+              
+           
+           end-evaluate
+         when msg-finish-entry
+             inquire Formkur-Gd-1, cursor-x in i cursor-y in ii
+             evaluate i
+               when 09
+                 inquire Formkur-Gd-1(ii,i) cell-data in kurgr-data1
+                 move kurgr-data1 to kur-gr-data1
+                 modify Formkur-Gd-1(ii,i) cell-data = kur-gr-data1  
+               when 10
+                 inquire Formkur-Gd-1(ii,i) cell-data in kurgr-data2
+                 move kurgr-data2 to kur-gr-data2
+                 modify Formkur-Gd-1(ii,i) cell-data = kur-gr-data2
+               when 11
+                 inquire Formkur-Gd-1(ii,i) cell-data in kurgr-data3
+                 move kurgr-data3 to kur-gr-data3
+                 modify Formkur-Gd-1(ii,i) cell-data = kur-gr-data3 
+               when 12
+                 inquire Formkur-Gd-1(ii,i) cell-data in kurgr-data4
+                 move kurgr-data4 to kur-gr-data4
+                 modify Formkur-Gd-1(ii,i) cell-data = kur-gr-data4  
+               when 13
+                 inquire Formkur-Gd-1(ii,i) cell-data in kurgr-data5
+                 move kurgr-data5 to kur-gr-data5
+                 modify Formkur-Gd-1(ii,i) cell-data = kur-gr-data5 
+               when 14
+                 inquire Formkur-Gd-1(ii,i) cell-data in kurgr-data6
+                 move kurgr-data6 to kur-gr-data6
+                 modify Formkur-Gd-1(ii,i) cell-data = kur-gr-data6  
+
+             end-evaluate
+    end-evaluate.                    
+*
+ formkur-kaydet.
+       open output kurgr
+       close kurgr
+      open i-o kur kurgr
+      inquire formkur-gd-1  last-row in kayit-sayi
+       perform varying ii from 2 by 1  until ii > kayit-sayi  
+           perform kur-satirdan-al
+            rewrite kurgr-rec
+              invalid 
+              
+               write kurgr-rec end-write
+                move   kurgr-gun1      to     takvim-gun   
+                move   kurgr-ay1       to     takvim-ay    
+                move   kurgr-yil1      to     takvim-yil   
+                 read takvim no lock invalid
+                    display message box ii  ".satirda Hatali tarih " 
+                    
+                    exit paragraph
+                  end-read
+                move   kurgr-gun2      to     takvim-gun   
+                move   kurgr-ay2       to     takvim-ay    
+                move   kurgr-yil2      to     takvim-yil   
+                 read takvim no lock invalid
+                    display message box ii ".satirda Hatali tarih " 
+                     close kur kurgr
+                    exit paragraph
+                  end-read
+               
+            end-rewrite
+            
+       end-perform .
+       initialize kurgr-rec.
+       start kurgr key > kurgr-anah
+         invalid
+          continue
+         not invalid
+          perform until fs-kurgr = "10"
+            read kurgr next 
+             end    move "10" to fs-kurgr
+             not end
+              
+               perform kur-aralik-kaydet
+             end-read
+          end-perform 
+       end-start.
+         close kur kurgr
+         perform kur-al.
+
+
+
+*
+ kur-aralik-kaydet.
+       move   kurgr-gun1      to     takvim-gun       
+       move   kurgr-ay1       to     takvim-ay    
+       move   kurgr-yil1      to     takvim-yil   
+       move   kurgr-gun2      to     arason-gun   
+       move   kurgr-ay2       to     arason-ay    
+       move   kurgr-yil2      to     arason-yil   
+       start takvim key = takvim-anah
+         invalid
+           continue
+         not invalid
+         perform until fs-takvim = "10"
+            read takvim next no lock
+              end move "10" to fs-takvim
+              not end
+                if takvim-anah > arason-tar
+                   move "10" to fs-takvim
+                 else
+                    initialize kur-rec
+                     move takvim-anah to kur-tarih
+                     move "87" to kur-banka
+                    perform varying m from 1 by 1 until m > doviz-sayi
+                     
+                      move tum-dovizler(m) to kur-doviz
+                    
+                      evaluate m 
+                         when 1
+                              move  kurgr-data1   to     DOVIZ-ALIS
+                         when 2                                        
+                              move  kurgr-data2   to     DOVIZ-ALIS
+                         when 3                                        
+                              move  kurgr-data3   to     DOVIZ-ALIS
+                         when 4                                        
+                              move  kurgr-data4   to     DOVIZ-ALIS
+                         when 5                                        
+                              move  kurgr-data5   to     DOVIZ-ALIS
+                         when 6                                        
+                              move  kurgr-data6   to     DOVIZ-ALIS
+                      end-evaluate
+                       rewrite kur-rec invalid write kur-rec end-rewrite
+
+                     end-perform 
+                    
+
+               end-if
+            end-read  
+         end-perform
+       end-start
+ 
+            .
+*
+ kur-satirdan-al.      
+       inquire Formkur-Gd-1(ii) RECORD-data in kur-gr-REC
+       inquire Formkur-Gd-1(ii,1)   hidden-data in kurgr-anah
+         move   kur-gr-gun1      to       kurgr-gun1   
+         move   kur-gr-ay1       to       kurgr-ay1    
+         move   kur-gr-yil1      to       kurgr-yil1   
+         move   kur-gr-gun2      to       kurgr-gun2   
+         move   kur-gr-ay2       to       kurgr-ay2    
+         move   kur-gr-yil2      to       kurgr-yil2   
+         move   kur-gr-data1     to       kurgr-data1  
+         move   kur-gr-data2     to       kurgr-data2  
+         move   kur-gr-data3     to       kurgr-data3  
+         move   kur-gr-data4     to       kurgr-data4  
+         move   kur-gr-data5     to       kurgr-data5  
+         move   kur-gr-data6     to       kurgr-data6  
+         move   kur-gr-data7     to       kurgr-data7 .
+         .
+       
+*
+ formkur-Ex-Other.
+        evaluate key-status 
+           when 2
+             perform  formkur-kaydet
+       end-evaluate
+     .
+ gunluk-ilk-update.
+      
+      initialize bgunluk-rec btoplugunluk
+      move bas-tar  to bgunluk-anah
+      start bgunluk key = bgunluk-anah invalid
+       continue
+       not invalid
+      perform gunluk-baslik
+      perform varying bgunluk-satir from 1 by 1 until bgunluk-satir > 31 or fs-bgunluk = "10"
+      read bgunluk next   no lock
+         end move "10" to fs-bgunluk
+         not end
+           if bgunluk-anah > bit-tar 
+             move "10" to fs-bgunluk
+             else
+              perform bgunluk2degisken   
+             end-if
+      end-read
+      end-perform
+      end-start.
+      perform  gunluk-update  .
+*
+ bgunluk2degisken.
+       
+        move bgunluk-tar   to   btoplugunluk-tarih(bgunluk-satir)
+       perform varying mm from 1 by 1 until mm > 7
+            add bgunluk-price1(mm)  to  btoplugunluk-tutartop(1,mm)
+            add bgunluk-price2(mm)  to  btoplugunluk-tutartop(2,mm)
+            add bgunluk-price3(mm)  to  btoplugunluk-tutartop(3,mm)
+            add bgunluk-price4(mm)  to  btoplugunluk-tutartop(4,mm)
+            add bgunluk-price5(mm)  to  btoplugunluk-tutartop(5,mm)
+            add bgunluk-price6(mm)  to  btoplugunluk-tutartop(6,mm)
+            add bgunluk-price7(mm)  to  btoplugunluk-tutartop(7,mm)
+       end-perform 
+             add bgunluk-oda1  to  btoplugunluk-odatop(1)
+            add bgunluk-oda2  to  btoplugunluk-odatop(2)
+            add bgunluk-oda3  to  btoplugunluk-odatop(3)
+            add bgunluk-oda4  to  btoplugunluk-odatop(4)
+            add bgunluk-oda5  to  btoplugunluk-odatop(5)
+            add bgunluk-oda6  to  btoplugunluk-odatop(6)
+            add bgunluk-oda7  to  btoplugunluk-odatop(7)
+            
+            
+            add bgunluk-pax1  to  btoplugunluk-paxtop(1)
+            add bgunluk-pax2  to  btoplugunluk-paxtop(2)
+            add bgunluk-pax3  to  btoplugunluk-paxtop(3)
+            add bgunluk-pax4  to  btoplugunluk-paxtop(4)
+            add bgunluk-pax5  to  btoplugunluk-paxtop(5)
+            add bgunluk-pax6  to  btoplugunluk-paxtop(6)
+            add bgunluk-pax7  to  btoplugunluk-paxtop(7)
+           
+ 
+             
+        perform varying mm from 1 by 1 until mm > 7
+            add bgunluk-price1(mm)  to  btoplugunluk-tutar(1,bgunluk-satir,mm)
+            add bgunluk-price2(mm)  to  btoplugunluk-tutar(2,bgunluk-satir,mm)
+            add bgunluk-price3(mm)  to  btoplugunluk-tutar(3,bgunluk-satir,mm)
+            add bgunluk-price4(mm)  to  btoplugunluk-tutar(4,bgunluk-satir,mm)
+            add bgunluk-price5(mm)  to  btoplugunluk-tutar(5,bgunluk-satir,mm)
+            add bgunluk-price6(mm)  to  btoplugunluk-tutar(6,bgunluk-satir,mm)
+            add bgunluk-price7(mm)  to  btoplugunluk-tutar(7,bgunluk-satir,mm)
+       end-perform 
+       
+            add bgunluk-oda1  to  btoplugunluk-oda(1,bgunluk-satir)
+            add bgunluk-oda2  to  btoplugunluk-oda(2,bgunluk-satir)
+            add bgunluk-oda3  to  btoplugunluk-oda(3,bgunluk-satir)
+            add bgunluk-oda4  to  btoplugunluk-oda(4,bgunluk-satir)
+            add bgunluk-oda5  to  btoplugunluk-oda(5,bgunluk-satir)
+            add bgunluk-oda6  to  btoplugunluk-oda(6,bgunluk-satir)
+            add bgunluk-oda7  to  btoplugunluk-oda(7,bgunluk-satir)
+            
+            
+            add bgunluk-pax1  to  btoplugunluk-pax(1,bgunluk-satir)
+            add bgunluk-pax2  to  btoplugunluk-pax(2,bgunluk-satir)
+            add bgunluk-pax3  to  btoplugunluk-pax(3,bgunluk-satir)
+            add bgunluk-pax4  to  btoplugunluk-pax(4,bgunluk-satir)
+            add bgunluk-pax5  to  btoplugunluk-pax(5,bgunluk-satir)
+            add bgunluk-pax6  to  btoplugunluk-pax(6,bgunluk-satir)
+            add bgunluk-pax7  to  btoplugunluk-pax(7,bgunluk-satir).
+           
+           
+           .
+ gunluk-update.
+        
+      initialize  btoplugunluk-ay-toplamlar
+      perform gunluk-baslik
+      perform varying bgunluk-satir from 1 by 1 until bgunluk-satir > 31 
+              perform bgunluk-satir-update
+      end-perform
+      perform toplam-yaz
+     .
+*
+ gunluk-baslik.
+       
+        evaluate gunluk-tip
+         when 1
+             move "ODA" to  gr2-tarih 
+         when 2
+             move "PAX" to  gr2-tarih 
+         when 3
+              move "TUTAR" to  gr2-tarih 
+         when 4
+              move "P.ORT" to  gr2-tarih 
+         when 5
+              move "O.ORT" to  gr2-tarih 
+         when 6 
+               move "DBLOCC" to  gr2-tarih 
+        end-evaluate.
+         move "TOPLAM"  to gr2-datatop
+         move tum-konum(1) to m   move konumadi(m)   to gr2-data1
+         move tum-konum(2) to m   move konumadi(m)   to gr2-data2
+         move tum-konum(3) to m   move konumadi(m)   to gr2-data3
+         move tum-konum(4) to m   move konumadi(m)   to gr2-data4
+         move tum-konum(5) to m   move konumadi(m)   to gr2-data5
+         move tum-konum(6) to m   move konumadi(m)   to gr2-data6
+         move tum-konum(7) to m   move konumadi(m)   to gr2-data7  .
+         modify form1-gd-2(1) record-data = gr2-rec.
+
+
+
+*
+ toplam-yaz.
+         
+        evaluate Gunluk-Tip
+         when 1
+             perform   bgunluk-oda-toplam
+         when 2
+             perform   bgunluk-pax-toplam
+         when 3
+            perform    bgunluk-tutar-toplam 
+         when 4
+             perform   bgunluk-paxort-toplam
+         when 5
+             perform   bgunluk-odaort-toplam
+         when 6
+             perform   bgunluk-dblocc-toplam
+         
+        end-evaluate.
+         
+         
+*
+ bgunluk-satir-update.
+         
+        evaluate Gunluk-Tip
+         when 1
+             perform   bgunluk-oda-update
+         when 2
+             perform   bgunluk-pax-update
+         when 3
+            perform    bgunluk-tutar-update 
+         when 4
+             perform   bgunluk-paxort-update
+         when 5
+             perform   bgunluk-odaort-update
+         when 6
+             perform   bgunluk-dblocc-update
+         
+        end-evaluate.
+
+*
+ ortak-gunluk-toplamlar.        
+         initialize gr2-rec
+         move btoplugunluk-tarih(bgunluk-satir)(7:2) to gr2-tarih
+         move btoplugunluk-tarih(bgunluk-satir)(5:2) to gr2-tarih (4:)
+         move "-"         to gr2-tarih (3:1)
+         initialize   btoplugunluk-gun-toplamlar(bgunluk-satir)
+        
+         perform varying nn from 1 by 1 until NN > 7
+           initialize  btoplugunluk-cev-tutar(nn,bgunluk-satir)
+           perform varying mm from 1 by 1 until mm > 7
+              compute btoplugunluk-cev-tutar(nn,bgunluk-satir) rounded =
+                   btoplugunluk-cev-tutar(nn,bgunluk-satir) +
+                    ( btoplugunluk-tutar(nn,bgunluk-satir,mm)
+                     * but-kur(mm) / cevrim-kuru )
+           end-perform 
+           add  btoplugunluk-cev-tutar(nn,bgunluk-satir) to 
+                btoplugunluktop-cev-tutar(bgunluk-satir)
+           add  btoplugunluk-pax(nn,bgunluk-satir)  to  
+                btoplugunluktop-pax(bgunluk-satir)
+           add  btoplugunluk-oda(nn,bgunluk-satir) to 
+                btoplugunluktop-oda(bgunluk-satir)
+
+         add   btoplugunluk-cev-tutar(nn,bgunluk-satir) to
+               btoplugunluk-ay-cev-tutark(nn)                
+         add   btoplugunluk-pax(nn,bgunluk-satir)       to
+               btoplugunluk-ay-paxk(nn)
+         add   btoplugunluk-oda(nn,bgunluk-satir)       to
+               btoplugunluk-ay-odak(nn)
+         end-perform
+         add   btoplugunluktop-cev-tutar(bgunluk-satir) to
+               btoplugunluk-ay-cev-tutar                
+         add   btoplugunluktop-pax(bgunluk-satir)       to
+               btoplugunluk-ay-pax
+         add   btoplugunluktop-oda(bgunluk-satir)       to
+               btoplugunluk-ay-oda.
+         
+
+*
+ bgunluk-oda-toplam.
+
+         initialize gr2-rec
+          move "TOPL."         to gr2-tarih  
+         move btoplugunluk-ay-oda    to zk8
+         move zk8                  to gr2-datatop
+         move btoplugunluk-ay-odak(1)   to zk8
+         move zk8             to gr2-data1
+         move btoplugunluk-ay-odak(2)   to zk8
+         move zk8             to gr2-data2
+         move btoplugunluk-ay-odak(3)   to zk8
+         move zk8             to gr2-data3
+         move btoplugunluk-ay-odak(4)   to zk8
+         move zk8             to gr2-data4
+         move btoplugunluk-ay-odak(5)   to zk8
+         move zk8             to gr2-data5
+         move btoplugunluk-ay-odak(6)   to zk8
+         move zk8             to gr2-data6
+         move btoplugunluk-ay-odak(7)   to zk8
+         move zk8             to gr2-data7
+
+          modify form1-gd-2(33) record-data = gr2-rec row-color = 490.
+
+*
+ bgunluk-oda-update.
+        perform  ortak-gunluk-toplamlar.
+         move btoplugunluktop-oda(bgunluk-satir)    to zk8
+         move zk8                  to gr2-datatop
+         move btoplugunluk-oda(1,bgunluk-satir)   to zk8
+         move zk8             to gr2-data1
+         move btoplugunluk-oda(2,bgunluk-satir)   to zk8
+         move zk8             to gr2-data2
+         move btoplugunluk-oda(3,bgunluk-satir)   to zk8
+         move zk8             to gr2-data3
+         move btoplugunluk-oda(4,bgunluk-satir)   to zk8
+         move zk8             to gr2-data4
+         move btoplugunluk-oda(5,bgunluk-satir)   to zk8
+         move zk8             to gr2-data5
+         move btoplugunluk-oda(6,bgunluk-satir)   to zk8
+         move zk8             to gr2-data6
+         move btoplugunluk-oda(7,bgunluk-satir)   to zk8
+         move zk8             to gr2-data7
+         
+         modify form1-gd-2(bgunluk-satir + 1 ) record-data = gr2-rec
+         .
+
+         
+*
+ bgunluk-pax-toplam.
+
+         initialize gr2-rec
+          move "TOPL."         to gr2-tarih  
+         move btoplugunluk-ay-pax    to zk8
+         move zk8                  to gr2-datatop
+         move btoplugunluk-ay-paxk(1)   to zk8
+         move zk8             to gr2-data1
+         move btoplugunluk-ay-paxk(2)   to zk8
+         move zk8             to gr2-data2
+         move btoplugunluk-ay-paxk(3)   to zk8
+         move zk8             to gr2-data3
+         move btoplugunluk-ay-paxk(4)   to zk8
+         move zk8             to gr2-data4
+         move btoplugunluk-ay-paxk(5)   to zk8
+         move zk8             to gr2-data5
+         move btoplugunluk-ay-paxk(6)   to zk8
+         move zk8             to gr2-data6
+         move btoplugunluk-ay-paxk(7)   to zk8
+         move zk8             to gr2-data7
+
+          modify form1-gd-2(33) record-data = gr2-rec row-color = 490.
+         
+         
+         
+*
+  bgunluk-pax-update.
+         perform  ortak-gunluk-toplamlar.
+         move btoplugunluktop-pax(bgunluk-satir)   to zk8
+         move zk8                  to gr2-datatop
+         move btoplugunluk-pax(1,bgunluk-satir)   to zk8
+         move zk8             to gr2-data1
+         move btoplugunluk-pax(2,bgunluk-satir)   to zk8
+         move zk8             to gr2-data2
+         move btoplugunluk-pax(3,bgunluk-satir)   to zk8
+         move zk8             to gr2-data3
+         move btoplugunluk-pax(4,bgunluk-satir)   to zk8
+         move zk8             to gr2-data4
+         move btoplugunluk-pax(5,bgunluk-satir)   to zk8
+         move zk8             to gr2-data5
+         move btoplugunluk-pax(6,bgunluk-satir)   to zk8
+         move zk8             to gr2-data6
+         move btoplugunluk-pax(7,bgunluk-satir)   to zk8
+         move zk8             to gr2-data7
+         
+         modify form1-gd-2(bgunluk-satir + 1 ) record-data = gr2-rec
+         .
+         .
+
+*
+ bgunluk-tutar-toplam.
+
+         initialize gr2-rec
+          move "TOPL."         to gr2-tarih  
+         move btoplugunluk-ay-cev-tutar    to z8
+         move z8                  to gr2-datatop
+         move btoplugunluk-ay-cev-tutark(1)   to z8
+         move z8             to gr2-data1
+         move btoplugunluk-ay-cev-tutark(2)   to z8
+         move z8             to gr2-data2
+         move btoplugunluk-ay-cev-tutark(3)   to z8
+         move z8             to gr2-data3
+         move btoplugunluk-ay-cev-tutark(4)   to z8
+         move z8             to gr2-data4
+         move btoplugunluk-ay-cev-tutark(5)   to z8
+         move z8             to gr2-data5
+         move btoplugunluk-ay-cev-tutark(6)   to z8
+         move z8             to gr2-data6
+         move btoplugunluk-ay-cev-tutark(7)   to z8
+         move z8             to gr2-data7
+
+          modify form1-gd-2(33) record-data = gr2-rec row-color = 490.
+         
+                  
+         
+         
+*
+  bgunluk-tutar-update.
+          perform  ortak-gunluk-toplamlar.
+         move  btoplugunluktop-cev-tutar(bgunluk-satir)    to z8
+         move z8                  to gr2-datatop
+         move btoplugunluk-cev-tutar(1,bgunluk-satir)  to z8
+         move z8             to gr2-data1
+          move btoplugunluk-cev-tutar(2,bgunluk-satir)  to z8
+          move z8             to gr2-data2
+          move btoplugunluk-cev-tutar(3,bgunluk-satir)  to z8
+          move z8             to gr2-data3
+          move btoplugunluk-cev-tutar(4,bgunluk-satir)  to z8
+          move z8             to gr2-data4
+           move btoplugunluk-cev-tutar(5,bgunluk-satir)  to z8
+           move z8             to gr2-data5
+           move btoplugunluk-cev-tutar(6,bgunluk-satir)  to z8
+           move z8             to gr2-data6
+           move btoplugunluk-cev-tutar(7,bgunluk-satir)  to z8
+           move z8             to gr2-data7
+         
+         modify form1-gd-2(bgunluk-satir + 1 ) record-data = gr2-rec
+         .
+ 
+       
+*
+*
+ bgunluk-paxort-toplam.
+
+         initialize gr2-rec
+          move "TOPL."         to gr2-tarih  
+         compute ort rounded = btoplugunluk-ay-cev-tutar  /
+                               btoplugunluk-ay-pax 
+         move ort    to zk8
+         move zk8                  to gr2-datatop
+         compute ort rounded = btoplugunluk-ay-cev-tutark(1)  /
+                               btoplugunluk-ay-paxk(1) 
+         move ort   to zk8
+         move zk8             to gr2-data1
+         compute ort rounded = btoplugunluk-ay-cev-tutark(2)  /
+                               btoplugunluk-ay-paxk(2) 
+
+         move ort   to zk8
+         move zk8             to gr2-data2
+         compute ort rounded = btoplugunluk-ay-cev-tutark(3)  /
+                               btoplugunluk-ay-paxk(3) 
+         move ort   to zk8
+         move zk8             to gr2-data3
+         compute ort rounded = btoplugunluk-ay-cev-tutark(4)  /
+                               btoplugunluk-ay-paxk(4) 
+         move ort   to zk8
+         move zk8             to gr2-data4
+         compute ort rounded = btoplugunluk-ay-cev-tutark(5) /
+                               btoplugunluk-ay-paxk(5) 
+         move ort  to zk8
+         move zk8             to gr2-data5
+         compute ort rounded = btoplugunluk-ay-cev-tutark(6)  /
+                               btoplugunluk-ay-paxk(6) 
+         move ort   to zk8
+         move zk8             to gr2-data6
+         compute ort rounded = btoplugunluk-ay-cev-tutark(7)  /
+                               btoplugunluk-ay-paxk(7) 
+         move ort   to zk8
+         move zk8             to gr2-data7
+
+          modify form1-gd-2(33) record-data = gr2-rec row-color = 490.
+         
+          .
+*
+  bgunluk-paxort-update.
+
+        
+         perform  ortak-gunluk-toplamlar.
+               
+         COMPUTE ORT ROUNDED =   btoplugunluktop-cev-tutar(bgunluk-satir)
+                      / btoplugunluktop-pax(bgunluk-satir)
+         move ort    to zk8
+         move zk8                  to gr2-datatop
+             COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(1,bgunluk-satir)
+                      /   btoplugunluk-pax(1,bgunluk-satir)
+         move ort  to zk8
+         move zk8             to gr2-data1
+          COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(2,bgunluk-satir)
+                      /   btoplugunluk-pax(2,bgunluk-satir)
+             move ort  to zk8  move zk8             to gr2-data2
+            COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(3,bgunluk-satir)
+                      /   btoplugunluk-pax(3,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data3
+            COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(4,bgunluk-satir)
+                      /   btoplugunluk-pax(4,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data4
+             COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(5,bgunluk-satir)
+                      /   btoplugunluk-pax(5,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data5
+             COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(6,bgunluk-satir)
+                      /   btoplugunluk-pax(6,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data6
+             COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(7,bgunluk-satir)
+                      /   btoplugunluk-pax(7,bgunluk-satir)
+             move ort  to zk8    move zk8             to gr2-data7
+         
+         modify form1-gd-2(bgunluk-satir + 1 ) record-data = gr2-rec
+         .
+ 
+*
+ 
+ bgunluk-odaort-toplam.
+
+         initialize gr2-rec
+          move "TOPL."         to gr2-tarih  
+         compute ort rounded = btoplugunluk-ay-cev-tutar  /
+                               btoplugunluk-ay-oda
+         move ort    to zk8
+         move zk8                  to gr2-datatop
+         compute ort rounded = btoplugunluk-ay-cev-tutark(1)  /
+                               btoplugunluk-ay-odak(1) 
+         move ort   to zk8
+         move zk8             to gr2-data1
+         compute ort rounded = btoplugunluk-ay-cev-tutark(2)  /
+                               btoplugunluk-ay-odak(2) 
+
+         move ort   to zk8
+         move zk8             to gr2-data2
+         compute ort rounded = btoplugunluk-ay-cev-tutark(3)  /
+                               btoplugunluk-ay-odak(3) 
+         move ort   to zk8
+         move zk8             to gr2-data3
+         compute ort rounded = btoplugunluk-ay-cev-tutark(4)  /
+                               btoplugunluk-ay-odak(4) 
+         move ort   to zk8
+         move zk8             to gr2-data4
+         compute ort rounded = btoplugunluk-ay-cev-tutark(5) /
+                               btoplugunluk-ay-odak(5) 
+         move ort  to zk8
+         move zk8             to gr2-data5
+         compute ort rounded = btoplugunluk-ay-cev-tutark(6)  /
+                               btoplugunluk-ay-odak(6) 
+         move ort   to zk8
+         move zk8             to gr2-data6
+         compute ort rounded = btoplugunluk-ay-cev-tutark(7)  /
+                               btoplugunluk-ay-odak(7) 
+         move ort   to zk8
+         move zk8             to gr2-data7
+
+          modify form1-gd-2(33) record-data = gr2-rec row-color = 490.
+         
+          .
+         
+         
+*
+ bgunluk-odaort-update.
+           perform  ortak-gunluk-toplamlar.
+        
+         COMPUTE ORT ROUNDED =   btoplugunluktop-cev-tutar(bgunluk-satir)
+                      /  btoplugunluktop-oda(bgunluk-satir) 
+         move ort    to zk8
+         move zk8                  to gr2-datatop
+             COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(1,bgunluk-satir)
+                      /   btoplugunluk-oda(1,bgunluk-satir)
+         move ort  to zk8
+         move zk8             to gr2-data1
+          COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(2,bgunluk-satir)
+                      /   btoplugunluk-oda(2,bgunluk-satir)
+             move ort  to zk8  move zk8             to gr2-data2
+            COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(3,bgunluk-satir)
+                      /   btoplugunluk-oda(3,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data3
+            COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(4,bgunluk-satir)
+                      /   btoplugunluk-oda(4,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data4
+             COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(5,bgunluk-satir)
+                      /   btoplugunluk-oda(5,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data5
+             COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(6,bgunluk-satir)
+                      /   btoplugunluk-oda(6,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data6
+             COMPUTE ORT ROUNDED =  btoplugunluk-cev-tutar(7,bgunluk-satir)
+                      /   btoplugunluk-oda(7,bgunluk-satir)
+             move ort  to zk8    move zk8             to gr2-data7
+         
+         modify form1-gd-2(bgunluk-satir + 1 ) record-data = gr2-rec
+         .
+        
+*
+
+ bgunluk-dblocc-toplam.
+
+         initialize gr2-rec
+          move "TOPL."         to gr2-tarih  
+         compute ort rounded = btoplugunluk-ay-pax  /
+                               btoplugunluk-ay-oda 
+         move ort    to zk8
+         move zk8                  to gr2-datatop
+         compute ort rounded = btoplugunluk-ay-paxk(1)  /
+                               btoplugunluk-ay-odak(1) 
+         move ort   to zk8
+         move zk8             to gr2-data1
+         compute ort rounded = btoplugunluk-ay-paxk(2)  /
+                               btoplugunluk-ay-odak(2) 
+
+         move ort   to zk8
+         move zk8             to gr2-data2
+         compute ort rounded = btoplugunluk-ay-paxk(3)  /
+                               btoplugunluk-ay-odak(3) 
+         move ort   to zk8
+         move zk8             to gr2-data3
+         compute ort rounded = btoplugunluk-ay-paxk(4)  /
+                               btoplugunluk-ay-odak(4) 
+         move ort   to zk8
+         move zk8             to gr2-data4
+         compute ort rounded = btoplugunluk-ay-paxk(5) /
+                               btoplugunluk-ay-odak(5) 
+         move ort  to zk8
+         move zk8             to gr2-data5
+         compute ort rounded = btoplugunluk-ay-paxk(6)  /
+                               btoplugunluk-ay-odak(6) 
+         move ort   to zk8
+         move zk8             to gr2-data6
+         compute ort rounded = btoplugunluk-ay-paxk(7)  /
+                               btoplugunluk-ay-odak(7) 
+         move ort   to zk8
+         move zk8             to gr2-data7
+
+          modify form1-gd-2(33) record-data = gr2-rec row-color = 490.
+         
+          .
+         .
+*
+ bgunluk-dblocc-update.
+
+          perform  ortak-gunluk-toplamlar.
+         COMPUTE ORT ROUNDED =   btoplugunluktop-pax(bgunluk-satir) 
+                      /  btoplugunluktop-oda(bgunluk-satir) 
+         move ort    to zk8
+         move zk8                  to gr2-datatop
+             COMPUTE ORT ROUNDED =  btoplugunluk-pax(1,bgunluk-satir)
+                      /   btoplugunluk-oda(1,bgunluk-satir)
+         move ort  to zk8
+         move zk8             to gr2-data1
+          COMPUTE ORT ROUNDED =  btoplugunluk-pax(2,bgunluk-satir)
+                      /   btoplugunluk-oda(2,bgunluk-satir)
+             move ort  to zk8  move zk8             to gr2-data2
+            COMPUTE ORT ROUNDED =  btoplugunluk-pax(3,bgunluk-satir)
+                      /   btoplugunluk-oda(3,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data3
+            COMPUTE ORT ROUNDED =  btoplugunluk-pax(4,bgunluk-satir)
+                      /   btoplugunluk-oda(4,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data4
+             COMPUTE ORT ROUNDED =  btoplugunluk-pax(5,bgunluk-satir)
+                      /   btoplugunluk-oda(5,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data5
+             COMPUTE ORT ROUNDED =   btoplugunluk-pax(6,bgunluk-satir)
+                      /   btoplugunluk-oda(6,bgunluk-satir)
+             move ort  to zk8   move zk8             to gr2-data6
+             COMPUTE ORT ROUNDED =  btoplugunluk-pax(7,bgunluk-satir)
+                      /   btoplugunluk-oda(7,bgunluk-satir)
+             move ort  to zk8    move zk8             to gr2-data7
+         
+         modify form1-gd-2(bgunluk-satir + 1 ) record-data = gr2-rec
+         .
+
+
+                 .
+*
+ Form1-Gd-2-Ev-Other.
+         evaluate event-type 
+            when msg-begin-entry
+               display message box "Lutfen Soldaki Tabloya giriniz" new-line 
+                                 "Forecast otomatik olusacaktir"
+               move event-action-fail to event-action,
+         end-evaluate
+     .
+****************************************************************
+ gerceklesen-al.
+            open output takasfiyat gbutce
+            close  takasfiyat gbutce
+            open i-o   takasfiyat gbutce
+    open input rez konuk romhrk aksiyhrk cast kur
+   
+    initialize cast-rec.
+    move bas-tar to cast-tarih.
+    start cast key not < cast-tarih invalid continue,
+        not invalid,
+
+      
+         perform with test after until fs-cast = "10",
+            read cast next no lock end  move "10"  to fs-cast,
+                 not end,
+                  if cast-tarih > bit-tar move "10" to fs-cast,
+                    else,
+                        initialize rez-rec,
+                        move cast-rez-no to rez-no,
+                        read rez no lock invalid continue,
+                                     not invalid
+                         if rez-durumu not = "I" 
+                             exit perform cycle 
+                         end-if
+                         if rez-k-g-b  not = "K"  
+                             exit perform cycle 
+                         end-if,
+                         
+                        if  rez-cik-tar  = cast-tarih
+                              exit perform cycle
+                        end-if
+                       
+                             perform gbutce-kaydet  
+                         
+                        end-read,
+                     end-if,
+              
+            end-read,
+        end-perform,
+    end-start.
+    close rez konuk romhrk aksiyhrk cast kur
+    close gbutce takasfiyat.
+    
+                      
+*
+ gbutce-kaydet.
+        initialize gbutce-rec
+        move rez-acenta to acenta-kodu
+        read acenta no lock invalid 
+           continue
+        end-read
+        if acenta-butce = spaces then 
+          move acenta-kodu to acenta-butce
+        end-if
+        move "D" to kodlar02-tipi.
+        move rez-anlasma to kodlar02-kodu
+        read kodlar02 no lock invalid
+            move rez-anlasma to kodlar02-anl-butce
+        end-read
+        move kodlar02-anl-butce to gbutce-anlasma
+        MOVE REZ-doviz          to gbutce-doviz
+        move acenta-butce       to gbutce-acenta
+        move rez-fiyat-konumu   to gbutce-konum
+        read gbutce no lock 
+             invalid
+                continue
+        end-read
+        compute pax-sayisi = rez-buyuk + ( rez-kucuk / 2 )
+        move rez-no to takasfiyat-rez-no
+        move cast-tarih to takasfiyat-tarih
+        read takasfiyat no lock 
+         invalid
+          perform  peryot-fiyat-bul
+          perform varying jj from 1 by 1 until  jj > 200 
+            if fiyatt-tar(jj) = cast-tarih
+                 compute gbutce-price-pp1 rounded = gbutce-price-pp1 +
+                       fiyatt-fiy(jj)
+                 add pax-sayisi to gbutce-pax-gun
+                 add 1          to gbutce-oda-gun
+            end-if
+          end-perform
+          not invalid 
+              compute gbutce-price-pp1 rounded = gbutce-price-pp1 +
+                  takasfiyat-fiyat
+              add pax-sayisi to gbutce-pax-gun
+              add 1          to gbutce-oda-gun
+       end-read
+       write gbutce-rec invalid 
+           rewrite gbutce-rec end-rewrite 
+       end-write .
+
+        
+ pariteleri-bul.
+       open input kur
+       move bas-tar to kur-tarih
+       move "87" to kur-banka
+       perform varying mm from 1 by 1 until mm > doviz-sayi 
+             move tum-dovizler(mm) to kur-doviz
+             read kur no lock 
+               invalid Display message box "Pariteler alinamadi"
+               not invalid
+                   move doviz-alis to but-kur(mm)
+             end-read
+        end-perform 
+        initialize mm
+        move secili-kur(1:1) to mm(3:1)
+        move but-kur(mm)     to cevrim-kuru
+        close kur
+        .
+*
+ secili-kur-degisti.
+        move secili-kur(1:1) to mm(3:1)
+        move but-kur(mm)     to cevrim-kuru 
+        perform  butgr-toplamlar-cevir.
+        perform  gunluk-update.
+
+     .
+*
+ butgr-toplamlar-cevir.
+           initialize butgr-cev-ttutar
+           perform varying mm from 1 by 1 until mm > 6
+              compute butgr-cev-ttutar rounded =
+                      butgr-cev-ttutar +
+                    ( butgr-ttutar(mm)
+                     * but-kur(mm) / cevrim-kuru )
+           end-perform .           
+           compute but-dbl rounded  =
+                     butgr-tpax / butgr-toda
+           display butgr-ef1 butgr-ef2 butgr-ef3 
+                   butgr-ef4 butgr-ef5 butgr-ef6 
+           but-tut-ef  but-oda-ef   but-pax-ef    but-dbl-ef
+           hed-tut-ef  hed-oda-ef   hed-pax-ef    hed-dbl-ef
+           kal-tut-ef  kal-oda-ef   kal-pax-ef    kal-dbl-ef
+           .
+*
+ eski-satir-al.
+         
+         perform satirdan-al
+         initialize ebutgr-toplamlar  ebtekgunluk
+          move  doviz-yer(butgr-doviz) to kacinci-doviz
+          compute ebutgr-ttutar(kacinci-doviz) rounded = 
+                  ebutgr-ttutar(kacinci-doviz) +
+                  ( butgr-pax1 * butgr-price-pp1 ) + 
+                  ( butgr-pax2 * butgr-price-pp2 ) + 
+                  ( butgr-pax3 * butgr-price-pp3 ) 
+          compute ebutgr-tpax rounded = 
+                  ebutgr-tpax +
+                  ( butgr-pax1  ) + 
+                  ( butgr-pax2  ) + 
+                  ( butgr-pax3  ) 
+          compute ebutgr-toda rounded = 
+                  ebutgr-toda +
+                  ( butgr-oda1  ) + 
+                  ( butgr-oda2  ) + 
+                  ( butgr-oda3  ) 
+          move  butgr-doviz  to ebtekgunluk-dov 
+          move  butgr-konum  to ebtekgunluk-konum 
+           perform varying mm from 1 by 1 until mm > butgr-gun1 +  butgr-gun2 + butgr-gun3 
+              evaluate true
+                 when mm <=  butgr-gun1
+                  compute   ebtekgunluk-tutar(mm) rounded  =
+                            butgr-price-pp1 * butgr-pax1 /butgr-gun1
+                  compute   ebtekgunluk-oda(mm) rounded = 
+                                  butgr-oda1 /butgr-gun1
+                  compute   ebtekgunluk-pax(mm) rounded = 
+                                  butgr-pax1 /butgr-gun1
+                when mm >  butgr-gun1 
+                  and  mm <=  butgr-gun1 +  butgr-gun2
+                   compute   ebtekgunluk-tutar(mm) rounded  =
+                            butgr-price-pp2 * butgr-pax2 /butgr-gun2
+                   compute   ebtekgunluk-oda(mm) rounded = 
+                                  butgr-oda2 /butgr-gun2
+                   compute   ebtekgunluk-pax(mm) rounded = 
+                                  butgr-pax2 /butgr-gun2
+                when mm >  butgr-gun1 +  butgr-gun2 
+                  and  mm <=  butgr-gun1 +  butgr-gun2 + butgr-gun3 
+                  compute   ebtekgunluk-tutar(mm) rounded  =
+                            butgr-price-pp3 * butgr-pax3 /butgr-gun3
+                   compute   ebtekgunluk-oda(mm) rounded = 
+                                  butgr-oda3 /butgr-gun3
+                   compute   ebtekgunluk-pax(mm) rounded = 
+                                  butgr-pax3 /butgr-gun3
+               when other 
+                display message box "hata--7863368" 
+             end-evaluate
+           end-perform. 
+         .
+*
+ yeni-satir-al.
+          perform satirdan-al
+         initialize ybutgr-toplamlar  btekgunluk
+          move  doviz-yer(butgr-doviz) to kacinci-doviz
+          compute ybutgr-ttutar(kacinci-doviz) rounded = 
+                  ybutgr-ttutar(kacinci-doviz) +
+                  ( butgr-pax1 * butgr-price-pp1 ) + 
+                  ( butgr-pax2 * butgr-price-pp2 ) + 
+                  ( butgr-pax3 * butgr-price-pp3 ) 
+          compute ybutgr-tpax rounded = 
+                  ybutgr-tpax +
+                  ( butgr-pax1  ) + 
+                  ( butgr-pax2  ) + 
+                  ( butgr-pax3  ) 
+          compute ybutgr-toda rounded = 
+                  ybutgr-toda +
+                  ( butgr-oda1  ) + 
+                  ( butgr-oda2  ) + 
+                  ( butgr-oda3  ) 
+          move  butgr-doviz  to btekgunluk-dov 
+          move  butgr-konum  to btekgunluk-konum 
+           perform varying mm from 1 by 1 until mm >   butgr-gun1 +  butgr-gun2 + butgr-gun3 
+              evaluate true
+                 when mm <=  butgr-gun1
+                  compute   btekgunluk-tutar(mm) rounded  =
+                            butgr-price-pp1 * butgr-pax1 /butgr-gun1
+                  compute   btekgunluk-oda(mm) rounded = 
+                                  butgr-oda1 /butgr-gun1
+                  compute   btekgunluk-pax(mm) rounded = 
+                                  butgr-pax1 /butgr-gun1
+                when mm >  butgr-gun1 
+                  and  mm <=  butgr-gun1 +  butgr-gun2
+                   compute   btekgunluk-tutar(mm) rounded  =
+                            butgr-price-pp2 * butgr-pax2 /butgr-gun2
+                   compute   btekgunluk-oda(mm) rounded = 
+                                  butgr-oda2 /butgr-gun2
+                   compute   btekgunluk-pax(mm) rounded = 
+                                  butgr-pax2 /butgr-gun2
+              when mm >  butgr-gun1 +  butgr-gun2 
+                  and  mm <=  butgr-gun1 +  butgr-gun2 + butgr-gun3 
+                  compute   btekgunluk-tutar(mm) rounded  =
+                            butgr-price-pp3 * butgr-pax3 /butgr-gun3
+                   compute   btekgunluk-oda(mm) rounded = 
+                                  butgr-oda3 /butgr-gun3
+                   compute   btekgunluk-pax(mm) rounded = 
+                                  butgr-pax3 /butgr-gun3
+               when other 
+                display message box "hata--7863368" 
+             end-evaluate
+           end-perform 
+           perform eski-yeni-fark-al.
+           perform butgr-toplamlar-cevir
+           perform gunluk-update.
+   
+
+        .
+ eski-yeni-fark-al.
+      move  doviz-yer(butgr-doviz) to kacinci-doviz
+      move  konum-yer(butgr-konum) to kacinci-konum
+
+      compute butgr-ttutar(kacinci-doviz) rounded = 
+              butgr-ttutar(kacinci-doviz) +
+                  ybutgr-ttutar(kacinci-doviz) -
+                  ebutgr-ttutar(kacinci-doviz) 
+
+      compute butgr-tpax rounded =   
+              butgr-tpax +  ybutgr-tpax  -  ebutgr-tpax
+      compute butgr-toda rounded = 
+              butgr-toda +  ybutgr-toda -   ebutgr-toda. 
+           stop " "
+       
+      perform varying mm from 1 by 1 until mm > butgr-gun1 +  butgr-gun2 + butgr-gun3 
+           
+          compute btoplugunluk-tutar(kacinci-konum,mm,kacinci-doviz) rounded  = 
+                  btoplugunluk-tutar(kacinci-konum,mm,kacinci-doviz) +
+                  btekgunluk-tutar(mm) - ebtekgunluk-tutar(mm) 
+          compute btoplugunluk-pax(kacinci-konum,mm) rounded  = 
+                  btoplugunluk-pax(kacinci-konum,mm) +
+                  btekgunluk-pax(mm) - ebtekgunluk-pax(mm) 
+          compute btoplugunluk-oda(kacinci-konum,mm) rounded  = 
+                  btoplugunluk-oda(kacinci-konum,mm) +
+                  btekgunluk-oda(mm) - ebtekgunluk-oda(mm) 
+      end-perform. 
+
+
+
+
+
+
+         
+*
+ ekle-Aft-Initdata.
+        modify ekle-acenta-cb reset-list = 1
+        perform varying mm from 1 by 1 until mm> acenta-sayi
+         move tum-acenta(mm) to ekle-acenta-sec(1:4) acenta-kodu
+           move "-" to  ekle-acenta-sec(5:1)
+           read acenta no lock 
+              invalid
+              move acenta-kodu to acenta-adi
+           end-read
+            move acenta-adi to ekle-acenta-sec(6:15) 
+            modify ekle-acenta-cb item-to-add  ekle-acenta-sec
+         end-perform 
+
+        modify ekle-anlasma-cb reset-list = 1
+        perform varying mm from 1 by 1 until mm> anlasma-sayi
+         move tum-anlasma(mm) to ekle-anlasma-sec(1:6) 
+           
+            modify ekle-anlasma-cb item-to-add  ekle-anlasma-sec
+         end-perform 
+          modify ekle-konum-cb reset-list = 1
+        perform varying mm from 1 by 1 until mm> konum-sayi
+         move tum-konum(mm) to ekle-konum-sec(1:2) konum-anahtar
+            move konumadi(konum-anahtar)  to   ekle-konum-sec(4:5)
+            modify ekle-konum-cb item-to-add  ekle-konum-sec
+         end-perform 
+            modify ekle-doviz-cb reset-list = 1
+          perform varying mm from 1 by 1 until mm> doviz-sayi  
+               initialize  ekle-doviz-sec
+              move tum-dovizler(mm)     to  ekle-doviz-sec(1:2)
+              move tum-dovizler-adi(mm) to ekle-doviz-sec(4:5)
+              move "-" to  ekle-doviz-sec(3:1)
+              modify ekle-doviz-cb item-to-add  ekle-doviz-sec
+           end-perform
+       
+         initialize ekle-doviz-sec ekle-acenta-sec ekle-konum-sec
+         ekle-anlasma-sec.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ ekle-Ex-Other.
+      if key-status = 2
+        if ekle-acenta-sec(1:4) = spaces  or 
+          ekle-doviz-sec(1:2) = spaces then
+            display message box "Acenta ve doviz secmelisiniz"
+            else 
+             perform ekle-satir-ekle
+            
+            end-if  
+
+      end-if
+     .
+*
+ ekle-satir-ekle.
+         open i-o butgr
+        initialize butgr-rec
+         move ekle-acenta-sec(1:4)   to  butgr-acenta
+         move ekle-doviz-sec(1:2)   to  butgr-doviz
+       if ekle-anlasma-sec = spaces 
+           perform varying mm from 1 by 1 until mm > anlasma-sayi
+             move tum-anlasma(mm) to butgr-anlasma
+             perform ekle-konum-ekle
+           end-perform 
+         else 
+          move ekle-anlasma-sec   to  butgr-anlasma
+          perform ekle-konum-ekle
+      end-if .
+      close butgr.
+
+
+*
+ ekle-konum-ekle.
+      if ekle-konum-sec = spaces 
+           perform varying nn from 1 by 1 until nn > anlasma-sayi
+             move tum-konum(nn) to butgr-konum
+             perform ekle-gride-ekle
+           end-perform 
+         else 
+          move ekle-konum-sec(1:2)   to  butgr-konum
+          perform ekle-gride-ekle
+      end-if .
+ekle-gride-ekle.
+       write butgr-rec  invalid 
+         display message box butgr-acenta " acentasi " butgr-anlasma " anlasmasi " konumadi(butgr-konum) " konumu zaten var" 
+       not invalid 
+          perform satir-ekle
+       end-write.
+*      
+ gridden-satir-sil.
+     inquire Form1-Gd-1, cursor-x in i cursor-y in ii
+     perform satirdan-al.
+     if butgr-oda-reel + butgr-pax1 +        
+        butgr-pax2 + butgr-pax3 +  butgr-oda1 +        
+        butgr-oda2 + butgr-oda3 +  butgr-price-total not = 0 then 
+         display message box "Once degerleri sifirlayiniz" 
+        else
+         open i-o butgr
+         delete butgr invalid
+            display message box "Silnemedi --- hata no :324838"
+         end-delete
+         close butgr
+         open i-o butce
+          modify Form1-Gd-1, record-to-delete(ii)
+          move b-dosya-adi to butce-adi
+          move butgr-doviz to butce-doviz
+          move butgr-anlasma to butce-anlasma
+          move butgr-konum to butce-konum
+          move butgr-acenta to butce-acenta
+          move bas-tar to butce-tarih
+         start butce key >= butce-acen-anah
+          invalid
+           continue
+         not invalid
+           perform until fs-butce = "10"
+             read butce next 
+               end move "10" to fs-butce
+               not end
+                  if butce-adi not =  b-dosya-adi
+                     or     butgr-doviz   not =  butce-doviz       
+                     or     butgr-anlasma not =  butce-anlasma   
+                     or     butgr-konum   not =  butce-konum       
+                     or     butgr-acenta  not =  butce-acenta     
+                     or     bit-tar        <     butce-tarih           
+
+                          move "10" to fs-butce
+                     else
+                       if bas-tar <= butce-tarih and 
+                          bit-tar >= butce-tarih
+                          delete butce invalid continue
+                          end-delete
+                          else 
+                          stop " "
+                       end-if
+                  end-if
+             end-read
+           end-perform
+        end-start
+        close butce
+      end-if.
+*
+ ac-Aft-Initdata.
+        initialize butce-rec  fs-butce
+         modify ac-cm-1 reset-list = 1 
+          open i-o butce
+        perform until fs-butce = "10" 
+         start butce key > butce-anah
+         invalid
+           move "10" to fs-butce
+         not invalid
+           read butce next no lock
+              end
+               continue
+              not end
+               modify ac-cm-1 item-to-add butce-adi 
+           end-read
+         end-start
+         move high-value to butce-adi(10:1)
+        end-perform
+        close butce
+        .
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+*
+ ac-Ev-Other.
+       evaluate key-status
+         when 6
+
+       end-evaluate
+        .
+*
+ form3-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+
+ 

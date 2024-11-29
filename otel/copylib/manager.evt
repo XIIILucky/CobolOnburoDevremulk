@@ -1,0 +1,902 @@
+* manager.evt
+* manager.evt is generated from D:\asya\acugt.ytl\otel\manager.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+     .
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to tarih.
+    display acc-01 acc-02 acc-03.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 2
+        open input depkod
+        perform takas-kaydet thru takas-kaydet-exit
+        perform liste-ara-olustur thru liste-ara-olustur-ex
+
+              initialize takas-rec
+              start takas key not < takas-anahtar invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close takas
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Manager Report"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Manager Report"   to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move gun            to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ay             to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move yil            to det-filler(57:04)
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "RRRRRRRRRRRRRRRRRRR" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"         to det-dokumer-20(1:2)
+     move "Oda "                        to det-2
+     move "Pax "                        to det-3
+     move "Chi."                        to det-4
+     move "Free"                        to det-5
+     move "G.Tutar          "             to det-6
+     move "A.Oda "                        to det-7
+     move "A.Pax "                        to det-8
+     move "A.Chi."                        to det-9
+     move "A.Free"                        to det-10
+     move "A.Tutar          "             to det-11
+     move "Y.Oda "                        to det-12
+     move "Y.Pax "                        to det-13
+     move "Y.Chi."                        to det-14
+     move "Y.Free"                        to det-15
+     move "Y.Tutar          "             to det-16
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9
+                 fil-10 fil-11 fil-12 fil-13 fil-14 fil-15 fil-16
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8 det-9
+                     det-10 det-11 det-12 det-13 det-14 det-15 det-16
+     write dokumer-rec from detay
+*********************************
+                   initialize  toplam-gelir1
+                 toplam-gelir2
+                 toplam-gelir3
+              initialize fs-takas
+              perform with test after until fs-takas = "10"
+                    read takas next no lock end move "10" to fs-takas
+                      not at end
+                      perform varying ara-anahtar from 1 by 1 until ara-anahtar > son-anahtar
+                            initialize ara-rec
+                            read ara no lock invalid initialize ara-rec end-read
+                            perform varying ii from 1 by 1 until ii > 17
+                              initialize dokumer-rec detay
+                              perform detay-ata
+                              if ara-kontrol(ii) = "E" move 20 to ii end-if
+                            end-perform
+                      end-perform
+                
+                    end-read
+              end-perform
+             
+             
+               perform son-ata
+               perform cizgi-cek
+              close dokumer ara gelir takas depkod
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer ara gelir takas
+    end-evaluate.
+     .
+ takas-kaydet.
+    perform takas-dosya-ac.
+
+*/  yillik istatistik bilgileri aktar...
+    open input detist.
+    initialize detist-rec takas-rec.
+    move yil to detist-yil.
+    start detist key not < detist-anah invalid continue,
+
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+            read detist next no lock end move "E" to evet-hayir,
+                not end,
+              if detist-tarih not > tarih
+
+*/ CORRECTION DEVREDE DEGILSE CORR TUTARLARI SIFIRLA
+               if cb-corr-hesaplansin-value = 0
+                  perform detist-corr-sifirla
+               end-if
+
+                initialize takas-rec,
+                move 1 to takas-anahtar,
+                read takas no lock invalid continue,end-read,
+
+                move 0 to xx,
+
+                if detist-tarih = tarih,
+                       move 1 to xx,
+                       perform takas-detist-yaz,
+                end-if,
+
+                if detist-ay = ay,
+                       move 2 to xx,
+                       perform takas-detist-yaz,
+                end-if,
+
+                if detist-yil = yil,
+                       move 3 to xx,
+                       perform takas-detist-yaz,
+                end-if,
+              end-if,
+
+            end-read,
+        end-perform,
+    end-start.
+    close detist.
+
+*/  yillik takvim bilgileri aktar...
+    open input takvim.
+    initialize takvim-rec.
+    move yil to takvim-yil.
+    start takvim key not < takvim-anah invalid continue,
+
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+            read takvim next no lock end move "E" to evet-hayir,
+                not end,
+             if takvim-anah not > tarih
+                initialize takas-rec,
+                move 1 to takas-anahtar,
+                read takas no lock invalid continue,end-read,
+                move 0 to xx,
+
+                if takvim-anah = tarih,
+                       move 1 to xx,
+                       perform takas-takvim-yaz,
+                end-if,
+
+                if takvim-ay = ay,
+                       move 2 to xx,
+                       perform takas-takvim-yaz,
+                end-if,
+
+                if takvim-yil = yil,
+                       move 3 to xx,
+                       perform takas-takvim-yaz,
+                end-if,
+             end-if, 
+            end-read,
+        end-perform,
+    end-start.
+    close takvim.
+
+*/  yillik gelir bilgileri aktar...
+    initialize gelir-dizisi.
+    open input onkasa.
+    initialize onkasa-rec.
+    move yil to onk-yil.
+    start onkasa key not < onkasa-tarih invalid continue,
+
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+            read onkasa next no lock end move "E" to evet-hayir,
+                not end,
+              if onkasa-tarih not > tarih 
+                if onkasa-dep not = 888 and onkasa-dep not = 999
+
+*/CORRECTION
+                   if cb-corr-hesaplansin-value = 0
+                      initialize onkasa-corr-tutar-tl
+                                 onkasa-corr-tutar-dv
+                   end-if
+*/CORRECTION
+                   move 0 to xx,
+                   move 0 to hata,
+                   initialize depkod-rec,
+                   move onkasa-dep to depkod-kodu,
+                   read depkod no lock invalid move 1 to hata,
+                        not invalid 
+                   if depkod-ba not = "B" move 1 to hata,
+                   end-if,
+
+                    ||   sy 21.07.2014 ***
+
+                   if depkod-ba = "B" and depkod-turu = 2 
+                           move 1 to hata
+                   end-if
+
+                   ||
+                   if depkod-turu = 3  move 1 to hata end-if
+                 
+                  if hata = 0
+                   initialize gelir-rec,
+                   move depkod-tipi   to gelir-tipi,
+                   if gelir-tipi < 1 or gelir-tipi > 5 
+                   move 1 to gelir-tipi
+                   end-if,
+                   move onkasa-dep to gelir-dep,
+                   read gelir no lock invalid continue,end-read,
+
+                   if onkasa-tarih = tarih,
+                          move 1 to xx,
+                          compute gelir-tutar-tl(xx) = gelir-tutar-tl(xx) + onkasa-tutar-tl -
+                                                       onkasa-corr-tutar-tl,
+                          compute gelir-tutar-dv(xx) = gelir-tutar-dv(xx) + onkasa-tutar-dv -
+                                                       onkasa-corr-tutar-dv
+
+                          compute gelir-tipi-tutar-tl(xx,gelir-tipi) = 
+                            gelir-tipi-tutar-tl(xx,gelir-tipi) + onkasa-tutar-tl - onkasa-corr-tutar-tl,
+                          compute gelir-tipi-tutar-dv(xx,gelir-tipi) = 
+                            gelir-tipi-tutar-dv(xx,gelir-tipi) + onkasa-tutar-dv - onkasa-corr-tutar-dv,
+                   end-if,
+
+                   if onk-ay = ay,
+                          move 2 to xx,
+                          compute gelir-tutar-tl(xx) = gelir-tutar-tl(xx) + onkasa-tutar-tl - onkasa-corr-tutar-tl,
+                          compute gelir-tutar-dv(xx) = gelir-tutar-dv(xx) + onkasa-tutar-dv - onkasa-corr-tutar-dv,
+                          compute gelir-tipi-tutar-tl(xx,gelir-tipi) = 
+                            gelir-tipi-tutar-tl(xx,gelir-tipi) + onkasa-tutar-tl - onkasa-corr-tutar-tl,
+                          compute gelir-tipi-tutar-dv(xx,gelir-tipi) = 
+                            gelir-tipi-tutar-dv(xx,gelir-tipi) + onkasa-tutar-dv - onkasa-corr-tutar-dv,
+                   end-if,
+
+                   if onk-yil = yil,
+                          move 3 to xx,
+                          compute gelir-tutar-tl(xx) = gelir-tutar-tl(xx) + onkasa-tutar-tl - onkasa-corr-tutar-tl,
+                          compute gelir-tutar-dv(xx) = gelir-tutar-dv(xx) + onkasa-tutar-dv - onkasa-corr-tutar-dv,
+                          compute gelir-tipi-tutar-tl(xx,gelir-tipi) = 
+                            gelir-tipi-tutar-tl(xx,gelir-tipi) + onkasa-tutar-tl - onkasa-corr-tutar-tl,
+                          compute gelir-tipi-tutar-dv(xx,gelir-tipi) = 
+                            gelir-tipi-tutar-dv(xx,gelir-tipi) + onkasa-tutar-dv - onkasa-corr-tutar-dv,
+                   end-if,
+
+                   write gelir-rec invalid rewrite gelir-rec,end-write,
+                  end-if,
+                end-if,
+              end-if,
+            end-read,
+        end-perform,
+    end-start.
+    close onkasa.
+ gelir-tipi-aktar.
+    perform varying i from 1 by 1 until i > 3,
+        perform varying ii from 1 by 1 until ii > 5,
+
+          move ii   to gelir-tipi,
+          move 999  to gelir-dep,
+          read gelir no lock invalid continue, end-read,
+          move gelir-tipi-tutar-tl(i,ii) to gelir-tutar-tl(i)
+          move gelir-tipi-tutar-dv(i,ii) to gelir-tutar-dv(i)
+
+         write gelir-rec invalid rewrite gelir-rec end-write,
+        end-perform,
+    end-perform.
+ gelir-tipi-aktar-exit.
+       exit.           
+ takas-kaydet-exit.
+    exit.
+ takas-detist-yaz.
+    compute takas-top-oda(xx) = takas-top-oda(xx) + detist-top-oda.
+    compute takas-top-pax(xx) = takas-top-pax(xx) + detist-top-buyuk.
+    compute takas-top-chi(xx) = takas-top-chi(xx) + detist-top-kucuk.
+    compute takas-top-fre(xx) = takas-top-fre(xx) + detist-top-free.
+    compute takas-top-fre(xx) = takas-top-fre(xx) + detist-top-bebek.
+    compute takas-top-tut(xx) = takas-top-tut(xx) + detist-top-tutar - detist-top-corr.
+
+    compute takas-oda-oda(xx) = takas-oda-oda(xx) + detist-oda-oda.
+    compute takas-oda-pax(xx) = takas-oda-pax(xx) + detist-oda-buyuk.
+    compute takas-oda-chi(xx) = takas-oda-chi(xx) + detist-oda-kucuk.
+    compute takas-oda-fre(xx) = takas-oda-fre(xx) + detist-oda-free.
+    compute takas-oda-fre(xx) = takas-oda-fre(xx) + detist-oda-bebek.
+    compute takas-oda-tut(xx) = takas-oda-tut(xx) + detist-oda-tutar - detist-oda-corr.
+
+    compute takas-kah-oda(xx) = takas-kah-oda(xx) + detist-kah-oda.
+    compute takas-kah-pax(xx) = takas-kah-pax(xx) + detist-kah-buyuk.
+    compute takas-kah-chi(xx) = takas-kah-chi(xx) + detist-kah-kucuk.
+    compute takas-kah-fre(xx) = takas-kah-fre(xx) + detist-kah-free.
+    compute takas-kah-fre(xx) = takas-kah-fre(xx) + detist-kah-bebek.
+    compute takas-kah-tut(xx) = takas-kah-tut(xx) + detist-kah-tutar - detist-kah-corr.
+
+    compute takas-ogl-oda(xx) = takas-ogl-oda(xx) + detist-ogl-oda.
+    compute takas-ogl-pax(xx) = takas-ogl-pax(xx) + detist-ogl-buyuk.
+    compute takas-ogl-chi(xx) = takas-ogl-chi(xx) + detist-ogl-kucuk.
+    compute takas-ogl-fre(xx) = takas-ogl-fre(xx) + detist-ogl-free.
+    compute takas-ogl-fre(xx) = takas-ogl-fre(xx) + detist-ogl-bebek.
+    compute takas-ogl-tut(xx) = takas-ogl-tut(xx) + detist-ogl-tutar - detist-ogl-corr.
+
+    compute takas-aks-oda(xx) = takas-aks-oda(xx) + detist-aks-oda.
+    compute takas-aks-pax(xx) = takas-aks-pax(xx) + detist-aks-buyuk.
+    compute takas-aks-chi(xx) = takas-aks-chi(xx) + detist-aks-kucuk.
+    compute takas-aks-fre(xx) = takas-aks-fre(xx) + detist-aks-free.
+    compute takas-aks-fre(xx) = takas-aks-fre(xx) + detist-aks-bebek.
+    compute takas-aks-tut(xx) = takas-aks-tut(xx) + detist-aks-tutar - detist-aks-corr.
+
+    compute takas-ice-oda(xx) = takas-ice-oda(xx) + detist-ice-oda.
+    compute takas-ice-pax(xx) = takas-ice-pax(xx) + detist-ice-buyuk.
+    compute takas-ice-chi(xx) = takas-ice-chi(xx) + detist-ice-kucuk.
+    compute takas-ice-fre(xx) = takas-ice-fre(xx) + detist-ice-free.
+    compute takas-ice-fre(xx) = takas-ice-fre(xx) + detist-ice-bebek.
+    compute takas-ice-tut(xx) = takas-ice-tut(xx) + detist-ice-tutar - detist-ice-corr.
+
+    compute takas-ext-oda(xx) = takas-ext-oda(xx) + detist-ext-oda.
+    compute takas-ext-pax(xx) = takas-ext-pax(xx) + detist-ext-buyuk.
+    compute takas-ext-chi(xx) = takas-ext-chi(xx) + detist-ext-kucuk.
+    compute takas-ext-fre(xx) = takas-ext-fre(xx) + detist-ext-free.
+    compute takas-ext-fre(xx) = takas-ext-fre(xx) + detist-ext-bebek.
+    compute takas-ext-tut(xx) = takas-ext-tut(xx) + detist-ext-tutar - detist-ext-corr.
+
+    compute takas-exb-oda(xx) = takas-exb-oda(xx) + detist-exb-oda.
+    compute takas-exb-pax(xx) = takas-exb-pax(xx) + detist-exb-buyuk.
+    compute takas-exb-chi(xx) = takas-exb-chi(xx) + detist-exb-kucuk.
+    compute takas-exb-fre(xx) = takas-exb-fre(xx) + detist-exb-free.
+    compute takas-exb-fre(xx) = takas-exb-fre(xx) + detist-exb-bebek.
+    compute takas-exb-tut(xx) = takas-exb-tut(xx) + detist-exb-tutar - detist-exb-corr.
+
+    compute takas-com-oda(xx) = takas-com-oda(xx) + detist-com-oda.
+    compute takas-com-pax(xx) = takas-com-pax(xx) + detist-com-buyuk.
+    compute takas-com-chi(xx) = takas-com-chi(xx) + detist-com-kucuk.
+    compute takas-com-fre(xx) = takas-com-fre(xx) + detist-com-free.
+    compute takas-com-fre(xx) = takas-com-fre(xx) + detist-com-bebek.
+    compute takas-com-tut(xx) = takas-com-tut(xx) + detist-com-tutar - detist-com-corr.
+
+    compute takas-hou-oda(xx) = takas-hou-oda(xx) + detist-hou-oda.
+    compute takas-hou-pax(xx) = takas-hou-pax(xx) + detist-hou-buyuk.
+    compute takas-hou-chi(xx) = takas-hou-chi(xx) + detist-hou-kucuk.
+    compute takas-hou-fre(xx) = takas-hou-fre(xx) + detist-hou-free.
+    compute takas-hou-fre(xx) = takas-hou-fre(xx) + detist-hou-bebek.
+    compute takas-hou-tut(xx) = takas-hou-tut(xx) + detist-hou-tutar - detist-hou-corr.
+
+    compute takas-shw-oda(xx) = takas-shw-oda(xx) + detist-nos-oda.
+    compute takas-shw-pax(xx) = takas-shw-pax(xx) + detist-nos-buyuk.
+    compute takas-shw-chi(xx) = takas-shw-chi(xx) + detist-nos-kucuk.
+    compute takas-shw-fre(xx) = takas-shw-fre(xx) + detist-nos-free.
+    compute takas-shw-fre(xx) = takas-shw-fre(xx) + detist-nos-bebek.
+    compute takas-shw-tut(xx) = takas-shw-tut(xx) + detist-nos-tutar - detist-nos-corr.
+
+    compute takas-sin-oda(xx) = takas-sin-oda(xx) + detist-sdt-oda(1).
+    compute takas-sin-pax(xx) = takas-sin-pax(xx) + detist-sdt-buyuk(1).
+    compute takas-sin-chi(xx) = takas-sin-chi(xx) + detist-sdt-kucuk(1).
+    compute takas-sin-fre(xx) = takas-sin-fre(xx) + detist-sdt-free(1).
+    compute takas-sin-fre(xx) = takas-sin-fre(xx) + detist-sdt-bebek(1).
+    compute takas-sin-tut(xx) = takas-sin-tut(xx) + detist-sdt-tutar(1) - detist-sdt-corr(1).
+
+    compute takas-dou-oda(xx) = takas-dou-oda(xx) + detist-sdt-oda(2).
+    compute takas-dou-pax(xx) = takas-dou-pax(xx) + detist-sdt-buyuk(2).
+    compute takas-dou-chi(xx) = takas-dou-chi(xx) + detist-sdt-kucuk(2).
+    compute takas-dou-fre(xx) = takas-dou-fre(xx) + detist-sdt-free(2).
+    compute takas-dou-fre(xx) = takas-dou-fre(xx) + detist-sdt-bebek(2).
+    compute takas-dou-tut(xx) = takas-dou-tut(xx) + detist-sdt-tutar(2) - detist-sdt-corr(2).
+
+    compute takas-tri-oda(xx) = takas-tri-oda(xx) + detist-sdt-oda(3).
+    compute takas-tri-pax(xx) = takas-tri-pax(xx) + detist-sdt-buyuk(3).
+    compute takas-tri-chi(xx) = takas-tri-chi(xx) + detist-sdt-kucuk(3).
+    compute takas-tri-fre(xx) = takas-tri-fre(xx) + detist-sdt-free(3).
+    compute takas-tri-fre(xx) = takas-tri-fre(xx) + detist-sdt-bebek(3).
+    compute takas-tri-tut(xx) = takas-tri-tut(xx) + detist-sdt-tutar(3) - detist-sdt-corr(3).
+
+    compute takas-gro-oda(xx) = takas-gro-oda(xx) + detist-sdt-oda(4).
+    compute takas-gro-pax(xx) = takas-gro-pax(xx) + detist-sdt-buyuk(4).
+    compute takas-gro-chi(xx) = takas-gro-chi(xx) + detist-sdt-kucuk(4).
+    compute takas-gro-fre(xx) = takas-gro-fre(xx) + detist-sdt-free(4).
+    compute takas-gro-fre(xx) = takas-gro-fre(xx) + detist-sdt-bebek(4).
+    compute takas-gro-tut(xx) = takas-gro-tut(xx) + detist-sdt-tutar(4) - detist-sdt-corr(4).
+
+    write takas-rec invalid rewrite takas-rec.
+
+ takas-takvim-yaz.
+    compute takas-mev-oda(xx) = takas-mev-oda(xx) + takvim-top-oda.
+    compute takas-haz-oda(xx) = takas-haz-oda(xx) + takvim-hazir-oda.
+    write takas-rec invalid rewrite takas-rec.
+ takas-dosya-ac.
+    open i-o genelfis.
+    move 1 to genelfis-anahtar.
+    read genelfis no lock invalid move 1 to ekran-fis-1.
+
+    add 1 to ekran-fis-1.
+  
+    move ekran-fis-1(2:) to takas-no gelir-no.
+    rewrite genelfis-rec invalid write genelfis-rec.
+    close genelfis.
+    open output takas close takas open i-o takas with mass-update.
+    open output gelir close gelir open i-o gelir with mass-update.
+    initialize takas-rec gelir-rec.
+ liste-ara-olustur.
+    open i-o genelfis.
+    move 1 to genelfis-anahtar.
+    read genelfis no lock invalid move 1 to ekran-fis-1.
+
+    add 1 to ekran-fis-1.
+ 
+    move ekran-fis-1(2:) to ara-no.
+    rewrite genelfis-rec invalid write genelfis-rec.
+    close genelfis.
+    open output ara close ara open i-o ara with mass-update.
+    initialize ara-rec.
+
+*/  takas dosya aktar...
+    initialize takas-rec.
+    move 1 to takas-anahtar.
+    read takas no lock invalid close takas delete file takas
+                               close gelir delete file gelir
+                               go liste-ara-olustur-ex.
+    move 1 to ii ara-anahtar.
+    move 0 to xx.
+    initialize ara-dizi(ii).
+    perform varying xx from 1 by 1 until xx > 3,
+            move 1 to ii ara-anahtar,
+
+            initialize ara-occ(ii,xx),
+            move takas-mev-oda(xx) to ara-oda(ii,xx)
+            move 1                to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-haz-oda(xx) to ara-oda(ii,xx)
+            move 2                to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-top-oda(xx) to ara-oda(ii,xx)
+            move takas-top-pax(xx) to ara-pax(ii,xx)
+            move takas-top-chi(xx) to ara-chi(ii,xx)
+            move takas-top-fre(xx) to ara-fre(ii,xx)
+            move takas-top-tut(xx) to ara-tut(ii,xx)
+            move 3                to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-oda-oda(xx) to ara-oda(ii,xx)
+            move takas-oda-pax(xx) to ara-pax(ii,xx)
+            move takas-oda-chi(xx) to ara-chi(ii,xx)
+            move takas-oda-fre(xx) to ara-fre(ii,xx)
+            move takas-oda-tut(xx) to ara-tut(ii,xx)
+            move 4                to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-kah-oda(xx) to ara-oda(ii,xx)
+            move takas-kah-pax(xx) to ara-pax(ii,xx)
+            move takas-kah-chi(xx) to ara-chi(ii,xx)
+            move takas-kah-fre(xx) to ara-fre(ii,xx)
+            move takas-kah-tut(xx) to ara-tut(ii,xx)
+            move 5                to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-ogl-oda(xx) to ara-oda(ii,xx)
+            move takas-ogl-pax(xx) to ara-pax(ii,xx)
+            move takas-ogl-chi(xx) to ara-chi(ii,xx)
+            move takas-ogl-fre(xx) to ara-fre(ii,xx)
+            move takas-ogl-tut(xx) to ara-tut(ii,xx)
+            move 6                to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-aks-oda(xx) to ara-oda(ii,xx)
+            move takas-aks-pax(xx) to ara-pax(ii,xx)
+            move takas-aks-chi(xx) to ara-chi(ii,xx)
+            move takas-aks-fre(xx) to ara-fre(ii,xx)
+            move takas-aks-tut(xx) to ara-tut(ii,xx)
+            move 7                to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-ice-oda(xx) to ara-oda(ii,xx)
+            move takas-ice-pax(xx) to ara-pax(ii,xx)
+            move takas-ice-chi(xx) to ara-chi(ii,xx)
+            move takas-ice-fre(xx) to ara-fre(ii,xx)
+            move takas-ice-tut(xx) to ara-tut(ii,xx)
+            move 8                to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-ext-oda(xx) to ara-oda(ii,xx)
+            move takas-ext-pax(xx) to ara-pax(ii,xx)
+            move takas-ext-chi(xx) to ara-chi(ii,xx)
+            move takas-ext-fre(xx) to ara-fre(ii,xx)
+            move takas-ext-tut(xx) to ara-tut(ii,xx)
+            move 9                to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-exb-oda(xx) to ara-oda(ii,xx)
+            move takas-exb-pax(xx) to ara-pax(ii,xx)
+            move takas-exb-chi(xx) to ara-chi(ii,xx)
+            move takas-exb-fre(xx) to ara-fre(ii,xx)
+            move takas-exb-tut(xx) to ara-tut(ii,xx)
+            move 10               to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-com-oda(xx) to ara-oda(ii,xx)
+            move takas-com-pax(xx) to ara-pax(ii,xx)
+            move takas-com-chi(xx) to ara-chi(ii,xx)
+            move takas-com-fre(xx) to ara-fre(ii,xx)
+            move takas-com-tut(xx) to ara-tut(ii,xx)
+            move 11               to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-hou-oda(xx) to ara-oda(ii,xx)
+            move takas-hou-pax(xx) to ara-pax(ii,xx)
+            move takas-hou-chi(xx) to ara-chi(ii,xx)
+            move takas-hou-fre(xx) to ara-fre(ii,xx)
+            move takas-hou-tut(xx) to ara-tut(ii,xx)
+            move 12               to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-shw-oda(xx) to ara-oda(ii,xx)
+            move takas-shw-pax(xx) to ara-pax(ii,xx)
+            move takas-shw-chi(xx) to ara-chi(ii,xx)
+            move takas-shw-fre(xx) to ara-fre(ii,xx)
+            move takas-shw-tut(xx) to ara-tut(ii,xx)
+            move 13               to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-sin-oda(xx) to ara-oda(ii,xx)
+            move takas-sin-pax(xx) to ara-pax(ii,xx)
+            move takas-sin-chi(xx) to ara-chi(ii,xx)
+            move takas-sin-fre(xx) to ara-fre(ii,xx)
+            move takas-sin-tut(xx) to ara-tut(ii,xx)
+            move 14               to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-dou-oda(xx) to ara-oda(ii,xx)
+            move takas-dou-pax(xx) to ara-pax(ii,xx)
+            move takas-dou-chi(xx) to ara-chi(ii,xx)
+            move takas-dou-fre(xx) to ara-fre(ii,xx)
+            move takas-dou-tut(xx) to ara-tut(ii,xx)
+            move 15               to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-tri-oda(xx) to ara-oda(ii,xx)
+            move takas-tri-pax(xx) to ara-pax(ii,xx)
+            move takas-tri-chi(xx) to ara-chi(ii,xx)
+            move takas-tri-fre(xx) to ara-fre(ii,xx)
+            move takas-tri-tut(xx) to ara-tut(ii,xx)
+            move 16               to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+
+            initialize ara-occ(ii,xx),
+            move takas-gro-oda(xx) to ara-oda(ii,xx)
+            move takas-gro-pax(xx) to ara-pax(ii,xx)
+            move takas-gro-chi(xx) to ara-chi(ii,xx)
+            move takas-gro-fre(xx) to ara-fre(ii,xx)
+            move takas-gro-tut(xx) to ara-tut(ii,xx)
+            move 17               to ara-alt-kontrol(ii),
+            perform kaydet-kontrol,
+    end-perform.
+
+*/  bos satir
+    move 998 to ara-alt-kontrol(ii).
+    move spaces to ara-kontrol(ii).
+    perform kaydet.
+    add 1 to ii.
+    if ii = 18 move 1 to ii add 1 to ara-anahtar.
+
+*/  cizgi ciz
+    move 997 to ara-alt-kontrol(ii).
+    move spaces to ara-kontrol(ii).
+    perform kaydet.
+    add 1 to ii.
+    if ii = 18 move 1 to ii add 1 to ara-anahtar.
+
+*/  gelir dosya aktar...
+    initialize gelir-rec.
+    start gelir key not < gelir-anah invalid continue,
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+            read gelir next no lock end move "E" to evet-hayir,
+                not end,
+
+                initialize ara-dizi(ii),
+                move gelir-tipi     to ara-dep-tipi(ii),
+                move gelir-dep      to ara-dep(ii),
+
+                move 0 to xx,
+                perform varying xx from 1 by 1 until xx > 3,
+                        initialize ara-occ(ii,xx),
+                        move gelir-tutar-tl(xx) to ara-tut(ii,xx),
+                end-perform,
+                move 999 to ara-alt-kontrol(ii),
+                perform kaydet-kontrol,
+
+            end-read,
+        end-perform,
+    end-start.
+
+*/  cizgi ciz
+    move 997 to ara-alt-kontrol(ii).
+    move spaces to ara-kontrol(ii).
+    perform kaydet.
+    add 1 to ii.
+    if ii = 18 move 1 to ii add 1 to ara-anahtar.
+
+    subtract 1 from ii.
+    perform sonmu.
+    move "E" to ara-kontrol(ii).
+    move ara-anahtar to son-anahtar.
+    perform kaydet.
+ liste-ara-olustur-ex.
+    exit.
+ kaydet-kontrol.
+    move spaces to ara-kontrol(ii).
+    perform kaydet.
+    add 1 to ii.
+    if ii = 18 move 1 to ii add 1 to ara-anahtar.
+ kaydet.
+    write ara-rec invalid rewrite ara-rec end-write.
+ sonmu.
+    if ii = 0 compute ara-anahtar = ara-anahtar - 1 move 17 to ii.
+    if ara-anahtar = 0 move 1 to ara-anahtar.
+
+ detay-ata.
+    initialize dokumer-rec detay.
+    read ara no lock invalid key initialize ara-dizi(ii).
+
+    evaluate true
+    when ara-alt-kontrol(ii) = 999
+         initialize depkod-rec,
+         move ara-dep(ii) to depkod-kodu,
+         read depkod no lock invalid 
+                     move spaces to depkod-adi,
+                     not invalid continue 
+         end-read,
+
+         if ara-dep(ii) = 999 
+            evaluate true 
+             when ara-dep-tipi(ii) = 1 move "Gen Gel.top" to depkod-adi
+             perform cizgi-cek
+             move "A"          to det-dokumer-20(3:1)
+             move 281          to det-renk1
+             move "1"          to det-dokumer-20(10:1)
+                 add ara-tut(ii,1) to toplam-gelir1
+                 add ara-tut(ii,2) to toplam-gelir2
+                 add ara-tut(ii,3) to toplam-gelir3
+             when ara-dep-tipi(ii) = 2 move "Oda Gel.top" to depkod-adi
+             perform cizgi-cek
+             move "A"          to det-dokumer-20(3:1)
+             move 281          to det-renk1
+             move "1"          to det-dokumer-20(10:1)
+                 add ara-tut(ii,1) to toplam-gelir1
+                 add ara-tut(ii,2) to toplam-gelir2
+                 add ara-tut(ii,3) to toplam-gelir3
+             when ara-dep-tipi(ii) = 3 move "Ext Gel.top" to depkod-adi
+             perform cizgi-cek
+             move "A"          to det-dokumer-20(3:1)
+             move 281          to det-renk1
+             move "1"          to det-dokumer-20(10:1)
+                 add ara-tut(ii,1) to toplam-gelir1
+                 add ara-tut(ii,2) to toplam-gelir2
+                 add ara-tut(ii,3) to toplam-gelir3
+             when ara-dep-tipi(ii) = 4 move "Tel Gel.top" to depkod-adi
+             perform cizgi-cek
+             move "A"          to det-dokumer-20(3:1)
+             move 281          to det-renk1
+             move "1"          to det-dokumer-20(10:1)
+                 add ara-tut(ii,1) to toplam-gelir1
+                 add ara-tut(ii,2) to toplam-gelir2
+                 add ara-tut(ii,3) to toplam-gelir3
+             when ara-dep-tipi(ii) = 5 move "Dig Gel.top" to depkod-adi
+             perform cizgi-cek
+             move "A"          to det-dokumer-20(3:1)
+             move 281          to det-renk1
+             move "1"          to det-dokumer-20(10:1)
+                 add ara-tut(ii,1) to toplam-gelir1
+                 add ara-tut(ii,2) to toplam-gelir2
+                 add ara-tut(ii,3) to toplam-gelir3
+            end-evaluate,
+         end-if, 
+         move depkod-adi      to det-1,
+         move ara-oda(ii,1)   to z-Y2,
+         move z-Y2             to det-2,
+         move ara-pax(ii,1)   to z-Y2
+         move z-Y2             to det-3,
+         move ara-chi(ii,1)   to z-Y2,
+         move z-Y2             to det-4,
+         move ara-fre(ii,1)   to z-Y2,
+         move z-Y2             to det-5,
+         move ara-tut(ii,1)   to z-g
+         move z-g             to det-6,
+      
+
+         move ara-oda(ii,2)   to z-1,
+         move z-1             to det-7,
+         move ara-pax(ii,2)   to z-1,
+         move z-1             to det-8,
+         move ara-chi(ii,2)   to z-1,
+         move z-1             to det-9,
+         move ara-fre(ii,2)   to z-1,
+         move z-1             to det-10,
+         move ara-tut(ii,2)   to z-y,
+         move z-y             to det-11,
+         move ara-oda(ii,3)   to z-1,
+         move z-1             to det-12,
+         move ara-oda(ii,3)   to z-1,
+         move z-1             to det-12,
+         move ara-chi(ii,3)   to z-1,
+         move z-1             to det-14,
+         move ara-fre(ii,3)   to z-1,
+         move z-1             to det-15,
+         move ara-tut(ii,3)   to z-y,
+         move z-y             to det-16,
+    when ara-alt-kontrol(ii) = 998
+         perform cizgi-cek
+         move "A"          to det-dokumer-20(3:1)
+         move 481          to det-renk1
+         move "1"          to det-dokumer-20(10:1)
+         move "Gelirler"   to det-1,
+         
+                
+    when ara-alt-kontrol(ii) < 990
+         move ara-alt-kontrol(ii) to xx,
+         move baslik-dizi(xx) to det-1,
+         move ara-oda(ii,1)   to z-Y2,
+         move z-Y2             to det-2,
+         move ara-pax(ii,1)   to z-Y2,
+         move z-Y2             to det-3,
+         move ara-chi(ii,1)   to z-Y2,
+         move z-Y2             to det-4,
+         move ara-fre(ii,1)   to z-Y2,
+         move z-Y2             to det-5,
+         move ara-tut(ii,1)   to z-g,
+         move z-g             to det-6,
+         move ara-oda(ii,2)   to z-1,
+         move z-1             to det-7,
+         move ara-pax(ii,2)   to z-1,
+         move z-1             to det-8,
+         move ara-chi(ii,2)   to z-1,
+         move z-1             to det-9,
+         move ara-fre(ii,2)   to z-1,
+         move z-1             to det-10,
+         move ara-tut(ii,2)   to z-y,
+         move z-y             to det-11,
+         move ara-oda(ii,3)   to z-1,
+         move z-1             to det-12,
+         move ara-pax(ii,3)   to z-1,
+         move z-1             to det-13,
+         move ara-chi(ii,3)   to z-1,
+         move z-1             to det-14,
+         move ara-fre(ii,3)   to z-1,
+         move z-1             to det-15,
+         move ara-tut(ii,3)   to z-y,
+         move z-y             to det-16
+    when other exit paragraph
+    end-evaluate.
+    move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9
+                fil-10 fil-11 fil-12 fil-13 fil-14 fil-15 fil-16.
+    write dokumer-rec from detay.
+ cizgi-cek.
+    initialize dokumer-rec detay
+    move "-"            to det-dokumer-20(5:1)
+    move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8 det-9
+                    det-10 det-11 det-12 det-13 det-14 det-15 det-16
+    write dokumer-rec from detay
+    initialize dokumer-rec detay.
+    .
+
+ detist-corr-sifirla.
+*/
+*/ EGER CORR. HESAPLAMASI YOKSA DETISTTEKI CORR ALANLARI SIFIRLIYORUM 
+*/
+     initialize
+             detist-top-corr
+             detist-oda-corr 
+             detist-kah-corr 
+             detist-ogl-corr 
+             detist-aks-corr 
+             detist-ice-corr 
+             detist-ext-corr 
+             detist-exb-corr 
+             detist-com-corr 
+             detist-hou-corr 
+             detist-nos-corr 
+             detist-sdt-corr(1) 
+             detist-sdt-corr(2) 
+             detist-sdt-corr(3) 
+             detist-sdt-corr(4).
+*
+ son-ata.
+    initialize dokumer-rec detay.
+   
+    
+             move "TOPLAM GELIRLER" to depkod-adi
+             perform cizgi-cek
+            move "A"          to det-dokumer-20(3:1)
+             move 481          to det-renk1
+             move "1"          to det-dokumer-20(10:1)
+            
+          
+         move depkod-adi      to det-1,
+        
+         move toplam-gelir1  to z-g
+         move z-g             to det-6,
+          move toplam-gelir2  to z-y
+         move z-y         to det-11
+          move toplam-gelir3  to z-y
+         move z-y           to det-16
+
+    move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9
+                fil-10 fil-11 fil-12 fil-13 fil-14 fil-15 fil-16.
+    write dokumer-rec from detay.
+
+ 

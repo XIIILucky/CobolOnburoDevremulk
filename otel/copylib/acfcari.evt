@@ -1,0 +1,716 @@
+* acfcari.evt
+* acfcari.evt is generated from D:\asya\acugt.ytl\otel\acfcari.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     move tarih-tasi  to ilk-tarih son-tarih.
+     open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+   
+    perform acuserve-adres-aktar.
+     .
+*
+ acc-ilk-yil-Aft-Procedure.
+     initialize gec-gecme.
+     open input takvim.
+     move ilk-tarih   to takvim-anah
+     read takvim no lock invalid
+          move 1 to gec-gecme
+     end-read
+     close takvim.
+*
+ acc-son-yil-Aft-Procedure.
+     initialize gec-gecme.
+     open input takvim.
+     move son-tarih   to takvim-anah
+     read takvim no lock invalid
+          move 1 to gec-gecme
+     end-read
+     close takvim.
+     
+     .
+
+*
+ Form1-Ex-Other.
+       
+    
+     if key-status = 2001 or key-status = 2002
+        continue
+     else
+        exit paragraph
+     end-if.
+     perform acc-ilk-yil-Aft-Procedure.
+     if gec-gecme = 1
+        move 4 to accept-control
+        move 6 to control-id
+        exit paragraph
+     end-if.
+     
+     perform acc-son-yil-Aft-Procedure.
+     if gec-gecme = 1
+        move 4 to accept-control
+        move 9 to control-id
+        exit paragraph
+     end-if.
+
+   
+
+     if key-status = 2001 perform raporla end-if .
+
+*
+ takaslara-yaz.
+        initialize konuk-rec.
+        move "H" to KONUK-DURUMU     
+        move ilk-tarih to KONUK-GIT-TAR .
+        start konuk key >= KONUK-GIT invalid continue
+          not invalid
+            perform until fs-konuk = "10" 
+              read konuk next no lock end move "10" to fs-konuk
+                 not end
+                  if konuk-git-tar > son-tarih or konuk-durumu not = "H" then
+                    move "10" to fs-konuk
+                    else
+                    if konuk-fol-kodu = "R"
+                     perform rom-al
+                     else
+                     perform ext-al
+                    end-if
+                  end-if
+               end-read
+           end-perform
+       end-start.
+     
+       initialize takas-rec
+       start takas key > takas-kodu
+          invalid
+            continue
+            not invalid
+            perform until fs-takas = "10"
+              read takas next no lock end
+                 continue
+                 not end
+                 initialize takastop-rec
+                    move takas-cari-vergino to takastop-cari-vergino
+                    move takas-fat-no to takastop-fatno
+                      move takas-cari-unvan to takastop-cari-unvan
+                     if takas-cari-unvan = spaces
+                           if takas-fat-no = 0 then 
+                             move "BILINMEYEN" to takastop-cari-unvan
+                           else
+                            move "MUNFERIT" to takastop-cari-unvan
+                        end-if
+                        end-if
+                    read takastop no lock invalid 
+                       continue
+                       end-read
+                          move takas-cout-tar to takastop-cout-tar
+                   
+                     if takas-dep = "999" then 
+                       add takas-tl-tutar to takastop-fark-tl-tutar
+                      add takas-tl-tutar to takastop-top-tl-tutar
+                     else
+                      add takas-tl-tutar to takastop-basilan-tl-tutar
+                       add takas-tl-tutar to  takastop-top-tl-tutar
+
+                     end-if
+                       move takas-cout-tar to takastop-cout-tar
+                     write takastop-rec invalid rewrite takastop-rec end-write
+              end-read
+            end-perform
+       end-start.
+        
+
+
+
+
+       .
+
+
+*
+ rom-al.
+    initialize romhrk-rec
+    move konuk-folio to romhrk-folio
+     start romhrk key > romhrk-anah1 invalid continue
+       not invalid
+        perform until fs-romhrk = "10"
+          read romhrk next no lock end move "10" to fs-romhrk
+             not end
+               if romhrk-folio not = konuk-folio 
+                  move "10" to fs-romhrk
+                  else
+                  if romhrk-yil not = yil-tasi
+                    exit perform cycle
+                  end-if
+                    move romhrk-depkod to  depkod-kodu
+                    if romhrk-corr-depkod > 0 then 
+                      move romhrk-corr-depkod to depkod-kodu
+                      move -1 to carpan
+                      else
+                      move 1 to carpan
+
+                    end-if
+                    read depkod no lock invalid initialize depkod-rec
+                    end-read
+                    if  DEPKOD-FATURA-TAKIP not = "E" then
+                       exit perform cycle
+                    end-if
+                      
+                  initialize takas-rec
+                  move konuk-acenta to takas-acenta
+                  move konuk-rez-no to takas-rez-no
+            
+            move konuk-folio to  takas-folio 
+            move romhrk-anah to hrk2-anah
+            read hrk2 no lock invalid
+               stop " "
+            end-read
+            move hrk2-kaynak-folio to takas-kfolio
+            move romhrk-islem to takas-islem-no 
+            move depkod-kodu to  takas-dep  
+             string konuk-adi delimited by "  "
+                " " delimited by size
+                 konuk-soyadi delimited by "  " 
+               into TAKAS-ADI           
+              move romhrk-tl-tutar to TAKAS-TL-TUTAR
+              if carpan = -1 then 
+             
+              multiply carpan by takas-tl-tutar giving takas-tl-tutar
+              end-if
+               if romhrk-fatura-no = zeroes or ROMHRK-FATURA-NO-ALFABE = spaces
+                 continue
+                 else
+              move romhrk-fatura-no to  takas-fat-no
+              end-if
+              move konuk-git-tar to takas-cout-tar
+              move romhrk-tarih  to takas-isl-tar
+              if takas-fat-no > 0 then 
+                 move  takas-fat-no to fatura-no 
+                  move 0                    to fatura-sira
+                  read fatura no lock invalid  
+                    move takas-fat-no to takas-cari-unvan
+                  not invalid
+                  initialize  takas-cari-unvan
+                   string  FATURA-BASLIK-1 delimited by "       "
+                        " " delimited by size
+                           FATURA-BASLIK-2 delimited by "       "
+                         into takas-cari-unvan 
+                   move FATURA-VER-NO to takas-cari-vergino
+                  end-read
+              
+               
+              end-if
+            write takas-rec invalid stop " " end-write
+            end-if
+          end-read
+        end-perform 
+
+     end-start.
+
+
+
+
+
+
+
+
+
+
+
+
+
+    .
+*
+ ext-al.
+    initialize exthrk-rec
+    move konuk-folio to exthrk-folio
+     start exthrk key > exthrk-anah1 invalid continue
+       not invalid
+        perform until fs-exthrk = "10"
+          read EXTHRK next no lock end move "10" to fs-EXTHRK
+             not end
+               if EXTHRK-folio not = konuk-folio 
+                  move "10" to fs-EXTHRK
+                  else
+                   if romhrk-yil not = yil-tasi
+                    exit perform cycle
+                  end-if
+                    move EXTHRK-depkod to  depkod-kodu
+                     if exthrk-corr-depkod > 0 then 
+                      move exthrk-corr-depkod to depkod-kodu
+                      move -1 to carpan
+                    
+                      else
+                      move 1 to carpan
+
+                    end-if
+                    read depkod no lock invalid initialize depkod-rec
+                    end-read
+                    if  DEPKOD-FATURA-TAKIP not = "E" then
+                       exit perform cycle
+                    end-if
+                      
+                  initialize takas-rec
+*                  move konuk-acenta to takas-acenta
+                  move konuk-rez-no to takas-rez-no
+
+            move konuk-folio to  takas-folio 
+            move romhrk-anah to hrk2-anah
+            read hrk2 no lock invalid
+               stop " "
+            end-read
+            move hrk2-kaynak-folio to takas-kfolio
+            move EXTHRK-islem to takas-islem-no 
+            move depkod-kodu to  takas-dep  
+             string konuk-adi delimited by "  "
+               " " delimited by size
+                 konuk-soyadi delimited by "  " 
+               into TAKAS-ADI           
+              move EXTHRK-tl-tutar to TAKAS-TL-TUTAR
+               if carpan = -1 then 
+             
+              multiply carpan by takas-tl-tutar giving takas-tl-tutar
+              end-if
+              add EXTHRK-tl-tutar to balans
+              if exthrk-fatura-no = zeroes or extHRK-FATURA-NO-ALFABE = spaces
+                      continue
+                      else
+              move EXTHRK-fatura-no to  takas-fat-no
+              end-if
+               move konuk-git-tar to takas-cout-tar
+              move exthrk-tarih  to takas-isl-tar
+                if takas-fat-no > 0 then 
+                 move  takas-fat-no to fatura-no 
+                  move 0                    to fatura-sira
+                  read fatura no lock invalid  
+                    move takas-fat-no to takas-cari-unvan
+                  not invalid
+                   initialize  takas-cari-unvan
+                   string  FATURA-BASLIK-1 delimited by "       "
+                     " " delimited by size
+                           FATURA-BASLIK-2 delimited by "       "
+                         into takas-cari-unvan 
+                   move FATURA-VER-NO to takas-cari-vergino
+                  end-read
+              
+               
+              end-if
+            write takas-rec invalid stop " " end-write
+            end-if
+          end-read
+        end-perform 
+
+     end-start.
+
+
+
+    .
+*
+ raporla.
+     open input konuk acenta romhrk exthrk fatura  hrk2 acenfat depkod cari.
+     
+
+     
+        open i-o genelfis
+        move 1 to genelfis-anahtar
+        read genelfis no lock invalid
+             accept print-no from time
+        not invalid
+             add 1 to print-no
+            
+             rewrite genelfis-rec end-rewrite
+        end-read
+        close genelfis
+       move print-no(2:) to takas-no takastop-no
+       open output takas takastop
+       close takas takastop
+       open i-o takas takastop 
+       perform takaslara-yaz.
+**************************
+    perform dokumere-yolla.
+        close takas takastop
+        delete file takas takastop
+   
+     close konuk acenta romhrk exthrk acenfat fatura depkod hrk2 cari.
+ 
+
+*
+ dokumere-yolla.
+
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Acenta Cari Hareketler Kontrol Raporu"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Acenta Cari Hareketler Kontrol Raporu"   to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move ilk-gun        to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ilk-ay         to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move ilk-yil        to det-filler(57:04)
+     move "-"            to det-filler(61:01)
+     move son-gun        to det-filler(62:02)
+     move "/"            to det-filler(64:01)
+     move son-ay         to det-filler(65:02)
+     move "/"            to det-filler(67:01)
+     move son-yil        to det-filler(68:04)
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+    
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLRRLLRRLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+     initialize dokumer-rec detay 
+     move "D1"         to det-dokumer-20(1:2)
+     move "1"          to det-dokumer-20(10:1)
+     move "Cari Vergino"          to det-1
+     move "Cari Unvani"        to det-2
+     move "Acenta Adi "        to det-3
+     move "FaturaNo"           to det-4
+     move "Rezno"              to det-5
+     move "Folio"              to det-6
+     move "Misafir Adi"        to det-7
+     move "Dep"                to det-8
+     move "Islem Tarihi"       to det-9
+     move "COUT Tarihi"        to det-10
+     move "Basilan Tutar"      to det-11
+     move "Duzeltme Tutar"     to det-12
+     move "Toplam  tutar"      to det-13
+    
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6
+                 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+                 det-7 det-8 det-9 det-10 det-11 det-12 det-13
+     write dokumer-rec from detay
+   
+     if icmal = 0 then
+     initialize  toplamlar initialize takas-rec
+     start takas key > takas-kodu invalid continue
+        not invalid
+
+
+     perform with test after until fs-takas = "10"
+         read takas next no lock end move "10" to fs-takas
+         not at end
+              
+                initialize detay cari-rec
+                move takas-cari-vergino to det-1
+                move takas-cari-unvan to det-2  
+                move takas-acenta to acenta-kodu 
+                read acenta no lock invalid
+                  move "EXTRA" to  det-3
+                  not invalid
+                  move acenta-adi to det-3
+                end-read
+                if takas-fat-no > 0 then 
+                move takas-fat-no to det-4
+                end-if
+                if takas-rez-no > 0 then
+                   move takas-rez-no to det-5
+                end-if
+                move takas-folio to det-6
+                move takas-adi to det-7
+                move takas-dep to depkod-kodu 
+               
+                read depkod no lock invalid
+                    move "KREDI DUZELTME" to det-8
+                    not invalid
+                    move depkod-adi to det-8
+                end-read
+                move takas-isl-tar(1:4) to eyil
+                move takas-isl-tar(5:2) to eay
+                move takas-isl-tar(7:2) to egun
+                move etarih              to det-9
+                move takas-cout-tar(1:4) to eyil
+                move takas-cout-tar(5:2) to eay
+                move takas-cout-tar(7:2) to egun
+                move etarih              to det-10
+                if  takas-dep not = "999" then 
+                add takas-tl-tutar to toplam-basilan-tl
+                move takas-tl-tutar to z-12
+                move z-12               to det-11
+                else
+                  add takas-tl-tutar to toplam-duzeltme-tl
+                move takas-tl-tutar to z-eksi
+                move z-eksi               to det-12
+                end-if
+                 add takas-tl-tutar to toplam-toplam-tl
+                move takas-tl-tutar to z-12
+                move z-12               to det-13
+               
+                write dokumer-rec from detay
+             
+         end-read
+     end-perform
+     end-start
+*/*-*\**/*-*\**/*-*\**/*-*\**/*-*\**/*-*\**/*-*\*
+   
+        initialize dokumer-rec detay
+        move "-"            to det-dokumer-20(5:1)
+        move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+                 det-7 det-8 det-9 det-10 det-11 det-12 det-13
+        write dokumer-rec from detay
+        initialize dokumer-rec detay
+        move "A"          to det-dokumer-20(3:1)
+        move 481          to det-renk1
+        move "1"          to det-dokumer-20(10:1)
+        move "Toplam =>"             to det-1
+       
+
+       
+                move  toplam-basilan-tl to z-12
+                move z-12               to det-11
+                move toplam-duzeltme-tl  to z-eksi
+                move z-eksi               to det-12
+               
+                 move toplam-toplam-tl to z-12
+                move z-12               to det-13
+        write dokumer-rec from detay 
+        initialize dokumer-rec detay
+        move "-"            to det-dokumer-20(5:1)
+       move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+                 det-7 det-8 det-9 det-10 det-11 det-12 det-13
+        write dokumer-rec from detay
+
+       end-if
+            initialize  toplamlar initialize takastop-rec
+     start takastop key > takastop-kodu invalid continue
+        not invalid
+
+
+     perform with test after until fs-takastop = "10"
+         read takastop next no lock end move "10" to fs-takastop
+         not at end
+              
+                initialize detay cari-rec
+                move takastop-cari-unvan to det-2 
+                  move takastop-cari-vergino to det-1
+               
+                 move takastop-fatno to det-4
+               
+              
+               
+                
+               
+                
+              add takastop-basilan-tl-tutar to  toplam-basilan-tl
+                move takastop-basilan-tl-tutar to z-12
+                move z-12               to det-11
+             
+                  add takastop-fark-tl-tutar to toplam-duzeltme-tl
+                move takastop-fark-tl-tutar to z-eksi
+                move z-eksi               to det-12
+                
+                 add takastop-top-tl-tutar to toplam-toplam-tl
+                move takastop-top-tl-tutar to z-12
+                move z-12               to det-13
+               
+                write dokumer-rec from detay
+             
+         end-read
+     end-perform
+     end-start.
+*/*-*\**/*-*\**/*-*\**/*-*\**/*-*\**/*-*\**/*-*\*
+   
+        initialize dokumer-rec detay
+        move "-"            to det-dokumer-20(5:1)
+        move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+                 det-7 det-8 det-9 det-10 det-11 det-12 det-13
+        write dokumer-rec from detay
+        initialize dokumer-rec detay
+        move "A"          to det-dokumer-20(3:1)
+        move 481          to det-renk1
+        move "1"          to det-dokumer-20(10:1)
+        move "Toplam =>"             to det-1
+       
+
+       
+                move  toplam-basilan-tl to z-12
+                move z-12               to det-11
+                move toplam-duzeltme-tl  to z-eksi
+                move z-eksi               to det-12
+               
+                 move toplam-toplam-tl to z-12
+                move z-12               to det-13
+        write dokumer-rec from detay 
+        initialize dokumer-rec detay
+        move "-"            to det-dokumer-20(5:1)
+       move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+                 det-7 det-8 det-9 det-10 det-11 det-12 det-13
+        write dokumer-rec from detay
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        close dokumer 
+     
+      
+        call dokumer-prog on exception
+             perform callerr-proc
+        not on exception
+             cancel dokumer-prog
+        end-call
+        delete file dokumer .
+        
+
+
+
+
+
+     .
+*
+ Form1-Aft-Initdata.
+          continue
+     
+     .
+*
+ acuserve-adres-aktar.
+    move muha-sirketi of genel-rec to CARI-DOSYA-adres         
+                         ISLENEN-DOSYA-adres      
+                         HESAP-DOSYA-adres        
+                         MAHSUP-DOSYA-adres       
+                          
+                         REFERANS-DOSYA-adres     
+                         Mgenel-DOSYA-adres       
+                        
+                       
+                
+
+    move all low-values to      
+                           CARI-ACUSERVE-DOSYA       
+                           ISLENEN-ACUSERVE-DOSYA    
+                           HESAP-ACUSERVE-DOSYA      
+                           MAHSUP-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA   
+                           REFERANS-ACUSERVE-DOSYA   
+                           Mgenel-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA  
+                           ip-no.
+
+
+    inspect genel-muha-uzak-ip 
+            replacing trailing spaces by low-values.
+
+    if genel-muha-uzak-ip <> low-values
+       move all low-values to ip-no
+       string ip-no,
+              "@" delimited by low-values
+              genel-muha-uzak-ip delimited by low-values
+              ":" delimited by low-values
+              into ip-no
+    end-if
+
+    string mgenel-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mgenel-dosya                    delimited by low-values
+           into mgenel-acuserve-dosya.
+    string genelfis-acuserve-dosya,
+           ip-no                        delimited by low-values
+           genelfis-dosya                 delimited by low-values
+           into genelfis-acuserve-dosya.
+
+    
+    string hesap-acuserve-dosya,
+           ip-no                        delimited by low-values
+           hesap-dosya                 delimited by low-values
+           into hesap-acuserve-dosya.
+    string mahsup-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mahsup-dosya                 delimited by low-values
+           into mahsup-acuserve-dosya.
+    string cari-acuserve-dosya,
+           ip-no                        delimited by low-values
+           cari-dosya                 delimited by low-values
+           into cari-acuserve-dosya.
+    string islenen-acuserve-dosya,
+           ip-no                        delimited by low-values
+           islenen-dosya               delimited by low-values
+           into islenen-acuserve-dosya.
+    string referans-acuserve-dosya,
+           ip-no                        delimited by low-values
+           referans-dosya                delimited by low-values
+           into referans-acuserve-dosya.
+    
+
+    inspect CARI-ACUSERVE-DOSYA        replacing  all spaces by low-values
+    inspect ISLENEN-ACUSERVE-DOSYA     replacing  all spaces by low-values
+    inspect HESAP-ACUSERVE-DOSYA       replacing  all spaces by low-values
+    inspect MAHSUP-ACUSERVE-DOSYA      replacing  all spaces by low-values
+    inspect genelfis-ACUSERVE-DOSYA    replacing  all spaces by low-values
+    inspect REFERANS-ACUSERVE-DOSYA    replacing  all spaces by low-values
+    inspect mgenel-ACUSERVE-DOSYA      replacing  all spaces by low-values
+    inspect genelfis-ACUSERVE-DOSYA   replacing  all spaces by low-values.
+
+ 

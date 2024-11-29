@@ -1,0 +1,549 @@
+* hesapara.evt
+* hesapara.evt is generated from D:\asya\acugt.ytl\otel\hesapara.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ arama-combo-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM arama-combo-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Lb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM Form1-Lb-1-Ex-Cmd-Dblclick
+        WHEN Ntf-Pl-First
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-First
+        WHEN Ntf-Pl-Last
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Last
+        WHEN Ntf-Pl-Next
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Next
+        WHEN Ntf-Pl-Nextpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Nextpage
+        WHEN Ntf-Pl-Prev
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prev
+        WHEN Ntf-Pl-Prevpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prevpage
+        WHEN Ntf-Pl-Search
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Search
+        END-EVALUATE
+     ELSE
+        PERFORM Form1-Lb-1-Ex-Other
+     END-IF
+     .
+***   start event editor code   ***
+******
+****** ýcýnde arama ýcýn alt ve üstünde içinde aram yazan
+****** paragraf ve satirlari kopyalamniz yeterli
+ Form1-Bef-Create.
+     
+     perform adresleri-tasi.
+     move link-isyeri to mgenel-dosya-adres hesap-dosya-adres
+     move "muha" to genel-dosya(16:4) hesap-dosya(16:4)
+     perform acuserve-adres-aktar
+  
+     open input genel.
+     move 1 to genel-anahtar
+     read genel no lock invalid
+          initialize mesaj-link
+          move 17 to mesaj-no
+          perform mesaj-ver
+          close genel  
+          goback
+     end-read
+     
+     
+     
+     close genel.
+     
+*ICINDE ARAMA
+     initialize icinde-ara-deg.
+*ICINDE ARAMA
+
+*
+ Form1-Aft-Initdata.
+     modify arama-combo,reset-list = 1 
+                        mass-update = 1
+     modify arama-combo,
+            item-to-add("1-Ada gore","2-Koda gore")
+     move "2-Koda gore"  to arama-combo-value.
+     move 2 to arama.
+     modify arama-combo,mass-update = 0
+                        value = arama-combo-value.
+
+     open input hesap cari.
+     perform kolon-ayarla.
+     perform Form1-Lb-1-Ex-Ntf-Pl-First
+     modify Form1-Lb-1, selection-index = 1.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+get-next-item.
+    evaluate state-flag
+*       when reading-backwards
+        when "b"
+             move kayit-sayisi to number-reads-needed
+*       when at-end
+        when "e"
+             exit paragraph
+*       when reading-forwards
+        when "f"
+          move 1 to number-reads-needed
+
+*       when at-start
+       when "s"
+          move low-values to hesap-adi hesap-kodu
+          evaluate arama
+             when 1
+               start hesap key not < hesap-adi invalid
+                     exit paragraph
+               end-start
+             when 2
+               start hesap key not < hesap-kodu invalid
+                     exit paragraph
+               end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+    end-evaluate.
+
+*******ICINDE ARAMA
+    if icinde-ara
+       perform varying i from 1 by 1 until i > number-reads-needed
+            read hesap next no lock end 
+                          set at-end to true
+                          exit paragraph
+            not at end
+             MOVE HESAP-KODU TO CARI-KODU
+            READ CARI NO LOCK INVALID
+                  CONTINUE
+            END-READ
+                perform icerik-karsilastir
+                             
+            end-read
+       end-perform
+*******ICINDE ARAMA
+    else
+       perform number-reads-needed times
+       read hesap next record
+            at end     set at-end to true
+                       exit paragraph
+       end-read
+        MOVE HESAP-KODU TO CARI-KODU
+            READ CARI NO LOCK INVALID
+                  CONTINUE
+            END-READ
+       end-perform
+    end-if
+
+    perform kayit-yerlestir
+
+
+    modify form1-lb-1, item-to-add = form1-lb-1-value
+
+    set reading-forwards to true.
+
+get-prev-item.
+    evaluate state-flag
+       when "b"
+*       when reading-backwards
+          move 1 to number-reads-needed
+*       when at-end
+       when  "e"
+          move high-values to hesap-adi hesap-kodu
+          evaluate arama
+          when 1 
+              start hesap key not > hesap-adi
+                   invalid key      exit paragraph
+              end-start
+          when 2
+              start hesap key not > hesap-kodu 
+                   invalid key      exit paragraph
+              end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+       when "f"
+*       when reading-forwards
+          move kayit-sayisi to number-reads-needed
+       when "s"
+*       when at-start
+          exit paragraph
+    end-evaluate.
+
+    if icinde-ara
+*******ICINDE ARAMA 
+       perform varying i from 1 by 1 until i > number-reads-needed
+            read hesap previous no lock end 
+                          set at-end to true
+                          exit paragraph
+            not at end
+             MOVE HESAP-KODU TO CARI-KODU
+            READ CARI NO LOCK INVALID
+                  CONTINUE
+            END-READ
+                perform icerik-karsilastir
+                             
+            end-read
+       end-perform
+*******ICINDE ARAMA 
+    else
+       perform number-reads-needed times
+       read hesap previous record
+          at end     set at-start to true
+                     exit paragraph
+          end-read
+           MOVE HESAP-KODU TO CARI-KODU
+            READ CARI NO LOCK INVALID
+                  CONTINUE
+            END-READ
+       end-perform
+    end-if
+    perform kayit-yerlestir
+
+    modify form1-lb-1, 
+       insertion-index = 1
+       item-to-add = form1-lb-1-value
+
+    set reading-backwards to true.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Next.
+    perform get-next-item.
+     
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prev.
+    perform get-prev-item.
+     
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Nextpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prevpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-First.
+     move low-values to hesap-adi hesap-kodu
+     evaluate arama
+     when 1 
+     start hesap key not < hesap-adi
+           invalid key    exit paragraph
+     end-start
+     when 2
+     start hesap key not < hesap-kodu
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Last.
+     move high-values to hesap-adi hesap-kodu
+     evaluate arama
+     when 1 
+     start hesap, key not > hesap-adi 
+           invalid key    exit paragraph
+     end-start
+     when 2 
+     start hesap, key not > hesap-kodu
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+     set reading-backwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Search.
+     inquire form1-lb-1, search-text in arama-kelime
+     evaluate arama
+     when 1 
+     move arama-kelime to hesap-adi
+     start hesap key not < hesap-adi
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 2 
+     move arama-kelime to hesap-kodu
+     start hesap key not < hesap-kodu
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     end-evaluate.
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0
+     if at-end
+        perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+     end-if.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+* ICINDE ARAMA
+     when 1
+          perform Form1-Lb-1-Ex-Other
+     when 2007
+          initialize icinde-ara-kelime-boy
+          inspect icinde-ara-kelime
+                  tallying icinde-ara-kelime-boy
+                  for trailing spaces
+          compute icinde-ara-kelime-boy = 
+                  function length(icinde-ara-kelime) -
+                  icinde-ara-kelime-boy
+          modify icinde-ara-button, enabled = false
+          perform Form1-Lb-1-Ex-Ntf-Pl-First
+          modify Form1-Lb-1, selection-index = 1
+          move 4 to accept-control
+          move 9 to control-id
+          modify icinde-ara-button, enabled = true
+
+* ICINDE ARAMA
+     when 2000
+     when 2001
+        inquire form1-lb-1,selection-index in i
+        evaluate arama
+        when 1 
+             inquire form1-lb-1(i),value in ada-gore
+             move ada-gore-kodu     to link-hesap
+             set exit-pushed to true
+        when 2
+             inquire form1-lb-1(i),value in koda-gore
+             move koda-gore-kodu    to link-hesap
+             set exit-pushed to true
+        end-evaluate
+*/ Eger mahsup ayirac yoksa sen git 
+*        if mahsup-ayrac <> "E"
+*           move link-hesap  to hesap-kodu
+*           read hesap no lock 
+*             invalid
+*                initialize link-hesap
+*             not invalid
+*                move hesap-noktasiz to link-hesap
+*           end-read
+*        end-if
+*     end-evaluate.
+      .
+*/
+ kolon-ayarla.
+     evaluate arama
+         when 1 
+              modify form1-lb-1,data-columns = 0
+                                display-columns = 0
+                                data-columns(1,41,56)
+                                display-columns(1,52,68)
+         when 2 
+              modify form1-lb-1,data-columns = 0
+                                display-columns = 0
+                                data-columns(1,16,56)
+                                display-columns(1,17,58)
+     end-evaluate.
+*
+ arama-combo-Ex-Ntf-Selchange.
+     if arama-combo-value(1:1) = "1"
+        move 1 to arama
+     else
+        move 2 to arama
+     end-if.
+     perform kolon-ayarla.
+     perform Form1-Lb-1-Ex-Ntf-Pl-First.
+
+*     set at-start to true
+*     modify form1-lb-1, mass-update = 1
+*     perform get-next-item kayit-sayisi times
+*     modify form1-lb-1, mass-update = 0.
+
+ kayit-yerlestir.
+    evaluate arama
+         when 1 
+              move hesap-adi    to ada-gore-adi
+              move hesap-kodu   to ada-gore-kodu
+              move C-UNVAN-2 to ada-gore-noktasiz
+              move ada-gore     to form1-lb-1-value
+         when 2
+              move hesap-kodu   to koda-gore-kodu
+              move hesap-adi    to koda-gore-adi
+              move C-UNVAN-2 to koda-gore-noktasiz
+              move koda-gore    to form1-lb-1-value
+    end-evaluate.
+*
+ Form1-Lb-1-Ex-Cmd-Dblclick.
+    move 2001 to key-status.
+    perform  Form1-Ex-Other.
+
+*
+ Form1-Aft-Routine.
+    close hesap cari.
+
+******************* ICINDE ARAMA ************************
+*
+ Form1-Lb-1-Ex-Other.
+    evaluate key-status
+    when 2
+         move "1-Ada gore"  to arama-combo-value
+         display arama-combo
+         perform arama-combo-Ex-Ntf-Selchange
+         exit paragraph
+    when 3
+         move "2-Koda gore"  to arama-combo-value
+         display arama-combo
+         perform arama-combo-Ex-Ntf-Selchange
+         exit paragraph
+    when 1
+         continue
+    when other
+         exit paragraph
+    end-evaluate
+
+    if icinde-ara 
+       initialize arama-algoritma
+    else
+       set icinde-ara to true 
+    end-if
+    display icinde-ara-label, icinde-ara-accept, icinde-ara-button
+    move 4 to accept-control
+    if icinde-ara
+       move 10 to control-id
+       modify Form1-Lb-1, 
+              reset-list = 1
+    else
+       move 9 to control-id
+       modify Form1-Lb-1,
+              reset-list = 1
+       perform Form1-Lb-1-Ex-Ntf-Pl-First
+       modify Form1-Lb-1, selection-index = 1
+    end-if.
+
+*
+ icerik-karsilastir.
+    initialize icinde-ara-i icinde-ara-karsilastir
+   
+    evaluate arama
+    when 1 
+         move hesap-adi    to icinde-ara-karsilastir
+    when 2
+         move hesap-kodu   to icinde-ara-karsilastir
+    end-evaluate
+    move function upper-case(icinde-ara-karsilastir) to 
+                             icinde-ara-karsilastir
+    if icinde-ara-kelime-boy <> 0 and 
+       icinde-ara-kelime-boy < function length(icinde-ara-kelime)
+       inspect icinde-ara-karsilastir
+               tallying icinde-ara-i
+               for all icinde-ara-kelime(1:icinde-ara-kelime-boy)
+       if icinde-ara-i = 0 
+          if (i > 1) or (number-reads-needed = 1)
+              subtract 1 from i
+          end-if
+       end-if
+    end-if.
+
+
+
+     
+     .
+*
+*
+ acuserve-adres-aktar.
+
+    move link-isyeri to CARI-DOSYA-adres         
+                         ISLENEN-DOSYA-adres      
+                         HESAP-DOSYA-adres        
+                         MAHSUP-DOSYA-adres       
+                         genelfis-DOSYA-adres     
+                         REFERANS-DOSYA-adres     
+                         mgenel-DOSYA-adres       
+                         genelfis-DOSYA-adres     
+                         move "muha" to genelfis-DOSYA(16:4)
+            
+
+    move all low-values to      
+                           CARI-ACUSERVE-DOSYA       
+                           ISLENEN-ACUSERVE-DOSYA    
+                           HESAP-ACUSERVE-DOSYA      
+                           MAHSUP-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA   
+                           REFERANS-ACUSERVE-DOSYA   
+                           Mgenel-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA  
+                           ip-no.
+
+
+   
+
+    if link-ip-no <> low-values
+       move all low-values to ip-no
+       string ip-no,
+              "@" delimited by low-values
+              link-ip-no delimited by low-values
+              ":" delimited by low-values
+              into ip-no
+    end-if
+
+    string mgenel-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mgenel-dosya                    delimited by low-values
+           into mgenel-acuserve-dosya.
+    string genelfis-acuserve-dosya,
+           ip-no                        delimited by low-values
+           genelfis-dosya                 delimited by low-values
+           into genelfis-acuserve-dosya.
+
+    
+    string hesap-acuserve-dosya,
+           ip-no                        delimited by low-values
+           hesap-dosya                 delimited by low-values
+           into hesap-acuserve-dosya.
+    string mahsup-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mahsup-dosya                 delimited by low-values
+           into mahsup-acuserve-dosya.
+    string cari-acuserve-dosya,
+           ip-no                        delimited by low-values
+           cari-dosya                 delimited by low-values
+           into cari-acuserve-dosya.
+    string islenen-acuserve-dosya,
+           ip-no                        delimited by low-values
+           islenen-dosya               delimited by low-values
+           into islenen-acuserve-dosya.
+    string referans-acuserve-dosya,
+           ip-no                        delimited by low-values
+           referans-dosya                delimited by low-values
+           into referans-acuserve-dosya.
+    
+
+    inspect CARI-ACUSERVE-DOSYA        replacing  all spaces by low-values
+    inspect ISLENEN-ACUSERVE-DOSYA     replacing  all spaces by low-values
+    inspect HESAP-ACUSERVE-DOSYA       replacing  all spaces by low-values
+    inspect MAHSUP-ACUSERVE-DOSYA      replacing  all spaces by low-values
+    inspect genelfis-ACUSERVE-DOSYA    replacing  all spaces by low-values
+    inspect REFERANS-ACUSERVE-DOSYA    replacing  all spaces by low-values
+    inspect mgenel-ACUSERVE-DOSYA      replacing  all spaces by low-values
+    inspect genelfis-ACUSERVE-DOSYA   replacing  all spaces by low-values.
+    
+
+ 

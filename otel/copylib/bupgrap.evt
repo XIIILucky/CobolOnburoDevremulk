@@ -1,0 +1,1431 @@
+* bupgrap.evt
+* bupgrap.evt is generated from D:\asya\acugt.ytl\otel\bupgrap.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      
+      open input genel
+      initialize genel-rec
+      move 1  to genel-anahtar
+      read genel no lock invalid 
+          continue 
+      end-read 
+      close genel
+      open input genel2
+      initialize genel2-rec
+      move 1  to genel2-anah
+      read genel2 no lock invalid 
+          continue 
+      end-read 
+      close genel2
+
+      move tarih-tasi         to ilk-tarih son-tarih
+      call "c$narg" using link-var
+         move acenta-dosya       to acenta2-ACUSERVE-DOSYA
+      if link-var > 0
+         move 1          to mail-gondereyimmi
+         perform rapor-goster
+         set exit-pushed to true 
+      end-if.
+      
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 2
+          initialize takvim-rec hata
+          move ilk-tarih        to takvim-anah
+          perform tarih-kontrol
+          if hata = 1
+             display message box "ilk Tarih Hatali ..." new-line
+                                 "Lutfen Kontrol Ediniz.."
+                             title "Uyari"
+                             icon 1
+                  exit paragraph 
+          end-if 
+
+          initialize takvim-rec hata
+          move son-tarih        to takvim-anah
+          perform tarih-kontrol
+          if hata = 1
+             display message box "Son Tarih Hatali ..." new-line
+                                 "Lutfen Kontrol Ediniz.."
+                             title "Uyari"
+                             icon 1
+                  exit paragraph 
+          end-if 
+
+          perform rapor-goster 
+
+      end-evaluate.
+*
+ tarih-kontrol.
+      open input takvim
+      read takvim no lock invalid
+           move 1 to hata
+      end-read 
+      close takvim. 
+*
+ upg-fiyatlari-bul.
+      initialize basilan-upg fiyat-upg konuk-rec  fiyat-upg-indli
+      perform upganlasbul
+      if rez-folio > 0 then
+        initialize yromhrk-rec
+        move rez-folio to yromhrk-folio  konuk-folio
+        perform upgbasbul
+***        compute konuk-folio = rez-folio + 1 
+        initialize konuk-rec kayit-var-konuk
+        move "I"       to konuk-durumu
+        move rez-odano to konuk-odano
+        start konuk key not < konuk-oda invalid
+            continue
+        not invalid 
+        perform until fs-konuk = "10"
+        read konuk next no lock end move "10"  to fs-konuk
+        not at end 
+             if konuk-durumu not = "I"
+                 exit perform 
+             end-if 
+             if konuk-odano <> rez-odano
+                exit perform 
+             end-if 
+             if konuk-fol-kodu = "R"
+                exit perform cycle 
+             end-if 
+                  initialize yromhrk-rec  fs-yromhrk kayit-var-konuk
+                  if konuk-extra-rez-no = rez-no
+                     move konuk-folio to yromhrk-folio
+                     move 1 to kayit-var-konuk 
+                     perform upgbasbul
+                     exit perform
+                  end-if
+        end-read 
+        end-perform
+        end-start
+        if kayit-var-konuk not = 1
+                initialize konuk-rec  
+                move "H"       to konuk-durumu
+                move rez-odano to konuk-odano
+                start konuk key not < konuk-oda invalid
+                    continue
+                not invalid 
+                perform until fs-konuk = "10"
+                read konuk next no lock end move "10"  to fs-konuk
+                not at end 
+                     if konuk-durumu not = "H"
+                         exit perform 
+                     end-if 
+                     if konuk-odano <> rez-odano
+                        exit perform 
+                     end-if 
+                     if konuk-fol-kodu = "R"
+                        exit perform cycle 
+                     end-if 
+                          initialize yromhrk-rec  fs-yromhrk kayit-var-konuk
+                          if konuk-extra-rez-no = rez-no
+                             move konuk-folio to yromhrk-folio
+                             perform upgbasbul
+                             exit perform
+                          end-if
+                end-read 
+                end-perform
+                end-start           
+        end-if 
+*        read konuk no lock invalid 
+*           continue
+*        not invalid 
+*          initialize yromhrk-rec  fs-yromhrk
+*          if konuk-extra-rez-no = rez-no
+*             move konuk-folio to yromhrk-folio
+*             perform upgbasbul
+*          end-if
+*        end-read
+      end-if.
+*
+ upganlasbul.
+****      if rez-no = 174394  then stop " " end-if
+      initialize upg-birim-tutar bupgfiy-rec dvz
+      move  blokupg-upgrade-tarih to gecerli-tarih
+      if rez-gir-tar >  blokupg-upgrade-tarih
+         move rez-gir-tar to gecerli-tarih
+      end-if
+      move  xkonum-tutar-sira(blokupg-eski-konum) to bupgfiy-eski-konum
+      move  xkonum-tutar-sira(blokupg-yeni-konum) to bupgfiy-yeni-konum      
+      start bupgfiy key > bupgfiy-alt-anah  invalid continue
+        not invalid
+        perform until fs-bupgfiy = "10"
+          read bupgfiy next no lock end move "10" to fs-bupgfiy
+             not end
+               if xkonum-tutar-sira(blokupg-eski-konum) not  = bupgfiy-eski-konum
+                  or xkonum-tutar-sira(blokupg-yeni-konum) not =  bupgfiy-yeni-konum
+                  or gecerli-tarih < bupgfiy-bas-tar
+                     exit perform 
+               end-if
+               initialize tl-oda-var
+               move rez-doviz to xrez-doviz
+               if genel2-upg-sabit-doviz-kodu not = spaces and 
+                  genel2-upg-sabit-doviz-kodu not = zeroes 
+                   if bupgfiy-dvz-kodu not = genel2-upg-sabit-doviz-kodu 
+                      exit perform cycle
+                   end-if
+               else
+
+                    if genel2-upg-eur-alsin = 1
+                       initialize doviz-rec 
+                       move rez-doviz  to doviz-kodu
+                       read doviz no lock invalid 
+                          continue 
+                      end-read 
+                         if d-merkez-banka-kodu = "TL"
+                             initialize doviz-rec
+                             start doviz key not < doviz-kodu invalid 
+                                continue 
+                             not invalid 
+                             perform until fs-doviz = "10"
+                             read doviz next no lock end move "10" to fs-doviz
+                             not at end 
+                                    if d-merkez-banka-kodu = "EUR"
+                                        move doviz-kodu to xrez-doviz 
+                                         move 1         to tl-oda-var
+                                        exit perform 
+                                    end-if 
+                             end-read 
+                             end-perform
+                             end-start
+                        end-if 
+                     end-if
+
+
+                    if bupgfiy-dvz-kodu not = xrez-doviz 
+                       exit perform cycle
+                    end-if     
+               end-if
+ 
+               if gecerli-tarih < bupgfiy-bit-tar
+                  move bupgfiy-tutar  to upg-birim-tutar
+                  if tl-oda-var = 1 
+                    move rez-doviz to dvz
+                  else
+                  move bupgfiy-dvz-kodu  to dvz
+                  end-if
+
+                  perform toplam-anl-bul
+                  exit perform 
+               end-if
+          end-read
+        end-perform
+      end-start 
+      perform ind-bul.
+      compute fiyat-upg-indli rounded =  fiyat-upg * (( 100 - bulunan-ind ) / 100 ).
+*
+ ind-bul.
+      initialize bupgind-rec
+      initialize bulunan-ind bupgind-rec
+      move  blokupg-upgrade-tarih to gecerli-tarih
+      if rez-gir-tar >  blokupg-upgrade-tarih
+         move rez-gir-tar to gecerli-tarih
+      end-if    
+      start bupgind key > bupgind-alt-anah  invalid continue
+      not invalid
+      perform until fs-bupgind = "10"
+          read bupgind next no lock end move "10" to fs-bupgind
+             not end
+               if  gecerli-tarih < bupgind-bas-tar 
+                    exit perform 
+               end-if
+               if gecerli-tarih <= bupgind-bit-tar and ( bupgind-tum-upgrade-gecerli = 1 or
+                   ( xkonum-tutar-sira(blokupg-eski-konum)   = bupgind-eski-konum
+                   and xkonum-tutar-sira(blokupg-yeni-konum)  =  bupgind-yeni-konum  ))  
+                   move bupgind-ind-tutar  to bulunan-ind                  
+                   exit perform 
+               end-if
+      end-read
+      end-perform
+      end-start .    
+*
+ toplam-anl-bul.
+     if tl-oda-var = 1
+         
+          initialize kur-rec 
+          move rez-banka  to kur-banka
+          move tarih-tasi to kur-tarih
+          move xrez-doviz to kur-doviz
+          read kur no lock invalid 
+              continue 
+          not invalid 
+                compute upg-birim-tutar = upg-birim-tutar * doviz-alis
+          end-read 
+           
+     end-if
+      evaluate true
+           when bupgfiy-kisi-oda-basi = "O"
+              move 1 to upg-carpan
+           when other
+             evaluate rez-buyuk
+                when 1
+                  compute upg-carpan = 
+                  ( 1 + ( bupgfiy-ss / 100)) + 
+                  ( rez-kucuk * ( (100 - bupgfiy-cocuk-ind) ) / 100 )
+                when 2
+                   compute upg-carpan = 
+                   ( 2 ) + ( rez-kucuk * ( (100 - bupgfiy-cocuk-ind) ) / 100 )
+                when 3
+                  compute upg-carpan = 
+                  ( 2 + (( 100 - (bupgfiy-uc-kisi-ind))/100) ) + 
+                  ( rez-kucuk * ( (100 - bupgfiy-cocuk-ind) ) / 100 )
+                when 4
+                    compute upg-carpan = 
+                    ( 2 + (( 100 - (bupgfiy-uc-kisi-ind))/100) + 
+                    ( 100 - ((bupgfiy-dort-kisi-ind))/100) ) + 
+                    ( rez-kucuk * ( (100 - bupgfiy-cocuk-ind) ) / 100 )         
+             end-evaluate
+      end-evaluate
+      move gecerli-tarih to s1
+      move rez-cik-tar   to s2
+      compute fiyat-upg rounded = (upg-birim-tutar *  upg-carpan) *
+           ( function integer-of-date(s2) - function integer-of-date(s1)).
+*
+ upgbasbul.
+      initialize dv-hesap yedek-yromhrk-blokupg-fis-no
+      start yromhrk key > yromhrk-anah invalid 
+           continue
+      not invalid
+           perform until fs-yromhrk = "10"
+             read yromhrk next no lock end move "10" to fs-yromhrk
+                not end
+                  if yromhrk-folio not = konuk-folio 
+                     exit perform 
+                  end-if
+                  
+                   move yromhrk-depkod to depkod2-anah
+                   read depkod2 no lock invalid 
+                      continue
+                   not invalid 
+                      if depkod2-upgrade = 1
+                        
+                         initialize kur-rec
+                         move rez-banka           to kur-banka
+                         move rez-doviz           to kur-doviz
+                         move yromhrk-tarih       to kur-tarih
+                         read kur no lock invalid    
+                             continue 
+                         end-read 
+                            compute dv-hesap rounded = yromhrk-tl-tutar / doviz-alis 
+*                            if blokupg-upgrade-tarih < yromhrk-tarih
+*                               initialize dv-hesap
+*                            end-if 
+                            add dv-hesap to basilan-upg
+                           
+                      end-if
+                      initialize yedek-yromhrk-blokupg-fis-no
+                      move yromhrk-blokupg-fis-no  to yedek-yromhrk-blokupg-fis-no 
+                   end-read
+             end-read
+           end-perform
+      end-start.
+*
+ mukerrer-kayit-kontrol.
+      open i-o genelfis
+      move 1 to genelfis-anahtar
+      read genelfis no lock invalid
+           accept print-no from time
+      not invalid
+           add 1 to print-no
+           rewrite genelfis-rec end-rewrite
+      end-read
+      close genelfis
+      move print-no            to t13-no
+      open output t13 close t13 open i-o t13
+
+      initialize blokupg-rec 
+      move ilk-tarih    to blokupg-upgrade-tarih
+      start blokupg key not < blokupg-tarihe-gore invalid
+            continue
+      not invalid
+      perform with test after until fs-blokupg = "10"
+      read blokupg next no lock end move "10" to fs-blokupg
+      not at end 
+          if blokupg-upgrade-tarih > son-tarih
+             exit perform 
+          end-if
+          initialize t13-rec 
+          move blokupg-upgrade-tarih to t13-tarih
+          move blokupg-rezno         to t13-rez
+          read t13 no lock invalid
+               continue
+          end-read
+          add 1 to t13-kac-tane
+          write t13-rec invalid
+                rewrite t13-rec end-rewrite 
+          end-write
+      end-read
+      end-perform 
+      end-start
+      close t13
+      .
+*
+ rapor-goster.
+     open i-o  blokupg
+     perform mukerrer-kayit-kontrol
+
+     initialize blokupg-rec  kayit-yok
+     move ilk-tarih       to blokupg-upgrade-tarih
+     start blokupg key not < blokupg-tarihe-gore invalid
+           move 1 to kayit-yok
+     end-start
+
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+     move print-no            to takasdv-no
+     open output takasdv close takasdv 
+     open i-o takasdv t13
+
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Upgrade Rezervasyonlar Raporu"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Upgrade Rezervasyonlar Raporu"   to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move ilk-gun        to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ilk-ay         to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move ilk-yil        to det-filler(57:04)
+     move "-"            to det-filler(61:01)
+     move son-gun        to det-filler(62:02)
+     move "/"            to det-filler(64:01)
+     move son-ay         to det-filler(65:02)
+     move "/"            to det-filler(67:01)
+     move son-yil        to det-filler(68:04)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     open input isyeri
+     initialize isyeri-rec
+     move isyeri-no-tasi         to ISYERI-NO
+     read isyeri no lock invalid 
+          continue 
+     not invalid 
+         move isyeri-unvan       to det-filler 
+     end-read 
+     close isyeri
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "RLLLLLLLLLLLLRRRRRRLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"         to det-dokumer-20(1:2)
+     move "Tarih"                to det-0
+     move "Zaman"                to det-0-0
+     move "Rez No"               to det-1
+     move "Adi"                  to det-2
+     move "Soyadi"               to det-3
+     move "Oda No"               to det-4
+     move "C-in Tarihi"          to det-4-1
+     move "C-out Tarihi"         to det-4-2
+     move "Kullanici Adi"        to det-5
+     move "Eski O.Konumu"        to det-6
+     move "Yeni O.Konumu"        to det-7
+*     move "Mevcut Konum"         to det-7-0
+     move "Acenta Adi"           to det-7-1
+*     move "Rez. Notu"            to det-7-2
+*     move "Rez. Notu"            to det-7-3
+*     move "Rez. Mesaj"           to det-7-4
+     move "Yetkili Personel"     to det-8
+     move "Islem Nedeni"         to det-9
+     move "Aciklama"             to det-10
+     move "Alinan Upgrade Ucreti"                  to det-11
+     move "Alinmasi Gereken Upgrade Ucreti"        to det-12
+     move "Upgrade Farki"                          to det-12-0
+     move "P.Cinsi"                                to det-12-0-0
+     move "Rezervasyon Tarafindan Basilan Fiyat"   to det-12-1
+     move "O.Konumuna Gore Acenta Kontrat Fiyati"  to det-12-2
+     move "Hesaplama Sekli"      to det-13
+     move "P.Cinsi"              to det-14
+     move "|" to fil-0 fil-0-0 fil-1 fil-2 fil-3 fil-7-0 fil-7-1 fil-7-2 fil-7-3 fil-7-4 fil-12-0-0
+                 fil-4 fil-4-1 fil-4-2 fil-5 fil-6 fil-7 fil-8 
+                 fil-9 fil-10 fil-11 fil-12 fil-12-0 fil-12-1 fil-12-2 fil-13 fil-14
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-0 det-0-0 det-1 det-2 det-3 det-7-0 det-7-1 det-7-2 det-7-3 det-7-4
+                     det-4 det-4-1 det-4-2 det-5 det-6 det-7 det-8 det-9 det-10 det-11 det-12 
+                     det-12-0 det-12-1 det-12-2 det-13 det-14 det-12-0-0
+     write dokumer-rec from detay
+*********************************
+            open input kllnc konum rez kodlar02 cast yromhrk depkod2 hesayr fiyat 
+                       acenta konumek doviz konuk kur nt  bupgfiy   bupgind
+
+            open input acenta2
+            initialize kayit-rez-adet
+            move 0 to ilk-kayit
+            initialize rezden-degisim-var
+            if kayit-yok not = 1
+                perform blokupg-rapor
+            else
+                          initialize dokumer-rec detay
+                          move all "####"  to det-5 det-6 det-7 det-7-1
+                          write dokumer-rec from detay
+
+                          initialize dokumer-rec detay
+                          move ilk-gun           to egun
+                          move ilk-ay            to eay
+                          move ilk-yil           to eyil
+                          move etar              to det-5
+                          move "TARIHINDE    "   to det-6
+                          MOVE "UPGRADE"         to det-7 
+                          MOVE "YAPILMAMISTIR"   to det-7-1
+                          move "|" to fil-0 fil-0-0 fil-1 fil-2 fil-3 
+                                      fil-4 fil-4-1 fil-4-2 fil-5 fil-6 
+                                      fil-7 fil-7-0 fil-7-1 fil-7-2 
+                                      fil-7-3 fil-7-4 fil-13 fil-12-0 fil-12-1 fil-12-2 
+                                      fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+                          write dokumer-rec from detay                          
+                          initialize dokumer-rec detay
+                          move all "####"  to det-5 det-6 det-7 det-7-1
+                          write dokumer-rec from detay               
+            end-if                      
+*                move 1 to rezden-degisim-var
+*                perform blokupg-rapor
+                perform doviz-detay
+                if fiy-hes-yok not = 1
+                   perform fiyati-dusuk-rezler
+                end-if 
+ 
+
+              initialize dokumer-rec detay
+              move "-"            to det-dokumer-20(5:1)
+              move all "-" to det-0 det-0-0 det-1 det-2 det-3 
+                              det-4 det-4-1 det-4-2 det-5 det-6 
+                              det-7 det-7-0 det-7-1 det-7-2 det-7-3
+                              det-8 det-9 det-10 det-11 det-12 det-12-0 
+                              det-12-1 det-12-2 det-13 det-14
+              write dokumer-rec from detay
+
+              initialize dokumer-rec detay
+              move "Top.Rez"       to det-1
+              move kayit-rez-adet  to eadet
+              move eadet           to det-2
+              move "|" to fil-0 fil-0-0 fil-1 fil-2 fil-3 
+                          fil-4 fil-4-1 fil-4-2 fil-5 fil-6 
+                          fil-7 fil-7-0 fil-7-1 fil-7-2 fil-7-3
+                          fil-8 fil-9 fil-10  fil-11 fil-12 
+                          fil-12-0 fil-12-1 fil-12-2 fil-13 fil-14
+              move "A"          to det-dokumer-20(3:1)
+              move 176          to det-renk1
+              move "1"          to det-dokumer-20(10:1)
+              write dokumer-rec from detay
+
+              close dokumer
+              if mail-gondereyimmi = 1
+                 perform mail-send-process
+              else
+                 call dokumer-prog on exception
+                      perform callerr-proc
+                 not on exception
+                      cancel dokumer-prog
+                 end-call
+              end-if 
+              close kllnc blokupg konum  hesayr konuk doviz acenta2
+                    cast yromhrk depkod2 bupgfiy bupgind fiyat
+                    rez kodlar02 acenta konumek kur nt takasdv t13
+*/************************************************************
+              delete file dokumer takasdv.
+*
+ blokupg-rapor.
+              if rezden-degisim-var = 1
+                 initialize blokupg-rec  kayit-yok upg-fark
+                 move ilk-tarih       to blokupg-upgrade-tarih
+                 start blokupg key not < blokupg-tarihe-gore invalid
+                          initialize dokumer-rec detay
+                          move all "####"  to det-5 det-6 det-7 det-7-1
+                          write dokumer-rec from detay
+
+                          initialize dokumer-rec detay
+                          move ilk-gun           to egun
+                          move ilk-ay            to eay
+                          move ilk-yil           to eyil
+                          move etar              to det-5
+                          move "TARIHINDE    "   to det-6
+                          MOVE "UPGRADE"         to det-7 
+                          MOVE "YAPILMAMISTIR"   to det-7-1
+                          move "|" to fil-0 fil-0-0 fil-1 fil-2 fil-3 
+                                      fil-4 fil-4-1 fil-4-2 fil-5 fil-6 
+                                      fil-7 fil-7-0 fil-7-1 fil-7-2 
+                                      fil-7-3 fil-7-4 fil-13 fil-12-0 fil-12-1 fil-12-2 
+                                      fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+                          write dokumer-rec from detay                          
+                          initialize dokumer-rec detay
+                          move all "####"  to det-5 det-6 det-7 det-7-1
+                          write dokumer-rec from detay
+                       move 1 to kayit-yok
+                 end-start
+              end-if 
+              initialize fs-blokupg kayit-buldum
+              perform with test after until fs-blokupg = "10"
+              read blokupg next no lock end 
+              
+              if kayit-buldum = 0
+                          initialize dokumer-rec detay
+                          move all "####"  to det-5 det-6 det-7 det-7-1
+                          write dokumer-rec from detay
+
+                          initialize dokumer-rec detay
+                          move ilk-gun           to egun
+                          move ilk-ay            to eay
+                          move ilk-yil           to eyil
+                          move etar              to det-5
+                          move "TARIHINDE    "   to det-6
+                          MOVE "UPGRADE"         to det-7 
+                          MOVE "YAPILMAMISTIR"   to det-7-1
+                          move "|" to fil-0 fil-0-0 fil-1 fil-2 fil-3 
+                                      fil-4 fil-4-1 fil-4-2 fil-5 fil-6 
+                                      fil-7 fil-7-0 fil-7-1 fil-7-2 
+                                      fil-7-3 fil-7-4 fil-13 fil-12-0 fil-12-1 fil-12-2 
+                                      fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+                          write dokumer-rec from detay                          
+                          initialize dokumer-rec detay
+                          move all "####"  to det-5 det-6 det-7 det-7-1
+                          write dokumer-rec from detay
+
+              end-if 
+              move "10" to fs-blokupg
+              not at end
+                    if blokupg-upgrade-tarih > son-tarih
+                       if kayit-buldum = 0
+                          initialize dokumer-rec detay
+                          move all "####"  to det-5 det-6 det-7 det-7-1
+                          write dokumer-rec from detay
+
+                          initialize dokumer-rec detay
+                          move ilk-gun           to egun
+                          move ilk-ay            to eay
+                          move ilk-yil           to eyil
+                          move etar              to det-5
+                          move "TARIHINDE    "   to det-6
+                          MOVE "UPGRADE"         to det-7 
+                          MOVE "YAPILMAMISTIR"   to det-7-1
+                          move "|" to fil-0 fil-0-0 fil-1 fil-2 fil-3 
+                                      fil-4 fil-4-1 fil-4-2 fil-5 fil-6 
+                                      fil-7 fil-7-0 fil-7-1 fil-7-2 
+                                      fil-7-3 fil-7-4 fil-13 fil-12-0 fil-12-1 fil-12-2 
+                                      fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+                          write dokumer-rec from detay                          
+                          initialize dokumer-rec detay
+                          move all "####"  to det-5 det-6 det-7 det-7-1
+                          write dokumer-rec from detay
+
+                       end-if 
+                       exit perform 
+                    end-if
+*                    if blokupg-rezno = 42003
+*                       if k-kodu-tasi = "ASYA" stop " " end-if
+*                       delete blokupg end-delete 
+*                    end-if 
+*********************************************************************firat takasta mükerrer kontrol delp
+                   if k-kodu-tasi not = "X   "
+                    initialize t13-rec 
+                    move blokupg-upgrade-tarih to t13-tarih
+                    move blokupg-rezno         to t13-rez
+                    read t13 no lock invalid 
+                         continue
+                    not invalid  
+                        if t13-kac-tane > 1
+                           compute t13-kac-tane = t13-kac-tane - 1
+                           write t13-rec invalid
+                                 rewrite t13-rec end-rewrite 
+                           end-write 
+                           exit perform cycle
+                        end-if         
+                    end-read 
+                   end-if
+*********************************************************************************
+*                   if k-kodu-tasi = "ASYA" and blokupg-rezno = 401477 stop " " end-if
+                    initialize dokumer-rec detay
+                    move blokupg-upgrade-yil           to eyil
+                    move blokupg-upgrade-ay            to eay
+                    move blokupg-upgrade-gun           to egun
+                    move etar                          to det-0
+                    
+                    move blokupg-upgrade-saat          to esaat
+                    move blokupg-upgrade-dakika        to edakika
+                    move blokupg-upgrade-saniye        to esaniye
+                    move ezaman                        to det-0-0
+
+                    move blokupg-rezno                 to det-1
+
+                    initialize rez-rec
+                    move blokupg-rezno                 to rez-no
+                    read rez no lock invalid
+                        continue 
+                    end-read 
+                       if rez-durumu = "S"
+                          exit perform cycle 
+                       end-if 
+                       if blokupg-upgrade-tarih = rez-cik-tar 
+                           exit perform cycle 
+                       end-if 
+                       if rezden-degisim-var not = 1 
+                          continue 
+*/****************delphin bilgi iþlem kadir isteði üzerine kaldýrýldý
+*                          if rez-folio = 0
+*                              exit perform cycle 
+*                          end-if 
+*                          if rez-c-in not = "E"
+*                             exit perform cycle
+*                          end-if 
+*/****************delphin bilgi iþlem kadir isteði üzerine kaldýrýldý
+                       else
+                          if rez-folio not = 0
+                              exit perform cycle 
+                          end-if 
+                          if rez-c-in = "E"
+                             exit perform cycle
+                          end-if                           
+                       end-if 
+                       move rez-adi                    to det-2
+                       move rez-soyadi                 to det-3
+                    initialize kllnc-rec
+                    move blokupg-kim-yapti             to k-kodu
+                    read kllnc no lock invalid
+                        move "Hatali Kullanici.."      to k-adi
+                    end-read 
+                    move rez-odano                     to det-4
+                    move rez-gir-gun                   to egun
+                    move rez-gir-ay                    to eay
+                    move rez-gir-yil                   to eyil
+                    move etar                          to det-4-1
+                    move rez-cik-gun                   to egun
+                    move rez-cik-ay                    to eay
+                    move rez-cik-yil                   to eyil
+                    move etar                          to det-4-2
+
+                    string det-5
+                           k-adi delimited by "   "
+                           " " delimited by size 
+                           k-soyadi delimited by size 
+                    into det-5
+                    
+                    initialize konum-rec
+                    move blokupg-eski-konum        to konum-anahtar
+                    read konum no lock invalid 
+                         move "Hata"               to konum-adi
+                    end-read 
+                        move konum-adi             to det-6
+                        move KONUM-TUTAR-SIRA      to eski-konum-siralamasi
+
+                    initialize konum-rec
+                    move blokupg-yeni-konum        to konum-anahtar
+                    read konum no lock invalid 
+                         move "Hata"               to konum-adi
+                    end-read 
+                        move konum-adi             to det-7
+                        move KONUM-TUTAR-SIRA      to yeni-konum-siralamasi
+ 
+                    if k-kodu-tasi not = "X   "
+                      if eski-konum-siralamasi >= yeni-konum-siralamasi
+                          exit perform cycle
+                      end-if
+                    end-if 
+
+                    initialize konum-rec
+                    move rez-oda-konumu            to konum-anahtar
+                    read konum no lock invalid 
+                        move "Hata"                to konum-adi                          
+                    end-read                      
+                        move konum-adi             to det-7-0
+
+
+                    initialize acenta-rec
+                    move rez-acenta                to acenta-kodu
+                    read acenta no lock invalid 
+                        move "Hatali Acenta..."    to det-7-1
+                    end-read 
+                        move acenta-adi            to det-7-1
+
+*                    move rez-not1                  to det-7-2
+*                    move rez-not2                  to det-7-3
+                    initialize tutar-aciklamasi2
+                    perform upg-fiyatlari-bul
+ 
+                    move basilan-upg               to etut
+                    move etut                      to det-11
+                    if basilan-upg > 0 
+                        if yedek-yromhrk-blokupg-fis-no > 0
+                          if blokupg-fis-no not = yedek-yromhrk-blokupg-fis-no
+                              exit perform cycle 
+                          end-if
+                        end-if 
+                    end-if 
+                    if rez-folio > 0
+                       move fiyat-upg-indli        to etut
+                       move etut                   to det-12
+                    end-if 
+                    if k-kodu-tasi not = "X   "
+                    if fiyat-upg-indli = zeroes 
+                        exit perform cycle 
+                    end-if  
+                    end-if
+
+                    compute upg-fark = basilan-upg - fiyat-upg-indli
+                    
+                    move upg-fark           to etut
+                    move etut               to det-12-0
+
+                    move rez-fiyati         to etut
+                    move etut               to det-12-1
+
+                     compute fiyat-upg-indli rounded = 
+                             fiyat-upg * 
+                             (( 100 - bulunan-ind ) / 100 )
+                     move fiyat-upg-indli   to z-tutarind
+                     move fiyat-upg         to z-tutar
+                     move upg-birim-tutar   to z-btutar
+                                          
+                     compute gun = 
+                     function integer-of-date(s2) - 
+                     function integer-of-date(s1) 
+                     
+                     move gun         to z-gun
+                     move upg-carpan  to z-carpan
+                
+                     if  bupgfiy-kisi-oda-basi = "O"
+                         move " Oda " to p-acik
+                     else
+                         move " Pax " to p-acik
+                     end-if
+                     string z-btutar delimited by size
+                            " X "  delimited by size
+                             z-carpan  delimited by size
+                             p-acik   delimited by size
+                             " X "  delimited by size
+                             z-gun  delimited by size
+                             "geceleme "   delimited by size
+                             " = "  delimited by size
+                             z-tutar delimited by size
+                             into tutar-aciklamasi2
+                      if bulunan-ind > 0 
+                          move  bulunan-ind to z-ind
+                           string tutar-aciklamasi2 delimited by "            "
+                            " -%"  delimited by size
+                             z-ind  delimited by size
+                             
+                             " indirim ="  delimited by size
+                                                        
+                             z-tutarind delimited by size
+                             into tutar-aciklamasi2
+                      end-if
+                      move tutar-aciklamasi2  to det-13        
+
+
+                    initialize not-rec
+                    move "REZ"            to NOT-DOS    
+                    move rez-anah         to NOT-DOS-ANAH 
+                    start nt key not < NOT-ANAH invalid
+                          continue 
+                    not invalid 
+                    perform with test after until fs-not = "10"
+                    read nt next no lock end move "10" to fs-not
+                    not at end
+                          if not-dos <> "REZ"
+                              exit perform 
+                          end-if 
+                          if NOT-DOS-ANAH  <> rez-anah
+                             exit perform 
+                          end-if 
+                          move  NOT1      to  det-7-4
+                    end-read 
+                    end-perform
+                    end-start
+                    inspect det-7-4 converting  x"0D0A09" to x"202020"
+                    if blokupg-yetkili-sifre-k-kodu not = spaces
+                       initialize kllnc-rec
+                       move blokupg-yetkili-sifre-k-kodu  to k-kodu
+                       read kllnc no lock invalid 
+                            move "          "   to k-adi
+                       end-read 
+                           string det-8
+                                k-adi delimited by "    "
+                                " " delimited by size 
+                                k-soyadi delimited by size 
+                           into det-8
+                    else
+                       initialize kllnc-rec
+                       move blokupg-kim-yapti   to k-kodu
+                       read kllnc no lock invalid 
+                            move "          "   to k-adi
+                       end-read 
+                           string det-8
+                                k-adi delimited by "    "
+                                " " delimited by size 
+                                k-soyadi delimited by size 
+                           into det-8                       
+                    end-if 
+                    move blokupg-aciklama          to det-10
+                    initialize kodlar02-rec 
+                    move "U"                       to kodlar02-tipi
+                    move blokupg-upgrade-nedeni    to kodlar02-kodu
+                    read kodlar02 no lock invalid 
+                          move "Hatali Aciklama"   to kodlar02-adi
+                    end-read 
+                          move kodlar02-adi        to det-9
+
+***                    move "EURO"                    to det-12-0-0
+                    initialize doviz-rec
+                    move dvz            to doviz-kodu
+                    read doviz no lock invalid 
+                         move "   "           to d-kisa-adi
+                    end-read 
+                         move d-kisa-adi      to det-12-0-0
+
+                    initialize takasdv-rec
+                    move dvz          to takasdv-dvz-kodu
+                    read takasdv no lock invalid 
+                          continue 
+                    end-read 
+
+                    if blokupg-stopta not = 1             | blokupg-stopta = 1 ise aþaðýda çýkýyor diye konuldu firat delp
+                       add basilan-upg        to takasdv-basilan-upg
+                       add fiyat-upg-indli    to takasdv-olmasi-gereken
+                       add upg-fark           to takasdv-upg-fark
+                       write takasdv-rec invalid 
+                             rewrite takasdv-rec end-rewrite 
+                       end-write 
+                    end-if
+                    initialize doviz-rec
+                    move rez-doviz            to doviz-kodu
+                    read doviz no lock invalid 
+                         move "   "           to d-kisa-adi
+                    end-read 
+                         move d-kisa-adi      to det-14
+                    if fiy-hes-yok not = 1
+                    initialize xrez-rec
+                    move rez-rec          to xrez-rec
+                    move "9888"           to xrez-no(1:4)
+                    move rez-oda-konumu   to xrez-fiyat-konumu
+
+                    initialize linkh-odahes  rez-rec
+                    move xrez-no   to linkh-rez-no  rez-no   
+                    move 9         to linkh-nereden  
+                    move 0         to linkh-anl-yaz
+                    move 0         to linkh-cast-yaz
+                    read rez no lock invalid 
+                         continue                           
+                    not invalid 
+                            initialize xrez-rec
+                            move rez-rec          to xrez-rec
+                            move "9988"           to xrez-no(1:4)
+                            move rez-oda-konumu   to xrez-fiyat-konumu
+                    end-read 
+                     call "/asya/ytl/obj/otel/odahes.asy" 
+                                   using   xrez-rec   linkh-odahes
+                                   on exception 
+                                   perform callerr-proc
+                                   exit paragraph
+                                   not on exception 
+                              cancel "/asya/ytl/obj/otel/odahes.asy"
+                    end-call
+                      initialize hesayr-rec
+                      move xrez-gir-tar          to hesayr-tarih
+                      move xrez-no               to hesayr-rez-no
+                      read hesayr  no lock invalid
+                        continue
+                      not invalid
+                          move hesayr-basilacak-tut to etut
+                          move etut                 to det-12-2
+                      end-read  
+                     end-if
+                    move 1                             to kayit-buldum 
+                    if link-var < 1 and blokupg-stopta = 1 
+                       move "A"          to det-dokumer-20(3:1)
+                       move 336          to det-renk1
+                       move "1"          to det-dokumer-20(10:1)
+                       write dokumer-rec from detay   
+                    else
+                       write dokumer-rec from detay   
+                    end-if
+                    add 1 to kayit-rez-adet
+              end-read
+              end-perform.
+ 
+*
+ fiyati-dusuk-rezler.
+     initialize dokumer-rec detay
+***     move all "#"  to detay
+     move "FIYATI"   to det-5
+     move "DUSUK"        TO DET-6
+     MOVE "REZERVASYONLAR"         TO DET-7 
+     MOVE "RAPORU"          TO det-7-1
+     move "|" to fil-0 fil-0-0 fil-1 fil-2 fil-3 
+                 fil-4 fil-4-1 fil-4-2 fil-5 
+                 fil-6 fil-7 fil-7-0 fil-7-1 fil-7-2 
+                 fil-7-3 fil-7-4  fil-12-0 fil-12-1 fil-12-2
+                 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+     move "A"          to det-dokumer-20(3:1)
+     move 112          to det-renk1
+     move "1"          to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "C-inTarihi"           to det-0
+     move "Zaman"                to det-0-0
+     move "Rez No"               to det-1
+     move "Adi"                  to det-2
+     move "Soyadi"               to det-3
+     move "Oda No"               to det-4
+     move "C-in Tarihi"          to det-4-1
+     move "C-out Tarihi"         to det-4-2
+     move "Kullanici Adi"        to det-5
+     move "Oda Konumu"           to det-6
+     move "Fiyat Konumu"         to det-7
+     move "Acenta Adi"           to det-7-1
+*     move "Rez. Notu"            to det-7-2
+*     move "Rez. Notu"            to det-7-3
+*     move "Rez. Mesaji"          to det-7-4
+     move "Yetkili Personel"     to det-8
+     move "Aciklama"             to det-10
+**     move "Aciklama"             to det-10
+     move "Rez.Fiyati"           to det-11
+     move "En Dusuk Fiyat"       to det-12 
+     move "Acenta"               to det-12-0        
+     move "|" to fil-0 fil-0-0 fil-1 fil-2 fil-3 
+                 fil-4 fil-4-1 fil-4-2 fil-5 
+                 fil-6 fil-7 fil-7-0 fil-7-1 fil-7-2 
+                 fil-7-3 fil-7-4   fil-12-0 fil-12-1 fil-12-2
+                 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-12-0
+     move "A"          to det-dokumer-20(3:1)
+     move 112          to det-renk1
+     move "1"          to det-dokumer-20(10:1)
+     write dokumer-rec from detay
+
+     initialize rez-rec
+     move ilk-tarih                 to rez-gir-tar
+     move "I"                        to rez-durumu
+     start rez key not < rez-gir invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-rez = "10"
+     read rez next no lock end move "10" to fs-rez
+     not at end 
+            if rez-durumu <> "I"
+                exit perform 
+            end-if 
+            if rez-gir-tar > son-tarih
+                exit perform 
+            end-if 
+            if rez-c-in <> "E"
+               exit perform cycle 
+            end-if 
+            if rez-folio = 0 
+               exit perform cycle 
+            end-if 
+              perform rapor-detay-basla
+     end-read 
+     end-perform
+     end-start.
+*
+ rapor-detay-basla.
+     open i-o genelfis
+     initialize genelfis-rec
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid  
+          continue 
+     end-read 
+     move ekran-fis-1  to takasv-no
+     add 1 to ekran-fis-1
+     rewrite genelfis-rec end-rewrite 
+     close genelfis
+     open output takasv close takasv open i-o takasv
+
+     initialize acenta-rec  
+     start acenta key not < acenta-kodu invalid 
+         continue 
+     not invalid 
+     perform until fs-acenta = "10"
+     read acenta next no lock end move "10"  to fs-acenta
+     not at end 
+             if acenta-en-dusuk-fiyat-hesapla = 1
+                 initialize not-rec 
+                 move "ACE"       to not-dos
+                 move "Default"   to not-dos-anah
+                 move acenta-kodu to not-dos-anah(8:)
+                 read nt no lock invalid
+                    continue 
+                 end-read
+                      move not1 to acen-dft
+                 if acen-dft-doviz = rez-doviz
+                        initialize xrez-rec 
+                        move rez-rec          to xrez-rec 
+                        move "9898"           to xrez-no(1:4)
+                        move acenta-kodu      to xrez-acenta
+                        
+                        initialize linkh-odahes
+                        move xrez-no   to linkh-rez-no     
+                        move 9         to linkh-nereden  
+                        move 0         to linkh-anl-yaz
+                        move 0         to linkh-cast-yaz
+                         call "/asya/ytl/obj/otel/odahes.asy" 
+                                       using xrez-rec linkh-odahes
+                                       on exception 
+                                       perform callerr-proc
+                                       exit paragraph
+                                       not on exception 
+                                  cancel "/asya/ytl/obj/otel/odahes.asy"
+                        end-call
+                          initialize hesayr-rec
+                          move xrez-gir-tar       to hesayr-tarih
+                          move xrez-no            to hesayr-rez-no
+                          read hesayr  no lock invalid
+                            continue
+                          not invalid      
+                              
+                              initialize takasv-rec
+                              move acenta-kodu  to takasv-anah
+                              read takasv no lock invalid 
+                                   continue 
+                              end-read 
+                                   move hesayr-basilacak-tut to takasv-fiyat
+                              write takasv-rec invalid 
+                                 rewrite takasv-rec end-rewrite 
+                              end-write 
+
+ 
+                          end-read                                                              
+                 end-if 
+                           
+             end-if 
+     end-read 
+     end-perform
+     end-start
+****     if rez-no = 206402 and k-kodu-tasi = "X   " stop " " end-if 
+****         if k-kodu-tasi = "X   " stop " " end-if 
+     initialize takasv-rec temp-tut
+     start takasv key not < takasv-fiyat invalid 
+         continue 
+     not invalid 
+     perform until fs-takasv = "10"
+     read takasv next no lock end move "10"  to fs-takasv
+     not at end 
+              initialize cast-rec
+              move rez-gir-tar  to cast-tarih
+              move rez-no       to cast-rez-no
+              read cast no lock invalid 
+                  move rez-fiyati to cast-fiyati
+              end-read 
+              if cast-fiyati < takasv-fiyat
+                  initialize temp-tut
+                  move takasv-fiyat  to temp-tut
+                  perform rez-detay-ata                 
+              end-if 
+              exit perform 
+     end-read 
+     end-perform
+     end-start
+
+     close takasv 
+     delete file takasv.
+*
+ rez-detay-ata.
+     initialize dokumer-rec detay
+     move rez-gir-yil           to eyil
+     move rez-gir-ay            to eay
+     move rez-gir-gun           to egun
+     move etar                  to det-0
+     
+     move REZ-GEL-SAAT          to esaat
+     move REZ-GEL-DAK           to edakika
+     move 00                    to esaniye
+     move ezaman                to det-0-0
+
+     move rez-no                to det-1
+ 
+     move rez-adi               to det-2
+     move rez-soyadi            to det-3
+     if rez-alan-staff = spaces
+         move rez-staf   to rez-alan-staff
+     end-if 
+     initialize kllnc-rec
+     move rez-alan-staff                to k-kodu
+     read kllnc no lock invalid
+         move "Hatali Kullanici.."      to k-adi
+     end-read 
+     move rez-odano                     to det-4
+
+     string det-5
+            k-adi delimited by "   "
+            " " delimited by size 
+            k-soyadi delimited by size 
+     into det-5
+                    
+    initialize konum-rec
+    move rez-oda-konumu            to konum-anahtar
+    read konum no lock invalid 
+         move "Hata"               to konum-adi
+    end-read 
+        move konum-adi             to det-6
+
+    initialize konum-rec
+    move rez-fiyat-konumu          to konum-anahtar
+    read konum no lock invalid 
+         move "Hata"               to konum-adi
+    end-read 
+        move konum-adi             to det-7
+
+    initialize acenta2-rec
+    move rez-acenta                to acenta2-kodu
+    read acenta2 no lock invalid 
+        move "Hatali Acenta..."    to det-7-1
+    end-read 
+        move acenta2-adi            to det-7-1
+
+
+
+*    move rez-not1                  to det-7-2
+*    move rez-not2                  to det-7-3
+    initialize acenta2-rec 
+    move takasv-anah   to acenta2-kodu
+    read acenta2 no lock invalid 
+       continue 
+    end-read 
+    move acenta2-adi to det-12-0
+
+
+    string det-10
+           rez-not1 delimited by "   "
+           " " delimited by size
+           rez-not2 delimited by size 
+    into det-10
+
+    move rez-gir-gun            to egun
+    move rez-gir-ay             to eay
+    move rez-gir-yil            to eyil
+    move etar                   to det-4-1
+
+    move rez-cik-gun            to egun
+    move rez-cik-ay             to eay
+    move rez-cik-yil            to eyil
+    move etar                   to det-4-2
+****25.04.2016  tarihinde istek üzerine kaldýrýldý
+*    initialize not-rec
+*    move "REZ"            to NOT-DOS    
+*    move rez-anah         to NOT-DOS-ANAH 
+*    start nt key not < NOT-ANAH invalid
+*          continue 
+*    not invalid 
+*    perform with test after until fs-not = "10"
+*    read nt next no lock end move "10" to fs-not
+*    not at end
+*          if not-dos <> "REZ"
+*              exit perform 
+*          end-if 
+*          if NOT-DOS-ANAH  <> rez-anah
+*             exit perform 
+*          end-if 
+*          move  NOT1      to  det-7-4
+*    end-read 
+*    end-perform
+*    end-start
+*    inspect det-7-4 converting  x"0D0A09" to  x"202020"
+*    if iptalden-geldi = 1
+*       move "IPTAL REZERVASYON"    to det-9  det-13
+*    end-if 
+
+**/**************************26-04-2018 periyot degisiminden dolayi
+*    move rez-fiyati           to etut
+*    move etut                      to det-11
+**/**************************26-04-2018 periyot degisiminden dolayi
+
+    initialize cast-rec
+    move rez-gir-tar  to cast-tarih
+    move rez-no       to cast-rez-no
+    read cast no lock invalid 
+        move rez-fiyati           to etut
+    not invalid 
+        move cast-fiyati          to etut        
+    end-read 
+    move etut                      to det-11  
+    
+    move temp-tut                 to etut
+    move etut                     to det-12
+ 
+    initialize doviz-rec
+    move rez-doviz          to doviz-kodu
+    read doviz no lock invalid 
+        move "Hata"         to d-kisa-adi
+    end-read 
+        move d-kisa-adi     to det-12-0-0 
+    
+    write dokumer-rec from detay   
+    add 1 to kayit-rez-adet.
+*
+ mail-send-process.
+     initialize mailsend-link 
+                ek-dosya
+
+     perform mail-send-call-csvyap.
+     perform mail-send-add-mail-attach.
+     open input onbkodlar10
+     initialize onbkodlar10-rec
+     move "MM"                 to onbkodlar10-tipi
+     start onbkodlar10 key not < onbkodlar10-anahtar invalid
+                continue 
+     not invalid 
+     perform with test after until fs-onbkodlar10 = "10"
+     read onbkodlar10 next no lock end move "10" to fs-onbkodlar10
+     not at end 
+             if onbkodlar10-tipi <> "MM"
+                 exit perform 
+             end-if
+             if onbkodlar10-upgrade-mail-gitsin not = 1 
+                exit perform cycle 
+             end-if 
+                string mailsend-link-to
+                      onbkodlar10-adi delimited by "     "
+                      ";" delimited by size 
+                into mailsend-link-to
+     end-read 
+     end-perform
+     end-start         
+     close onbkodlar10
+     perform mail-send-call-mail
+     .
+*
+ mail-send-call-csvyap.
+      add 1 to ek-dosya.
+      initialize csvyap-link
+      call "c$calledby" using  csvyap-link-called-program
+      set csvyap-link-islem-xls-yap         to true
+      call "/asya/ytl/obj/otel/csvyap.asy" using  csvyap-link on exception 
+            perform callerr-proc
+            exit paragraph
+      not on exception
+      cancel "/asya/ytl/obj/otel/csvyap.asy"
+      end-call.
+*
+ mail-send-add-mail-attach.
+    move csvyap-link-nereye-cek                 to csv2xls-link-cikti(12:)
+
+    if not csv2xls-link-hata 
+       add  1                                   to ek-dosya
+       move csv2xls-link-cikti(12:)             to mailsend-link-dosya(ek-dosya) 
+       move csv2xls-link-cikti(48:)             to mailsend-link-dosya-aciklama(ek-dosya)
+       inspect mailsend-link-dosya(ek-dosya) replacing trailing spaces by low-values
+       inspect mailsend-link-dosya-aciklama(ek-dosya) replacing trailing spaces by low-values
+       
+       initialize kaynak-yol
+       string kaynak-yol
+               "@[DISPLAY]:" delimited by "   "
+               mailsend-link-dosya(ek-dosya) delimited by size 
+       into kaynak-yol
+
+       initialize hedef-yol
+       string hedef-yol
+                "@[DISPLAY]:" delimited by "   " 
+                "\\192.168.3.240\Upgrade\" delimited by size 
+                isyeri-adres delimited by size 
+                ".xls" delimited by size 
+       into hedef-yol        
+       call "c$copy"  using kaynak-yol , hedef-yol
+
+    end-if.
+*
+ mail-send-call-mail.
+     string mailsend-link-konu
+            ISYERI-UNVAN delimited by "    "
+            " " delimited by size 
+            "Upgrade Rezervasyonlar" delimited by size 
+     into mailsend-link-konu
+
+     move "Upgrade alan rezervasyonlar ektedir" to mailsend-link-aciklama(1)
+     move "Saygilarimizla"                      to mailsend-link-aciklama(2) 
+     move 1                                     to mailsend-link-konu(99:1) |otomatik mail ---mail ekranýnýn açýlmamasý için
+     call "/asya/ytl/obj/otel/mailsend.asy" using mailsend-link
+          on exception 
+             perform callerr-proc
+     not on exception
+          cancel "/asya/ytl/otel/otel/mailsend.asy"
+     end-call.
+*
+ doviz-detay.
+     initialize takasdv-rec
+     start takasdv key not < takasdv-anah invalid 
+          continue 
+     not invalid 
+     perform until fs-takasdv = "10"
+     read takasdv next no lock end move "10"  to fs-takasdv
+     not at end 
+              initialize dokumer-rec detay doviz-rec
+              move takasdv-dvz-kodu  to doviz-kodu
+              read doviz no lock invalid 
+                   continue
+              end-read 
+                  move d-kisa-adi              to det-12-0-0
+                  move "Toplam=>"              to det-7-1
+                  move takasdv-basilan-upg     to etut
+                  move etut                    to det-11
+                  move takasdv-olmasi-gereken  to etut
+                  move etut                    to det-12
+                  move takasdv-upg-fark        to etut
+                  move etut                    to det-12-0
+
+             move "|" to fil-0 fil-0-0 fil-1 fil-2 fil-3 
+                         fil-4 fil-4-1 fil-4-2 fil-5 
+                         fil-6 fil-7 fil-7-0 fil-7-1 fil-7-2 
+                         fil-7-3 fil-7-4
+                         fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+             move "A"          to det-dokumer-20(3:1)
+             move 175          to det-renk1
+             move "1"          to det-dokumer-20(10:1)
+
+             write dokumer-rec from detay
+     end-read 
+     end-perform
+     end-start.
+
+ 

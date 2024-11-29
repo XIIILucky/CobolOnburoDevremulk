@@ -1,0 +1,543 @@
+* mailsend.evt
+* mailsend.evt is generated from D:\asya\acugt.ytl\otel\mailsend.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     call "c$narg" using link-var
+     if link-var > 0
+       if mailsend-link-konu(99:1) = 0
+          open input kllnc
+          move k-kodu-tasi         to k-kodu
+          read kllnc no lock invalid
+               close kllnc
+               display message box 
+                       "Tanimsiz Kullanici"
+                       icon mb_error_icon
+                       title "Hata"
+               goback
+          end-read
+          close kllnc
+          initialize kendi-mailini-kullandi
+          move 1     to kendi-mailini-kullandi
+       else
+          initialize kendi-mailini-kullandi
+          open input kllnc
+          move "ASYA"         to k-kodu
+          read kllnc no lock invalid
+               close kllnc
+               display message box 
+                       "Tanimsiz Kullanici"
+                       icon mb_error_icon
+                       title "Hata"
+               goback
+          end-read
+          close kllnc
+           
+       end-if 
+     end-if.
+*
+ Form1-Aft-Initdata.
+     open i-o otlortak
+*/ imza ayarlarini oku
+     initialize otlortak-rec
+     set otlortak-tipi-mail-imza     to true
+     move k-kodu                     to otlortak-kodu1
+     read otlortak invalid
+          initialize otlortak-mail-imza
+     end-read
+     move otlortak-rec               to mem-otlortak-rec
+*/ imza icindeki türkçe karakterleri cevir
+     perform imzatrk2eng
+     
+*/ mail ayarlarini oku
+     initialize otlortak-rec
+     set otlortak-tipi-mail          to true
+     move k-kodu                     to otlortak-kodu1
+     read otlortak invalid
+          initialize otlortak-mail
+     end-read
+
+     perform varying i
+             from 1
+             by 1
+             until i > 3
+             initialize combo-email-value
+             move i                            to combo-email-sira
+             move otlortak-mail-name(i)        to combo-email-aciklama      
+             modify combo-email,
+                    item-to-add(combo-email-value)
+     end-perform.
+
+     initialize combo-email-value
+     if k-default-email = 1 or 2 or 3 
+        move k-default-email      to combo-email-sira
+     else
+        move 1                    to combo-email-sira
+     end-if
+     modify combo-email, value = combo-email-value
+
+     close otlortak.
+
+     modify form1-gd-1,
+            reset-grid = 1
+            mass-update = 1
+     initialize form1-gd-1-record
+     move "*"                   to gd-1-col-1
+     move "+"                   to gd-1-col-2
+     move "Dosya Aciklamasi"    to gd-1-col-3
+     modify form1-gd-1,
+            record-to-add(form1-gd-1-record)
+     move 1 to ii
+
+     perform varying i 
+             from 1
+             by 1
+             until i > 10
+             if mailsend-link-dosya(i) <> spaces
+                add 1 to ii
+                initialize form1-gd-1-record
+                move  mailsend-link-dosya-aciklama(i)      to gd-1-col-3
+                modify form1-gd-1,
+                       record-to-add(form1-gd-1-record)
+                modify form1-gd-1(ii),
+                       x = 2
+                       bitmap = attachment-bmp
+                       bitmap-width = 32
+                       bitmap-number = 1
+                       bitmap-trailing = 1
+                       x = 1
+                       hidden-data = mailsend-link-dosya(i)
+             end-if
+     end-perform.
+
+     modify form1-gd-1,
+            mass-update = 0
+     if mailsend-link-konu(98:1) = spaces
+             evaluate mailsend-link-konu(99:1) 
+             when 1
+                move 2               to combo-email-sira
+                modify combo-email, value = combo-email-value
+                perform send-mail         
+             end-evaluate
+     end-if
+
+     if mailsend-link-konu(98:1) = 1
+        if mailsend-link-konu(99:1) = 1
+           move 3                    to combo-email-sira
+           modify combo-email, value = combo-email-value
+           perform send-mail                    
+        end-if 
+     end-if. 
+*
+ send-mail.
+     if mailsend-link-to = spaces or
+        mailsend-link-to = low-values
+                display message box
+                        "Gonderilecek E-Posta Belirsiz ..."
+                        icon mb_error_icon
+                        title "Hata"
+                move 4 to accept-control
+                move 4 to control-id
+                exit paragraph
+     end-if.
+     
+
+     if mailsend-link-konu = spaces or 
+        mailsend-link-konu = low-values
+                display message box
+                        "Gonderilecek E-Posta'nin Konusu Belirsiz ..."
+                        icon mb_error_icon
+                        title "Hata"
+                move 4 to accept-control
+                move 8 to control-id 
+                exit paragraph
+     end-if.
+
+
+     if mailsend-link-aciklama(1) = spaces or 
+        mailsend-link-aciklama(1) = low-values
+                display message box
+                        "Lutfen Gonderilecek E-Posta Icin Aciklama Giriniz ..."
+                        icon mb_error_icon
+                        title "Hata"
+                move 4 to accept-control
+                move 9 to control-id
+                exit paragraph
+     end-if.
+
+     if otlortak-mail-spa(combo-email-sira) = "E"
+        move 1         to spa
+     else
+        move 0         to spa
+     end-if
+
+     if otlortak-mail-ssl(combo-email-sira) = "E"
+        move 1         to ssl
+     else
+        move 0         to ssl
+     end-if
+
+     modify objSmtpMail, 
+            @SmtpServer(otlortak-mail-server(combo-email-sira))
+            @smtpport(otlortak-mail-send-port(combo-email-sira))
+            @SmtpUsername(otlortak-mail-username(combo-email-sira))
+            @SmtpPassword(otlortak-mail-password(combo-email-sira)) 
+            @smtpssl(ssl)
+            @smtpspa(spa)
+            returning mail-donus
+
+     if mail-donus <> 0
+        display message box
+                "E-Posta Oturumu Acilamadi ...",x"0a0d",
+                "E-Posta Hesap Bilgilerinizi Kontrol Ediniz .."
+                icon mb_error_icon
+                title "Hata"
+       exit paragraph
+     end-if.
+
+*     inquire acc-not ,
+*             value in  mailsend-link-aciklama(1).
+     inspect mailsend-link-aciklama(1) replacing trailing spaces by low-values
+     inspect mailsend-link-aciklama(2) replacing trailing spaces by low-values
+     inspect mailsend-link-aciklama(3) replacing trailing spaces by low-values
+     inspect mailsend-link-aciklama(4) replacing trailing spaces by low-values
+     inspect mailsend-link-aciklama(5) replacing trailing spaces by low-values
+     inspect mailsend-link-aciklama(6) replacing trailing spaces by low-values
+     inspect mailsend-link-aciklama(7) replacing trailing spaces by low-values
+     inspect mailsend-link-aciklama(8) replacing trailing spaces by low-values
+     inspect mailsend-link-aciklama(9) replacing trailing spaces by low-values
+     inspect mailsend-link-aciklama(10) replacing trailing spaces by low-values
+     if mailsend-link-konu(99:1) = 1 
+        initialize konu-temizlendi 
+        move spaces   to mailsend-link-konu(99:1)
+        move 1        to konu-temizlendi
+     end-if 
+     inspect mailsend-link-konu replacing trailing spaces by low-values
+
+*/ imza varsa incele
+     inspect mem-otlortak-mail-imza-aciklama(combo-email-sira) replacing trailing 
+             spaces by low-values
+*       if k-kodu-tasi = "ASYA" then stop " " end-if 
+     move all low-values to buffer
+     if konu-temizlendi = 1 or kendi-mailini-kullandi = 1
+     string buffer,
+            mailsend-link-aciklama(1)                         delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mailsend-link-aciklama(2)                         delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mailsend-link-aciklama(3)                         delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mailsend-link-aciklama(4)                         delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mailsend-link-aciklama(5)                         delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mailsend-link-aciklama(6)                         delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mailsend-link-aciklama(7)                         delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mailsend-link-aciklama(8)                         delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mailsend-link-aciklama(9)                         delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mailsend-link-aciklama(10)                        delimited by low-values
+            x"0d0a",                                          delimited by low-values
+            mem-otlortak-mail-imza-aciklama(combo-email-sira) delimited by low-values
+            x"0d0d0d0d"                                       delimited by low-values
+*            "AsyaSoft Mail Servis / AsyaSoft Otel Yonetim Sistemi" delimited by low-values
+            into buffer
+     else
+        perform varying f from 1 by 1 until f > 20
+             inspect ramco(f) replacing trailing spaces by low-values
+        end-perform
+            move ramco-ust to buffer 
+          string buffer,
+            mailsend-link-aciklama(1)                         delimited by low-values
+            x"0d0d",                                          delimited by low-values
+            mailsend-link-aciklama(2)                         delimited by "                                  "
+            x"0d0d",                                          delimited by low-values
+            mailsend-link-aciklama(3)                         delimited by "                                  "
+            x"0d0d",                                          delimited by low-values
+            mem-otlortak-mail-imza-aciklama(combo-email-sira) delimited by low-values
+            x"0d0d0d0d"                                       delimited by low-values
+*            "AsyaSoft Mail Servis / AsyaSoft Otel Yonetim Sistemi" delimited by low-values
+            into buffer
+           
+     end-if 
+     create mailmessage handle in @message
+     
+     move zeroes to i
+     inspect buffer tallying i for all low-values
+     compute i = function length(buffer) - i
+
+
+     modify @message,
+            @MessageSubject(mailsend-link-konu)
+            @messagebody(buffer(1: i + 1))
+
+     modify @message,
+            @MessageBodyFormat("0" as vt_variant)
+*            @MessageBodyCharset("utf8")
+
+     modify @message,
+            @messagepriority("3" as vt_variant)
+
+
+     if otlortak-email-uzun(combo-email-sira) = spaces
+        move otlortak-mail-email(combo-email-sira)  to otlortak-email-uzun(combo-email-sira)
+     end-if
+     inspect otlortak-email-uzun(combo-email-sira) replacing trailing spaces by low-values
+     inspect otlortak-mail-name(combo-email-sira) replacing trailing spaces by low-values
+*/ Gonderen
+     create mailaddress handle in from1
+     modify from1,
+            @Address(otlortak-email-uzun(combo-email-sira))
+            @name(otlortak-mail-name(combo-email-sira))
+     modify @message,
+            @sender(from1)
+
+*/ cc - bilgi 
+     if mailsend-link-bilgi <> spaces
+        perform add-ccrecipient
+     end-if
+
+*/ eger kendine de 1 kopya gönderecekse
+     if otlortak-mail-kendim(combo-email-sira) = "E"
+        inspect otlortak-email-uzun(combo-email-sira) replacing trailing spaces by low-values
+        create mailaddress handle in bccrecipient
+        modify bccrecipient,
+               @Address(otlortak-email-uzun(combo-email-sira))
+        modify @message,
+               @AddBccRecipient(bccrecipient)
+     end-if
+    
+     
+
+*/  gönderiyor - to 
+     perform add-recipient
+
+     move 0 to ii
+     perform varying i
+             from 1
+             by 1
+             until i > 10
+             if mailsend-link-dosya(i) <> spaces
+                add 1 to ii
+                create MailAttachment handle in attach(ii)
+                inspect mailsend-link-dosya-aciklama(i) replacing trailing spaces by low-values
+                inspect mailsend-link-dosya-ext(i) replacing trailing spaces by low-values
+                if mailsend-link-dosya-aciklama(i)(1:1) = low-values
+                   string mailsend-link-dosya-aciklama(i)
+                          "Ek dosya" delimited by low-values
+                          i          delimited by low-values
+                          mailsend-link-dosya-ext(i) delimited by low-values
+                          into mailsend-link-dosya-aciklama(i)
+                else
+                   string mailsend-link-dosya-aciklama(i),
+                          mailsend-link-dosya-ext(i) delimited by low-values
+                          into mailsend-link-dosya-aciklama(i)
+                end-if
+                modify attach(ii),
+                       @file(mailsend-link-dosya(i))
+                       @inline(1)
+                       @name(mailsend-link-dosya-aciklama(i))
+
+                modify @message,
+                       @AddAttachment(attach(ii))
+
+             end-if
+     end-perform
+     
+***     move all low-values to buffer
+     if konu-temizlendi not = 1  
+       if kendi-mailini-kullandi not = 1 
+          modify objsmtpmail,
+              @send(@message,1,buffer)
+              returning mail-donus
+       else 
+          modify objsmtpmail,
+          SimpleSendAttachment(otlortak-email-uzun(combo-email-sira),
+                                mailsend-link-to,
+                                mailsend-link-konu,
+                                buffer,
+                                mailsend-link-dosya(1),
+                                "Hata") 
+          if mailsend-link-bilgi not = spaces
+             modify objsmtpmail,
+             SimpleSendAttachment(otlortak-email-uzun(combo-email-sira),
+                                 mailsend-link-bilgi,
+                                 mailsend-link-konu,
+                                 buffer,
+                                 mailsend-link-dosya(1),
+                                 "Hata")      
+          end-if 
+       end-if 
+     else
+          modify objsmtpmail,
+          SimpleSendAttachment(otlortak-email-uzun(2),
+                                mailsend-link-to,
+                                mailsend-link-konu,
+                                buffer,
+                                mailsend-link-dosya(2),
+                                "Hata") 
+     
+          if mailsend-link-bilgi not = spaces
+          modify objsmtpmail,
+          SimpleSendAttachment(otlortak-email-uzun(2),
+                                mailsend-link-bilgi,
+                                mailsend-link-konu,
+                                buffer,
+                                mailsend-link-dosya(2),
+                                "Hata")  
+          end-if
+    end-if 
+
+     if mail-donus <> 0 
+        inspect buffer replacing trailing spaces by low-values
+        display message box
+                "E-Posta gonderilemedi !!!",x"0a0d"
+                "Hata Numarasi :",mail-donus,x"0a0d",
+                "Hata Aciklamasi:",buffer
+                icon mb_Error_icon
+                title "Hata"
+     else
+       if konu-temizlendi = 1
+          move 1 to  mailsend-link-konu(99:1)
+       end-if 
+       if mailsend-link-konu(99:1) not = 1
+          display message box
+                 "E-Postaniz Gonderildi"
+                 title "Bilgi"
+       end-if 
+     end-if.
+
+     set exit-pushed to true.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 4001
+          perform send-mail
+     end-evaluate.
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+     when msg-bitmap-dblclick
+          move event-action-fail        to event-action
+     end-evaluate.
+     
+     .
+*
+ add-ccrecipient.
+     initialize mybuf-deg
+     unstring mailsend-link-bilgi delimited by ";" 
+              into mybuf(01)
+                   mybuf(02)
+                   mybuf(03)
+                   mybuf(04)
+                   mybuf(05)
+                   mybuf(06)
+                   mybuf(07)
+                   mybuf(08)
+                   mybuf(09)
+                   mybuf(10)
+
+     perform varying i
+             from 1
+             by 1
+             until i > 10
+             if mybuf(i) <> spaces
+                create mailaddress handle in ccrecipient
+                modify ccrecipient,
+                       @Address(mybuf(i))
+                modify @message,
+                       @AddccRecipient(ccrecipient)
+             end-if
+     end-perform.
+*
+ add-recipient.
+     initialize mybuf-deg
+     unstring mailsend-link-to delimited by ";" 
+              into mybuf(01)
+                   mybuf(02)
+                   mybuf(03)
+                   mybuf(04)
+                   mybuf(05)
+                   mybuf(06)
+                   mybuf(07)
+                   mybuf(08)
+                   mybuf(09)
+                   mybuf(10)
+
+     perform varying i
+             from 1
+             by 1
+             until i > 10
+             if mybuf(i) <> spaces
+                create mailaddress handle in recipient
+                modify recipient,
+                       @Address(mybuf(i))
+                modify @message,
+                       @AddRecipient(recipient)
+             end-if
+     end-perform.
+*
+*
+ imzatrk2eng.
+     perform varying i
+             from 1
+             by 1
+             until i > 3
+    inspect mem-otlortak-mail-imza-aciklama(i)            
+            converting x"98" to x"49"
+*x9e => b-y-k s 
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"9E" to x"53"
+*x99 => =
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"99" to x"4F"
+*x9A => -
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"9A" to x"55"
+*x9A => +
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"80" to x"43"
+*x9A => yumusak G
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"A6" to x"47"
+****** KUCUK KARAKTERLER
+*x9A => yumusak G
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"A7" to x"67"
+* kucuk i noktasizi
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"8D" to x"69"
+* kucuk - 
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"81" to x"75"
+* kucuk _ 
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"87" to x"63"
+* kucuk s  
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"9F" to x"73"
+* kucuk s  
+    inspect mem-otlortak-mail-imza-aciklama(i)
+            converting x"94" to x"6F"
+
+     end-perform.
+
+ 

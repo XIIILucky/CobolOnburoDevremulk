@@ -1,0 +1,419 @@
+* cast2acen.evt
+* cast2acen.evt is generated from D:\asya\acugt.ytl\otel\cast2acen.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM exception-procedure
+     .
+***   start event editor code   ***
+
+*
+ Form1-Bef-Create.
+      call "c$narg" using link-var.
+      perform adresleri-tasi.
+     .
+*
+ before-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 11
+              evaluate true
+                  when turkce
+                       move "Islemi Baslat  "   to mesaj
+                  when ingilizce 
+                       move "Islemi Baslat  "   to mesaj
+                  when almanca
+                       move "Islemi Baslat  "   to mesaj
+              end-evaluate
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 1 
+            panel-text = mesaj.
+
+ Form1-Aft-Initdata.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid
+          initialize mesaj-link
+          move 03 to mesaj-no
+          perform mesaj-ver
+    not invalid
+        continue
+    end-read
+    close genel
+    move 1 to rezpara-trace
+    open input konum
+     initialize konum-rec
+     start konum key not < konum-anahtar invalid
+           continue
+     not invalid
+     perform  with test after until fs-konum = "10"
+           read konum next no lock end move "10" to fs-konum
+           not at end
+                if konum-anahtar > 0 and konum-anahtar not > 19
+                   move konum-anahtar to son-konum
+                end-if
+           end-read
+     end-perform
+     close konum
+         
+    if link-var > 0 then 
+        move cast2acen-acenta to txtacenta-kodu
+        if txtacenta-kodu = spaces or txtacenta-kodu = zeroes
+             move 27 to key-status
+             exit paragraph
+        end-if
+        perform islem-yap
+        move 27 to key-status
+    end-if .
+*       
+ exception-procedure.
+     evaluate key-status
+          when 2 
+              perform islem-yap 
+         end-evaluate.
+*
+ islem-yap.
+       open i-o  acenhrk rez acenta  cast takvim kontrat 
+       perform acenhrk-temizle
+       perform ykontrat-isle
+       perform rez-isle
+       close  acenhrk rez acenta  cast takvim kontrat 
+       move 27 to key-status.
+
+*
+ acenhrk-temizle.
+
+        initialize acenta-rec.
+        move txtacenta-kodu to acenta-kodu
+        read acenta no lock invalid
+             continue
+        end-read
+        if  acenta-kontenjan not = spaces 
+              move acenta-kontenjan to acn-kont
+        else 
+              move acenta-kodu to acn-kont
+        end-if
+
+        initialize ACENHRK-rec.
+        move acn-kont to ACENHRK-ACENTA
+        start acenhrk key not < ACENHRK-ANAH invalid 
+             continue
+        not invalid
+        perform until fs-acenhrk = "10"
+        read acenhrk next no lock end move "10" to fs-acenhrk
+        not end
+                if ACENHRK-ACENTA <> acn-kont 
+                      exit perform
+                end-if 
+                delete acenhrk end-delete
+        end-read
+        end-perform
+        end-start.
+*
+ rez-isle.  
+        initialize rez-rec.
+        move "I"            to REZ-DURUMU
+        move txtacenta-kodu to REZ-ACEN-ANAH
+        start rez key not < REZ-ACEN invalid 
+             continue
+             not invalid
+             perform until fs-rez = "10"
+                     read rez next no lock end move "10" to fs-rez
+                         not end
+                             
+                             if REZ-ACENTA <> txtacenta-kodu
+                                   exit perform
+                             end-if
+
+                             if  rez-fiyat-konumu = 0 then
+                                  move 1 to rez-fiyat-konumu
+                              end-if
+                               if rez-oda-konumu = 0 then
+                                  move 1 to rez-oda-konumu 
+                              end-if
+                  
+                                 initialize acenta-rec
+                                 move rez-acenta to acenta-kodu
+                                 read acenta no lock invalid
+                                      continue
+                                 end-read
+                                 if  acenta-kontenjan not = spaces 
+                                     move acenta-kontenjan to acn-kont
+                                  else 
+                                       move acenta-kodu to acn-kont
+                                 end-if
+                                  perform acenhrk-isle
+                      end-read    
+              end-perform 
+        end-start.
+
+      
+
+
+ acenhrk-isle.
+        if rez-durumu not = "I" or rez-k-g-b not  = "K" 
+           exit paragraph
+        end-if.
+        move rez-gir-tar to takvim-anah.
+        start takvim key not < takvim-anah 
+           invalid 
+                continue
+           not invalid
+             perform until fs-takvim = "10"
+                 read takvim next no lock 
+                        end  move "10" to fs-takvim
+                    not end 
+                     if takvim-anah >= rez-cik-tar 
+                        move "10" to fs-takvim
+                     else
+*   TRACE Uygulamasi Acik ise kisi sayilari cast'tan alinacak
+                        if rezpara-trace = 1
+
+                           perform kisiler-casttan
+                        end-if
+                       
+                           perform acenhrk-tek-gun
+                     end-if
+                 end-read
+             end-perform
+        end-start.
+*
+ acenhrk-tek-gun.
+     move acn-kont      to acenhrk-acenta  
+     move takvim-anah       to acenhrk-tarih
+     move rez-fiyat-konumu  to acenhrk-oda-konumu   
+     move rez-s-d-t-g       to acenhrk-s-d-t-g   
+     read acenhrk no lock 
+         invalid 
+              initialize acenhrk-sat-oda  acenhrk-sat-buyuk  
+              acenhrk-sat-free acenhrk-sat-kucuk
+              move 99999 to acenhrk-kontrat-oda
+              compute acenhrk-sat-oda   = acenhrk-sat-oda   + 1  
+              compute acenhrk-sat-buyuk = acenhrk-sat-buyuk + rez-buyuk  
+              compute acenhrk-sat-kucuk = acenhrk-sat-kucuk + rez-kucuk  
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-free   
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-bebek   
+              write acenhrk-rec 
+                invalid display message box "Hata:acnhrk1hhh"
+              end-write
+         not invalid
+              compute acenhrk-sat-oda   = acenhrk-sat-oda   + 1  
+              compute acenhrk-sat-buyuk = acenhrk-sat-buyuk + rez-buyuk  
+              compute acenhrk-sat-kucuk = acenhrk-sat-kucuk + rez-kucuk  
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-free   
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-bebek   
+              rewrite acenhrk-rec 
+                 invalid display message box "Hata:acnhrk2hhh"
+              end-rewrite
+    end-read
+     move acn-kont      to acenhrk-acenta  
+   
+     move takvim-anah     to acenhrk-tarih 
+     move 41              to acenhrk-oda-konumu   
+     move rez-s-d-t-g     to acenhrk-s-d-t-g   
+     read acenhrk no lock 
+         invalid 
+             initialize acenhrk-sat-oda  acenhrk-sat-buyuk  
+              acenhrk-sat-free acenhrk-sat-kucuk
+              move 99999 to acenhrk-kontrat-oda
+              compute acenhrk-sat-oda   = acenhrk-sat-oda   + 1  
+              compute acenhrk-sat-buyuk = acenhrk-sat-buyuk + rez-buyuk  
+              compute acenhrk-sat-kucuk = acenhrk-sat-kucuk + rez-kucuk  
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-free   
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-bebek   
+              write acenhrk-rec 
+                invalid display message box "Hata:acnhrk3hhh"
+              end-write
+         not invalid
+              compute acenhrk-sat-oda   = acenhrk-sat-oda   + 1  
+              compute acenhrk-sat-buyuk = acenhrk-sat-buyuk + rez-buyuk  
+              compute acenhrk-sat-kucuk = acenhrk-sat-kucuk + rez-kucuk  
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-free   
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-bebek   
+              rewrite acenhrk-rec 
+                 invalid display message box "Hata:acnhrk4hhh"
+              end-rewrite
+    end-read
+       
+     move acn-kont      to acenhrk-acenta  
+   
+     move takvim-anah       to acenhrk-tarih 
+     move rez-fiyat-konumu  to acenhrk-oda-konumu   
+     move 5                 to acenhrk-s-d-t-g   
+     read acenhrk no lock 
+         invalid 
+              initialize acenhrk-sat-oda  acenhrk-sat-buyuk  
+              acenhrk-sat-free acenhrk-sat-kucuk
+              move 99999 to acenhrk-kontrat-oda
+              compute acenhrk-sat-oda   = acenhrk-sat-oda   + 1  
+              compute acenhrk-sat-buyuk = acenhrk-sat-buyuk + rez-buyuk  
+              compute acenhrk-sat-kucuk = acenhrk-sat-kucuk + rez-kucuk  
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-free   
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-bebek   
+              write acenhrk-rec 
+                invalid display message box "Hata:acnhrk5hhh"
+              end-write
+         not invalid
+              compute acenhrk-sat-oda   = acenhrk-sat-oda   + 1  
+              compute acenhrk-sat-buyuk = acenhrk-sat-buyuk + rez-buyuk  
+              compute acenhrk-sat-kucuk = acenhrk-sat-kucuk + rez-kucuk  
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-free   
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-bebek   
+              rewrite acenhrk-rec 
+                 invalid display message box "Hata:acnhrk6hhh"
+              end-rewrite
+    end-read   
+     move acn-kont      to acenhrk-acenta  
+  
+      move takvim-anah     to acenhrk-tarih 
+     move 41              to acenhrk-oda-konumu   
+     move 5               to acenhrk-s-d-t-g   
+     read acenhrk no lock 
+         invalid 
+             initialize acenhrk-sat-oda  acenhrk-sat-buyuk  
+              acenhrk-sat-free acenhrk-sat-kucuk
+              move 99999 to acenhrk-kontrat-oda
+              compute acenhrk-sat-oda   = acenhrk-sat-oda   + 1  
+              compute acenhrk-sat-buyuk = acenhrk-sat-buyuk + rez-buyuk  
+              compute acenhrk-sat-kucuk = acenhrk-sat-kucuk + rez-kucuk  
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-free   
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-bebek   
+              write acenhrk-rec 
+                invalid display message box "Hata:acnhrk7hhh"
+              end-write
+         not invalid
+              compute acenhrk-sat-oda   = acenhrk-sat-oda   + 1  
+              compute acenhrk-sat-buyuk = acenhrk-sat-buyuk + rez-buyuk  
+              compute acenhrk-sat-kucuk = acenhrk-sat-kucuk + rez-kucuk  
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-free   
+              compute acenhrk-sat-free  = acenhrk-sat-free  + rez-bebek   
+              rewrite acenhrk-rec 
+                 invalid display message box "Hata:acnhrk8hhh"
+              end-rewrite
+    end-read  
+    .
+
+*
+
+*
+ kisiler-casttan.
+*   TRACE Uygulamasi Acik ise kisi sayilari cast'tan alinacak
+    if rezpara-trace = 1
+       move takvim-anah      to cast-tarih
+       move rez-no           to cast-rez-no
+       read cast no lock invalid continue
+       not invalid
+           if rez-kisi not = cast-kisi
+              move cast-kisi to rez-kisi
+              evaluate true
+                when rez-buyuk < 2
+                     move 1 to rez-s-d-t-g
+                when rez-buyuk = 2
+                     move 2 to rez-s-d-t-g
+                when rez-buyuk = 3
+                     move 3 to rez-s-d-t-g
+                when rez-buyuk > 3
+                     move 4 to rez-s-d-t-g
+              end-evaluate 
+           end-if
+           if rez-oda-konumu not = cast-oda-konumu
+              move cast-oda-konumu to rez-oda-konumu
+           end-if 
+       end-read 
+    end-if.
+
+
+*       
+ ykontrat-isle.
+    initialize acenta-rec.
+    move txtacenta-kodu to acenta-kodu
+    read acenta no lock invalid
+         continue
+    end-read
+    if  acenta-kontenjan not = spaces 
+        move acenta-kontenjan to acn-kont
+    else 
+          move acenta-kodu to acn-kont
+    end-if
+
+
+    initialize kontrat-rec
+    move acn-kont to kontrat-acenta
+    start kontrat key > kontrat-anah
+      invalid 
+        continue
+      not invalid
+         perform until fs-kontrat = "10"
+             read kontrat next no lock 
+               end move "10" to fs-kontrat
+               not end
+
+                   if kontrat-acenta <> acn-kont
+                         exit perform
+                   end-if
+
+                   |display kontrat-acenta
+                   perform tek-kont-yaz
+            end-read
+         end-perform
+    end-start
+    .
+*
+ tek-kont-yaz.
+     
+     move kontrat-ilk-tarih    to takvim-anah
+     start takvim key not < takvim-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-takvim = "10"
+           read takvim next no lock end move "10" to fs-takvim
+           not at end
+                if takvim-anah > kontrat-son-tarih
+                   exit perform
+                end-if
+                perform varying i from 1 by 1 until i > 41
+                     if i > son-konum and i < 41
+                        exit perform cycle
+                     end-if 
+                        initialize acenhrk-rec
+                        move kontrat-acenta          to acenhrk-acenta
+                        move takvim-anah             to acenhrk-tarih
+                        move kontrat-tipi            to acenhrk-s-d-t-g
+                        move i                       to acenhrk-oda-konumu
+                        read acenhrk no lock invalid continue end-read
+                        if kontrat-eksi = "-" then
+                                  if  kontrat-oda(i) < 9999
+                                     if acenhrk-kontrat-oda >  kontrat-oda(i)
+                                         subtract kontrat-oda(i)  from acenhrk-kontrat-oda
+                                       else
+                                          move 0 to  acenhrk-kontrat-oda
+                                     end-if
+                                   end-if
+                          else
+                                    if acenhrk-kontrat-oda +  kontrat-oda(i)  not  > 9999
+                                       add kontrat-oda(i)   to acenhrk-kontrat-oda
+                                     else
+                                       if kontrat-oda(i)  >  acenhrk-kontrat-oda
+                                            continue
+                                       else
+                                           move kontrat-oda(i) to  acenhrk-kontrat-oda
+                                       end-if
+                                   end-if 
+                        end-if 
+                        compute acenhrk-kontrat-buyuk = 
+                                acenhrk-kontrat-oda * acenhrk-s-d-t-g
+                        write acenhrk-rec invalid
+                              rewrite acenhrk-rec end-rewrite
+                        end-write 
+
+               end-perform
+           end-read
+     end-perform
+     end-start.
+
+    
+
+ 

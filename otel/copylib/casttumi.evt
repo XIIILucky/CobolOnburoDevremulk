@@ -1,0 +1,511 @@
+* casttumi.evt
+* casttumi.evt is generated from F:\asya\acugt.kaya\otel\casttumi.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM exception-procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+       perform adresleri-tasi.
+     .
+*
+ before-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 11
+            move "Islemi Baslat  "   to mesaj 
+     end-evaluate.
+     modify form1-st-1-handle,
+            panel-index = 1 
+            panel-text = mesaj.
+
+ Form1-Aft-Initdata.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid
+          initialize mesaj-link
+          move 03 to mesaj-no
+          perform mesaj-ver
+    not invalid
+        continue
+    end-read
+    close genel.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+
+ exception-procedure.
+     evaluate key-status
+          when 2 
+             modify Form1-Ef-1, ENABLED = false
+             perform islem-yap 
+             display message box "Islem Tamamlandi...."
+             move 27 to key-status    
+     end-evaluate.
+
+*
+ islem-yap.
+ 
+       open output casttop takvimtop reztop detisttop istdatatop turizmtop.
+       close       casttop takvimtop reztop detisttop istdatatop turizmtop.
+       open i-o    casttop takvimtop reztop detisttop istdatatop turizmtop.
+           perform reztop-olustur.
+           perform rez-isle
+       close       casttop takvimtop reztop detisttop istdatatop turizmtop.
+* Rezervasyonlari tek tek ayirip casta-yaza gonder yaz
+ rez-isle.  
+        modify lb-isl-durumu, title = "Forecastlar Hazirlaniyor ".
+        initialize reztop-rec.
+        start reztop key not < reztop-anah 
+           invalid continue   
+           not invalid 
+              perform until fs-reztop = "10"  
+                read reztop next no lock 
+                     at end move "10" to fs-reztop
+                     not end
+                       modify form1-handle title  = reztop-anah
+                       perform cast-isle    
+                 end-read
+               end-perform
+        end-start.
+* tek rezervasyonu casta-yaz
+ cast-isle. 
+        move reztop-gir-tar to takvimtop-anah.
+        start takvimtop key not < takvimtop-anah 
+           invalid continue 
+           not invalid 
+               perform until fs-takvimtop = "10"
+                 read takvimtop next no lock 
+                      end move "10" to fs-takvimtop
+                      not end
+                         modify lb-isl-durumu-1, 
+                         title =  takvimtop-anah 
+                        if takvimtop-anah > reztop-cik-tar then 
+                             move "10" to fs-takvimtop 
+                          else
+                            initialize casttop-rec
+                            move takvimtop-anah      to casttop-tarih
+                            move reztop-otel         to casttop-otel
+                            move reztop-no           to casttop-rez-no
+                            move reztop-odano        to casttop-oda-no
+                            write casttop-rec invalid 
+                              rewrite casttop-rec invalid continue end-rewrite 
+                            end-write
+                        end-if   
+                  end-read
+               end-perform
+         end-start.
+            .
+* Tum sirketlerin rezervasyonlarini tek rezervasyon dosyasina topla 
+* ve takvimleri topla tek takvim dosyasi olustur
+ reztop-olustur.
+        open input isyeri
+        initialize isyeri-rec
+        start isyeri key > isyeri-sira
+           invalid continue
+           not invalid 
+           
+              perform until fs-isyeri = "10"
+                read isyeri next no lock
+                  at end move  "10" to fs-isyeri
+                  not end
+                     if isyeri-grup > 0 then 
+                     
+                           move isyeri-adres to 
+                           rez-dosya-adres     takvim-dosya-adres
+                           istdata-dosya-adres detist-dosya-adres
+                           turizm-dosya-adres
+                           perform tek-rez-yaz
+                           perform tek-takvim-yaz
+                           perform tek-ist-yaz
+                           perform tek-detist-yaz
+                           perform tek-turizm-yaz
+                      end-if
+                 end-read
+               end-perform
+        end-start.
+* Tek sirketin Tum rezervasyonlarini reztoplama aktar 
+ tek-rez-yaz.
+       open input rez
+       initialize rez-rec
+       start rez key > rez-anah 
+         invalid continue
+         not invalid
+          perform until fs-rez = "10"
+            read rez next no lock 
+                at end 
+                   move "10" to fs-rez
+                not end
+                   move rez-rec to reztop-rec(3:)
+                   move isyeri-sira to reztop-otel
+                   write reztop-rec
+            end-read
+          end-perform
+        end-start
+        close rez.
+* Tek sirketin takvim dosyasini takvimtop dosyasini yaz
+ tek-takvim-yaz.
+       open input takvim
+       initialize takvim-rec
+       start takvim key > takvim-anah 
+        invalid continue
+         not invalid
+          perform until fs-takvim = "10"
+            read takvim next no lock 
+                at end 
+                   move "10" to fs-takvim
+                not end
+                   move takvim-anah to takvimtop-anah 
+                   read takvimtop 
+                       invalid
+                          initialize takvimtop-rec
+                          move takvim-anah to takvimtop-anah
+                          move takvim-kacinci       to takvimtop-kacinci
+                          move takvim-gun-adi       to takvimtop-gun-adi
+                          move takvim-mesai-tatil   to takvimtop-mesai-tatil
+                          perform takvim-tek-tarih-aktar
+                          write takvimtop-rec 
+                              invalid 
+                              display "Yetki paylasimi dogru degil"  
+                              " Sistem yöneticiniz arayiniz"
+                          end-write
+                       not invalid
+                          perform takvim-tek-tarih-aktar  
+                          rewrite takvimtop-rec 
+                              invalid 
+                              display "Yetki paylasimi dogru degil"  
+                              " Sistem yöneticiniz arayiniz"
+                          end-rewrite
+                   end-read
+                   
+            end-read
+          end-perform
+        end-start
+        close takvim
+        .
+* Tek bir gunu takvim dosyasindan takvimtoplam dosyasina ekle
+ takvim-tek-tarih-aktar.
+      add takvim-hazir-oda to 
+      takvimtop-hazir-oda takvimtek-hazir-oda(isyeri-sira)
+      add takvim-top-oda to 
+      takvimtop-top-oda takvimtek-top-oda(isyeri-sira)
+      perform varying dongu9 from 1 by 1 until dongu9 > 9
+         perform varying dongu4 from 1 by 1 until dongu4 > 4
+           add takvim-sat-oda(dongu9,dongu4) to 
+           takvimtop-sat-oda(dongu9,dongu4) 
+           takvimtek-sat-oda(isyeri-sira,dongu9,dongu4)
+           add takvim-sat-buyuk(dongu9,dongu4) to 
+           takvimtop-sat-buyuk(dongu9,dongu4) 
+           takvimtek-sat-buyuk(isyeri-sira,dongu9,dongu4)
+           add takvim-sat-kucuk(dongu9,dongu4) to 
+           takvimtop-sat-kucuk(dongu9,dongu4) 
+           takvimtek-sat-kucuk(isyeri-sira,dongu9,dongu4)
+           add takvim-sat-free(dongu9,dongu4) to 
+           takvimtop-sat-free(dongu9,dongu4) 
+           takvimtek-sat-free(isyeri-sira,dongu9,dongu4)           
+         end-perform
+       end-perform
+      .
+* 
+ tek-ist-yaz.
+       open input istdata
+       initialize istdata-rec
+       start istdata key > istdata-anah 
+       invalid continue
+        not invalid
+          perform until fs-istdata = "10"
+            read istdata next no lock 
+                at end 
+                   move "10" to fs-istdata
+                not end
+                   move istdata-anah to istdatatop-anah 
+                   read istdatatop 
+                       invalid
+                          initialize istdatatop-rec
+                          perform ist-topla
+                          
+                          move istdata-anah to istdatatop-anah
+
+                          write istdatatop-rec 
+                              invalid 
+                              display "Yetki paylasimi dogru degil"  
+                              " Sistem yöneticiniz arayiniz"
+                          end-write
+                       not invalid
+                          perform ist-topla
+          
+
+                          rewrite istdatatop-rec 
+                              invalid 
+                              display "Yetki paylasimi dogru degil"  
+                              " Sistem yöneticiniz arayiniz"
+                          end-rewrite
+                   end-read
+                   
+            end-read
+          end-perform
+        end-start
+        close istdata
+        .
+
+*
+ tek-detist-yaz.
+       open input detist
+       initialize detist-rec
+       start detist key > detist-anah
+        invalid continue
+        not invalid
+          perform until fs-detist = "10"
+            read detist next no lock 
+                at end 
+                   move "10" to fs-detist
+                not end
+                   move detist-anah to detisttop-anah 
+                   read detisttop 
+                       invalid
+                          initialize detisttop-rec
+                          PERFORM DETIST-TOPLA
+                          
+                          move detist-anah to detisttop-anah
+
+                          write detisttop-rec 
+                              invalid 
+                              display "Yetki paylasimi dogru degil"  
+                              " Sistem yöneticiniz arayiniz"
+                          end-write
+                       not invalid
+                          PERFORM DETIST-TOPLA
+                          rewrite detisttop-rec 
+                              invalid 
+                              display "Yetki paylasimi dogru degil"  
+                              " Sistem yöneticiniz arayiniz"
+                          end-rewrite
+                   end-read
+                   
+            end-read
+          end-perform
+        end-start
+        close detist
+        .
+*
+ tek-turizm-yaz. 
+        open input turizm
+       initialize turizm-rec
+       start turizm key > turizm-anah 
+        invalid continue
+         not invalid
+          perform until fs-turizm = "10"
+            read turizm next no lock 
+                at end 
+                   move "10" to fs-turizm
+                not end
+                   move turizm-anah to turizmtop-anah 
+                   read turizmtop 
+                       invalid
+                          initialize turizmtop-rec
+                          
+                          perform  turizm-topla
+                          move turizm-anah to turizmtop-anah
+
+                          write turizmtop-rec 
+                              invalid 
+                              display "Yetki paylasimi dogru degil"  
+                              " Sistem yöneticiniz arayiniz"
+                          end-write
+                       not invalid
+                          perform turizm-topla
+                          rewrite turizmtop-rec 
+                              invalid 
+                              display "Yetki paylasimi dogru degil"  
+                              " Sistem yöneticiniz arayiniz"
+                          end-rewrite
+                   end-read
+                   
+            end-read
+          end-perform
+        end-start
+        close turizm
+        .
+*
+ detist-topla.
+        ADD DETIST-TOP-ODA       TO     DETISTTOP-TOP-ODA   
+        ADD DETIST-TOP-BUYUK     TO     DETISTTOP-TOP-BUYUK 
+        ADD DETIST-TOP-KUCUK     TO     DETISTTOP-TOP-KUCUK 
+        ADD DETIST-TOP-FREE      TO     DETISTTOP-TOP-FREE  
+        ADD DETIST-TOP-BEBEK     TO     DETISTTOP-TOP-BEBEK
+        ADD DETIST-TOP-TUTAR     TO     DETISTTOP-TOP-TUTAR
+ 
+        ADD DETIST-ODA-ODA       TO     DETISTTOP-ODA-ODA   
+        ADD DETIST-ODA-BUYUK     TO     DETISTTOP-ODA-BUYUK 
+        ADD DETIST-ODA-KUCUK     TO     DETISTTOP-ODA-KUCUK 
+        ADD DETIST-ODA-FREE      TO     DETISTTOP-ODA-FREE  
+        ADD DETIST-ODA-BEBEK     TO     DETISTTOP-ODA-BEBEK 
+        ADD DETIST-ODA-TUTAR     TO     DETISTTOP-ODA-TUTAR 
+
+        ADD DETIST-KAH-ODA       TO     DETISTTOP-KAH-ODA   
+        ADD DETIST-KAH-BUYUK     TO     DETISTTOP-KAH-BUYUK 
+        ADD DETIST-KAH-KUCUK     TO     DETISTTOP-KAH-KUCUK 
+        ADD DETIST-KAH-FREE      TO     DETISTTOP-KAH-FREE  
+        ADD DETIST-KAH-BEBEK     TO     DETISTTOP-KAH-BEBEK
+        ADD DETIST-KAH-TUTAR     TO     DETISTTOP-KAH-TUTAR 
+
+        ADD DETIST-OGL-ODA       TO     DETISTTOP-OGL-ODA   
+        ADD DETIST-OGL-BUYUK     TO     DETISTTOP-OGL-BUYUK 
+        ADD DETIST-OGL-KUCUK     TO     DETISTTOP-OGL-KUCUK 
+        ADD DETIST-OGL-FREE      TO     DETISTTOP-OGL-FREE  
+        ADD DETIST-OGL-BEBEK     TO     DETISTTOP-OGL-BEBEK
+        ADD DETIST-OGL-TUTAR     TO     DETISTTOP-OGL-TUTAR 
+
+        ADD DETIST-AKS-ODA       TO     DETISTTOP-AKS-ODA   
+        ADD DETIST-AKS-BUYUK     TO     DETISTTOP-AKS-BUYUK 
+        ADD DETIST-AKS-KUCUK     TO     DETISTTOP-AKS-KUCUK 
+        ADD DETIST-AKS-FREE      TO     DETISTTOP-AKS-FREE  
+        ADD DETIST-AKS-BEBEK     TO     DETISTTOP-AKS-BEBEK
+        ADD DETIST-AKS-TUTAR     TO     DETISTTOP-AKS-TUTAR 
+
+        ADD DETIST-ICE-ODA       TO     DETISTTOP-ICE-ODA   
+        ADD DETIST-ICE-BUYUK     TO     DETISTTOP-ICE-BUYUK 
+        ADD DETIST-ICE-KUCUK     TO     DETISTTOP-ICE-KUCUK 
+        ADD DETIST-ICE-FREE      TO     DETISTTOP-ICE-FREE  
+        ADD DETIST-ICE-BEBEK     TO     DETISTTOP-ICE-BEBEK
+        ADD DETIST-ICE-TUTAR     TO     DETISTTOP-ICE-TUTAR 
+
+        ADD DETIST-EXT-ODA       TO     DETISTTOP-EXT-ODA   
+        ADD DETIST-EXT-BUYUK     TO     DETISTTOP-EXT-BUYUK 
+        ADD DETIST-EXT-KUCUK     TO     DETISTTOP-EXT-KUCUK 
+        ADD DETIST-EXT-FREE      TO     DETISTTOP-EXT-FREE  
+        ADD DETIST-EXT-BEBEK     TO     DETISTTOP-EXT-BEBEK
+        ADD DETIST-EXT-TUTAR     TO     DETISTTOP-EXT-TUTAR
+ 
+        ADD DETIST-EXB-ODA       TO     DETISTTOP-EXB-ODA   
+        ADD DETIST-EXB-BUYUK     TO     DETISTTOP-EXB-BUYUK 
+        ADD DETIST-EXB-KUCUK     TO     DETISTTOP-EXB-KUCUK 
+        ADD DETIST-EXB-FREE      TO     DETISTTOP-EXB-FREE  
+        ADD DETIST-EXB-BEBEK     TO     DETISTTOP-EXB-BEBEK
+        ADD DETIST-EXB-TUTAR     TO     DETISTTOP-EXB-TUTAR 
+
+        ADD DETIST-COM-ODA       TO     DETISTTOP-COM-ODA   
+        ADD DETIST-COM-BUYUK     TO     DETISTTOP-COM-BUYUK 
+        ADD DETIST-COM-KUCUK     TO     DETISTTOP-COM-KUCUK 
+        ADD DETIST-COM-FREE      TO     DETISTTOP-COM-FREE  
+        ADD DETIST-COM-BEBEK     TO     DETISTTOP-COM-BEBEK 
+        ADD DETIST-COM-TUTAR     TO     DETISTTOP-COM-TUTAR 
+
+        ADD DETIST-HOU-ODA       TO     DETISTTOP-HOU-ODA   
+        ADD DETIST-HOU-BUYUK     TO     DETISTTOP-HOU-BUYUK 
+        ADD DETIST-HOU-KUCUK     TO     DETISTTOP-HOU-KUCUK 
+        ADD DETIST-HOU-FREE      TO     DETISTTOP-HOU-FREE  
+        ADD DETIST-HOU-BEBEK     TO     DETISTTOP-HOU-BEBEK 
+        ADD DETIST-HOU-TUTAR     TO     DETISTTOP-HOU-TUTAR 
+
+         perform varying dongu9 from 1 by 1 until dongu9 > 4                                             
+                ADD DETIST-SDT-ODA(DONGU9)       TO     DETISTTOP-SDT-ODA(DONGU9)   
+                ADD DETIST-SDT-BUYUK(DONGU9)     TO     DETISTTOP-SDT-BUYUK(DONGU9) 
+                ADD DETIST-SDT-KUCUK(DONGU9)     TO     DETISTTOP-SDT-KUCUK(DONGU9) 
+                ADD DETIST-SDT-FREE(DONGU9)      TO     DETISTTOP-SDT-FREE(DONGU9)  
+                ADD DETIST-SDT-BEBEK(DONGU9)     TO     DETISTTOP-SDT-BEBEK(DONGU9)  
+                ADD DETIST-SDT-TUTAR(DONGU9)     TO     DETISTTOP-SDT-TUTAR(DONGU9) 
+        END-PERFORM 
+
+
+
+        .
+*
+ turizm-topla.
+              
+                 ADD   KALAN-ODA    TO  KALANTOP-ODA    
+                 ADD   KALAN-BUYUK  TO  KALANTOP-BUYUK  
+                 ADD   KALAN-KUCUK  TO  KALANTOP-KUCUK  
+                 ADD   KALAN-FREE   TO  KALANTOP-FREE 
+                 ADD   KALAN-BEBEK  TO  KALANTOP-BEBEK
+  
+                 ADD   GELEN-ODA    TO  GELENTOP-ODA    
+                 ADD   GELEN-BUYUK  TO  GELENTOP-BUYUK  
+                 ADD   GELEN-KUCUK  TO  GELENTOP-KUCUK  
+                 ADD   GELEN-FREE   TO  GELENTOP-FREE
+                 ADD   GELEN-BEBEK  TO  GELENTOP-BEBEK
+                 
+      
+        
+        .
+*
+ ist-topla.
+         add  IST-TOP-ODA   to  ISTTOP-TOP-ODA      
+         add IST-TOP-BUYUK  to ISTTOP-TOP-BUYUK     
+         add IST-TOP-KUCUK  to ISTTOP-TOP-KUCUK     
+         add IST-TOP-FREE   to ISTTOP-TOP-FREE      
+         add  IST-TOP-TUTAR to  ISTTOP-TOP-TUTAR      
+         add  IST-ODA-ODA   to  ISTTOP-ODA-ODA      
+         add IST-ODA-BUYUK  to ISTTOP-ODA-BUYUK     
+         add IST-ODA-KUCUK  to ISTTOP-ODA-KUCUK     
+         add IST-ODA-FREE   to ISTTOP-ODA-FREE      
+         add  IST-ODA-TUTAR to  ISTTOP-ODA-TUTAR      
+         add  IST-KAH-ODA   to  ISTTOP-KAH-ODA      
+         add IST-KAH-BUYUK  to ISTTOP-KAH-BUYUK     
+         add IST-KAH-KUCUK  to ISTTOP-KAH-KUCUK     
+         add IST-KAH-FREE   to ISTTOP-KAH-FREE      
+         add  IST-KAH-TUTAR to  ISTTOP-KAH-TUTAR      
+         add  IST-OGL-ODA   to  ISTTOP-OGL-ODA      
+         add IST-OGL-BUYUK  to ISTTOP-OGL-BUYUK     
+         add IST-OGL-KUCUK  to ISTTOP-OGL-KUCUK     
+         add IST-OGL-FREE   to ISTTOP-OGL-FREE      
+         add  IST-OGL-TUTAR to  ISTTOP-OGL-TUTAR      
+         add  IST-AKS-ODA   to  ISTTOP-AKS-ODA      
+         add IST-AKS-BUYUK  to ISTTOP-AKS-BUYUK     
+         add IST-AKS-KUCUK  to ISTTOP-AKS-KUCUK     
+         add IST-AKS-FREE   to ISTTOP-AKS-FREE      
+         add  IST-AKS-TUTAR to  ISTTOP-AKS-TUTAR      
+         add  IST-ICE-ODA   to  ISTTOP-ICE-ODA      
+         add IST-ICE-BUYUK  to ISTTOP-ICE-BUYUK     
+         add IST-ICE-KUCUK  to ISTTOP-ICE-KUCUK     
+         add IST-ICE-FREE   to ISTTOP-ICE-FREE      
+         add  IST-ICE-TUTAR to  ISTTOP-ICE-TUTAR      
+         add  IST-EXT-ODA   to  ISTTOP-EXT-ODA      
+         add IST-EXT-BUYUK  to ISTTOP-EXT-BUYUK     
+         add IST-EXT-KUCUK  to ISTTOP-EXT-KUCUK     
+         add IST-EXT-FREE   to ISTTOP-EXT-FREE      
+         add  IST-EXT-TUTAR to  ISTTOP-EXT-TUTAR      
+         add  IST-EXB-ODA   to  ISTTOP-EXB-ODA      
+         add IST-EXB-BUYUK  to ISTTOP-EXB-BUYUK     
+         add IST-EXB-KUCUK  to ISTTOP-EXB-KUCUK     
+         add IST-EXB-FREE   to ISTTOP-EXB-FREE      
+         add  IST-EXB-TUTAR to  ISTTOP-EXB-TUTAR      
+         add  IST-DI1-ODA   to  ISTTOP-DI1-ODA      
+         add IST-DI1-BUYUK  to ISTTOP-DI1-BUYUK     
+         add IST-DI1-KUCUK  to ISTTOP-DI1-KUCUK     
+         add IST-DI1-FREE   to ISTTOP-DI1-FREE      
+         add  IST-DI1-TUTAR to  ISTTOP-DI1-TUTAR      
+         add  IST-COM-ODA   to  ISTTOP-COM-ODA      
+         add IST-COM-BUYUK  to ISTTOP-COM-BUYUK     
+         add IST-COM-KUCUK  to ISTTOP-COM-KUCUK     
+         add IST-COM-FREE   to ISTTOP-COM-FREE      
+         add  IST-COM-TUTAR to  ISTTOP-COM-TUTAR      
+         add  IST-HOU-ODA   to  ISTTOP-HOU-ODA      
+         add  IST-HOU-BUYUK to  ISTTOP-HOU-BUYUK     
+         add  IST-HOU-KUCUK to  ISTTOP-HOU-KUCUK     
+         add IST-HOU-FREE   to ISTTOP-HOU-FREE      
+         add  IST-HOU-TUTAR to  ISTTOP-HOU-TUTAR      
+         add  IST-NOS-ODA   to  ISTTOP-NOS-ODA      
+         add  IST-NOS-BUYUK to  ISTTOP-NOS-BUYUK     
+         add  IST-NOS-KUCUK to  ISTTOP-NOS-KUCUK     
+         add  IST-NOS-FREE  to  ISTTOP-NOS-FREE      
+         add  IST-NOS-TUTAR to  ISTTOP-NOS-TUTAR      
+         perform varying dongu9 from 1 by 1 until dongu9 > 4     
+                  add  IST-SDT-ODA(dongu9)   to  ISTTOP-SDT-ODA(dongu9)     
+                  add IST-SDT-BUYUK(dongu9)  to  ISTTOP-SDT-BUYUK(dongu9)    
+                  add IST-SDT-KUCUK(dongu9)  to  ISTTOP-SDT-KUCUK(dongu9)    
+                  add IST-SDT-FREE(dongu9)   to  ISTTOP-SDT-FREE(dongu9)   
+                  add IST-SDT-TUTAR(dongu9)  to ISTTOP-SDT-TUTAR(dongu9)    
+         end-perform       
+      
+
+        
+ 
+         .
+ 

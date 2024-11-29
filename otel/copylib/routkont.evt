@@ -1,0 +1,274 @@
+* routkont.evt
+* routkont.evt is generated from D:\asya\acugt.ytl\otel\routkont.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+
+ Form1-Gd-2-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+        perform adresleri-tasi 
+        open i-o odalar2.
+     
+     .
+*
+ Form1-Aft-Initdata.
+              
+        open i-o genelfis
+        move 1 to genelfis-anahtar
+        read genelfis no lock invalid
+             accept print-no from time
+        not invalid
+            add 1 to print-no
+            rewrite genelfis-rec end-rewrite
+        end-read
+        close genelfis
+        move print-no         to gelen-no giden-no
+
+        open output gelen close gelen open i-o gelen 
+        open output giden close giden open i-o giden
+        open input route depkod rez konuk
+*/gelen
+           perform reze-gore-gelen
+           perform folioya-gore-gelen
+           perform gelen-grid-yukle
+*/giden
+           perform reze-gore-giden
+           perform folioya-gore-giden
+           perform giden-grid-yukle
+
+        close route gelen giden depkod rez konuk.
+*
+ reze-gore-giden.         
+        initialize route-rec      
+        move link-rez-no     to route-rezno
+        start route key not < route-anah invalid
+              continue
+        not invalid
+        perform with test after until fs-route = "10"
+        read route next no lock end move "10"  to fs-route
+        not at end 
+                if route-rezno <> link-rez-no
+                   exit perform 
+                end-if
+                initialize giden-rec
+                move route-depkod          to giden-anah
+                read giden no lock invalid
+                   if  route-tip = "R" 
+                     move route-no         to giden-rez-no
+                   else
+                      move route-no        to giden-folio-no
+                   end-if
+                     write giden-rec end-write                     
+                end-read
+        end-read
+        end-perform
+        end-start      
+     .
+*
+ folioya-gore-giden.
+        initialize route-rec
+       
+        move link-folio-no     to route-folio 
+        start route key not < route-anah invalid
+              continue
+        not invalid
+        perform with test after until fs-route = "10"
+        read route next no lock end move "10"  to fs-route
+        not at end 
+                if route-folio <> link-folio-no
+                   exit perform 
+                end-if
+                initialize giden-rec
+                move route-depkod             to giden-anah
+                read giden no lock invalid
+                     if  route-tip = "R" 
+                     move route-no         to giden-rez-no
+                     else
+                      move route-no         to giden-folio-no
+                   end-if
+                     write giden-rec end-write                     
+                end-read
+        end-read
+        end-perform
+        end-start
+      .
+*
+ giden-grid-yukle.
+        modify Form1-Gd-2, RESET-GRID = 1
+                           mass-update = 1
+        move "Dep"             to gd-2-col-1
+        move "Adi"             to gd-2-col-2
+        move "Rez No"          to gd-2-col-3
+        move "Folio No"        to gd-2-col-4
+        modify form1-gd-2,
+                        record-to-add(form1-gd-2-record)
+        move 1   to kayit-sayi
+        initialize giden-rec
+        start giden key not < giden-anah invalid
+              continue
+        not invalid
+        perform with test after until fs-giden = "10"
+        read giden next no lock end move "10"  to fs-giden
+        not at end
+                 initialize form1-gd-2-record  
+                 move giden-depkod             to gd-2-col-1 depkod-anah
+                 read depkod no lock invalid
+                      move "Tanimsiz...."   to depkod-adi
+                 end-read
+                      move depkod-adi       to gd-2-col-2
+                 move giden-rez-no          to gd-2-col-3
+                 move giden-folio-no        to gd-2-col-4
+                 add 1 to kayit-sayi
+                 modify form1-gd-2(1,kayit-sayi),
+                                 record-to-add(form1-gd-2-record)
+                                 hidden-data = gelen-rec
+        end-read
+        end-perform
+        end-start
+        modify form1-gd-2,mass-update = 0
+
+      .
+*
+ reze-gore-gelen.
+ 
+        initialize route-rec
+        move "R"             to route-tip
+        move link-rez-no     to route-no
+        start route key not < route-data invalid
+              continue
+        not invalid
+        perform with test after until fs-route = "10"
+        read route next no lock end move "10"  to fs-route
+        not at end 
+                if route-no <> link-rez-no
+                   exit perform 
+                end-if
+                initialize gelen-rec
+
+                move route-rezno     to gelen-rez-no
+                move route-folio     to gelen-folio-no
+                read gelen no lock invalid
+                                
+                     move route-depkod to  gelen-dep
+                     write gelen-rec end-write 
+                not invalid
+                                      
+                     move route-depkod         to birlesecek-dep
+
+                     inspect dep-birlesen replacing trailing spaces by low-values
+                     inspect birlesecek-dep replacing trailing spaces by low-values
+                    string gelen-dep delimited by spaces
+                           "-" delimited by size
+                            birlesecek-dep  delimited by spaces
+                     into dep-birlesen
+                     move dep-birlesen   to gelen-dep
+                     rewrite gelen-rec end-rewrite 
+                end-read
+        end-read
+        end-perform
+        end-start
+        .
+
+*
+ folioya-gore-gelen.
+        initialize route-rec
+        move "F"             to route-tip
+        move link-folio-no   to route-no
+        start route key not < route-data invalid
+              continue
+        not invalid
+        perform with test after until fs-route = "10"
+        read route next no lock end move "10"  to fs-route
+        not at end 
+                if route-no <> link-folio-no
+                   exit perform
+                end-if
+                initialize gelen-rec dep-birlesen
+                move route-rezno     to gelen-rez-no
+                move route-folio     to gelen-folio-no
+                read gelen no lock invalid
+                                
+                     move route-depkod to  gelen-dep
+                     write gelen-rec end-write 
+                not invalid
+                                      
+                     move route-depkod         to birlesecek-dep
+
+                     inspect dep-birlesen replacing trailing spaces by low-values
+                     inspect birlesecek-dep replacing trailing spaces by low-values
+                     string gelen-dep delimited by spaces
+                           "-" delimited by size
+                            birlesecek-dep  delimited by spaces
+                     into dep-birlesen
+                     move dep-birlesen   to gelen-dep
+                     rewrite gelen-rec end-rewrite 
+                end-read
+        end-read
+        end-perform
+        end-start.
+*
+ gelen-grid-yukle.
+        modify Form1-Gd-1, RESET-GRID = 1
+                           mass-update = 1
+        move "Oda"             to gd-1-col-1
+        move "Adi"             to gd-1-col-2
+        move "Soyadi"          to gd-1-col-3
+        move "Departmanlar"    to gd-1-col-4
+        modify form1-gd-1,
+                        record-to-add(form1-gd-1-record)
+        move 1   to kayit-sayi
+        initialize gelen-rec
+        start gelen key not < gelen-anah invalid
+              continue
+        not invalid
+        perform with test after until fs-gelen = "10"
+        read gelen next no lock end move "10"  to fs-gelen
+        not at end
+                 initialize form1-gd-1-record rez-rec 
+                 move gelen-rez-no            to rez-no
+                 read rez no lock invalid
+                      continue
+                 not invalid
+                      move rez-odano          to o-kisa 
+            perform oda-uzat
+            move o-uzun to  gd-1-col-1
+                      move rez-adi            to gd-1-col-2
+                      move rez-soyadi         to gd-1-col-3
+                      move gelen-dep          to gd-1-col-4
+                 end-read
+
+                 initialize konuk-rec
+                 move gelen-folio-no          to konuk-folio
+                 read konuk no lock invalid
+                      continue
+                 not invalid
+                      move konuk-odano        to o-kisa 
+            perform oda-uzat
+            move o-uzun to  gd-1-col-1
+                      move konuk-adi          to gd-1-col-2
+                      move konuk-soyadi       to gd-1-col-3
+                      move gelen-dep          to gd-1-col-4
+                 end-read
+                 add 1 to kayit-sayi
+                 modify form1-gd-1(1,kayit-sayi),
+                                 record-to-add(form1-gd-1-record)
+                                 hidden-data = gelen-rec
+        end-read
+        end-perform
+        end-start
+        modify form1-gd-1,mass-update = 0
+        .    
+*
+ Form1-Aft-Routine.
+     close odalar2
+     .
+
+ 

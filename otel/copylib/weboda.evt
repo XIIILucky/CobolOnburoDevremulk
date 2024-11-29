@@ -1,0 +1,380 @@
+* weboda.evt
+* weboda.evt is generated from D:\asya\acugt.ytl\otel\weboda.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.    
+     call "c$narg" using link-var.
+     perform adresleri-tasi.
+*     move tus-yetkileri to tus-kodlari.
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid continue
+          not invalid continue
+     end-read
+     close genel.
+     move CALISMA-TARIHI to tarih-tasi
+     if rezpara-ortak-profil = 1
+        move "standart" to musteri-dosya-adres
+     else
+        move isyeri-adres-tasi to musteri-dosya-adres
+     end-if.
+ 
+*     open extend wlog
+*     initialize wlog-rec
+*      accept wlog-tarih  from century-date 
+*      accept wlog-zaman  from time 
+*      move "Form1-bef-create"  to wlog-data
+*     write wlog-rec end-write.
+*
+ Form1-Aft-Initdata.   
+     if link-var >= 1 then      
+*     initialize wlog-rec
+*      accept wlog-tarih  from century-date 
+*      accept wlog-zaman  from time 
+*      move "Form1-Aft-Initdata"  to wlog-data
+*     write wlog-rec end-write
+   
+*          move gweb-tipxx  to web-tipxx
+*          move gweb-debug  to web-debug 
+*          move gweb-rec    to web-rec
+*          move gweb2-rec   to web2-rec 
+          move sorgugweb-gelen-oda-sorgu to sorguweb-gelen-oda-sorgu
+ 
+          perform islem 
+*          move web-tipxx   to gweb-tipxx
+*          move web-debug   to gweb-debug 
+*          move web-rec     to gweb-rec
+*          move web2-rec    to gweb2-rec
+          move sorguweb-gelen-oda-sorgu to sorgugweb-gelen-oda-sorgu
+
+          set exit-pushed  to true
+     end-if .             
+*
+ Exception-Procedure.
+        evaluate key-status 
+          when 2         
+             move sorgu-odano   to sorguweb-gelen-sorgu-oda-no         
+             move sorgu-gir-tar to sorguweb-gelen-sorgu-gir-tar   
+             move sorgu-nereden to sorguweb-gelen-sorgu-nereden
+             call "/asya/ytl/obj/otel/weboda.asy" 
+                        using   sorguweb
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                   cancel "/asya/ytl/obj/otel/weboda.asy"
+            end-call
+            perform grid-yukle
+            perform varying i from 1 by 1 until i > 10
+               if sorguweb-giden-oda-bilgi-rez-no <> 0
+                  initialize form1-gd-1-record
+                  move sorguweb-giden-oda-bilgi-rez-no   to gd-1-col-1              
+                  move sorguweb-giden-oda-rez-adi(i)     to gd-1-col-2 
+                  move sorguweb-giden-oda-rez-soyadi(i)  to gd-1-col-3 
+                  move sorguweb-giden-oda-bilgi-gir-tar  to gd-1-col-4 
+                  move sorguweb-giden-oda-bilgi-cik-tar  to gd-1-col-5
+                  move sorguweb-giden-oda-cinsiyet(i)    to gd-1-col-6
+                  move sorguweb-giden-oda-d-tar(i)       to gd-1-col-7
+                  move sorguweb-giden-oda-uyruk(i)       to gd-1-col-8
+                  move sorguweb-giden-oda-cikis-saati    to gd-1-col-9
+                  modify form1-gd-1,record-to-add(form1-gd-1-record)
+               end-if 
+            end-perform 
+            modify form1-gd-1,mass-update = 0
+        end-evaluate.
+* 
+ grid-yukle.  
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "R.No"        to gd-1-col-1
+     move "R.Adi"       to gd-1-col-2
+     move "R.Soyadi"    to gd-1-col-3
+     move "Gir Tar"     to gd-1-col-4
+     move "Cik Tar"     to gd-1-col-5
+     move "Cinsiyet"    to gd-1-col-6
+     move "D.Tarihi"    to gd-1-col-7
+     move "Uyruk"       to gd-1-col-8
+     move "C.Saati"     to gd-1-col-9
+     modify form1-gd-1,record-to-add(form1-gd-1-record).
+*
+ islem.             
+     open input konuk yanrez polisxml rez  musteri
+
+     initialize konuk-rec 
+  ||Firat 21/07/2020
+*     move sorguweb-gelen-sorgu-gir-tar  to konuk-gel-tar   
+     if sorguweb-gelen-sorgu-nereden = spaces 
+        move sorguweb-gelen-sorgu-gir-tar to konuk-gel-tar
+     end-if
+  ||
+     move "I"                           to konuk-durumu
+     start konuk key not < konuk-gel invalid 
+          continue 
+     not invalid 
+     perform until fs-konuk = "10"
+     read konuk next no lock end move "10"  to fs-konuk
+     not at end 
+
+  ||Firat 21/07/2020
+*             if konuk-gel-tar <> sorguweb-gelen-sorgu-gir-tar  
+*                 exit perform 
+*             end-if 
+             if konuk-gel-tar <> sorguweb-gelen-sorgu-gir-tar and 
+                sorguweb-gelen-sorgu-nereden = spaces 
+                 exit perform 
+             end-if 
+   ||
+
+             if konuk-durumu <> "I"
+                exit perform 
+             end-if 
+             if sorguweb-gelen-sorgu-oda-no(4:1) = space and
+                konuk-odano(4:1) = space  
+                if konuk-odano(1:3) <> sorguweb-gelen-sorgu-oda-no(1:3)
+                   exit perform cycle 
+                end-if   
+             else
+                if konuk-odano <> sorguweb-gelen-sorgu-oda-no
+                   exit perform cycle 
+                end-if                          
+             end-if 
+ 
+             if konuk-fol-kodu <> "R"
+                 exit perform cycle 
+             end-if 
+             
+             initialize rez-rec      |||lck13 26.07.2018 firat
+             move konuk-rez-no to rez-no 
+             read rez no lock invalid
+                  continue
+             end-read
+
+                initialize sorguweb-giden-oda-bilgi
+                move konuk-rez-no  to sorguweb-giden-oda-bilgi-rez-no
+                move konuk-gel-tar to sorguweb-giden-oda-bilgi-gir-tar
+                move konuk-git-tar to sorguweb-giden-oda-bilgi-cik-tar
+
+                if konuk-git-zaman(1:2) > 0
+                   move konuk-git-zaman(1:2) to sorguweb-giden-oda-cikis-saati(1:2)
+                   move ":"                  to sorguweb-giden-oda-cikis-saati(3:1)
+                   move konuk-git-zaman(3:2) to sorguweb-giden-oda-cikis-saati(4:2)
+                end-if 
+                if konuk-git-saat = 0 and konuk-git-dakika = 0
+                   move " " to sorguweb-giden-oda-cikis-saati(1:2)
+                   move ":" to sorguweb-giden-oda-cikis-saati(3:1)
+                   move " " to sorguweb-giden-oda-cikis-saati(4:2)
+                end-if
+                if rez-vip <> spaces
+                   move rez-vip to sorguweb-giden-oda-bilgi-vip-durumu
+                else
+                   move "N" to sorguweb-giden-oda-bilgi-vip-durumu
+                end-if
+
+                move konuk-buyuk to sorguweb-giden-oda-buyuk
+
+                if konuk-kucuk = 0
+                    move 0 to sorguweb-giden-oda-kucuk    
+                else
+                    move konuk-kucuk to sorguweb-giden-oda-kucuk    
+                end-if 
+                if konuk-free = 0
+                    move 0  to sorguweb-giden-oda-free        
+                else
+                    move konuk-free  to sorguweb-giden-oda-free
+                end-if 
+                if konuk-bebek = 0
+                   move 0 to sorguweb-giden-oda-bebek    
+                else
+                   move konuk-bebek to sorguweb-giden-oda-bebek    
+                end-if 
+ 
+                   
+                perform yanrez-oku
+             move 1 to tel-buldum
+             move "10"   to fs-konuk
+             exit perform 
+     end-read 
+     end-perform
+     end-start
+
+     if tel-buldum not = 1 and 
+        sorguweb-gelen-sorgu-nereden  = spaces   || Firat 21/07/2020
+     initialize konuk-rec 
+     move sorguweb-gelen-sorgu-gir-tar  to konuk-gel-tar   
+     move "H"                           to konuk-durumu
+     start konuk key not < konuk-gel invalid 
+          continue 
+     not invalid 
+     perform until fs-konuk = "10"
+     read konuk next no lock end move "10"  to fs-konuk
+     not at end 
+             if konuk-gel-tar <> sorguweb-gelen-sorgu-gir-tar
+                 exit perform 
+             end-if 
+             if konuk-durumu <> "H"
+                exit perform 
+             end-if 
+             if konuk-odano <> sorguweb-gelen-sorgu-oda-no
+                 exit perform cycle 
+             end-if 
+             if konuk-fol-kodu <> "R"
+                 exit perform cycle 
+             end-if 
+
+             initialize rez-rec      |||lck13 26.07.2018 firat
+             move konuk-rez-no to rez-no 
+             read rez no lock invalid
+                  continue
+             end-read
+
+                initialize sorguweb-giden-oda-bilgi
+                move konuk-rez-no  to sorguweb-giden-oda-bilgi-rez-no
+                move konuk-gel-tar to sorguweb-giden-oda-bilgi-gir-tar
+                move konuk-git-tar to sorguweb-giden-oda-bilgi-cik-tar
+                
+                if rez-vip <> spaces
+                   move rez-vip to sorguweb-giden-oda-bilgi-vip-durumu
+                else
+                   move "N" to sorguweb-giden-oda-bilgi-vip-durumu
+                end-if
+
+                perform yanrez-oku
+             move 1 to tel-buldum
+             move "10"   to fs-konuk
+             exit perform 
+     end-read 
+     end-perform
+     end-start
+     end-if
+     close konuk yanrez polisxml rez musteri
+
+     if tel-buldum = 0
+         initialize sorguweb-giden-oda-bilgi
+         move "oda-yok"  to sorguweb-giden-oda-rez-adi(1)
+     end-if. 
+      
+*
+ yanrez-oku.
+     perform varying i from 1 by 1 until i > 10             
+            move "REZ" to sorguweb-giden-oda-rez-adi(i)
+            move "YOK" to sorguweb-giden-oda-rez-soyadi(i)               
+             initialize sorguweb-giden-oda-cinsiyet(i)
+                sorguweb-giden-oda-d-tar(i)
+                sorguweb-giden-oda-uyruk(i)              
+              sorguweb-giden-oda-yanrez-anah(i)
+     end-perform
+
+
+
+     initialize i yanrez-rec 
+     move konuk-rez-no    to yanrez-rezno
+     start yanrez key not < yanrez-anah invalid 
+         continue 
+     not invalid 
+     perform until fs-yanrez = "10"
+     read yanrez next no lock end move "10"   to fs-yanrez
+     not at end 
+            if yanrez-rezno <> konuk-rez-no
+                exit perform 
+            end-if 
+            if yanrez-adi = spaces
+               exit perform cycle 
+            end-if 
+            if yanrez-soyadi = spaces
+               exit perform cycle 
+            end-if 
+            if i = 9
+               exit perform cycle 
+            end-if 
+
+            add 1              to i
+            move yanrez-adi    to sorguweb-giden-oda-rez-adi(i)
+            move yanrez-soyadi to sorguweb-giden-oda-rez-soyadi(i)  
+            initialize polisxml-rec
+            move yanrez-anah        to polisxml-anah
+            move yanrez-sirano(2:1) to polisxml-sirano
+            read polisxml no lock invalid
+                continue 
+            not invalid 
+                move polisxml-cinsiyet to sorguweb-giden-oda-cinsiyet(i)
+                move polisxml-dog-tar  to sorguweb-giden-oda-d-tar(i)
+                move polisxml-uyruk    to sorguweb-giden-oda-uyruk(i)
+                if polisxml-tckimlikno > 0
+                   move polisxml-tckimlikno to sorguweb-giden-p-seri(i)
+                else
+                   move polisxml-kseri    to sorguweb-giden-p-seri(i)    ||Firat 21/07/2020
+                end-if 
+
+            end-read 
+            move yanrez-anah to sorguweb-giden-oda-yanrez-anah(i) 
+
+
+                 
+
+            ||Firat 21/07/2020
+            initialize musteri-rec 
+            move yanrez-profil-sirket to musteri-sirket 
+            move yanrez-profil-no     to musteri-no
+            read musteri no lock invalid
+                 continue
+            not invalid
+                move musteri-tel1 to sorguweb-giden-tel(i)
+                if sorguweb-giden-tel(i) = spaces 
+                   move musteri-tel2 to sorguweb-giden-tel(i)
+                end-if
+                if sorguweb-giden-tel(i) = spaces 
+                   move musteri-tel3 to sorguweb-giden-tel(i)
+                end-if
+                if sorguweb-giden-tel(i) = spaces 
+                   move musteri-gsm to sorguweb-giden-tel(i)
+                end-if
+            end-read 
+            if sorguweb-gelen-sorgu-nereden not = spaces 
+               if sorguweb-giden-oda-d-tar(i) <> sorguweb-gelen-sorgu-gir-tar
+                  initialize sorguweb-giden-oda-rez-adi(i)
+                             sorguweb-giden-oda-rez-soyadi(i)
+                             sorguweb-giden-oda-cinsiyet(i)
+                             sorguweb-giden-oda-d-tar(i)   
+                             sorguweb-giden-oda-uyruk(i)
+                             sorguweb-giden-p-seri(i)    
+                             sorguweb-giden-tel(i)
+                  compute i = i - 1
+                  exit perform cycle
+               else  
+                 move rez-adi to  sorguweb-giden-oda-rez-adi(i)
+                 if musteri-adi <> spaces
+                   move musteri-adi    to  sorguweb-giden-oda-rez-adi(i)
+                 end-if 
+                    move rez-soyadi to sorguweb-giden-oda-rez-soyadi(i)
+                 if musteri-soyadi <> spaces 
+                    move musteri-soyadi to sorguweb-giden-oda-rez-soyadi(i)
+                 end-if 
+
+               exit perform 
+               end-if
+            end-if
+            ||
+
+     end-read 
+     end-perform
+     end-start.
+ 
+*
+ Form1-Aft-Routine.
+*     close wlog.
+        .
+
+ 

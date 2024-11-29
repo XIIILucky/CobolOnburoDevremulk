@@ -1,0 +1,2060 @@
+* sirrap01.evt
+* sirrap01.evt is generated from D:\asya\acugt.ytl\otel\sirrap01.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+
+
+    open input genel2
+    move 1 to genel2-anah
+    read genel2 no lock invalid continue
+         not invalid continue
+    end-read
+    close genel2.
+
+**********************************************************************pdf conv
+    call "c$narg" using link-var
+**********************************************************************pdf conv
+    move ONKPARA-DOVIZ to butce-cev-doviz .
+    move 1 to reel-gecmis
+    
+    if genel-br-ayir-cikma = 1
+          move 0 to br-ayir-visible
+    end-if.
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to ilk-tarih son-tarih.
+    if son-ay < 12 then 
+       add 1 to son-ay
+    else
+       move 1 to son-ay
+        add 1 to son-yil
+    end-if
+    move "N" to rap-tip.
+    display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 acc-07 com-01.
+    perform Form1-Ef-1-Aft-Procedure
+    move 2  to xx
+    move 48 to sut-yer sutun(xx)
+    perform varying i from 1 by 1 until i > 7
+         add 1 to xx      add 7  to sut-yer     move sut-yer to sutun(xx)
+         add 1 to xx      add 5  to sut-yer     move sut-yer to sutun(xx)
+         add 1 to xx      add 9  to sut-yer     move sut-yer to sutun(xx)
+         add 1 to xx      add 9  to sut-yer     move sut-yer to sutun(xx)
+         add 1 to xx      add 9  to sut-yer     move sut-yer to sutun(xx)
+         add 1 to xx      add 15 to sut-yer     move sut-yer to sutun(xx)
+    end-perform.
+     modify com-ana1, item-to-add ("P-Pazar",  "T-Acenta", "M-Merkez Acenta","U-Ulke ", 
+    "F-Fiyat Konumu", "O-Oda Konumu", "A-Anlasma " , "1-Kaynak1","2-Kaynak2","3-Kaynak3",
+    "4-Folio", "5-Operator Kodu","R-RezNo","S-Sehir","D-Oda No","G-Grup")
+     modify com-ana2, item-to-add (" -Detaysiz", "P-Pazar",  "T-Acenta","M-Merkez Acenta", "U-Ulke ", 
+    "F-Fiyat Konumu", "O-Oda Konumu", "A-Anlasma " , "1-Kaynak1","2-Kaynak2","3-Kaynak3","R-RezNo",
+    "5-Operator Kodu","S-Sehir","D-Oda No","G-Grup") 
+    move "P" to rap-anah1
+    move "F" to rap-anah2
+    display com-ana1 com-ana2
+    move "T-Acenta"   to rap-anah1
+    move " -Detaysiz" to rap-anah2
+    display com-ana1 com-ana2
+**********************************************************************pdf conv
+    if link-var > 0 
+        move 0 to oda-ref fiyat-ref
+        move forlink-bas-tarih to ilk-tarih
+        move forlink-bit-tarih to son-tarih
+        move 2 to key-status
+        perform Form1-Ex-Other       
+    end-if 
+**********************************************************************pdf conv
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 1
+        evaluate control-id
+        when 12
+        when 2001
+             initialize acenta-cagir
+
+
+             call "/asya/ytl/obj/otel/acenara.asy" 
+                  using acenta-cagir  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     if acenta-cagir <> spaces
+                        move acenta-cagir to acn-kod
+                        display acc-07
+                     end-if
+             end-call
+
+
+             move 4 to accept-control
+             move 12 to control-id
+        when 16
+        when 17
+             initialize acn-grup-kod
+             call "/asya/ytl/obj/otel/grupara.asy" 
+                  using "A", acn-grup-kod  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     display acc-08
+             end-call
+             move 4 to accept-control
+             move 17 to control-id
+        end-evaluate
+        exit paragraph
+      when 33 
+            call "/asya/ytl/obj/otel/rezfilt.asy" 
+                  using filtre-tasi  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     continue
+             end-call
+             display l-filtre 
+      when 2
+           perform Form1-Ef-1-Aft-Procedure
+          open input doviz acenta
+          if d-m = 1 then
+                  open i-o debkur
+          end-if
+          initialize alt-toplam-dizi rez-adet
+          perform takas-dosya-yaz
+          close doviz acenta
+          if d-m = 1 then
+             close debkur
+          end-if
+          initialize takas13-rec
+          start takas13 key not < takas13-tarih invalid
+                initialize mesaj-link
+                move 04 to mesaj-no
+                perform mesaj-ver
+               
+          end-start
+
+          open i-o genelfis
+          move 1 to genelfis-anahtar
+          read genelfis no lock invalid
+               accept print-no from time
+          not invalid
+               add 1 to print-no
+               rewrite genelfis-rec end-rewrite
+          end-read
+          close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+*****      display message box rez-adet " adet rezervasyon tarandi"
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Sirketler Arasi Analiz Raporu"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Sirketler Arasi Analiz Raporu"   to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move ilk-gun        to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ilk-ay         to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move ilk-yil        to det-filler(57:04)
+     move "-"            to det-filler(61:01)
+     move son-gun        to det-filler(62:02)
+     move "/"            to det-filler(64:01)
+     move son-ay         to det-filler(65:02)
+     move "/"            to det-filler(67:01)
+     move son-yil        to det-filler(68:04)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Rapor Tipi..:"          to det-filler(01:15)
+
+     evaluate rap-tip
+        when "N" move "Normal Rezervasyonlar"       to det-filler(15:25)
+        when "W" move "Bekle. Rezervasyonlar"       to det-filler(15:25)
+        when "S" move "Silinmis Rezervasyonlar"     to det-filler(15:25)
+     end-evaluate
+     move "Acenta....:"           to det-filler(40:)
+     move acn-kod                 to det-filler(55:04)
+     move "<->"                   to det-filler(60:03)
+     if acn-kod       = spaces
+        move "Tum Acentalar.."    to det-filler(63:15)
+     else
+        open input acenta
+        initialize acenta-rec  
+        move acn-kod        to acenta-kodu
+        read acenta no lock invalid 
+             move all "*" to acenta-adi  
+                        not invalid continue
+        end-read
+        close acenta
+        move acenta-adi           to det-filler(63:15)
+     end-if
+     write dokumer-rec from detay
+      if onkpara-referans-var = 1 then 
+            initialize dokumer-rec detay
+             move "1"            to det-dokumer-20(10:1)
+             move "B"            to det-dokumer-20(1:1)
+             if oda-ref = 0 then 
+             move "TUM KOMPLEX " TO DET-FILLER
+             else
+             MOVE ref-adi(oda-ref)to det-filler
+             move "OTEL "  to det-filler(16:)
+             move "KONAKLAMALARI" to det-filler(25:)
+             end-if
+             if fiyat-ref not = 0 
+                MOVE ref-adi(fiyat-ref)to det-filler(40:)
+             move "OTEL "  to det-filler(50:)
+             move "SATISLARI" to det-filler(58:)
+             end-if
+              write dokumer-rec from detay
+     end-if
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LRRRRRRRRRRRRRRRRRRRRRRRRRR" to dokumer-align-occ
+      move "2"  to dokumer-align-occ(50:1)
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+      
+     initialize dokumer-rec detay  
+     move "D1"           to det-dokumer-20(1:2)
+     perform varying xx from 2   by 1 until  xx > 48 or sutun(xx) < 5,
+             move "|"       to det-1(sutun(xx) - 1:1),
+     end-perform 
+     move "|"       to det-1(366:1),
+     open input doviz
+     perform varying xx from 1 by 1 until xx > 7
+             compute yy =  6 * (xx - 1)
+
+                if xx = 7 then 
+                   move "TOP."       to det-1(sutun(yy + 2):4)   
+                   move "TOP."       to det-1(sutun(yy + 3):4),,  
+                   move "TOP."       to det-1(sutun(yy + 4):4),,              
+                   move "TOPLAM"     to det-1(sutun(yy + 5):4),,  
+                   move "TOPLAM"     to det-1(sutun(yy + 6):4),,  
+                   move "TOPLAM    "     to det-1(sutun(yy + 7):13), 
+                else
+                   move xsirket-adi(xx)(1:6)   to det-1(sutun(yy + 5):6),,  
+                   move xsirket-adi(xx)(8:6)   to det-1(sutun(yy + 6):6),,  
+                   move xsirket-adi(xx)(15:7)  to det-1(sutun(yy + 7):7),,  
+                end-if
+     end-perform
+     close doviz
+     move "--------------Sirket:" to det-1(1:23)
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay  
+     move "D2"           to det-dokumer-20(1:2)
+     perform varying xx from 2 by 1 until  xx > 48 or sutun(xx) < 5,
+             move "|"       to det-1(sutun(xx) - 1:1),
+     end-perform 
+     move "|"       to det-1(366:1),
+
+     open input doviz
+     perform varying xx from 1 by 1 until xx > 7,
+         compute yy =  6 * (xx - 1)
+         if xx = 6 then 
+            move "Pax"        to det-1(sutun(yy + 2):4)   
+            move "   "        to det-1(sutun(yy + 3):4)  
+            move "Chi"        to det-1(sutun(yy + 4):4)              
+            move "Free"       to det-1(sutun(yy + 5):4)  
+            move "Bebek"      to det-1(sutun(yy + 6):6)  
+            move "T.Kisi"     to det-1(sutun(yy + 7):14) 
+         else
+            move "Oda"           to det-1(sutun(yy + 2):4)
+            move "DOcc"          to det-1(sutun(yy + 3):4)
+            move "Pax"           to det-1(sutun(yy + 4):4)
+            move "Oda Ort."      to det-1(sutun(yy + 5):8)
+            move "Pax Ort."      to det-1(sutun(yy + 6):8)
+            move "Tutar      "   to det-1(sutun(yy + 7):14)
+         end-if
+      end-perform
+      close doviz
+      move "Tarih.:--------------" to det-1(01:23)
+      move "1"          to det-dokumer-20(10:1)
+      write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "D3"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     
+      move all "-" to det-1(01:366)
+     write dokumer-rec from detay
+*********************************
+      open input takvim
+     
+      perform until fs-takas13 = "10"
+      read takas13 next no lock end move "10" to fs-takas13
+      not at end
+ 
+          initialize dokumer-rec detay
+         move takas13-ay        to det-1(01:02)
+         move takas13-yil       to det-1(04:04)
+         if takas13-ay not = zeroes 
+            move "/" to  det-1(03:01),
+         end-if
+         move takas13-tarih to takvim-anah
+         read takvim no lock invalid
+              continue
+         end-read
+         if rap-anah2 = spaces then 
+            move takas13-detay1 to det-1(10:40) 
+         end-if
+         if takas13-detay1 = high-values 
+            exit perform cycle
+            move "-----AY TOPLAM----   " to det-1(10:13)
+         end-if
+         perform varying xx from 1 by 1 until xx > 7,
+             if xx = 6 
+                compute yy =  6 * (xx - 1)
+                move takas13-pax2(7) to zpax2,
+                move zpax2          to det-1(sutun(yy + 2):6)
+                move takas13-chi(7)  to zpax2,
+                move zpax2          to det-1(sutun(yy + 4) :8)
+                move takas13-fre(7)  to zpax2,
+                move zpax2          to det-1(sutun(yy + 5) :8)
+                move takas13-beb(7)  to zpax2,
+                move zpax2          to det-1(sutun(yy + 6) :8)
+
+                compute t-kisi = takas13-pax2(7) + takas13-chi(7) + 
+                                 takas13-fre(7) + takas13-beb(7)
+                move t-kisi         to zpax2
+                move zpax2          to det-1(sutun(yy + 7) :14)
+     
+             else
+                compute yy =  6 * (xx - 1)
+                move takas13-oda(xx) to z4,
+                move z4             to det-1(sutun(yy + 2):6)
+                compute docc rounded =
+                        takas13-pax(xx) / takas13-oda(xx)
+                move docc   to z4k,
+                move z4k         to det-1(sutun(yy + 3) :4)
+                move takas13-pax(xx)    to zpax,
+                move zpax         to det-1(sutun(yy + 4) :8)
+                compute ort rounded =
+                        takas13-tut(xx) / takas13-oda(xx) 
+                move ort   to z8k,
+                move z8k          to det-1(sutun(yy + 5) :8)
+                compute ort rounded =
+                        takas13-tut(xx) / takas13-pax(xx) 
+                move ort     to z8k,
+                move z8k          to det-1(sutun(yy + 6) :8)
+                move takas13-tut(xx)    to z-goster,
+                move z-goster          to det-1(sutun(yy + 7) :14)
+             end-if
+         end-perform
+
+
+         perform varying xx from 2 by 1 until  xx > 48 or sutun(xx) < 5,
+             move "|"       to det-1(sutun(xx) - 1:1),
+         end-perform 
+         move "|"       to det-1(sutun(xx - 1) - 1:1),
+         inspect det-1(27:) replacing all space by high-values
+         if takas13-detay2 = high-values
+            move 289  to det-1(sutun(xx - 1) :3)     
+            move "A"          to det-dokumer-20(3:1)
+            move "1"   to det-dokumer-20(10:1)
+         else
+            move spaces to det-1(sutun(xx - 1 ):3)   
+         end-if
+         if takas13-detay1 = high-values 
+            move 481  to det-1(sutun(xx - 1) :3)   
+         end-if
+         write dokumer-rec from detay   
+     end-read
+     end-perform
+     close takvim
+
+     initialize dokumer-rec detay
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"   to det-1(1:366),
+     write dokumer-rec from detay
+
+
+*     initialize dokumer-rec detay
+*     move "GENEL TOPLAM:" to det-1(1:13) 
+*     perform varying xx from 1 by 1 until xx > 7
+*        compute yy =  6 * (xx - 1)
+*            if xx = 6
+*               move alt-pax2(7)    to z4,
+*               move z4             to det-1(sutun(yy + 2):6)                         
+*               move alt-kucuk(7)   to zpax2,
+*               move zpax2          to det-1(sutun(yy + 4) :8)
+*               move alt-free(7)    to zpax2,
+*               move zpax2          to det-1(sutun(yy + 5) :8)
+*               move alt-bebek(7)   to zpax2,
+*               move zpax2          to det-1(sutun(yy + 6) :8)
+*               compute t-kisi =  alt-pax2(7) + alt-kucuk(7) + alt-free(7) + alt-bebek(7)                  
+*               move t-kisi         to z4
+*               move z4             to det-1(sutun(yy + 7) :13)
+*            else
+*               move alt-oda(xx)    to z4,
+*               move z4             to det-1(sutun(yy + 2):6)
+*               compute docc rounded =
+*                       alt-pax(xx) / alt-oda(xx)
+*               move docc           to z4k,
+*               move z4k            to det-1(sutun(yy + 3) :4)
+*               move alt-pax(xx)    to zpax,
+*               move zpax           to det-1(sutun(yy + 4) :8)
+*               compute ort rounded =
+*                       alt-tut(xx) / alt-oda(xx) 
+*               move ort            to z8k,
+*               move z8k             to det-1(sutun(yy + 5) :8)
+*               compute ort rounded =
+*                     alt-tut(xx) / alt-pax(xx) 
+*               move ort     to z8k,
+*               move z8k          to det-1(sutun(yy + 6) :8)                 
+*               move alt-tut(xx) to z-goster
+*               move z-goster          to det-1(sutun(yy + 7) :14)
+*           end-if 
+*     end-perform
+*       perform varying xx from 2 by 1 until  xx > 48 or sutun(xx) < 5 ,
+*          move "|"       to det-1(sutun(xx) - 1:1),
+*       end-perform 
+*       move "|"       to det-1(sutun(xx - 1 ):1),
+*       move "A"          to det-dokumer-20(3:1)
+*       move 176         to det-1(sutun(xx - 1)  :3)              
+*       move "1"          to det-dokumer-20(10:1)
+*       inspect det-1(12:) replacing all space by high-values
+*       write dokumer-rec from detay
+*
+*************************************************************************************************************
+*             if kap-hesapla = 1
+*              initialize dokumer-rec detay
+*              move "TOPLAM KAPASITE:" to det-1(1:10)
+*              perform varying xx from 1 by 1 until xx > 7
+*                 compute yy =  6 * (xx - 1)
+*                     if xx = 7
+*                        move toplam-oda    to z4,
+*                        move z4          to det-1(sutun(yy + 2):6)
+*                        compute docc rounded =
+*                              toplam-yatak / toplam-oda
+*                        move docc   to z4k,
+*                        move z4k         to det-1(sutun(yy + 3) :4)
+*                        move toplam-yatak    to z4,
+*                        move z4         to det-1(sutun(yy + 4) :8)
+*
+*                        compute ort rounded =
+*                              alt-tut(xx) / toplam-oda
+*                        move ort   to z8k,
+*                        move z8k          to det-1(sutun(yy + 5) :8)
+*                        compute ort rounded =
+*                              alt-tut(xx) / toplam-yatak 
+*                        move ort     to z8k,
+*                        move z8k          to det-1(sutun(yy + 6) :8)                 
+*                        move alt-tut(xx) to z-goster
+*                        move z-goster          to det-1(sutun(yy + 7) :13)
+*                end-if 
+*              end-perform
+*                perform varying xx from 2 by 1 until  xx > 48 or sutun(xx) < 5 ,
+*                   move "|"       to det-1(sutun(xx) - 1:1),
+*                end-perform 
+*                move "|"       to det-1(sutun(xx - 1 ):1),
+*                move "A"          to det-dokumer-20(3:1)
+*                move 176         to det-1(sutun(xx - 1)  :3)              
+*                move "1"          to det-dokumer-20(10:1)
+*                inspect det-1(12:) replacing all space by high-values
+*                write dokumer-rec from detay
+*              end-if
+*************************************************************************************************************************
+              initialize dokumer-rec detay
+                move "-"            to det-dokumer-20(5:1)
+                move all "-"   to det-1(1:366),
+              write dokumer-rec from detay
+
+              close dokumer takas6 takas7 takas62 takasfiyat takas13 merkod
+
+**********************************************************************pdf conv
+              if link-var > 0 
+                 perform pdf-olustur                  
+                 string dokumer-dosya(17:4) delimited by "    "
+                        ".pdf"              delimited by size     
+                 into forlink-donus-dosya-adi
+              else
+                 call  dokumer-prog on exception
+                      perform callerr-proc
+                 not on exception
+                      cancel dokumer-prog
+                 end-call
+              end-if
+**********************************************************************pdf conv
+
+              delete file dokumer takas6 takas7 takas62 takasfiyat takas13
+**********************************************************************pdf conv
+              if link-var > 0 
+                 set exit-pushed to true
+              end-if 
+**********************************************************************pdf conv
+    end-evaluate.
+     .
+*
+ alt-toplam-hesap.
+    perform varying xx from 1 by 1 until xx > 7,
+        if xx = 6 
+           add takas13-pax2(7) to alt-pax2(7) 
+           add takas13-chi(7)  to alt-kucuk(7)
+           add takas13-fre(7)  to alt-free(7)
+           add takas13-beb(7)  to alt-bebek(7)
+        else
+           add takas13-oda(xx) to alt-oda(xx)
+           add takas13-pax(xx) to alt-pax(xx)
+           add takas13-tut(xx) to alt-tut(xx)
+        end-if
+    end-perform
+    .
+*
+ pdf-olustur.
+    initialize pdf-link-tum
+    move dokumer-dosya                    to pdf-dokumer-adres
+    call "/asya/ytl/obj/otel/dok2pdf.asy" using  pdf-link-tum 
+       on exception 
+          perform callerr-proc
+          exit paragraph
+    not on exception
+    cancel "/asya/ytl/obj/otel/dok2pdf.asy"
+    end-call.
+*
+ takas-dosya-yaz.
+    move isyeri-adres-tasi to eski-sirket
+    move 6 to yil-ay
+    if ay-ayrima = 1 then 
+      move 4 to yil-ay
+    end-if
+    initialize doviz-tablo
+    perform varying xx from 1 by 1 until xx > 7
+        move xx         to doviz-sira(xx)
+        move spaces     to doviz-kodu2(xx)
+    end-perform.
+
+
+    open i-o genelfis.
+    move 1 to genelfis-anahtar.
+    read genelfis no lock invalid 
+         move 1 to ekran-fis-1
+    end-read.
+   
+    add 1 to ekran-fis-1.
+    move ekran-fis-1(2:) to takas6-no takas62-no takas13-no takas7-no takasfiyat-no .
+    rewrite genelfis-rec invalid 
+            write genelfis-rec invalid continue
+            end-write
+    end-rewrite.
+    close genelfis.
+    open output takas6     close takas6 
+    open output takas62    close takas62 
+    open output takas13    close takas13
+    open output takas7     close takas7
+    open output takasfiyat close takasfiyat
+    open i-o takas6 
+    open i-o takas7 with mass-update
+    open i-o takas62 
+    open i-o takas13 
+    open i-o takasfiyat
+    open i-o merkod 
+    initialize merkod-rec 
+    move "SK" to merkod-tipi
+    start merkod key not < merkod-anah invalid
+          continue
+    not invalid
+    perform with test after until fs-merkod = "10"
+    read merkod next no lock end move "10" to fs-merkod
+    not at end 
+        if "SK" <> merkod-tipi
+           exit perform 
+        end-if
+        move merkod-sir-anah-kodu to xsirket-kodu(merkod-sir-anah-sira)
+        move merkod-sir-dig-adi   to xsirket-adi(merkod-sir-anah-sira)
+
+    end-read 
+    end-perform 
+    end-start
+    perform varying xi from 1 by 1 until xi > 7
+                
+       if xsirket-kodu(xi) = spaces 
+          move eski-sirket to isyeri-adres-tasi
+          perform adresleri-tasi
+          exit perform 
+       end-if
+
+       move isyeri-adres-tasi   to onceki-sirket
+       move xsirket-kodu(xi)    to isyeri-adres-tasi
+       modify lb-sirket-adi, title = isyeri-adres-tasi
+       perform adresleri-tasi
+
+
+       if xi > 1                                | ACENTA DEGÝSTÝR
+          open i-o genelfis
+          move 1 to genelfis-anahtar
+          read genelfis no lock invalid 
+               move 1 to ekran-fis-1
+          end-read
+          add 1 to ekran-fis-1                                                         | takaslarý kapat sil yeniden aç
+          move ekran-fis-1(2:) to takas6-no takas62-no  takas7-no takasfiyat-no 
+          rewrite genelfis-rec invalid 
+                  write genelfis-rec invalid continue
+                  end-write
+          end-rewrite
+          close genelfis
+          close takas6 takas62 takas7 takasfiyat
+          delete file takas6 takas62 takas7 takasfiyat
+          open output takas6     close takas6 
+          open output takas62    close takas62 
+          open output takas7     close takas7
+          open output takasfiyat close takasfiyat
+          open i-o takas6 
+          open i-o takas7 with mass-update
+          open i-o takas62 
+          open i-o takasfiyat
+          if acn-kod <> spaces 
+             perform filtre-acenta-degistir
+          end-if
+       end-if         
+       perform sirketleri-gez
+       perform takas-al
+    end-perform 
+    move eski-sirket to isyeri-adres-tasi
+    perform adresleri-tasi
+    .
+*
+ filtre-acenta-degistir.
+    initialize merkod-rec 
+    move "AC" to merkod-tipi
+    start merkod key not < merkod-anah invalid
+          continue
+    not invalid
+    perform with test after until fs-merkod = "10"
+    read merkod next no lock end move "10" to fs-merkod
+    not at end 
+        if merkod-tipi <> "AC" 
+           exit perform 
+        end-if
+        if merkod-ace-anah-sirket <> onceki-sirket 
+           exit perform cycle
+        end-if
+        if merkod-ace-dig-kodu = acn-kod 
+           move isyeri-adres-tasi to merkod-ace-anah-sirket
+           read merkod no lock invalid
+                initialize acn-kod
+           not invalid
+                move merkod-ace-dig-kodu to acn-kod
+                display acc-07
+           end-read 
+           exit perform 
+        end-if
+    end-read 
+    end-perform 
+    end-start
+    .
+*
+ merkez-ace-kont.  
+    initialize acenta-rec 
+    move takas6-detay1 to acenta-adi
+    read acenta key is acenta-adi invalid
+         continue
+    not invalid
+        open input nt
+        initialize not-rec 
+        move "ACE"       to not-dos
+        move "Default"   to not-dos-anah
+        move acenta-kodu to not-dos-anah(8:)
+        read nt no lock invalid
+             continue
+        not invalid 
+            move not1 to acen-dft
+        end-read
+        close nt
+    end-read
+
+    initialize sira-sakla
+    perform varying xii from 1 by 1 until xii > 7
+       if acen-dft-doviz <> doviz-kodu2(xii)
+          exit perform cycle
+       end-if
+       move doviz-sira(xii) to sira-sakla
+       initialize doviz-rec
+       move doviz-kodu2(xii) to doviz-kodu 
+       read doviz no lock invalid 
+            continue
+       not invalid
+           move d-kisa-adi to dov-sakla
+       end-read 
+       exit perform
+    end-perform 
+
+    initialize merkod-rec takas13-detay1
+    move "AC" to merkod-tipi
+    start merkod key not < merkod-anah invalid
+          continue
+    not invalid
+    perform with test after until fs-merkod = "10"
+    read merkod next no lock end move "10" to fs-merkod
+    not at end 
+        if merkod-tipi <> "AC"
+           exit perform 
+        end-if          
+        if merkod-ace-anah-sirket <> isyeri-adres-tasi
+           exit perform cycle
+        end-if
+        if merkod-ace-dig-kodu = takas6-detay-kodu
+           move merkod-ace-anah-kodu to yedek-ace-kodu
+        end-if
+    end-read 
+    end-perform 
+    end-start
+    initialize merkod-rec takas13-detay1
+    move "AC"           to merkod-tipi
+    move yedek-ace-kodu to merkod-ace-anah-kodu 
+    read merkod no lock invalid
+         move "Tanimsiz Acenta.." to merkod-ace-dig-adi
+    end-read 
+
+    inspect takas13-detay1 replacing 
+            trailing spaces by low-values
+    inspect merkod-ace-dig-adi replacing 
+            trailing spaces by low-values
+    inspect dov-sakla replacing 
+            trailing spaces by low-values
+
+    string merkod-ace-dig-adi delimited by low-values
+           "("                delimited by size
+           dov-sakla          delimited by low-values
+           ")"                delimited by size
+    into takas13-detay1
+    inspect takas13-detay1 replacing 
+            trailing low-values by spaces
+    .
+*
+ string-ornek.
+    move all low-values to takas13-detay1
+    string takas13-detay1 
+           merkod-ace-dig-adi delimited by low-values
+           "("                delimited by low-values
+           dov-sakla          delimited by low-values
+           ")"                delimited by low-values
+    into takas13-detay1
+    inspect takas13-detay1 replacing trailing low-values by spaces
+    .
+*
+ takas-al.
+    initialize takas6-rec 
+    start takas6 key not < takas6-tarih invalid
+          continue
+    not invalid
+    perform with test after until fs-takas6 = "10"
+    read takas6 next no lock end move "10" to fs-takas6
+    not at end 
+        initialize takas13-rec 
+        move takas6-tarih(1:6)  to takas13-tarih(1:)
+        if takas6-detay1 <> spaces and high-values
+           perform merkez-ace-kont
+        end-if
+        if takas13-detay1 = spaces  
+           exit perform cycle
+        end-if
+        read takas13 no lock invalid
+             continue
+        end-read 
+        if sira-sakla = 0 or spaces 
+           add takas6-kod(7)    to takas13-kod(xi)  
+           add takas6-tut(7)    to takas13-tut(xi)    
+           add takas6-oda(7)    to takas13-oda(xi)    
+           add takas6-pax(7)    to takas13-pax(xi)
+           
+           add takas6-kod(7)    to takas13-kod(7)  
+           add takas6-tut(7)    to takas13-tut(7)    
+           add takas6-oda(7)    to takas13-oda(7)    
+           add takas6-pax(7)    to takas13-pax(7)
+        else
+           add takas6-kod(sira-sakla)    to takas13-kod(xi)  
+           add takas6-tut(sira-sakla)    to takas13-tut(xi)    
+           add takas6-oda(sira-sakla)    to takas13-oda(xi)    
+           add takas6-pax(sira-sakla)    to takas13-pax(xi)
+           
+           add takas6-kod(sira-sakla)    to takas13-kod(7)  
+           add takas6-tut(sira-sakla)    to takas13-tut(7)    
+           add takas6-oda(sira-sakla)    to takas13-oda(7)    
+           add takas6-pax(sira-sakla)    to takas13-pax(7)
+        end-if
+
+        add takas6-pax2(7)            to takas13-pax2(7)   
+        add takas6-chi(7)             to takas13-chi(7)    
+        add takas6-fre(7)             to takas13-fre(7)    
+        add takas6-beb(7)             to takas13-beb(7) 
+
+        write takas13-rec invalid
+              rewrite takas13-rec end-rewrite 
+        end-write 
+    end-read 
+    end-perform 
+    end-start.
+*
+ sirketleri-gez.
+    open input takvim takvim2
+    initialize takvim-rec toplam-oda toplam-yatak
+    move ilk-tarih to takvim-anah kur-tarih
+     
+      open input sehir rez odalar gruplar cast grup aksiyhrk 
+              fiyat fiyatana aceanlas   kur konuk grupfiy  formul 
+          romhrk kodlar02 cast3 konum ulke onbkodlar10
+      open i-o fiyatind merkez
+          move spaces to eh 
+
+        move ilk-tarih to takvim-anah
+    start takvim key not < takvim-anah invalid 
+          continue
+          not invalid
+          
+                initialize takas6-rec
+                 move butce-cev-doviz      to doviz-kodu2(7)
+                 
+                 move tarih-tasi          to kur-tarih
+                 move "87"       to kur-banka
+                 if merkez = 1 then move "01" to kur-banka end-if
+                 move butce-cev-doviz     to kur-doviz
+                 read kur no lock invalid 
+                    move "01" to   kur-banka
+                    read kur no lock invalid 
+                         move 1 to doviz-alis
+                     end-read
+                 end-read
+                 move doviz-alis to doviz-kuru(7)
+          
+          perform with test after until evet
+              read takvim next no lock end move "E" to eh
+                   not end
+                   if takvim-anah > son-tarih
+                                move "E" to eh
+                       else
+                            if takvim-anah not > son-tarih
+                               initialize takas6-rec
+                               move takvim-anah(1:yil-ay) to takas6-tarih
+                               read takas6 no lock invalid
+                             
+                                       move high-values to takas6-detay1 takas6-detay2
+                                      write takas6-rec invalid 
+                                          rewrite takas6-rec invalid continue
+                                          end-rewrite
+                                     end-write
+                               end-read
+                               perform cast-oku thru cast-oku-exit
+                               perform kaydet
+
+                               compute toplam-oda = toplam-oda + takvim-hazir-oda
+                               compute toplam-yatak = toplam-yatak + takvim-hazir-yatak
+                            end-if
+                   end-if
+              end-read
+          end-perform
+    end-start
+      move ilk-tarih to takas-blok-bas-tar
+    move son-tarih to takas-blok-bit-tar
+    move 1 to takas-blok-fiyatli
+        move 1 to takas-blok-konumlu
+     if beklenen-grup    =  1
+             perform grup-takas-al
+             perform gruplari-takasa-ekle
+     end-if
+       if kdv-haric   = 1 then 
+*             initialize alt-toplam-dizi
+            initialize takas6-rec 
+             start takas6 key > takas6-tarih  invalid
+              continue
+                not invalid
+                 perform until fs-takas6 = "10"
+                    read takas6 next no lock end move "10" to fs-takas6
+                       not end
+                          perform varying iid from 1 by 1 until iid > 7
+
+
+
+                                 move takas6-tarih to kdv-rap-tarih
+                                 perform genel2-cinkdv-ayarla
+                                
+                                 compute TAKAS6-TUT(iid) rounded =   TAKAS6-TUT(iid)  /  (( 100 +  CINPARA-MUS-KDV ) / 100)        
+                                   add TAKAS6-TUT(iid)   to alt-tut(iid) 
+                                   add TAKAS6-oda(iid)   to alt-oda(iid)    
+                                   add TAKAS6-pax(iid)   to alt-pax(iid)   
+                                   add TAKAS6-pax2(iid)  to alt-pax2(iid)
+                                   add TAKAS6-chi(iid)   to alt-kucuk(iid)
+                                   add TAKAS6-fre(iid)   to alt-free(iid)
+                                   add TAKAS6-beb(iid)   to alt-bebek(iid)
+                           end-perform 
+                          rewrite takas6-rec invalid write takas6-rec end-rewrite
+                   end-read
+                end-perform
+            end-start
+       end-if 
+      
+     
+            initialize takas6-rec 
+             start takas6 key > takas6-tarih  invalid
+              continue
+                not invalid
+                 perform until fs-takas6 = "10"
+                    read takas6 next no lock end move "10" to fs-takas6
+                       not end
+                         if rap-anah2 not = spaces  and takas6-detay2 not = high-values 
+                            and takas6-detay1 not = high-values then 
+                              initialize takas62-rec
+                              move takas6-tarih to takas62-tarih
+                               move high-values to takas62-detay2
+                               read takas62 no lock invalid
+                                  continue
+                               end-read
+                                      
+                               perform varying iid from 1 by 1 until iid > 7
+                                 add TAKAS6-TUT(iid)  to TAKAS62-TUT(iid)         
+                                 add takas6-oda(iid)  to takas62-oda(iid)         
+                                 add takas6-pax(iid)  to takas62-pax(iid) 
+                                 add takas6-pax2(iid) to takas62-pax2(iid) 
+                                 add takas6-chi(iid)  to takas62-chi(iid)         
+                                 add takas6-fre(iid)  to takas62-fre(iid) 
+                                 add takas6-beb(iid)  to takas62-beb(iid)
+                              end-perform
+                              write takas62-rec invalid rewrite takas62-rec end-write
+
+                         end-if
+                          if  takas6-detay1 not = high-values and takas6-detay2 not = high-values  then 
+                              initialize takas62-rec
+                              move takas6-tarih to takas62-tarih
+                               move high-values to takas62-detay1  takas62-detay2
+                               read takas62 no lock invalid
+                                  continue
+                               end-read
+                                      
+                               perform varying iid from 1 by 1 until iid > 7
+                                 add TAKAS6-TUT(iid)   to TAKAS62-TUT(iid)         
+                                 add takas6-oda(iid)   to takas62-oda(iid)         
+                                 add takas6-pax(iid)   to takas62-pax(iid) 
+                                 add takas6-pax2(iid)  to takas62-pax2(iid) 
+                                 add takas6-chi(iid)   to takas62-chi(iid)         
+                                 add takas6-fre(iid)   to takas62-fre(iid) 
+                                 add takas6-beb(iid)   to takas62-beb(iid) 
+                              end-perform
+                              write takas62-rec invalid rewrite takas62-rec end-write
+                          end-if
+                   end-read
+                end-perform
+            end-start
+            close takvim sehir  takvim2 rez odalar cast grup aksiyhrk kodlar02 grupfiy gruplar formul merkez
+            konuk romhrk fiyat fiyatana aceanlas fiyatind kur cast3 konum ulke onbkodlar10.
+*
+ cast-oku.
+    if merkez = 1 then 
+      move "01" to kur-banka
+      move butce-cev-doviz  to kur-doviz
+      move cast-tarih to kur-tarih
+      read kur no lock invalid
+         move tarih-tasi to kur-tarih
+         read kur no lock invalid 
+          move 1 to doviz-alis
+         end-read
+      end-read
+      move doviz-alis to mer-cev
+    end-if
+    initialize cast-rec.
+    move takvim-anah to cast-tarih.
+    start cast key not < cast-tarih invalid continue
+        not invalid
+        move spaces to var-yok
+        perform with test after until var
+            read cast next no lock end move "V" to var-yok
+                 not end
+                 if cast-tarih > takvim-anah move "V" to var-yok
+                     else
+                     if cast-tarih not > takvim-anah
+                        initialize rez-rec
+                        move cast-rez-no to rez-no
+                        read rez no lock invalid continue
+                                     not invalid
+
+                      if filtre-var = 1 then 
+                        perform filtre
+                        if filtre-gecti = 1 then 
+                          perform takas-kaydet thru takas-kaydet-exit
+                        end-if
+                      else
+                        perform takas-kaydet thru takas-kaydet-exit 
+                    end-if
+                        end-read
+                     end-if
+                 end-if 
+            end-read 
+        end-perform 
+    end-start.
+ cast-oku-exit.
+    exit.
+
+ det-at.    
+           initialize takas6-detay1 x-kodu
+           evaluate  rap-anah1
+                                  when "G"
+                                      if rez-grup-no > 0
+                                        initialize gruplar-rec
+                                        move rez-grup-no   to gruplar-anahtar
+                                        read gruplar no lock invalid 
+                                             move rez-grup-no   to takas6-detay1
+                                        end-read 
+                                             move gruplar-adi to takas6-detay1
+                                      else
+                                        move "---DIGER REZERVASYONLAR"  to takas6-detay1 
+                                      end-if 
+                                  when "D"
+                                       initialize odalar-rec
+                                       move rez-odano      to odalar-anah
+                                       read odalar no lock invalid 
+                                           continue 
+                                       end-read 
+                                          move odalar-anah   to takas6-detay1
+
+                                  when "S"
+                                       move rez-sehir      to sehir-anah
+                                       read sehir no lock invalid 
+                                          move all "*"     to sehir-adi
+                                       end-read 
+                                          move sehir-adi   to takas6-detay1
+                                  when "R"                                                         
+                                        move rez-no    to takas6-detay1 
+                                   when "4"                                                      
+                                        move rez-folio to takas6-detay1 
+                                  when "A"              
+                                        move "D" to kodlar02-tipi
+                                        move rez-anlasma  to kodlar02-kodu
+                                        read kodlar02 no lock invalid
+                                             move all "*" to kodlar02-adi
+                                             move kodlar02-kodu to kodlar02-adi
+                                        end-read
+                                        move kodlar02-adi to takas6-detay1 
+                                  when "4" 
+                                      initialize kodlar02-rec
+                                         move "O" to kodlar02-tipi
+                                        move rez-operator  to kodlar02-kodu
+                                        read kodlar02 no lock invalid
+                                             move all "*" to kodlar02-adi
+                                             move kodlar02-kodu to kodlar02-adi
+                                        end-read
+                                        move kodlar02-adi to takas6-detay1 
+                                  when "P"              
+                                        move "E" to kodlar02-tipi
+                                        move rez-pazar  to kodlar02-kodu
+                                        read kodlar02 no lock invalid
+                                             move all "*" to kodlar02-adi
+                                             move kodlar02-kodu to kodlar02-adi
+                                        end-read
+                                        move kodlar02-adi to takas6-detay1 
+                                   when "1"    
+                                        initialize onbkodlar10-rec
+                                           move "AB" to onbkodlar10-tipi
+                                           move rez-kaynak-1  to onbkodlar10-kodu1
+                                             read onbkodlar10 no lock invalid
+                                                   move all "*" to onbkodlar10-adi
+                                                  move "Belirsiz-" to onbkodlar10-adi
+                                                  move rez-kaynak-1  to onbkodlar10-adi(9:2)
+                                             end-read
+                                       
+                                       
+                                        move onbkodlar10-adi to takas6-detay1 
+                                  when "2"   
+                                   initialize onbkodlar10-rec
+                                         move "AC" to onbkodlar10-tipi
+                                           move rez-kaynak-2  to onbkodlar10-kodu1
+                                             read onbkodlar10 no lock invalid
+                                                   move all "*" to onbkodlar10-adi
+                                                  move "Belirsiz-" to onbkodlar10-adi
+                                                  move rez-kaynak-2  to onbkodlar10-adi(9:2)
+                                             end-read
+                                       
+                                       
+                                        move onbkodlar10-adi to takas6-detay1 
+                                  when "3"  
+                                   initialize onbkodlar10-rec
+                                         move "AD" to onbkodlar10-tipi
+                                           move rez-kaynak-3  to onbkodlar10-kodu1
+                                             read onbkodlar10 no lock invalid
+                                                   move all "*" to onbkodlar10-adi
+                                                 move "Belirsiz-" to onbkodlar10-adi
+                                                  move rez-kaynak-3  to onbkodlar10-adi(9:2)
+                                             end-read
+                                       
+                                       
+                                        move onbkodlar10-adi to takas6-detay1 
+                                   when "U"
+                                        move rez-ulke   to ulke-anah
+                                        read ulke no lock invalid
+                                             move all "*" to ulke-adi
+                                             move ulke-anah to  ulke-adi
+                                        end-read
+                                         move ulke-adi to takas6-detay1 
+                                        
+                                  
+                                  when "F" when "O"
+                                      if rap-anah1 = "F" 
+                                         move rez-fiyat-konumu to konum-anahtar
+                                      else
+                                        move rez-oda-konumu  to konum-anahtar
+                                      end-if
+                                       
+                                        read konum no lock invalid
+                                             move all "*" to konum-adi
+                                        end-read
+                                       
+                                        move konum-adi     to takas6-detay1  
+                                  when "5"
+                                        move "O"           to kodlar02-tipi
+                                        move rez-operator  to kodlar02-kodu
+                                        read kodlar02 no lock invalid
+                                             move all "*" to kodlar02-adi
+                                             move kodlar02-kodu to kodlar02-adi
+                                        end-read
+                                        move kodlar02-adi to takas6-detay1
+                               
+                                  when "T" when  "M"
+                                       move rez-acenta  to acenta-anahtar 
+
+
+                                        read acenta no lock invalid
+                                              
+                                             move all "*" to acenta-adi
+                                             move acenta-kodu to acenta-adi
+                                             not invalid 
+                                             if acenta-merkez-kodu > spaces and rap-anah1 ="M"
+
+                                                initialize merkez-rec
+                                                move "A" to merkez-tipi
+                                               move acenta-merkez-kodu    to merkez-kodu
+                                              read merkez no lock invalid
+                                                         continue
+                                                    not invalid
+                                                    if merkez-adi not = spaces 
+                                                            initialize  acenta-adi
+                                                            move merkez-adi to acenta-adi
+                                                    end-if
+                                                     
+                                               end-read
+                                             end-if
+                                        end-read
+                                       
+                                        move acenta-adi     to takas6-detay1 
+                                        move acenta-kodu    to x-kodu             |XIIILucky
+                               end-evaluate .
+              initialize takas6-detay2
+               evaluate  rap-anah2
+                                  when "G"
+                                      if rez-grup-no > 0
+                                        initialize gruplar-rec
+                                        move rez-grup-no   to gruplar-anahtar
+                                        read gruplar no lock invalid 
+                                             move rez-grup-no   to takas6-detay1
+                                        end-read 
+                                             move gruplar-adi to takas6-detay1
+                                      else
+                                        move "---DIGER REZERVASYONLAR"  to takas6-detay1 
+                                      end-if 
+                                  when "D"
+                                       initialize odalar-rec
+                                       move rez-odano      to odalar-anah
+                                       read odalar no lock invalid 
+                                           continue 
+                                       end-read 
+                                          move odalar-anah   to takas6-detay2
+
+                                  when "S"
+                                       move rez-sehir      to sehir-anah
+                                       read sehir no lock invalid 
+                                          move all "*"     to sehir-adi
+                                       end-read 
+                                          move sehir-adi   to takas6-detay2 
+                                when "R"                                                      
+                                        move rez-no to  takas6-detay2 
+                                  when "4" 
+                                      initialize kodlar02-rec
+                                         move "O" to kodlar02-tipi
+                                        move rez-operator  to kodlar02-kodu
+                                        read kodlar02 no lock invalid
+                                             move all "*" to kodlar02-adi
+                                             move kodlar02-kodu to kodlar02-adi
+                                        end-read
+                                        move kodlar02-adi to takas6-detay2 
+                                  when "A"              
+                                        move "D" to kodlar02-tipi
+                                        move rez-anlasma  to kodlar02-kodu
+                                        read kodlar02 no lock invalid
+                                             move all "*" to kodlar02-adi
+                                             move kodlar02-kodu to kodlar02-adi
+                                        end-read
+                                        move kodlar02-adi to takas6-detay2 
+
+                                  when "P"              
+                                        move "E" to kodlar02-tipi
+                                        move rez-pazar  to kodlar02-kodu
+                                        read kodlar02 no lock invalid
+                                             move all "*" to kodlar02-adi
+                                             move kodlar02-kodu to kodlar02-adi
+                                        end-read
+                                        move kodlar02-adi to takas6-detay2 
+                                   when "1"   
+                                    initialize onbkodlar10-rec
+                                         move "AB" to onbkodlar10-tipi
+                                           move rez-kaynak-1  to onbkodlar10-kodu1
+                                             read onbkodlar10 no lock invalid
+                                                   move all "*" to onbkodlar10-adi
+                                                 move "Belirsiz-" to onbkodlar10-adi
+                                                  move rez-kaynak-1  to onbkodlar10-adi(9:2)
+                                             end-read
+                                        move onbkodlar10-adi to takas6-detay2 
+                                  when "2"   
+                                   initialize onbkodlar10-rec
+                                         move "AC" to onbkodlar10-tipi
+                                           move rez-kaynak-2  to onbkodlar10-kodu1
+                                             read onbkodlar10 no lock invalid
+                                                   move all "*" to onbkodlar10-adi
+                                                  move "Belirsiz-" to onbkodlar10-adi
+                                                  move rez-kaynak-2  to onbkodlar10-adi(9:2)
+                                             end-read
+                                         move onbkodlar10-adi to takas6-detay2 
+                                  when "3"  
+                                  initialize onbkodlar10-rec
+                                         move "AD" to onbkodlar10-tipi
+                                           move rez-kaynak-3  to onbkodlar10-kodu1
+                                             read onbkodlar10 no lock invalid
+                                                   move all "*" to onbkodlar10-adi
+                                                  move "Belirsiz-" to onbkodlar10-adi
+                                                  move rez-kaynak-3  to onbkodlar10-adi(9:2)
+                                             end-read
+                                         move onbkodlar10-adi to takas6-detay2
+                                   
+                                   when "U"
+                                        move rez-ulke   to ulke-anah
+                                        read ulke no lock invalid
+                                             move all "*" to ulke-adi
+                                             move ulke-anah to  ulke-adi
+                                        end-read
+                                         move ulke-adi to takas6-detay2 
+                
+                                  
+                                  when "F" when "O"
+                                      if rap-anah2 = "F" 
+                                         move rez-fiyat-konumu to konum-anahtar
+                                      else
+                                        move rez-oda-konumu  to konum-anahtar
+                                      end-if
+                                       
+                                        read konum no lock invalid
+                                             move all "*" to konum-adi
+                                        end-read
+                                       
+                                        move konum-adi     to takas6-detay2  
+                              
+                                  when "5"
+                                        move "O"           to kodlar02-tipi
+                                        move rez-operator  to kodlar02-kodu
+                                        read kodlar02 no lock invalid
+                                             move all "*" to kodlar02-adi
+                                             move kodlar02-kodu to kodlar02-adi
+                                        end-read
+                                        move kodlar02-adi to takas6-detay2 
+                                   when "T" when  "M"
+                                       move rez-acenta  to acenta-anahtar 
+
+
+                                        read acenta no lock invalid
+                                              
+                                             move all "*" to acenta-adi
+                                             move acenta-kodu to acenta-adi
+                                             not invalid 
+                                             if ACENTA-merkez-kodu > spaces and rap-anah1 ="M"
+
+                                                initialize merkez-rec
+                                                move "A" to merkez-tipi
+                                               move ACENTA-merkez-kodu    to merkez-kodu
+                                              read merkez no lock invalid
+                                                     continue
+                                                    not invalid
+                                                    if merkez-adi not = spaces 
+                                                            initialize  acenta-adi
+                                                            move merkez-adi to acenta-adi
+                                                    end-if
+                                                     
+                                               end-read
+                                             end-if
+                                        end-read
+                                       
+                                       
+                                        move acenta-adi     to takas6-detay2
+                                       
+                                  
+                               end-evaluate .
+
+
+ takas-kaydet.
+       
+       initialize kodlar02-rec.
+       move "B"                to kodlar02-tipi.
+       move rez-odeme-tipi    to kodlar02-kodu
+       read kodlar02         no lock invalid 
+           go takas-kaydet-exit
+       end-read          
+       
+        if ( ode-tipi = "D" or  ode-tipi = "F" or  ode-tipi = "O")   and tumu = 2 then
+           go takas-kaydet-exit
+          end-if
+          if ( ode-tipi not = "D" and ode-tipi not = "F" and ode-tipi not = "O") and tumu = 3 then
+             go takas-kaydet-exit
+          end-if
+      
+
+    evaluate true
+    when rap-tip = "N"
+         if rez-durumu not = "I" go takas-kaydet-exit,
+         end-if,
+         if rez-k-g-b  not = "K" go takas-kaydet-exit,
+         end-if,
+    when rap-tip = "W"
+         if rez-durumu not = "I" go takas-kaydet-exit,
+         end-if,
+         if rez-k-g-b      = "K" go takas-kaydet-exit,
+         end-if,
+    when rap-tip = "S"
+         if rez-durumu not = "S" go takas-kaydet-exit,
+         end-if.
+   
+    initialize merkod-rec merkod-tanimli                | merkod datasýnda bu acenta tanýmlanmamýþsa çýk  firat
+    move "AC" to merkod-tipi
+    start merkod key not < merkod-anah invalid
+          continue
+    not invalid
+    perform with test after until fs-merkod = "10"
+    read merkod next no lock end move "10" to fs-merkod 
+    not at end 
+
+        if merkod-tipi <> "AC"
+           exit perform
+        end-if
+
+        if merkod-ace-anah-sirket <> isyeri-adres-tasi
+           exit perform cycle
+        end-if
+
+        if merkod-ace-dig-kodu = rez-acenta
+           move 1 to merkod-tanimli
+           exit perform 
+        end-if
+
+    end-read 
+    end-perform 
+    end-start
+
+    if merkod-tanimli = 0 go takas-kaydet-exit.
+
+    if acn-kod not = spaces and rez-acenta not = acn-kod,
+                                 go takas-kaydet-exit.
+    
+*** Grup Filtresi
+
+    if acn-grup-kod not = spaces
+      initialize grup-rec
+      set grup-acenta to true
+      move acn-grup-kod to grup-kodu
+      move rez-acenta   to grup-alt
+      read grup no lock
+        invalid
+          go takas-kaydet-exit
+      end-read
+    end-if
+
+*** Grup Filtresi
+*   TRACE Uygulamasi Acik ise kisi sayilari cast'tan alinacak
+    move 1 to eklenecek-oda
+    if rezpara-trace = 1
+       if rez-kisi not = cast-kisi
+
+          move cast-kisi       to rez-kisi            
+
+          MOVE CAST-ODA-KONUMU TO REZ-ODA-KONUMU
+          MOVE CAST-fiyat-konumu to rez-fiyat-konumu
+          move cast-anlasma    to rez-anlasma
+       end-if
+         move cast-share to rez-share
+           move cast-oda-no to rez-odano
+                              move cast-fiyat-konumu to rez-fiyat-konumu
+                              move cast-oda-konumu to rez-oda-konumu
+       if rez-share = 1 then          
+           move 0 to eklenecek-oda 
+       else
+            move 1 to eklenecek-oda
+       end-if
+    else 
+          move 1 to eklenecek-oda
+    end-if
+
+        if onkpara-referans-var = 1 then 
+           perform ref-filtre
+           if  not ref-gecti then 
+               exit paragraph
+           end-if
+        end-if
+     if rez-odano not = spaces and 
+       ( hayali-haric = 1 or dis-haric = 1 ) then 
+              move rez-odano to odalar-anah
+              read odalar no lock invalid continue
+              not invalid
+              if ( odalar-hayali = "H" and hayali-haric = 1 )  then
+                       move 0 to eklenecek-oda
+              end-if
+               if ( dis-haric = 1 and odalar-dis = 1 )  then
+                          go takas-kaydet-exit
+              end-if 
+              end-read
+    end-if  
+
+
+     perform det-at.
+     
+    read takas6 no lock invalid 
+       initialize takas6-data
+    end-read
+
+    move x-kodu to takas6-detay-kodu
+
+
+
+*    initialize xx sira-sakla.
+*    move "H" to eh.
+*    perform varying xx from 1 by 1 until xx > 6 or evet,
+*        if xsirket-kodu(xx) not = spaces
+*              if rez-doviz = sirket-kodu(xx),
+*                 move sirket-sira(xx) to sira-sakla,
+*                 move "E" to eh,
+*              end-if,
+*          else
+*              if not evet
+*                 move rez-doviz       to sirket-kodu(xx),
+*                 move sirket-sira(xx) to sira-sakla,
+*                 move tarih-tasi      to kur-tarih
+*                 move rez-banka       to kur-banka
+*                 move rez-doviz       to kur-doviz
+*                 read kur no lock invalid 
+*                      move 1          to doviz-alis
+*                 end-read
+*                 move doviz-alis to sirket-kuru(xx) butce-kurlari(butce-cev-doviz)
+*                 move "E" to eh,
+*              end-if
+*        end-if,
+*    end-perform.
+    perform varying xx from 1 by 1 until xx > 6 or evet,
+        if doviz-kodu2(xx) not = spaces
+              if rez-doviz = doviz-kodu2(xx),
+                 move doviz-sira(xx) to sira-sakla,
+                 move "E" to eh,
+              end-if,
+          else
+              if not evet
+                 move rez-doviz      to doviz-kodu2(xx),
+                 move doviz-sira(xx) to sira-sakla,
+                 move tarih-tasi to kur-tarih
+                 move rez-banka to kur-banka
+                 move rez-doviz     to kur-doviz
+                 read kur no lock invalid 
+                     move 1 to doviz-alis
+                 end-read
+                 move doviz-alis to doviz-kuru(xx) butce-kurlari(butce-cev-doviz)
+                 move "E" to eh,
+              end-if
+        end-if,
+    end-perform.
+    
+    if hayir 
+       move 6 to sira-sakla xx
+       move "E" to eh
+    end-if.
+
+        evaluate ychild(1:1) 
+       when 1 
+        compute pax-sayisi = rez-buyuk + ( rez-kucuk / 2 )
+       when 0
+        compute pax-sayisi = rez-buyuk
+       when 2 
+           compute pax-sayisi = rez-buyuk +  rez-kucuk  + rez-free
+       when 3
+         compute pax-sayisi = rez-buyuk +  rez-kucuk  + rez-free + rez-bebek
+       when 4
+          compute pax-sayisi = rez-buyuk +  rez-kucuk 
+       when other
+            compute pax-sayisi = rez-buyuk + ( rez-kucuk / 2 )   
+      end-evaluate
+
+         if rez-cik-tar  = takvim-anah       
+            initialize eklenecek-oda pax-sayisi      
+         end-if
+
+       initialize takas7-rec
+       move cast-tarih to takas7-tarih
+       move rez-no     to takas7-rez
+       
+***************************************
+             move rez-no  to takasfiyat-rez-no
+             move takvim-anah to takasfiyat-tarih
+             read takasfiyat no lock 
+                invalid
+                
+                   perform  peryot-fiyat-bul
+                   if  rez-cik-tar  = takvim-anah then 
+                     initialize pax-sayisi rez-buyuk rez-kucuk  rez-free rez-bebek
+                  end-if
+                    initialize cevrilmis-tl  cevrilmis-deger         
+              perform varying jj from 1 by 1 until  jj > 399
+                      
+                if fiyatt-tar(jj) = takvim-anah
+                
+                  if gercek-cin-kuru = 1 then 
+                      
+                       compute cevrilmis-tl rounded =  fiyatt-fiy(jj) * 
+                       fiyatt-kur(jj)
+                   
+                         if rez-doviz = butce-cev-doviz  then 
+                           move  fiyatt-fiy(jj) to cevrilmis-deger
+                           else
+                          compute cevrilmis-deger rounded =  fiyatt-fiy(jj) * 
+                             fiyatt-kur(jj) / fiyatt-kurcev(jj)
+
+                         end-if
+
+                 
+                    else
+                       
+                       compute cevrilmis-tl rounded =  fiyatt-fiy(jj) * 
+                      fiyatt-kur(jj)  
+                      
+                         if rez-doviz = butce-cev-doviz  then 
+                           move  fiyatt-fiy(jj) to cevrilmis-deger
+                           else
+                          compute cevrilmis-deger rounded =  fiyatt-fiy(jj) * 
+                             fiyatt-kur(jj) / fiyatt-kurcev(jj)
+
+                         end-if
+
+                      
+                  end-if
+                     move fiyatt-fiy(jj) to  takasfiyat-fiyat
+             if d-m = 1 
+                    move  fiyatt-kur(jj)     to takasfiyat-kur
+                    move  fiyatt-kurcev(jj)  to takasfiyat-kurcev
+             end-if
+                      
+                end-if
+              end-perform  
+             
+              
+              not invalid 
+                  if  rez-cik-tar  = takvim-anah then 
+                     initialize pax-sayisi rez-buyuk rez-kucuk  rez-free rez-bebek
+                  end-if
+                  if gercek-cin-kuru = 1 then 
+                      compute cevrilmis-deger rounded =  takasfiyat-fiyat * 
+                       takasfiyat-kur / takasfiyat-kurcev 
+                       compute cevrilmis-tl rounded =  takasfiyat-fiyat * 
+                       takasfiyat-kur
+                     
+                         if rez-doviz = butce-cev-doviz 
+                           move  takasfiyat-fiyat to cevrilmis-deger
+                           else
+                          compute cevrilmis-deger rounded =  takasfiyat-fiyat * 
+                             takasfiyat-kur / takasfiyat-kurcev 
+
+                         end-if
+
+                
+                    else
+                       
+                       compute cevrilmis-deger =  takasfiyat-fiyat *  
+                       takasfiyat-kur / takasfiyat-kurcev 
+                       compute cevrilmis-tl rounded =  takasfiyat-fiyat *  
+                          takasfiyat-kur
+                      
+                         if rez-doviz = butce-cev-doviz
+                           move  takasfiyat-fiyat to cevrilmis-deger
+                           else
+                          compute cevrilmis-deger rounded =  takasfiyat-fiyat * 
+                             takasfiyat-kur / takasfiyat-kurcev 
+
+                         end-if
+
+                   
+                  end-if
+                    
+             end-read
+             if d-m = 1 then
+                   initialize debkur-rec
+                   move cast-tarih to debkur-tarih
+                   move REZ-NO to debkur-rezno
+                    read debkur no lock invalid 
+                       move takasfiyat-kur        to debkur-tlyekur
+                       move takasfiyat-kurcev        to debkur-dvyekur
+                       move takasfiyat-fiyat   to debkur-tut1
+                       move cevrilmis-deger   to debkur-tut2
+                       write debkur-rec  invalid continue
+                       end-write
+                       not invalid 
+                         if  takasfiyat-fiyat not =  debkur-tut1
+                           or  cevrilmis-deger not =  debkur-tut2
+                              display message box "Rezno : "  debkur-rezno  new-line
+                                                  "Tarih : "  debkur-tarih  new-line
+                                                  "Bende : "  takasfiyat-fiyat " ----- "  cevrilmis-deger new-line
+                                                  "Orda  : "  debkur-tut1   " ----- "   debkur-tut2  new-line
+                                                                      type 2 default 2 giving sonuc
+                                if sonuc = 1 then 
+                                  move 0 to d-m
+                               end-if 
+
+
+                        end-if
+                  end-read
+                 end-if
+
+
+
+****************  salih koy
+        if dis-kom-dus = 1 then 
+              initialize acenta-rec
+              move rez-acenta to acenta-kodu
+              read acenta no lock invalid continue
+              end-read
+               if  acenta-merkez-carpan  > 0 then 
+                     
+                  compute cevrilmis-deger  rounded = 
+                  cevrilmis-deger  * (( 1000 - acenta-merkez-carpan )/1000)
+
+                  compute takasfiyat-fiyat rounded = 
+                  takasfiyat-fiyat * (( 1000 - acenta-merkez-carpan )/1000)
+
+               end-if
+        end-if
+
+****************************
+        move sira-sakla       to xx
+        move doviz-kodu2(xx)  to takas6-kod(xx)
+        move takasfiyat-fiyat to takas7-tut  rez-fiyati
+      
+        compute takas6-tut(xx) = takas6-tut(xx) + takasfiyat-fiyat
+        add pax-sayisi to takas6-pax(xx)
+        add eklenecek-oda         to takas6-oda(xx)
+        compute alt-tut(xx)   rounded = alt-tut(xx)     + takas7-tut
+        add pax-sayisi to alt-pax(xx)
+        add eklenecek-oda          to alt-oda(xx)
+
+         add rez-kucuk     to alt-kucuk(xx)
+         
+         add rez-free rez-bebek to alt-free(xx)
+
+        add rez-buyuk  to  takas6-pax2(xx)
+        add rez-kucuk  to takas6-chi(xx)
+        add rez-free   to takas6-fre(xx)
+        add rez-bebek  to takas6-beb(xx)       
+
+         
+         compute takas6-tut(7) rounded = takas6-tut(7) + 
+                                   cevrilmis-deger 
+         compute takas6-oda(7) rounded = takas6-oda(7) + 
+
+                                   eklenecek-oda
+         compute takas6-pax(7) rounded = takas6-pax(7) + 
+                                   pax-sayisi
+
+         compute takas6-pax2(7) rounded = takas6-pax2(7) + 
+                                   rez-buyuk
+        compute takas6-chi(7) rounded = takas6-chi(7) + 
+                                   rez-kucuk
+          compute takas6-fre(7) rounded = takas6-fre(7) + 
+                                   rez-free 
+                                   
+         compute takas6-beb(7) rounded = takas6-beb(7) + 
+                                  rez-bebek
+         
+         compute alt-tut(7)    rounded = alt-tut(7)     +
+                                   cevrilmis-deger 
+         compute alt-oda(7)    rounded = alt-oda(7)     +
+                                   eklenecek-oda 
+         compute alt-pax(7)    rounded = alt-pax(7)     +
+                                   pax-sayisi
+           compute alt-pax2(7)    rounded = alt-pax2(7)     +
+                                   rez-buyuk
+         compute alt-kucuk(7)    rounded = alt-kucuk(7)     +
+                                   rez-kucuk
+         compute alt-free(7)    rounded = alt-free(7)     +
+                                   rez-free 
+        compute alt-bebek(7)    rounded = alt-bebek(7)     +                                  
+                                   rez-bebek
+
+        
+    rewrite takas6-rec invalid write takas6-rec end-rewrite
+    move "H" to eh.
+ takas-kaydet-exit.
+    exit.
+ kaydet.
+    rewrite takas6-rec invalid 
+            write takas6-rec invalid continue
+            end-write
+    end-rewrite.
+*
+ takas7-doldur.
+       perform peryot-fiyat-bul.
+*
+ acc-07-Aft-Procedure.
+     open input acenta
+     if acn-kod = spaces
+        if acn-grup-kod = spaces
+           move "Tum Acentalar"   to acenta-adi
+        end-if
+     else
+        move acn-kod    to acenta-kodu
+        read acenta no lock invalid
+             move "Tanimsiz Acenta ..." to acenta-adi
+             move 4 to accept-control
+             move 12 to control-id
+        end-read
+        initialize acn-grup-kod
+        move "Acenta Filtresi" to grup-adi
+        display acc-08 lb-acngrupadi
+     end-if
+     display lb-acenadi
+     close acenta
+     .
+*
+ acc-08-Aft-Procedure.
+     open input grup
+     if acn-grup-kod = spaces
+        if acn-kod = spaces
+           move "Tum Gruplar"   to grup-adi
+        end-if
+     else
+        initialize grup-rec
+        set grup-acenta to true
+        move acn-grup-kod    to grup-kodu
+        read grup no lock invalid
+             move "Tanimsiz Acenta Grubu..." to grup-adi
+             move 4 to accept-control
+             move 17 to control-id
+        end-read
+        initialize acn-kod
+        move "Grup Filtresi" to acenta-adi
+        display acc-07 lb-acenadi
+     end-if
+     display lb-acngrupadi
+     close grup
+     .
+*
+ gun-sayisi-bul.
+      initialize g-bul-gun-sayisi
+                takvim2-rec 
+     move rez-gir-tar   to takvim2-anah
+     start takvim2 key not < takvim2-anah
+           invalid
+                move 1 to g-bul-gun-sayisi
+     not invalid
+     initialize fs-takvim2
+     perform with test after until fs-takvim2 = "10"
+     read takvim2 next no lock end move "10" to fs-takvim2
+     not at end
+          if takvim2-anah = rez-cik-tar
+             move "10" to fs-takvim2
+             exit perform cycle
+          end-if
+          if takvim2-anah not > rez-cik-tar
+             add 1 to g-bul-gun-sayisi
+          else
+             move "10" to fs-takvim2
+          end-if
+     end-read
+     end-perform
+     end-start.
+
+*
+ Form2-Ex-Other.
+       evaluate key-status
+          when 2 
+            set exit-pushed to true
+       end-evaluate
+     .
+*
+ Form2-Bef-Create.
+     .
+*
+ Form1-Ef-1-Aft-Procedure.
+          open input kur doviz 
+         move butce-cev-doviz to DOVIZ-KODU
+         read doviz no lock invalid
+            display message box  "Tanimsiz Doviz Girdiniz"
+            move "Tanimsiz " to d-kisa-adi
+         end-read
+         move  d-kisa-adi to kur-adi
+
+        move tarih-tasi to kur-tarih
+        move "87" to kur-banka
+        if merkez = 1 then 
+          move "01" to kur-banka
+        end-if
+        move doviz-kodu to kur-doviz
+           read kur no lock invalid
+                move 1 to merkez
+                display Form1-Cb-1
+                move "01" to kur-banka
+                read kur no lock invalid
+                  move 1 to doviz-alis
+                end-read
+            end-read
+           move doviz-alis to cevrim-kuru    cevrim-kur-sayisal 
+         display kdov adov ikur
+        close kur doviz
+     .
+*
+ gruplari-takasa-ekle2.
+  
+     
+     if takas-blok-konumlu = 1 then 
+     move takas-blok-konum to rez-oda-konumu rez-fiyat-konumu
+      if onkpara-referans-var = 1 then 
+       perform ref-filtre
+       if  not ref-gecti then 
+           exit paragraph
+       end-if
+      end-if
+     end-if
+  
+    
+   
+    if acn-kod not = spaces and gruplar-acenta not = acn-kod, exit paragraph
+    end-if
+   
+    
+    if tumu > 1 then
+          move "B" to kodlar02-tipi
+          move gruplar-odeme  to kodlar02-kodu
+          read kodlar02 no lock invalid 
+              move spaces to kodlar02-adi
+          end-read
+         if ( ode-tipi = "D" or  ode-tipi = "F" or  ode-tipi = "O")   and tumu = 2 then
+          exit paragraph
+          end-if
+          if ( ode-tipi not = "D" and ode-tipi not = "F" and ode-tipi not = "O") and tumu = 3 then
+            exit paragraph
+          end-if
+    end-if
+   
+
+*** Grup Filtresi
+
+    if acn-grup-kod not = spaces
+      initialize grup-rec
+      set grup-acenta to true
+      move acn-grup-kod to grup-kodu
+      move gruplar-acenta   to grup-alt
+      read grup no lock
+        invalid
+         exit paragraph
+      end-read
+
+    end-if
+      initialize xx sira-sakla.
+    move "H" to eh.
+    perform varying xx from 1 by 1 until xx > 6 or evet,
+        if doviz-kodu2(xx) not = spaces
+              if gruplar-doviz = doviz-kodu2(xx),
+                 move doviz-sira(xx) to sira-sakla,
+                 move "E" to eh,
+              end-if,
+          else
+              if not evet
+                 move gruplar-doviz      to doviz-kodu2(xx),
+                 move doviz-sira(xx) to sira-sakla,
+                 move tarih-tasi to kur-tarih
+                 move gruplar-banka to kur-banka
+                 move gruplar-doviz     to kur-doviz
+                 read kur no lock invalid 
+                     move 1 to doviz-alis
+                 end-read
+                 move doviz-alis to doviz-kuru(xx) butce-kurlari(butce-cev-doviz)
+                 move "E" to eh,
+              end-if
+        end-if,
+    end-perform.
+    
+    
+    if hayir 
+    move 6 to sira-sakla xx
+    move "E" to eh
+    end-if.
+
+      compute geklenecek-oda = takas-blok-ayrilan-oda  - takas-blok-satilan-oda
+     if geklenecek-oda < 0 then 
+         move 0 to geklenecek-oda
+     end-if
+       compute geklenecek-pax = takas-blok-ayrilan-pax - takas-blok-satilan-pax
+        if   gruplar-kalanlar-double = 1 then 
+             compute geklenecek-pax = takas-blok-kalan-oda * 2
+        end-if
+      if geklenecek-pax < 0 then 
+         move 0 to geklenecek-pax
+      end-if
+
+      compute geklenecek-chi = takas-blok-ayrilan-child - takas-blok-satilan-child
+       
+      if geklenecek-chi < 0 then 
+         move 0 to geklenecek-chi
+      end-if
+      
+      
+       initialize takas7-rec   takas6-rec
+       move takas-blok-tarih to takas7-tarih takas6-tarih
+
+       move rez-no     to takas7-rez
+       
+
+         
+         initialize takas6-rec,
+                               move takas-blok-tarih(1:yil-ay) to takas6-tarih,
+
+      move gruplar-kaynak-1 to rez-kaynak-1
+      move gruplar-kaynak-2 to rez-kaynak-2
+      move gruplar-kaynak-3 to rez-kaynak-3
+      move gruplar-anlasma  to rez-anlasma
+      move takas-blok-konum to rez-fiyat-konumu rez-oda-konumu
+      move gruplar-ulke     to rez-ulke
+      move gruplar-acenta   to rez-acenta
+      move gruplar-firma    to rez-firma
+      move gruplar-kodu     to rez-grup-no
+      move gruplar-grup-statu to rez-gr-status
+      move gruplar-pazar to rez-pazar
+      move gruplar-pan-tipi  to rez-pan-tipi
+       
+       perform det-at                 
+    read takas6 no lock invalid 
+       initialize takas6-data
+    end-read
+
+      
+
+
+
+
+         
+           
+
+        
+****************************
+        move    sira-sakla to xx
+        move    doviz-kodu2(xx) to takas6-kod(xx)
+        move  takas-blok-kalan-tutar to takas7-tut  rez-fiyati
+      
+
+
+
+
+
+        compute takas6-tut(xx) = takas6-tut(xx) + takas-blok-kalan-tutar
+        add geklenecek-oda        to takas6-oda(xx)
+        
+
+        compute takas6-pax(xx) = takas6-pax(xx) + geklenecek-pax + geklenecek-chi
+        compute alt-tut(xx)   rounded = alt-tut(xx)     + takas-blok-kalan-tutar
+     
+        add geklenecek-oda           to alt-oda(xx)
+
+        compute alt-pax(xx) = alt-pax(xx) + geklenecek-pax  + geklenecek-chi
+      
+
+           if gruplar-doviz = butce-cev-doviz  then 
+                                move  takas-blok-kalan-tutar to cevrilmis-deger
+                           else
+                           move tarih-tasi to kur-tarih
+                           move "01" to kur-banka
+                           move gruplar-doviz to kur-doviz
+                           read kur no lock invalid
+                              move 1 to doviz-alis
+                           end-read
+                              compute cevrilmis-deger rounded = takas-blok-kalan-tutar * 
+                                  doviz-alis / cevrim-kur-sayisal
+
+              end-if
+
+
+         compute takas6-tut(7) rounded = takas6-tut(7) + 
+                                   cevrilmis-deger 
+         compute takas6-oda(7) rounded = takas6-oda(7) + 
+                                   geklenecek-oda 
+         compute takas6-pax(7) rounded = takas6-pax(7) + 
+                                  geklenecek-pax  + geklenecek-chi
+         compute alt-tut(7)    rounded = alt-tut(7)     +
+                                   cevrilmis-deger 
+         compute alt-oda(7)    rounded = alt-oda(7)     +
+                                   geklenecek-oda 
+         compute alt-pax(7)    rounded = alt-pax(7)     +
+                                  geklenecek-pax  + geklenecek-chi
+        
+    rewrite takas6-rec invalid write takas6-rec end-rewrite
+    move "H" to eh.
+
+
+*
+ genel2-cinkdv-ayarla. 
+     if genel2-kdv-gecerlilik-tar not = spaces and genel2-kdv-gecerlilik-tar not = zeroes
+*             if kdv-rap-tarih < genel2-kdv-gecerlilik-tar or kdv-rap-tarih > 20201231  |firat 15/12/2020 düzeltme
+*             if kdv-rap-tarih < genel2-kdv-gecerlilik-tar or kdv-rap-tarih >= 20210601 |firat 26/04/2021 düzeltme
+*             if kdv-rap-tarih < genel2-kdv-gecerlilik-tar or kdv-rap-tarih >= 20210630
+            if genel2-kdv-bit-tar = spaces or genel2-kdv-bit-tar = zeroes then
+                   move 20210731 to genel2-kdv-bit-tar
+            end-if
+            if kdv-rap-tarih < genel2-kdv-gecerlilik-tar or kdv-rap-tarih >= genel2-kdv-bit-tar 
+                  move 8 to CINPARA-MUS-KDV
+             else
+                  move 1 to CINPARA-MUS-KDV
+             end-if
+      end-if.
+      if  kdv-rap-tarih >= 20230710
+                   move 10 to CINPARA-MUS-KDV
+                
+                end-if.
+
+
+
+ 

@@ -1,0 +1,133 @@
+* onodegir.evt
+* onodegir.evt is generated from D:\asya\acugt.ytl\otel\onodegir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      call "c$narg" using link-var
+      if link-onodeme-rez-no = spaces
+         display message box "Rezervasyon Numarasi Bulunamadi.."
+                         title "Uyari"
+                         icon 1
+           set exit-pushed to true 
+      end-if 
+      open input genel
+      initialize genel-rec 
+      move 1   to genel-anahtar
+      read genel no lock invalid 
+           display message box "Genel Parametre Tanimsiz..."
+                           title "Uyari"
+                           icon 1
+                close genel
+                exit paragraph 
+      end-read 
+      close genel
+      if genel-onodeme-odano = spaces
+         display message box "Genel Parametre On Odeme Oda Numarasini Tanimlayiniz...." new-line
+                             "Bakim Tanimlamalar->Onburo Calisma Parametleri->C/in->"
+                         title "Uyari"
+                         icon 1
+              exit paragraph 
+      end-if.
+*
+ Form1-Aft-Initdata.
+      modify form1-gd-1,reset-grid = 1
+                        mass-update = 1
+      initialize form1-gd-1-record
+      move "Oda"           to gd-1-col-1
+      move "Folio"         to gd-1-col-2
+      move "Adi"           to gd-1-col-3
+      move "Soyadi"        to gd-1-col-4
+
+      modify form1-gd-1,
+             record-to-add(form1-gd-1-record)
+
+      open input konuk
+      initialize konuk-rec
+      move "I"                 to konuk-durumu
+      move genel-onodeme-odano to konuk-odano
+      start konuk key not < konuk-oda invalid 
+           continue 
+      not invalid 
+      perform with test after until fs-konuk = "10"
+      read konuk next no lock end move "10" to fs-konuk
+      not at end 
+             if konuk-durumu <> "I"  
+                   exit perform 
+             end-if
+             if konuk-odano <> genel-onodeme-odano
+                 exit perform 
+             end-if 
+             initialize form1-gd-1-record
+             move konuk-odano   to gd-1-col-1
+             move konuk-folio   to gd-1-col-2
+             move konuk-adi     to gd-1-col-3
+             move konuk-soyadi  to gd-1-col-4
+             modify form1-gd-1,
+                    record-to-add(form1-gd-1-record)
+      end-read 
+      end-perform
+      end-start
+      close konuk
+
+      modify form1-gd-1,mass-update = 0.
+*
+ Form1-Gd-1-Ev-Other.
+      evaluate event-type
+      when msg-begin-entry
+      evaluate event-data-1
+        when 2
+              move event-action-fail to event-action
+              initialize dokcagir-tasi
+              inquire form1-gd-1(event-data-2,2),
+                      cell-data dokcagir-konuk-folio              
+          if k-kodu-tasi = "X   "  or 1 = 1
+             perform folio-cagir  
+          end-if
+        when other
+              move event-action-fail to event-action
+              initialize dokcagir-tasi
+              inquire form1-gd-1(event-data-2,2),
+                      cell-data dokcagir-konuk-folio              
+              set dokcagir-tasi-call-cekgir4 to true
+              move 1                         to dokcagir-pencere 
+              move link-onodeme-rez-no       to dokcagir-rez-no
+              perform dokcagir-call
+      end-evaluate 
+      end-evaluate .
+*
+ dokcagir-call.
+     call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+          on exception 
+             perform callerr-proc
+          not on exception
+             cancel "/asya/ytl/obj/otel/dokcagir.asy"
+     end-call.
+*
+ folio-cagir.
+       if k-kodu-tasi = "ASYA" or "X   " or 1=1 then 
+         call "/asya/ytl/obj/otel/folio.asy" 
+         using dokcagir-konuk-folio link-onodeme-rez-no
+          on exception 
+             perform callerr-proc
+          not on exception
+             cancel "/asya/ytl/obj/otel/folio.asy"
+        end-call
+
+       else
+         set dokcagir-tasi-call-folio1      to true
+         perform dokcagir-call
+         move dokcagir-konuk-folio          to konuk-folio
+       end-if
+         .
+
+ 

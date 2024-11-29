@@ -1,0 +1,76 @@
+* 
+ peryot-fiyat-bul.
+       move rez-odeme-tipi          to kodlar02-kodu
+        move "B"                     to kodlar02-tipi
+        read kodlar02 no lock invalid
+             move "Tanimsiz"  to kodlar02-adi
+        end-read
+       
+      if ode-posting = "H" then        
+          initialize top-rez-fiyati
+          exit paragraph
+      end-if 
+     open input takvim
+     initialize aksiyhrk-rec special-var-yok
+     move "O"              to aksiyhrk-tipi
+     move rez-acenta       to aksiyhrk-acenta
+     move rez-gir-tar      to aksiyhrk-tarih
+     move rez-pan-tipi     to aksiyhrk-pan-tipi
+     move g-bul-gun-sayisi to aksiyhrk-gecele
+
+     read aksiyhrk no lock
+       invalid
+         continue
+       not invalid
+         set special-var to true
+         move aksiyhrk-gecele   to special-gece 
+         move aksiyhrk-ode      to special-tahsil 
+     end-read
+     
+     initialize aksiyhrk-rec aksiyon-durumu
+     move "A"              to aksiyhrk-tipi
+     move rez-acenta       to aksiyhrk-acenta
+     move rez-gir-tar      to aksiyhrk-tarih
+     move rez-pan-tipi     to aksiyhrk-pan-tipi
+     move g-bul-gun-sayisi to aksiyhrk-gecele
+     read aksiyhrk no lock invalid
+          continue
+     not invalid
+          set aksiyon-var to true
+     end-read
+
+     move rez-fiyati    to ilk-rez-fiyati
+
+     initialize g-bul-gun-sayisi  kacinci-gece
+                takvim-rec top-rez-fiyati
+     move rez-gir-tar   to takvim-anah
+     start takvim key not < takvim-anah
+           invalid
+                move 1 to g-bul-gun-sayisi
+     not invalid
+     initialize fs-takvim
+     perform with test after until fs-takvim = "10"
+     read takvim next no lock end move "10" to fs-takvim
+     not at end
+          if takvim-anah = rez-cik-tar
+             move "10" to fs-takvim
+             exit perform cycle
+          end-if
+          if takvim-anah not > rez-cik-tar
+             perform fiyat-bul thru fiyat-bul-exit
+             add 1 to g-bul-gun-sayisi kacinci-gece
+              if kacinci-gece > aksiyhrk-ode and aksiyon-var and aksiyhrk-sondan = 1 then
+                  continue
+                  else
+                  compute top-rez-fiyati
+                        = top-rez-fiyati + ilk-rez-fiyati
+                  end-if
+             
+             
+          else
+             move "10" to fs-takvim
+          end-if
+     end-read
+     end-perform.
+
+     close takvim.

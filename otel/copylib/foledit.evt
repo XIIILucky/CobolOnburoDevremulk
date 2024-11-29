@@ -1,0 +1,153 @@
+* kvkksoru.evt
+* kvkksoru.evt is generated from D:\asya\acugt.ytl\otel\kvkksoru.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM gd-soru-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform Adresleri-Tasi
+     .
+*
+ Exception-Procedure.
+     evaluate key-status 
+         when 2 
+              perform Form-Kaydet
+         when 3
+              perform Form-Sil
+     end-evaluate 
+     .
+*
+ Form1-Aft-Initdata.
+     perform Form-Yenile
+     .
+*
+ After-Procedure.
+     perform Form-Oku
+     .
+*
+ Form-Oku.
+     open i-o kvkksoru 
+     if sira-val not > 0  
+        display message box "Hatasiz Bir Sira No Giriniz.."
+                      title "[ Uyari ]"
+                       icon 1
+     end-if
+     initialize kvkksoru-rec 
+     move sira-val to kvkksoru-sira 
+     read kvkksoru no lock invalid 
+          continue 
+     not invalid 
+         move kvkksoru-baslik to baslik-val
+         move kvkksoru-text   to text-val
+     end-read 
+     display acc-baslik acc-text
+     close kvkksoru     
+     .
+*
+ Form-Kaydet.
+     open i-o kvkksoru 
+     if sira-val not > 0
+        display message box "Hatasiz Bir Sira No Giriniz.." new-line
+                            "Kayit Islemi Yapilmayacaktir.."
+                      title "[ Uyari ]"
+                       icon 1
+     end-if
+     initialize kvkksoru-rec 
+     move sira-val to kvkksoru-sira 
+     read kvkksoru no lock invalid 
+          continue 
+     end-read
+     move baslik-val to kvkksoru-baslik
+     move text-val   to kvkksoru-text
+     write kvkksoru-rec invalid
+           rewrite kvkksoru-rec end-rewrite 
+     end-write 
+     close kvkksoru  
+     perform Form-Yenile
+     .
+*
+ Form-Sil.
+     open i-o kvkksoru 
+     if sira-val not > 0
+        display message box "Hatasiz Bir Sira No Giriniz.." new-line
+                            "Silme Islemi Yapilmayacaktir.."
+                      title "[ Uyari ]"
+                       icon 1
+     end-if
+     initialize kvkksoru-rec 
+     move sira-val to kvkksoru-sira 
+     read kvkksoru no lock invalid 
+          display message box "Tanimsiz Bir Sira No Girdiniz.." new-line
+                              "Silme Islemi Yapilmayacaktir.."
+                        title "[ Uyari ]"
+                         icon 1
+     not invalid
+         delete kvkksoru end-delete
+     end-read
+     close kvkksoru
+     perform Form-Yenile
+     .
+*
+ Form-Yenile.
+     initialize sira-val baslik-val text-val
+     display acc-sira acc-baslik acc-text
+     move 4 to accept-control
+     move 5 to control-id
+     perform Grid-Yukle
+     .
+*
+ Grid-Yukle.
+     open i-o kvkksoru
+     modify gd-soru, reset-grid  = 1 
+                     mass-update = 1 
+
+     initialize soru-rec 
+     move "Sira"     to soru-col-1
+     move "Baslik"   to soru-col-2
+     modify gd-soru, record-to-add(soru-rec)
+
+     initialize kvkksoru-rec 
+     start kvkksoru key not < kvkksoru-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-kvkksoru = "10" 
+     read kvkksoru next no lock end move "10" to fs-kvkksoru
+     not at end
+
+         initialize soru-rec 
+         move kvkksoru-sira     to soru-col-1
+         move kvkksoru-baslik   to soru-col-2
+         modify gd-soru, record-to-add(soru-rec)
+
+     end-read 
+     end-perform 
+     end-start
+     modify gd-soru, mass-update = 0
+     close kvkksoru
+    .
+*
+ gd-soru-Ev-Other.
+     evaluate event-type
+         when msg-begin-entry
+              move event-action-fail to event-action
+              inquire gd-soru,                cursor-y  in satir-getir
+              if satir-getir > 1
+                 inquire gd-soru(satir-getir,1), cell-data in sira-val
+                 display acc-sira
+                 perform Form-Oku
+              end-if
+     end-evaluate 
+     .
+
+ 

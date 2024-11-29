@@ -1,0 +1,394 @@
+* webbanka.evt
+* webbanka.evt is generated from D:\asya\acugt.ytl\otel\webbanka.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ accept-1301-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ accept-1303-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ Form1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM listbox-eventlar
+        WHEN Cmd-Goto
+           PERFORM Listbox-Eventlar
+        WHEN Ntf-Selchange
+           PERFORM Listbox-Eventlar
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open i-o webbanka close webbanka
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid 
+         continue
+    end-read
+    close genel.
+     .
+*
+ exception-procedure.
+     evaluate key-status
+         when 1
+              evaluate control-id
+                  when 14
+                       initialize doviz-cagir
+                       call "/asya/ytl/obj/otel/dovizara.asy" using doviz-cagir
+                            on exception perform callerr-proc
+                            not on exception
+                       cancel "/asya/ytl/obj/otel/dovizara.asy" 
+                       end-call
+                       move doviz-cagir     to dov-kod
+                       display accept-1301
+                       perform Accept-1301-Aft-Procedure
+                       move 4 to accept-control
+                       move 28 to control-id
+                  when 8
+                       initialize hesapara-link
+                       move MUHA-SIRKETI       to hesapara-isyeri
+                       inspect genel-muha-uzak-ip replacing all spaces by low-values
+                       move genel-muha-uzak-ip to hesapara-ip-no
+                       call "/asya/ytl/obj/otel/hesapara.asy" using hesapara-link
+                            on exception 
+                               perform callerr-proc
+                            not on exception
+                               if hesapara-hesap <> spaces 
+                                  move hesapara-hesap  to hesap-kodu 
+                                  display accept-1303
+                               end-if
+                            cancel "/asya/ytl/obj/otel/hesapara.asy"
+                       end-call
+              end-evaluate
+     
+          
+       
+     end-evaluate.
+ bef-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 5
+              evaluate true
+                  when turkce
+                       move "Referans  kodunu giriniz    " to mesaj
+                  when ingilizce
+                       move "Referans kodunu giriniz    " to mesaj
+                  when almanca
+                       move "Referans kodunu giriniz    " to mesaj
+              end-evaluate
+          when 8
+              evaluate true
+                  when turkce
+                       move "Referans aciklamasini giriniz       " to mesaj
+                  when ingilizce
+                       move "Referans aciklamasini giriniz       " to mesaj
+                  when almanca
+                       move "Referans aciklamasini giriniz       " to mesaj
+              end-evaluate
+          when 19
+              evaluate true
+                  when turkce
+                       move "Referans kodunu kaydetmek icin tiklayiniz" to mesaj
+                  when ingilizce
+                       move "Referans kodunu kaydetmek icin tiklayiniz" to mesaj
+                  when almanca
+                       move "Referans kodunu kaydetmek icin tiklayiniz" to mesaj
+              end-evaluate
+          when 20
+              evaluate true
+                  when turkce
+                       move "Referans kodunu silmek icin tiklayiniz" to mesaj
+                  when ingilizce
+                       move "Referans kodunu silmek icin tiklayiniz" to mesaj
+                  when almanca
+                       move "Referans kodunu silmek icin tiklayiniz" to mesaj
+              end-evaluate
+          when 21
+              evaluate true
+                  when turkce
+                       move "Rapor almak icin tiklayiniz      " to mesaj
+                  when ingilizce
+                       move "Rapor almak icin tiklayiniz      " to mesaj
+                  when almanca
+                       move "Rapor almak icin tiklayiniz      " to mesaj
+              end-evaluate
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 2 
+            panel-text = mesaj.
+
+ Form1-Aft-Initdata.
+     perform listbox-yukle 
+     move 0 to taksit-sayisi
+     move "GRN" to banka-kodu(1:3)
+     display cmb-1301 accept-1302
+             
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\* 
+*
+ listbox-yukle.
+     modify form1-lb-1,
+            reset-list  = 1
+            mass-update = 1
+     open input webbanka
+     initialize webbanka-rec
+     start webbanka key not < webbanka-anah invalid
+           continue
+     not invalid
+     move zeroes to fs-webbanka
+     perform with test after until fs-webbanka = "10"
+          read webbanka next no lock end move "10" to fs-webbanka
+          not at end
+          initialize form1-lb-1-value
+          move webbanka-banka-kodu    to lb-1-col-1
+          move webbanka-doviz-kodu    to lb-1-col-2
+          move webbanka-taksit-sayisi to lb-1-col-3
+          move webbanka-hesap-kodu    to lb-1-col-4
+          modify form1-lb-1,
+                 item-to-add(form1-lb-1-value)
+          end-read
+     end-perform
+     end-start
+     close webbanka.
+     modify form1-lb-1,
+            mass-update = 0
+            selection-index = 1
+            thumb-position = 1.
+
+        
+*
+ listbox-eventlar.          
+ 
+     evaluate event-type
+          when 4099
+               inquire form1-lb-1,value in form1-lb-1-value
+               move lb-1-col-1 to banka-kodu 
+               move lb-1-col-2 to dov-kod
+               move lb-1-col-3 to taksit-sayisi
+               move lb-1-col-4 to hesap-kodu
+               display cmb-1301, 
+                       accept-1301,
+                       accept-1302,
+                       accept-1303
+               perform Accept-1301-Aft-Procedure
+     end-evaluate.
+     
+     .
+*
+ Ex-Ntf-Selchange-cb-tipi.
+     
+     .
+*
+ accept-1301-Aft-Procedure.
+     open input doviz
+     initialize doviz-rec
+     move dov-kod to doviz-kodu 
+     read doviz no lock invalid
+          modify label-1301, TITLE = "Tanimsiz.."
+     not invalid
+          modify label-1301, TITLE = D-ADI-1
+     end-read
+     close doviz
+     .
+*
+ accept-1302-Aft-Procedure.
+     if taksit-sayisi = spaces or taksit-sayisi = zeroes
+        move 0 to taksit-sayisi
+        display accept-1302
+     end-if
+     initialize hesap-kodu
+        display accept-1303
+          open i-o webbanka
+              initialize webbanka-rec
+              move banka-kodu(1:3) to webbanka-banka-kodu
+              move dov-kod         to webbanka-doviz-kodu
+              move taksit-sayisi   to webbanka-taksit-sayisi
+              read webbanka no lock invalid
+                   continue
+              not invalid
+                  move webbanka-hesap-kodu to hesap-kodu
+                  display accept-1303
+              end-read
+          close webbanka.
+*
+ button-0101-Link.
+     if banka-kodu = spaces 
+                 display message box "Tanimsiz Doviz Kodu Lütfen Kontrol Ediniz.."
+                 move 4  to accept-control
+                 move 14 to control-id
+                 exit paragraph
+              end-if
+              open i-o webbanka
+              initialize webbanka-rec
+              move banka-kodu(1:3) to webbanka-banka-kodu
+              move dov-kod         to webbanka-doviz-kodu
+              move taksit-sayisi   to webbanka-taksit-sayisi
+              read webbanka no lock invalid
+                   continue
+              end-read
+              move hesap-kodu to webbanka-hesap-kodu
+              write webbanka-rec invalid 
+                    rewrite webbanka-rec end-rewrite 
+              end-write
+              close webbanka
+              if i > zeroes
+                   initialize form1-lb-1-value
+                   modify form1-lb-1,
+                          item-to-delete(i)
+                   move webbanka-banka-kodu    to lb-1-col-1
+                   move webbanka-doviz-kodu    to lb-1-col-2
+                   move webbanka-taksit-sayisi to lb-1-col-3
+                   move webbanka-hesap-kodu    to lb-1-col-4
+                   modify form1-lb-1,
+                          item-to-add(form1-lb-1-value)
+              else
+                 initialize form1-lb-1-value
+                 move webbanka-banka-kodu    to lb-1-col-1
+                 move webbanka-doviz-kodu    to lb-1-col-2
+                 move webbanka-taksit-sayisi to lb-1-col-3
+                 move webbanka-hesap-kodu    to lb-1-col-4
+                 modify form1-lb-1,
+                        item-to-add(form1-lb-1-value)
+              end-if
+              move 4 to accept-control
+              move 5 to control-id
+              perform Listbox-Yukle
+     .
+*
+ button-0102-Link.
+          open i-o webbanka
+              initialize webbanka-rec
+              move banka-kodu(1:3) to webbanka-banka-kodu
+              move dov-kod         to webbanka-doviz-kodu
+              move taksit-sayisi   to webbanka-taksit-sayisi
+              read webbanka no lock invalid
+                   continue
+              not invalid
+                  move webbanka-hesap-kodu to hesap-kodu
+                  display accept-1303
+              end-read
+              delete webbanka invalid continue 
+              end-delete
+              close webbanka
+              if i > zeroes
+                 modify form1-lb-1,
+                        item-to-delete(i)
+              end-if
+              move 4 to accept-control
+              move 5 to control-id
+              perform Listbox-Yukle
+     .
+*
+ button-0103-Link.
+  
+              open input webbanka
+              initialize webbanka-rec
+              start webbanka key not < webbanka-anah invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close webbanka
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Webasya Banka Hesap Kodlari Raporu " to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Webasya Banka Hesap Kodlari Raporu " to det-filler
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  s
+     initialize dokumer-rec detay
+     move "D1"         to det-dokumer-20(1:2)
+     move "1"          to det-dokumer-20(10:1)
+     move "Banka K"       to det-1
+     move "Doviz K"       to det-2
+     move "Taksit"        to det-3
+     move "Hesap Kodu"    to det-4
+     move "|" to fil-1 fil-2 fil-3 fil-4
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"  to det-1 det-2 det-3 det-4
+     write dokumer-rec from detay
+**************************
+
+              initialize fs-webbanka
+              perform with test after until fs-webbanka = "10"
+                    read webbanka next no lock end move "10" to fs-webbanka
+                    not at end
+                         initialize dokumer-rec detay
+                         move webbanka-banka-kodu    to det-1
+                         move webbanka-doviz-kodu    to det-2
+                         move webbanka-taksit-sayisi to det-3
+                         move webbanka-hesap-kodu    to det-4
+                         move "|" to fil-1 fil-2 fil-3 fil-4 
+                         write dokumer-rec from detay
+                    end-read
+              end-perform
+                  initialize dokumer-rec detay
+                  move "-"            to det-dokumer-20(5:1)
+                  move all "-"  to det-1 det-2 det-3 det-4
+                  write dokumer-rec from detay
+
+              close dokumer
+              close webbanka
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer
+     .
+
+ 

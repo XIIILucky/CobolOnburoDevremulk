@@ -1,0 +1,345 @@
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     open input genel
+     initialize genel-rec
+     move 1 to genel-anahtar
+     read genel no lock invalid     
+         continue 
+     end-read 
+     close genel
+     move tarih-tasi   to bupgfiy-bas-tar bupgfiy-bit-tar 
+     open i-o bupgfiy close bupgfiy
+     perform takas-fis-no-al.
+*
+ ust-baslik-doldur.   
+     open input konum
+     initialize konum-rec t
+     start konum key not < konum-anahtar invalid 
+           continue 
+     not invalid 
+     perform with test after until fs-konum = "10"
+     read konum next no lock end move "10" to fs-konum
+     not at end
+            if konum-tutar-sira = spaces
+               exit perform cycle 
+            end-if 
+            if konum-tutar-sira = zeroes
+               exit perform cycle 
+            end-if 
+            add 1                   to t 
+                   
+            move konum-adi          to occ-konum-adi(t)  
+            move konum-tutar-sira   to occ-konum-per-kodu(t)   
+
+     end-read 
+     end-perform
+     end-start
+     close konum 
+           
+     initialize form1-gd-1-record g-rec
+     modify form1-gd-1,
+            reset-grid      = 1
+            mass-update     = 1
+     move "Konum"                      to g1
+         
+     perform varying z from 1 by 1 until z > t 
+         initialize baslik-konum-per-kod(z)                
+         move occ-konum-per-kodu(z)    to g21-per-kod(z) baslik-konum-per-kod(z)
+         move "-"                      to g21-filler(z)
+         move occ-konum-adi(z)         to g21-per-konum-adi(z)
+         move "Oda/Kisi"               to g22(z)  
+     end-perform
+   
+     modify form1-gd-1,
+            record-to-add(g-rec)
+
+     perform varying z from 1 by 1 until z > t
+         modify form1-gd-1(1,( z * 2 )),
+                hidden-data = occ-konum-per-kodu(z)                 
+     end-perform.            
+*
+ alt-detay-doldur.             
+     perform varying z from 1 by 1 until z > t 
+        initialize form1-gd-1-record g-rec               
+        move occ-konum-alt(z)          to g1 
+        initialize p 
+        perform varying p from 1 by 1 until p > t 
+                if occ-konum-per-kodu(z) >= baslik-konum-per-kod(p) 
+                    move all "*"       to g21(p) g22(p)                                        
+                end-if 
+        end-perform 
+        
+        modify form1-gd-1,
+               record-to-add(g-rec) 
+       
+        modify form1-gd-1(z + 1,1),
+               hidden-data = occ-konum-per-kodu(z)                 
+         
+     end-perform.
+*
+ Form1-Aft-Initdata.
+     perform takas-agac-doldur
+     perform ust-baslik-doldur
+     perform alt-detay-doldur
+     modify form1-gd-1,mass-update = 0.
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+         inquire form1-gd-1(event-data-2,event-data-1),
+                 cell-data = temp
+         if temp(1:5) = "*****"
+             move event-action-fail to event-action
+         else
+             inquire form1-gd-1(1,event-data-1),
+                     hidden-data in ust-konum
+             inquire form1-gd-1(event-data-2,1),
+                     hidden-data in yan-konum 
+             if ust-konum = spaces
+                inquire form1-gd-1(1,event-data-1 - 1),
+                     hidden-data in ust-konum                
+             end-if 
+         end-if 
+     when msg-finish-entry
+         inquire form1-gd-1(event-data-2,event-data-1),
+                 cell-data = temp
+         if temp(1:5) = "*****"
+             move event-action-fail to event-action
+         else
+             inquire form1-gd-1(event-data-2,event-data-1),
+                     cell-data in tutar
+             inquire form1-gd-1(event-data-2,event-data-1),
+                     cell-data in oda-kisi
+             perform takas-yaz 
+         end-if 
+     end-evaluate.
+*
+ takas-fis-no-al.
+     open i-o genelfis
+     initialize genelfis-rec
+     move 1  to genelfis-anahtar
+     read genelfis no lock invalid 
+           continue 
+     end-read 
+         add 1 to print-no
+         rewrite genelfis-rec end-rewrite 
+     close genelfis
+     move print-no          to takas-no
+     move k-kodu-tasi       to takas-k-kodu
+     open output takas close takas.
+*
+ takas-yaz.
+     open i-o takas
+     initialize takas-rec
+     move ust-konum   to takas-ust-konum
+     move yan-konum   to takas-yan-konum
+     read takas no lock invalid 
+          continue 
+     end-read 
+        move tutar     to takas-tutar
+        move oda-kisi  to takas-oda-kisi
+        write takas-rec invalid 
+            rewrite takas-rec end-rewrite 
+        end-write 
+     close takas. 
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 1
+        perform takas-fis-no-al
+        perform ust-baslik-doldur
+        perform alt-detay-doldur
+        modify form1-gd-1,mass-update = 0
+
+        modify btn-kaydet,enabled = true 
+        modify btn-yeni-kayit,enabled = false 
+        perform enb-ac
+     when 2 
+        perform form-kaydet
+
+        modify btn-kaydet,enabled = false 
+        modify btn-yeni-kayit,enabled = true 
+ 
+        perform takas-fis-no-al
+        perform ust-baslik-doldur
+        perform alt-detay-doldur
+        modify form1-gd-1,mass-update = 0
+        perform enb-kapat
+     end-evaluate.
+*
+ enb-kapat.
+     move 0   to vis-ef
+     display accept-0101 accept-0102 accept-0103
+             accept-0104 accept-0105 accept-0106
+             acc-ss acc-ci acc-3i acc-4i form1-gd-1
+     move 4    to accept-control
+     move 81   to control-id.
+*
+ enb-ac.    
+     move tarih-tasi   to bupgfiy-bas-tar bupgfiy-bit-tar
+     move 1   to vis-ef
+     display accept-0101 accept-0102 accept-0103
+             accept-0104 accept-0105 accept-0106
+             acc-ss acc-ci acc-3i acc-4i form1-gd-1
+     move 4 to accept-control
+     move 4 to control-id.
+*
+ form-kaydet.
+     open i-o bupgfiy
+     open input takas
+     initialize takas-rec
+     start takas key not < takas-anah invalid 
+            continue 
+     not invalid 
+     perform until fs-takas = "10"
+     read takas next no lock end move "10" to fs-takas
+     not at end 
+         perform id-no-al
+         
+         move id-no            to bupgfiy-id
+         read bupgfiy no lock invalid 
+             continue 
+         end-read 
+         move takas-ust-konum  to bupgfiy-yeni-konum
+         move takas-yan-konum  to bupgfiy-eski-konum
+         move takas-tutar      to bupgfiy-tutar
+         move takas-oda-kisi(1:1) to bupgfiy-kisi-oda-basi
+         move k-kodu-tasi         to bupgfiy-staf
+         write bupgfiy-rec invalid 
+              rewrite bupgfiy-rec end-rewrite 
+         end-write 
+     end-read 
+     end-perform
+     end-start
+     close takas bupgfiy.
+     delete file takas.
+*
+ id-no-al.
+     open i-o genelfis
+     initialize genelfis-rec 
+     move 1   to genelfis-anahtar
+     read genelfis no lock invalid   
+          continue 
+     end-read 
+          add 1 to ekran-fis-1
+          rewrite genelfis-rec end-rewrite 
+     close genelfis
+     move ekran-fis-1   to id-no.
+* 
+ takas-agac-doldur.   
+     open i-o genelfis
+     initialize genelfis-rec
+     move 1  to genelfis-anahtar
+     read genelfis no lock invalid 
+           continue 
+     end-read 
+         add 1 to print-no
+         rewrite genelfis-rec end-rewrite 
+     close genelfis
+     move print-no          to takasagac-no
+     move k-kodu-tasi       to takasagac-k-kodu
+     open output takasagac close takasagac open i-o takasagac
+     
+     open input bupgfiy 
+     initialize bupgfiy-rec
+     start bupgfiy key not < bupgfiy-anah invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-bupgfiy = "10"
+     read bupgfiy next no lock end move "10"  to fs-bupgfiy
+     not at end 
+            initialize takasagac-rec
+            move bupgfiy-bas-tar           to takasagac-bas-tar
+            move bupgfiy-bit-tar           to takasagac-bit-tar
+            read takasagac no lock invalid 
+                 continue 
+            end-read 
+                move bupgfiy-yeni-konum    to takasagac-ust-konum
+                move bupgfiy-eski-konum    to takasagac-yan-konum
+            write takasagac-rec invalid 
+                 rewrite takasagac-rec end-rewrite 
+            end-write 
+     end-read 
+     end-perform
+     end-start
+         perform agac-doldur
+     close takasagac bupgfiy.
+*
+ agac-doldur.
+   
+     initialize takasagac-rec
+     start takasagac key not < takasagac-anah invalid 
+            continue 
+     not invalid 
+     perform until fs-takasagac = "10"
+     read takasagac next no lock end move "10" to fs-takasagac
+     not at end 
+           
+           move takasagac-bas-yil   to eyil
+           move takasagac-bas-ay    to eay
+           move takasagac-bas-gun   to egun
+
+           move takasagac-bit-yil   to yyil
+           move takasagac-bit-ay    to yay
+           move takasagac-bit-gun   to ygun
+
+           modify agac, 
+                   parent = 0 
+                   PLACEMENT = TVPLACE-SORT
+                   item-to-add = ana-dal 
+                   giving ace-po 
+                   has-children = 1
+                    
+           perform alt-dal-yukle
+     end-read 
+     end-perform
+     end-start.
+*
+ alt-dal-yukle.
+     initialize bupgfiy-rec
+     move takasagac-bas-tar     to bupgfiy-bas-tar
+     move takasagac-bit-tar     to bupgfiy-bit-tar
+     start bupgfiy key not < bupgfiy-alt-anah2 invalid 
+           continue 
+     not invalid 
+     perform until fs-bupgfiy = "10"
+     read bupgfiy next no lock end move "10" to fs-bupgfiy
+     not at end 
+            if bupgfiy-bas-tar <> takasagac-bas-tar
+               exit perform 
+            end-if 
+            if bupgfiy-bit-tar <> takasagac-bit-tar
+               exit perform 
+            end-if
+
+            move bupgfiy-eski-konum  to eski-konum
+            move bupgfiy-yeni-konum  to yeni-konum
+
+            modify agac, 
+                   parent = ace-po, 
+                   PLACEMENT = TVPLACE-last 
+                   item-to-add = agac-konum  
+                   has-children = 0
+                   giving per-po 
+                   hidden-data = bupgfiy-id
+
+     end-read 
+     end-perform
+     end-start.
+*
+ agac-Ev-Msg-Tv-Selchange.
+     move event-data-2 to dig-po
+     modify agac, item = event-data-2
+     inquire agac, hidden-data in tt      
+     open input bupgfiy
+     inquire agac,hidden-data in bupgfiy-id 
+     read bupgfiy no lock invalid 
+          display message box "Kayit Okunamadi..."
+     end-read 
+     close bupgfiy
+     perform enb-ac
+     .
+*
+ agac-Ev-Cmd-Goto.
+     .

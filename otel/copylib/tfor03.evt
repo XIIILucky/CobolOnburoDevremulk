@@ -1,0 +1,445 @@
+* tfor03.evt
+* tfor03.evt is generated from D:\asya\acugt.ytl\otel\tfor03.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.      
+     .
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to tarih.
+    move "O" to fol-tip.
+    move "N" to rap-tip.
+    display acc-01 acc-02 acc-03 acc-04 com-01 com-02.
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 1
+        evaluate control-id
+        when 12
+        when 2001
+             initialize acenta-cagir
+             call "/asya/ytl/obj/otel/acenara.asy" 
+                  using acenta-cagir  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     if acenta-cagir <> spaces
+                        move acenta-cagir to acn-kod
+                        display acc-04
+                     end-if
+             end-call
+             move 4 to accept-control
+             move 12 to control-id
+        end-evaluate
+        exit paragraph
+      when 2
+       open i-o genelfis
+       move 1 to genelfis-anahtar
+       read genelfis no lock invalid 
+            move 1 to ekran-fis-1,
+       end-read
+       add 1 to ekran-fis-1
+      
+       move ekran-fis-1(2:) to takas4-no
+       rewrite genelfis-rec invalid 
+               write genelfis-rec invalid continue,
+               end-write,
+       end-rewrite
+       close genelfis
+       open output takas4 close takas4 open i-o takas4 with mass-update
+
+       initialize alt-toplam-dizi yan-toplam-dizi alt-yuzde-dizi
+       move 31 to 31x
+       move 32 to 32x
+       open input reztop takvimtop casttop 
+       initialize takvimtop-rec sayac tarih-dizi hazir-oda-dizi hazir-oda-ortalama
+               hazir-oda-sayac eh
+
+       move tarih to takvimtop-anah
+       start takvimtop key not < takvimtop-anah invalid continue
+         not invalid
+         perform with test after until evet
+           read takvimtop next no lock end move "E" to eh
+             not end
+             
+             if sayac > 31x 
+                move "E" to eh
+              else
+                add 1 to sayac
+                if sayac < 32x 
+                  perform casttop-oku thru casttop-oku-exit
+                  move takvimtop-gun       to gun-dizi(sayac),
+                  move takvimtop-ay        to ay-dizi(sayac),
+                  move takvimtop-yil       to yil-dizi(sayac),
+                  move takvimtop-hazir-oda to hazir-oda(sayac),
+                  if takvimtop-hazir-oda not = zeroes,
+                    add 1 to hazir-oda-sayac,
+                    compute hazir-oda-ortalama = hazir-oda-ortalama + takvimtop-hazir-oda,
+                  end-if
+                end-if
+             end-if
+           end-read
+         end-perform
+       end-start
+       close reztop takvimtop casttop 
+       perform acenta-sirala
+       compute hazir-oda-ortalama = hazir-oda-ortalama / hazir-oda-sayac
+
+
+              initialize takas4-rec
+              start takas4 key not < takas4-rap-sira invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close takas4
+                    delete file takas4
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Grup Acenta Koduna Gore Forecasttop"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Grup Acenta Koduna Gore Forecasttop"   to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move gun            to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ay             to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move yil            to det-filler(57:04)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Rapor Tipi..:"          to det-filler(01:15)
+
+     evaluate rap-tip
+        when "N" move "Normal Rezervasyonlar"       to det-filler(15:25)
+        when "W" move "Bekle. Rezervasyonlar"       to det-filler(15:25)
+        when "S" move "Silinmis Rezervasyonlar"     to det-filler(15:25)
+     end-evaluate
+     move "Acenta....:"           to det-filler(40:)
+     move acn-kod                 to det-filler(55:04)
+     move "<->"                   to det-filler(60:03)
+     if acn-kod       = spaces
+        move "Tum Acentalar.."    to det-filler(63:20)
+     else
+        open input acenta
+        initialize acenta-rec  
+        move acn-kod        to acenta-kodu
+        read acenta no lock invalid 
+             move all "*" to acenta-adi  
+                        not invalid continue
+        end-read
+        close acenta
+        move acenta-adi           to det-filler(63:20)
+     end-if
+     evaluate fol-tip 
+       when "O" move "Oda     Sayilari"     to det-filler(90:)
+       when "P" move "Buyuk   Sayilari"     to det-filler(90:)
+       when "C" move "U.Cocuk Sayilari"     to det-filler(90:)
+       when "F" move "F.Cocuk Sayilari"     to det-filler(90:)
+     end-evaluate
+
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+     initialize dokumer-rec detay  
+     move "D1"           to det-dokumer-20(1:2)
+     perform varying sayac from 1 by 1 until sayac > 31x,
+             move "|"             to det-1(sutun(sayac) - 1:01),
+             move gun-dizi(sayac) to det-1(sutun(sayac):02),
+             move ay-dizi(sayac)  to det-1(sutun(sayac) + 2:02),
+             move "|"             to det-1(sutun(sayac) + 4:01),
+     end-perform
+             compute det-dokumer-top = 32 + (sayac + 1)
+             move "Acenta"        to det-1(01:10)
+             move "Toplam"        to det-1(168:06),
+             move "|"             to det-1(173:01),
+             write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     perform varying xx from 1 by 1 until xx > 31,
+          move "----" to det-1(sutun(xx):04),
+          move "|"    to det-1(sutun(xx) - 1:01),
+     end-perform
+          move "|"      to det-1(166:01)
+          move "------" to det-1(167:06)
+          move "|"      to det-1(173:01)
+     write dokumer-rec from detay
+*********************************
+
+              open input acenta
+              initialize fs-takas4 son-toplam
+              perform with test after until fs-takas4 = "10"
+                    read takas4 next no lock end move "10" to fs-takas4
+                    not at end
+                         initialize dokumer-rec detay
+                         move takas4-acenta to acenta-kodu
+                         read acenta no lock invalid move spaces to acenta-adi,end-read
+                         move acenta-adi         to det-1(01:11)
+                         initialize toplam
+                         perform varying sayac from 1 by 1 until sayac > 31x,
+*                          move "|"                   to det-1(sutun(sayac) - 1:01),
+                           move takas4-toplam(sayac)  to detay-z,
+                           move detay-z               to det-1(sutun(sayac):4),
+                           move "|"                   to det-1(sutun(sayac) - 1:01),
+                           compute toplam = toplam +  takas4-toplam(sayac)
+                           compute alt-toplam(sayac) = alt-toplam(sayac) + takas4-toplam(sayac)
+                         end-perform
+                         move "|"      to det-1(166:01)
+                         move toplam   to toplam-z
+                         move toplam-z to det-1(167:05)
+                         move "|"      to det-1(173:01)
+                         compute son-toplam = son-toplam + toplam
+                         inspect det-1(12:) replacing all space by high-values
+
+                         write dokumer-rec from detay
+                    end-read
+              end-perform
+              initialize dokumer-rec detay
+              move "-"            to det-dokumer-20(5:1)
+              perform varying xx from 1 by 1 until xx > 31,
+                move "----" to det-1(sutun(xx):04),
+                move "|"    to det-1(sutun(xx) - 1:01),
+              end-perform
+              move "|"      to det-1(166:01)
+              move "------" to det-1(167:06)
+              move "|"      to det-1(173:01)
+              write dokumer-rec from detay
+
+              initialize dokumer-rec detay
+              perform varying sayac from 1 by 1 until sayac > 31x,
+                 move "Toplam:"         to det-1(1:10)
+                 move alt-toplam(sayac) to detay-z,
+                 move detay-z           to det-1(sutun(sayac):4),
+                 move "|"              to det-1(sutun(sayac) - 1:01),
+                
+                 
+                 if fol-tip = "P" 
+                     compute alt-yuzde(sayac) = (alt-toplam(sayac) * 50) / hazir-oda(sayac),
+                     else
+                     compute alt-yuzde(sayac) = (alt-toplam(sayac) * 100) / hazir-oda(sayac),
+                  end-if
+
+              end-perform
+              move "|"      to det-1(166:01)
+              move son-toplam to toplam-z
+              move toplam-z      to det-1(167:06),
+              move "|"      to det-1(173:01)
+              move "T"          to det-dokumer-20(1:1)
+              move "A"          to det-dokumer-20(3:1)
+              move 481          to det-renk1
+              move "1"          to det-dokumer-20(10:1)
+              inspect det-1(12:) replacing all space by high-values
+              write dokumer-rec from detay
+
+              initialize dokumer-rec detay
+              move "-"            to det-dokumer-20(5:1)
+              perform varying xx from 1 by 1 until xx > 31,
+                move "----" to det-1(sutun(xx):04),
+                move "|"    to det-1(sutun(xx) - 1:01),
+              end-perform
+              move "|"      to det-1(166:01)
+              move "------" to det-1(167:06)
+              move "|"      to det-1(173:01)
+              write dokumer-rec from detay
+
+              initialize dokumer-rec detay
+              perform varying sayac from 1 by 1 until sayac > 31x,
+                move "Yuzde:"         to det-1(1:10)
+                move alt-yuzde(sayac) to yuzde-goster,
+                move yuzde-goster     to det-1(sutun(sayac):04),
+                move "|"              to det-1(sutun(sayac) - 1:01),
+              end-perform
+              compute son-yuzde = (son-toplam * 100) / ( hazir-oda-ortalama * 31 )
+*              display message box hazir-oda-ortalama
+              move son-yuzde to yuzde-goster-1
+              move "|"      to det-1(166:01)
+              move yuzde-goster-1    to det-1(167:06),
+              move "|"      to det-1(173:01)
+              move "Y"          to det-dokumer-20(1:1)
+              move "A"          to det-dokumer-20(3:1)
+              move 481          to det-renk1
+              move "1"          to det-dokumer-20(10:1)
+              inspect det-1(12:) replacing all space by high-values
+              write dokumer-rec from detay
+
+              initialize dokumer-rec detay
+              move "-"            to det-dokumer-20(5:1)
+              perform varying xx from 1 by 1 until xx > 31,
+                move "----" to det-1(sutun(xx):04),
+                move "|"     to det-1(sutun(xx) - 1:01),
+              end-perform
+              move "|"      to det-1(166:01)
+              move "------" to det-1(167:06)
+              move "|"      to det-1(173:01)
+              write dokumer-rec from detay
+
+
+
+              close dokumer takas4
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer takas4
+              close acenta
+    end-evaluate.
+     .
+
+*
+ casttop-oku.
+    initialize casttop-rec.
+    move takvimtop-anah to casttop-tarih.
+    start casttop key not < casttop-tarih invalid continue,
+        not invalid,
+
+        move spaces to var-yok,
+        perform with test after until var,
+            read casttop next no lock end move "V" to var-yok,
+                 not end,
+
+                 if casttop-tarih > takvimtop-anah move "V" to var-yok,
+                    else,
+                     if casttop-tarih not > takvimtop-anah,
+                        initialize reztop-rec,
+                        move casttop-rez-no to reztop-no,
+                        move casttop-otel   to reztop-otel
+                        read reztop no lock 
+                            invalid continue,
+                            not invalid 
+                            perform takas-kaydet thru takas-kaydet-exit,
+                        end-read,
+                     end-if,
+                 end-if,
+            end-read,
+        end-perform,
+    end-start.
+ casttop-oku-exit.
+    exit.
+
+*
+ takas-kaydet.
+    evaluate true
+    when rap-tip = "N"
+         if reztop-durumu not = "I" go takas-kaydet-exit, end-if,
+         if reztop-k-g-b  not = "K" go takas-kaydet-exit, end-if,
+    when rap-tip = "W"
+         if reztop-durumu not = "I" go takas-kaydet-exit, end-if,
+         if reztop-k-g-b      = "K" go takas-kaydet-exit, end-if,
+    when rap-tip = "S"
+         if reztop-durumu not = "S" go takas-kaydet-exit, end-if.
+    if reztop-cik-tar    = takvimtop-anah go takas-kaydet-exit.
+    if acn-kod not = spaces and reztop-acenta not = acn-kod, go takas-kaydet-exit.
+    initialize takas4-rec.
+    move reztop-acenta to takas4-acenta.
+    read takas4 no lock invalid continue.
+    move takvimtop-anah to takas4-tarih(sayac).
+    if fol-tip = "O" compute takas4-toplam(sayac) = takas4-toplam(sayac) + 1
+                     compute yan-toplam(sayac)    = yan-toplam(sayac)    + 1.
+    if fol-tip = "P" compute takas4-toplam(sayac) = takas4-toplam(sayac) + reztop-buyuk
+                     compute yan-toplam(sayac)    = yan-toplam(sayac)    + reztop-buyuk.
+    if fol-tip = "C" compute takas4-toplam(sayac) = takas4-toplam(sayac) + reztop-kucuk
+                     compute yan-toplam(sayac)    = yan-toplam(sayac)    + reztop-kucuk.
+    if fol-tip = "F" compute takas4-toplam(sayac) = takas4-toplam(sayac) + reztop-free
+                     compute yan-toplam(sayac)    = yan-toplam(sayac)    + reztop-free.
+     
+    rewrite takas4-rec invalid write takas4-rec.
+ takas-kaydet-exit.
+    exit.
+*
+ acc-04-Aft-Procedure.
+      open input acenta
+     if acn-kod = spaces
+        move "Tum Acentalar"   to acenta-adi
+     else
+        move acn-kod    to acenta-kodu
+        read acenta no lock invalid
+             move "Tanimsiz Acenta ..." to acenta-adi
+             move 4 to accept-control
+             move 12 to control-id
+        end-read
+     end-if
+     display lb-acenadi.
+     close acenta.     
+*
+ acenta-sirala.
+       open input acenta
+       initialize takas4-rec
+       start takas4 key not < takas4-acenta invalid
+             exit paragraph
+         not invalid
+         initialize fs-takas4 
+         perform with test after until fs-takas4 = "10"
+             read takas4 next no lock end move "10" to fs-takas4
+                  not at end
+                  move takas4-acenta to acenta-kodu
+                  read acenta no lock invalid 
+                  move spaces to acenta-rap-sira,end-read
+                  move acenta-rap-sira to takas4-sira
+                  move takas4-acenta   to takas4-acenta1
+                  rewrite takas4-rec invalid continue
+                  end-rewrite
+             end-read
+         end-perform 
+
+       end-start.
+       close acenta.
+ 

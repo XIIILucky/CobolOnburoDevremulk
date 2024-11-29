@@ -1,0 +1,1247 @@
+* outof.evt
+* outof.evt is generated from D:\asya\acugt.ytl\otel\outof.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Cm-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM Form1-Cm-1-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+
+ grd-konum-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM grd-konum-Ev-Msg-Begin-Entry
+     WHEN Other
+        PERFORM grd-konum-Ev-Other
+     END-EVALUATE
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+        perform adresleri-tasi
+        move tarih-tasi  to bas-tar bit-tar isl-tar
+        move k-kodu-tasi to staf
+        open input genel.
+        move 1 to genel-anahtar
+        read genel no lock invalid
+             continue
+        end-read
+        close genel.
+        open input kllnc.
+        open i-o odalar2.
+*
+ Form1-Aft-Initdata.
+     if k-kodu-tasi not = "ASYA"
+        modify Form1-Pb-2, visible = false
+                           enabled = false
+     end-if
+     open i-o outof close outof     
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 1
+        evaluate control-id
+            when 6
+                 perform oda-ara
+        end-evaluate
+     when 2
+        perform form-kaydet       
+     when 3
+        perform form-sil
+     when 4
+        perform yeni-kayit
+     when 5
+        perform Acu-Form2-Routine
+     WHEN 44
+                initialize todasec-link 
+                call "/asya/ytl/obj/otel/todasecy.asy"  using todasec-link
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                cancel "/asya/ytl/obj/otel/todasecy.asy"
+                end-call
+                   
+                if todasec-link-oda(1) <> spaces
+                    initialize gelen-link
+                    move todasec-link to gelen-link
+               end-if
+
+               
+               modify grd-konum,reset-grid = 1
+               perform varying i from 1 by 1 until i > 900
+                        initialize grd-konum-record
+                        move gelen-oda(i)  to o-kisa 
+                             perform oda-uzat
+                          move o-uzun to  grd-konum-col-1
+                        modify grd-konum,record-to-add( grd-konum-record )
+               end-perform
+     end-evaluate
+     
+     .
+
+*
+ toplu-kontrol.
+     initialize hata-mesaji  
+     perform hata-kontrol
+     if hata = 1
+            move "Daha Once Kayitli Tarih Araligi... "to hata-mesaji
+            if toplu-secim = 0
+               display message box oda-no" Nolu Oda Daha Once Kayitli Tarih Araligi..."
+                        title "[ Uyari ]"
+                        icon 1
+             end-if
+                move 1 to oda-hata-var 
+                exit paragraph
+     end-if.
+     perform oda-oku
+     if oda-hatasi = 1
+        exit paragraph 
+     end-if 
+     if oda-no = spaces
+             move "Oda Numarasi Bos Gecilemez..." to hata-mesaji
+             if toplu-secim = 0 
+                 display message box "Oda Numarasi Bos Gecilemez..."
+                        title "[ Uyari ]"
+                        icon 1
+             end-if
+
+             move 1 to oda-hata-var 
+             exit paragraph        exit paragraph
+     end-if
+
+***********CAST ODA KONTROL**********
+     perform cast-kontrol 
+
+     if oda-rez-buldu = 1
+             
+              move "Out Of Order'a Almak Istediginiz Odaya Blokaji Atilmis Rezervasyon Var !"to hata-mesaji
+              if toplu-secim = 0
+                display message box oda-no" Nolu Oda Out Of Order'a Almak Istediginiz Odaya Blokaji Atilmis Rezervasyon Var !"new-line
+                "Blokaj'ini Iptal Etmeniz Gerekmektedir. Isleme Devam Edilemiyor!"
+                       title "[ Uyari ]"
+                       icon 3
+              end-if
+
+              move 1 to oda-hata-var 
+             exit paragraph
+     end-if
+
+     if oda-cin-buldu = 1
+              move "Out Of Order'a Almak Istediginiz Odada Konaklama Var !"to hata-mesaji
+              if toplu-secim = 0
+                display message box "DIKKAT !" new-line
+                oda-no" Nolu Oda Out Of Order'a Almak Istediginiz Odada Konaklama Var !"
+                "Isleme Devam Edilemiyor ! "
+                title "[ Uyari ]"
+                icon 3
+              end-if
+
+              move 1 to oda-hata-var 
+              exit paragraph
+    end-if.
+
+*
+ form-kaydet.
+     initialize toplu-secim
+     if cmb-turu(1:2) = "01"
+          initialize oda-hata-var 
+          perform toplu-kontrol
+        
+          if oda-hata-var = 1
+                exit paragraph
+          end-if
+          display message box "Kaydetmek Istediginizden Eminmisiniz.?" 
+                          title "[ Uyari ]"
+                          icon 1
+                          type 2
+                          default 2
+                          returning donus-code 
+          if donus-code = 2
+               exit paragraph
+          end-if
+          perform outof-kaydet
+     else
+          if gelen-oda(1) = spaces
+                exit paragraph
+          end-if
+          move 1 to toplu-secim
+          display message box "Secili Olan Oda Listesini Kaydetmek Istediginizden Eminmisiniz.?" 
+                          title "[ Uyari ]"
+                          icon 1
+                          type 2
+                          default 2
+                          returning donus-code 
+          if donus-code = 2
+               exit paragraph
+          end-if
+             
+          modify grd-konum,reset-grid = 1
+          perform varying i from 1 by 1 until i > 900
+               initialize oda-hata-var oda-no
+               move gelen-oda(i)  to o-kisa 
+            perform oda-uzat
+            move o-uzun to  oda-no
+
+               if oda-no = spaces
+                     exit perform
+               end-if
+
+               perform toplu-kontrol
+
+               if oda-hata-var = 1
+                     initialize grd-konum-record
+                     move gelen-oda(i)         to o-kisa 
+            perform oda-uzat
+            move o-uzun to grd-konum-col-1
+                     move hata-mesaji         to grd-konum-col-2
+                     modify grd-konum,record-to-add( grd-konum-record )
+                     modify grd-konum(i),row-color = 176
+               else
+                     initialize grd-konum-record
+                     ||////**********
+                     perform outof-kaydet
+                     ||////********
+                     move gelen-oda(i)        to o-kisa 
+            perform oda-uzat
+            move o-uzun to  grd-konum-col-1
+                     move "Kayit Edildi...." to grd-konum-col-2
+                     modify grd-konum,record-to-add( grd-konum-record )
+                     modify grd-konum(i),row-color = 481
+               end-if
+          end-perform
+     end-if
+
+     display message box "Kaydedildi."
+                     title "[ Bilgi ]"
+                     icon 1
+     initialize aciklama oda-etkile display acc-12 Form1-Cb-1
+     if cmb-turu(1:2) = "01" 
+             perform grid-yukle
+     end-if
+      .
+*
+ outof-kaydet.
+      open i-o outof odalar
+     initialize outof-rec odalar-rec
+     move oda-no      to o-uzun
+            perform oda-kisalt
+            move o-kisa to      outof-odano
+     move bas-tar    to outof-bas-tarih
+     move bit-tar    to outof-bit-tarih
+     read outof no lock invalid
+             initialize outof-rec
+     end-read
+             move oda-no     to o-uzun
+            perform oda-kisalt
+            move o-kisa to  outof-odano
+             move bas-tar    to outof-bas-tarih
+             move bit-tar    to outof-bit-tarih
+             move staf       to outof-staf
+             move isl-tar    to outof-isl-tarih
+             move aciklama   to outof-aciklama
+             move oda-etkile to outof-toplam-oda-etkile
+             initialize odalar-rec
+             move outof-odano  to odalar-no
+             read odalar no lock invalid
+                  continue
+             end-read
+             if tarih-tasi <= outof-bas-tarih
+               and  tarih-tasi >= outof-bit-tarih
+             move house-so   to odalar-durumu
+             move house-so   to house-durumu
+             rewrite odalar-rec invalid 
+                 continue 
+             end-rewrite 
+             perform log-operation-odalar
+            end-if
+     write outof-rec invalid 
+         
+        rewrite outof-rec  end-rewrite 
+        not invalid 
+         perform takvim-kaydet-azalt
+         
+     end-write
+     close outof odalar.
+*
+ takvim-kaydet-azalt.
+     move oda-no      to o-uzun
+            perform oda-kisalt
+            move o-kisa to  oda-no-k
+    open i-o takvim
+    initialize takvim-rec
+    move bas-tar           to takvim-anah
+    start takvim key not < takvim-anah invalid
+         continue
+    not invalid
+    perform with test after until fs-takvim = "10"
+    read takvim next no lock end move "10"  to fs-takvim
+    not at end
+           if takvim-anah >= bit-tar
+               exit perform 
+           end-if
+           initialize odalar-rec
+           move oda-no-k       to odalar-anah
+           read odalar no lock invalid
+               continue
+           end-read
+           move xkonum-ref(odalar-konumu) to ref3
+             if ref3 > 0 and ref3 < 10  then 
+                        continue
+                        else
+                        move 1 to ref3
+             end-if
+                   
+           if outof-toplam-oda-etkile   = 1
+              subtract 1 from takvim-ref-hazir-oda(ref3)
+              subtract odalar-kapasite from takvim-ref-hazir-yatak(ref3)
+              subtract 1 from takvim-konum-oda(odalar-konumu)
+              subtract 1 from takvim-hazir-oda
+              subtract odalar-kapasite from takvim-hazir-yatak
+           end-if
+              subtract 1 from takvim-ref-hazir-oda2(ref3)
+              subtract odalar-kapasite from takvim-ref-hazir-yatak2(ref3)
+              subtract 1 from takvim-konum-oda2(odalar-konumu)
+              subtract 1 from takvim-hazir-oda2
+              subtract odalar-kapasite from takvim-hazir-yatak2
+              rewrite takvim-rec end-rewrite 
+    end-read
+    end-perform
+    end-start
+    close takvim .
+*
+ takvim-sil-artir.
+    open i-o takvim 
+    move oda-no      to o-uzun
+            perform oda-kisalt
+            move o-kisa to  oda-no-k
+    initialize takvim-rec
+    move bas-tar           to takvim-anah
+    start takvim key not < takvim-anah invalid
+         continue
+    not invalid
+    perform with test after until fs-takvim = "10"
+    read takvim next no lock end move "10"  to fs-takvim
+    not at end
+           if takvim-anah >= bit-tar
+               exit perform 
+           end-if
+           initialize odalar-rec
+           move oda-no-k       to odalar-anah
+           read odalar no lock invalid
+               continue
+           end-read
+              move xkonum-ref(odalar-konumu) to ref3
+               if ref3 > 0 and ref3 < 10  then 
+                        continue
+                        else
+                        move 1 to ref3
+                      end-if
+            if outof-toplam-oda-etkile   = 1
+                   add 1 to takvim-ref-hazir-oda(ref3)
+                   add odalar-kapasite to  takvim-ref-hazir-yatak(ref3)
+                   add 1 to takvim-konum-oda(odalar-konumu)
+                   add 1 to takvim-hazir-oda
+                   add odalar-kapasite to takvim-hazir-yatak
+           end-if
+                   add 1 to  takvim-ref-hazir-oda2(ref3)
+                   add odalar-kapasite to  takvim-ref-hazir-yatak2(ref3)
+                   add 1 to takvim-konum-oda2(odalar-konumu)
+                   add 1 to takvim-hazir-oda2
+                   add odalar-kapasite to takvim-hazir-yatak2
+           rewrite takvim-rec end-rewrite 
+    end-read
+    end-perform
+    end-start
+    close takvim 
+       .
+*
+ form-sil.
+      move oda-no      to o-uzun
+            perform oda-kisalt
+            move o-kisa to  oda-no-k
+     perform oda-oku
+     if oda-hatasi = 1
+        exit paragraph 
+     end-if 
+
+     display message box "Silmek Istediginizden Eminmisiniz.?" 
+                     title "[ Uyari ]"
+                     icon 1
+                     type 2
+                     default 2
+                     returning donus-code 
+     if donus-code = 2
+        exit paragraph
+     end-if
+
+    open i-o outof odalar  soutof
+    initialize outof-rec odalar-rec
+    move oda-no-k       to outof-odano
+    move bas-tar      to outof-bas-tarih
+    move bit-tar      to outof-bit-tarih
+    read outof no lock invalid
+         continue
+    not invalid
+        modify Form1-Pb-1, ENABLED = false
+        initialize odalar-rec
+        move outof-odano   to odalar-no
+        read odalar no lock invalid
+            continue
+        end-read 
+           move house-bk   to odalar-durumu
+           move house-bk   to house-durumu
+           rewrite odalar-rec invalid 
+               continue
+           end-rewrite 
+            perform log-operation-odalar
+        delete outof end-delete
+        
+        initialize soutof-rec
+        move outof-rec        to soutof-rec
+        accept soutof-sil-tar from century-date 
+        accept soutof-sil-zaman from time 
+        move k-kodu-tasi       to soutof-sil-staff
+        write soutof-rec invalid 
+           rewrite soutof-rec end-rewrite 
+        end-write 
+
+           perform takvim-sil-artir
+         
+    end-read
+    close outof odalar soutof
+    display message box "Kayit Silindi."
+                    title "[ Uyari ]"
+                    icon 1
+    move 4 to accept-control
+    move 6 to control-id
+    perform baslik-yukle.
+*
+ oda-ara.
+    initialize oda-cagir.
+    call "/asya/ytl/obj/otel/odaara.asy" using oda-cagir
+          on exception perform callerr-proc
+             not on exception
+             cancel "/asya/ytl/obj/otel/odaara.asy" 
+    end-call.
+    move odano-cagir      to o-kisa 
+            perform oda-uzat
+            move o-uzun to  oda-no
+    display acc-1
+    move 4  to accept-control
+    move 6  to control-id
+    perform oda-oku.
+*
+ acc-1-Aft-Procedure.
+    modify Form1-Pb-1, ENABLED = true
+    perform baslik-yukle
+    perform kayit-goster
+     
+     .
+*
+ oda-oku.
+    open input odalar
+    initialize odalar-rec oda-hatasi
+    move oda-no     to o-uzun
+            perform oda-kisalt
+            move o-kisa to      odalar-anah
+    read odalar no lock invalid
+        display message box "Yanlis Oda Numarasi "new-line
+                            "Lutfen Kontrol Ediniz.."new-line
+                            "Odano:"oda-no
+                        title "[ Uyari ]"
+                        icon 1
+        move 4 to accept-control
+        move 6 to control-id
+        move 1 to oda-hatasi
+        close odalar 
+        exit paragraph
+    end-read
+        if odalar-aktif-pasif = 1
+        display message box "Pasif Oda Numarasi "new-line
+                            "Lutfen Kontrol Ediniz.."new-line
+                            "Odano:"oda-no
+                        title "[ Uyari ]"
+                        icon 1
+        move 4 to accept-control
+        move 6 to control-id
+        move 1 to oda-hatasi
+        close odalar 
+        exit paragraph
+        end-if 
+
+    close odalar
+    .
+*
+ aft-kontrol.
+    if bas-tar < tarih-tasi AND K-kodu-tasi not = "X   "
+       display message box "Baslangic Tairihi Sistem Tarihinden Kucuk Olamaz."new-line
+                           "Baslangic Tairihi:"bas-gun"/"bas-ay"/"bas-yil new-line
+                           "Sistem Tarihi      :"gun-tasi"/"ay-tasi"/"yil-tasi
+                       title "[ Uyari ]"
+                       icon 1
+       move 4 to accept-control
+       move 7 to control-id
+       exit paragraph
+    end-if
+    if control-id = 12
+       if bas-tar > bit-tar AND K-kodu-tasi not = "X   "
+          display message box "Baslangic Tairihi Bitis Tarihinden Buyuk Olamaz."new-line
+                              "Baslangic Tairihi:"bas-gun"/"bas-ay"/"bas-yil new-line
+                              "Bitis Tarihi      :"bit-gun"/"bit-ay"/"bit-yil 
+                          title "[ Uyari ]"
+                          icon 1
+          move 4 to accept-control
+          move 7 to control-id
+          exit paragraph               
+       end-if
+    end-if
+    .
+*
+ grid-yukle.
+    perform baslik-yukle
+    perform grid-kayit-yukle.
+*
+ baslik-yukle.
+     modify form1-gd-1,
+            reset-grid = 1
+            mass-update = 1
+
+     initialize form1-gd-1-record
+     move "Oda"                  to gd-1-col-1
+     move "Bas.Tarihi"           to gd-1-col-2
+     move "Bit.Tarihi"           to gd-1-col-3
+     move "Staf"                 to gd-1-col-4
+     move "Isl.Tarihi"           to gd-1-col-5
+     move "Aciklama"             to gd-1-col-6
+     modify form1-gd-1,
+            record-to-add(form1-gd-1-record).
+   
+     modify form1-gd-1,
+            mass-update = 0.    
+    .
+*
+ grid-kayit-yukle.
+     move outof-odano           to gd-1-col-1
+     move outof-bas-gun         to egun
+     move outof-bas-ay          to eay
+     move outof-bas-yil         to eyil
+     move etarih                to gd-1-col-2
+     move outof-bit-gun         to egun
+     move outof-bit-ay          to eay
+     move outof-bit-yil         to eyil
+     move etarih                to gd-1-col-3
+     move outof-staf            to gd-1-col-4
+     move outof-isl-gun         to egun
+     move outof-isl-ay          to eay
+     move outof-isl-yil         to eyil
+     move etarih                to gd-1-col-5
+     move outof-aciklama        to gd-1-col-6
+     modify Form1-Gd-1, RECORD-TO-ADD(form1-gd-1-record)
+      .
+*
+ kayit-goster.
+     move oda-no  to o-uzun
+            perform oda-kisalt
+            move o-kisa to oda-no-k          
+     open input outof
+     initialize outof-rec kayit-bulundu
+     move oda-no-k           to outof-odano
+     start outof key not < outof-anah invalid
+          continue
+     not invalid
+     perform with test after until fs-outof = "10"
+     read outof next no lock end move "10"  to fs-outof
+     not at end
+             if outof-odano <> oda-no-k
+                exit perform cycle 
+             end-if
+             move 1 to kayit-bulundu
+             perform grid-kayit-yukle
+     end-read
+     end-perform
+     end-start
+     close outof
+     if kayit-bulundu not = 1
+        perform baslik-yukle
+     end-if
+     .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type 
+     when msg-begin-entry
+          move event-action-fail to event-action
+          inquire form1-gd-1(event-data-2,1),cell-data in oda-no
+          inquire form1-gd-1(event-data-2,2),cell-data in ydk-bas-tar
+          inquire form1-gd-1(event-data-2,3),cell-data in ydk-bit-tar
+          move ydk-bas-tar(1:2)  to bas-gun
+          move ydk-bas-tar(4:2)  to bas-ay
+          move ydk-bas-tar(7:4)  to bas-yil 
+          move ydk-bit-tar(1:2)  to bit-gun
+          move ydk-bit-tar(4:2)  to bit-ay
+          move ydk-bit-tar(7:4)  to bit-yil 
+
+          display acc-1 acc-2 acc-3 acc-4 acc-5 acc-6 acc-7 
+          modify Form1-Pb-1, ENABLED = false
+          open input outof 
+          initialize outof-rec
+          move oda-no              to o-uzun
+            perform oda-kisalt
+            move o-kisa to        outof-odano
+          move bas-tar           to outof-bas-tarih
+          move bit-tar           to outof-bit-tarih
+          read outof no lock invalid
+               continue
+          end-read
+              move outof-aciklama        to aciklama
+              move outof-toplam-oda-etkile TO oda-etkile 
+          close outof
+          display acc-12 Form1-Cb-1
+     end-evaluate
+     
+     .
+*
+ yeni-kayit.
+     modify Form1-Pb-1, ENABLED = true
+     perform baslik-yukle
+     move 4 to accept-control
+     move 6 to control-id
+     initialize oda-no 
+     display acc-1
+     .
+*
+ hata-kontrol.
+      move oda-no  to o-uzun
+            perform oda-kisalt
+            move o-kisa to oda-no-k      
+     open input outof
+     initialize outof-rec hata
+     move oda-no-k       to outof-odano
+     start outof key >= outof-anah invalid
+          continue
+     not invalid
+     perform with test after until fs-outof = "10"
+     read outof next no lock end move "10"  to fs-outof
+     not at end 
+           if outof-odano not = oda-no-k
+              move "10" to fs-outof
+           else
+             if (outof-bas-tarih < bit-tar and
+                outof-bit-tarih > bas-tar) 
+                 move 1 to hata
+                 move "10" to fs-outof
+             end-if
+           end-if
+     end-read
+     end-perform
+     end-start
+     close outof.
+*
+ Form2-Ex-Other.
+     evaluate key-status
+     when 2
+        if sil-oda-ciksin = 0
+           perform rapor-basla
+        else
+           perform silinen-rapor-basla
+        end-if 
+     end-evaluate 
+     
+     .
+*
+ rapor-basla.
+              open input outof  
+              initialize outof-rec
+             move high-values  to outof-odano
+             move ilk-tarih    to outof-bas-tarih 
+                                  outof-bit-tarih            
+              start outof key < outof-anah invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close outof
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Arizali Odalar Raporu"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Arizali Odalar Raporu"   to det-filler
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"            to det-dokumer-20(10:1)
+     move "D1"           to det-dokumer-20(1:2)
+     move "Oda"          to det-1
+     move "Konum"        to det-1k
+     move "Bas.Tar."     to det-2
+     move "Bit.Tar."     to det-3
+     move "D"            to det-5
+     move "Aciklama"     to det-4
+     move "Kayit T."     to det-6
+     move "Staff Adi"    to det-7
+     move "Staff soyadi" to det-8
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-1k
+                 fil-6 fil-7 fil-8
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-1k
+                     det-6 det-7 det-8
+     write dokumer-rec from detay
+*********************************
+             move rap-oda    to o-uzun
+            perform oda-kisalt
+            move o-kisa to     rap-oda-k 
+              open input odalar konum
+              initialize fs-outof  alt-toplam
+              perform with test after until fs-outof = "10"
+                    read outof previous no lock end move "10" to fs-outof
+                    not at end
+                            if rap-oda <> spaces
+                               if outof-odano <> rap-oda-k
+                                   exit perform cycle 
+                               end-if 
+                            end-if 
+                             if ilk-tarih >= outof-bas-tarih and 
+                                 ilk-tarih <= outof-bit-tarih 
+                                    initialize dokumer-rec detay odalar-rec
+                                    move outof-odano        to det-1 odalar-no
+                                    read odalar no lock invalid 
+                                       continue
+                                    not invalid
+                                       initialize konum-rec
+                                       move odalar-konumu to konum-anahtar
+                                       read konum no lock invalid continue
+                                          not invalid 
+                                            move konum-adi to det-1k
+                                        end-read
+                                    end-read
+
+                                    move outof-bas-gun to egun
+                                    move outof-bas-ay  to eay
+                                    move outof-bas-yil to eyil
+                                    move etarih        to det-2
+
+                                    move outof-bit-gun to egun
+                                    move outof-bit-ay  to eay
+                                    move outof-bit-yil to eyil
+                                    move etarih        to det-3
+
+                                    move outof-aciklama to det-4
+                                    if outof-toplam-oda-etkile = 1 
+                                      move "E" to det-5
+                                    else
+                                      initialize det-5
+                                    end-if
+                                    move outof-isl-gun  to det-6(1:)
+                                    move "/"            to det-6(3:)
+                                    move outof-isl-ay   to det-6(4:)
+                                    move "/"            to det-6(6:)
+                                    move outof-isl-yil  to det-6(7:)
+                                    initialize kllnc-rec 
+                                    move outof-staf     to k-kodu
+                                    read kllnc no lock invalid
+                                         continue
+                                    end-read 
+                                    move k-adi          to det-7
+                                    move k-soyadi       to det-8
+
+                                    move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-1k
+                                                fil-6 fil-7 fil-8
+                                    write dokumer-rec from detay
+                                    add 1 to alt-toplam
+                             end-if                          
+                    end-read
+              end-perform
+                close odalar konum
+               initialize dokumer-rec detay
+               move "-"            to det-dokumer-20(5:1)
+               move all "-" to det-1 det-2 det-3 det-4 det-5  
+                               det-6 det-7 det-8
+               write dokumer-rec from detay
+
+               initialize dokumer-rec detay
+               move "TOP"      to det-1
+               move alt-toplam to z-4 move z-4 to det-1k
+               move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-1k
+                     fil-6 fil-7 fil-8
+               write dokumer-rec from detay
+
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close outof  
+              delete file dokumer.
+
+*
+ silinen-rapor-basla.
+              open input soutof 
+              initialize soutof-rec
+             move high-values  to soutof-odano
+             move ilk-tarih    to soutof-bas-tarih 
+                                  soutof-bit-tarih            
+              start soutof key < soutof-anah invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close soutof
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Silinen Arizali Odalar Raporu"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Silinen Arizali Odalar Raporu"   to det-filler
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"               to det-dokumer-20(10:1)
+     move "D1"              to det-dokumer-20(1:2)
+     move "Oda"             to det-1
+     move "Konum"           to det-1k
+     move "Bas.Tar."        to det-2
+     move "Bit.Tar."        to det-3
+     move "Aciklama"        to det-4
+     move "D"               to det-5
+     move "Sil.Tarihi"      to det-6
+     move "Sil.Zaman"       to det-7
+     move "Silen Kullanici" to det-8
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-1k  
+                 fil-6 fil-7 fil-8
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-1k 
+                     det-6 det-7 det-8
+     write dokumer-rec from detay
+*********************************
+            move   rap-oda to o-uzun
+            perform oda-kisalt
+            move o-kisa to  rap-oda-k   . 
+              open input odalar konum  
+              initialize fs-soutof   alt-toplam
+              perform with test after until fs-soutof = "10"
+                    read soutof previous no lock end move "10" to fs-soutof
+                    not at end
+                            if rap-oda <> spaces
+                               if soutof-odano <> rap-oda-k
+                                   exit perform cycle 
+                               end-if 
+                            end-if 
+                             if ilk-tarih >= soutof-bas-tarih and
+                                ilk-tarih <= soutof-bit-tarih
+                                      initialize dokumer-rec detay
+                                      move soutof-odano        to det-1  odalar-no
+                                      read odalar no lock invalid continue
+                                        not invalid
+                                         move odalar-konumu to konum-anahtar
+                                         read konum no lock invalid continue
+                                            not invalid 
+                                              move konum-adi to det-1k
+                                          end-read
+                                      end-read
+
+                                    move soutof-bas-gun to egun
+
+
+                                    move soutof-bas-ay  to eay
+                                    move soutof-bas-yil to eyil
+                                    move etarih        to det-2
+
+                                    move soutof-bit-gun to egun
+                                    move soutof-bit-ay  to eay
+                                    move soutof-bit-yil to eyil
+                                    move etarih        to det-3
+
+                                    move soutof-aciklama to det-4
+                                    if soutof-toplam-oda-etkile = 1 
+                                      move "E" to det-5
+                                    else
+                                      initialize det-5
+                                    end-if
+                               
+
+                                    move soutof-sil-yil to eyil
+                                    move soutof-sil-ay  to eay
+                                    move soutof-sil-gun to egun
+                                    move etarih         to det-6
+
+                                    move soutof-sil-saat    to esaat
+                                    move soutof-sil-dakika  to edakika
+                                    move soutof-sil-saniye  to esaniye
+                                    move ezaman             to det-7
+
+                                    initialize kllnc-rec
+                                    move soutof-sil-staff  to k-kodu
+                                    read kllnc no lock invalid 
+                                         move "Hata"       to k-soyadi
+                                    end-read 
+                                         move k-soyadi     to det-8
+
+
+
+                              move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-1k
+                                          fil-6 fil-7 fil-8
+                                    write dokumer-rec from detay
+                                    add 1 to alt-toplam
+                             end-if                          
+                    end-read
+              end-perform
+                close odalar konum 
+               initialize dokumer-rec detay
+               move "-"            to det-dokumer-20(5:1)
+               move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8 
+               write dokumer-rec from detay
+
+               initialize dokumer-rec detay
+               move "TOP"      to det-1
+               move alt-toplam to z-4 move z-4 to det-1k
+               move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-1k
+                     fil-6 fil-7 fil-8
+               write dokumer-rec from detay
+
+
+              close dokumer
+              
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close soutof  
+
+              delete file dokumer
+     .
+*
+ Form2-Bef-Create.
+     move tarih-tasi to ilk-tarih son-tarih
+     
+     .
+
+*
+ cast-kontrol.
+      move oda-no   to o-uzun
+            perform oda-kisalt
+            move o-kisa to oda-no-k  
+    open input cast rez konuk takvim
+            initialize takvim-rec  oda-cin-buldu oda-rez-buldu
+            move bas-tar to takvim-anah
+            start takvim key not < takvim-anah invalid
+                    continue
+            not invalid
+            perform until fs-takvim = "10"
+            read takvim next no lock end move "10" to fs-takvim
+            not end
+                    if takvim-anah > bit-tar 
+                          exit perform
+                    end-if
+
+                    initialize cast-rec
+                    move oda-no-k      to CAST-ODA-NO
+                    move takvim-anah to cast-tarih
+                    start cast key not < cast-anah3 invalid
+                            continue
+                    not invalid
+                    perform until fs-cast = "10"
+                    read cast next no lock end move "10" to fs-cast
+                    not end
+ 
+                            if CAST-ODA-NO <> oda-no-k then
+                                  exit perform 
+                            end-if
+
+                            if cast-tarih <> takvim-anah then
+                                  exit perform 
+                            end-if
+
+                            initialize rez-rec konuk-rec  
+                            move cast-rez-no to rez-no
+                            read rez no lock invalid
+                                    exit perform cycle
+                            not invalid
+                                   if rez-durumu <> "I"
+                                        exit perform cycle
+                                   end-if
+                                   initialize konuk-rec
+                                   move rez-folio to konuk-folio
+                                   read konuk no lock invalid
+                                          if rez-cik-tar <> cast-tarih
+                                               move 1 to oda-rez-buldu
+                                          end-if
+                                          exit perform
+                                   not invalid
+                                          if konuk-git-tar = cast-tarih
+                                                exit perform
+                                          end-if
+                                          move 1 to oda-cin-buldu
+                                          exit perform
+                                   end-read
+                            end-read
+                    end-read
+                    end-perform
+                    end-start
+
+                    if oda-cin-buldu = 1 or oda-rez-buldu = 1
+                          exit perform
+                    end-if
+            end-read
+            end-perform
+            end-start
+    close cast rez konuk takvim.
+*
+ Form1-Cm-1-Ex-Ntf-Selchange.
+         if cmb-turu(1:2) = "02"
+            initialize oda-no            
+            display acc-1
+            modify top-buton,enabled = true
+            modify button-acenara,enabled = false 
+            modify acc-1,enabled = false 
+
+         else
+            modify grd-konum,reset-grid = 1
+            initialize gelen-link
+            modify top-buton,enabled = false
+            modify button-acenara,enabled = true 
+            modify acc-1,enabled = true 
+         end-if.
+*
+ grd-konum-Ev-Msg-Begin-Entry.
+       move event-action-fail to event-action
+     .
+*
+ grd-konum-Ev-Other.
+     
+     .
+*
+ Form1-Aft-Routine.
+     close odalar2
+     .
+*
+ Form1-Pb-2-Link.
+*     if k-kodu-tasi not = "ASYA" 
+        exit paragraph
+*     end-if
+     open i-o soutof 
+     initialize soutof-rec 
+     start soutof key not < soutof-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-soutof = "10"
+     read soutof next no lock end move "10" to fs-soutof 
+     not at end 
+         if soutof-aciklama <> spaces 
+
+            CALL "C$TOUPPER" 
+                USING soutof-aciklama, VALUE 50
+            move soutof-aciklama to kelime
+            move "TEYMUR"       to aranan-kelime
+            move 0 to aranan-i aranan-kelime-boy
+            inspect aranan-kelime tallying aranan-kelime-boy
+                    for trailing spaces 
+            compute aranan-kelime-boy = function length(aranan-kelime) -
+                                        aranan-kelime-boy
+        
+            inspect kelime tallying aranan-i 
+                    for all aranan-kelime(1:aranan-kelime-boy)
+            if aranan-i = 1 
+               delete soutof end-delete
+               exit perform cycle
+            end-if
+
+
+            move soutof-aciklama to kelime
+            move "GURKAN"       to aranan-kelime
+            move 0 to aranan-i aranan-kelime-boy
+            inspect aranan-kelime tallying aranan-kelime-boy
+                    for trailing spaces 
+            compute aranan-kelime-boy = function length(aranan-kelime) -
+                                        aranan-kelime-boy
+        
+            inspect kelime tallying aranan-i 
+                    for all aranan-kelime(1:aranan-kelime-boy)
+            if aranan-i = 1 
+               delete soutof end-delete
+               exit perform cycle
+            end-if
+
+            move soutof-aciklama to kelime
+            move "GÜRKAN"       to aranan-kelime
+            move 0 to aranan-i aranan-kelime-boy
+            inspect aranan-kelime tallying aranan-kelime-boy
+                    for trailing spaces 
+            compute aranan-kelime-boy = function length(aranan-kelime) -
+                                        aranan-kelime-boy
+        
+            inspect kelime tallying aranan-i 
+                    for all aranan-kelime(1:aranan-kelime-boy)
+            if aranan-i = 1 
+               delete soutof end-delete
+            end-if
+
+            move soutof-aciklama to kelime
+            move "YAVUZ"       to aranan-kelime
+            move 0 to aranan-i aranan-kelime-boy
+            inspect aranan-kelime tallying aranan-kelime-boy
+                    for trailing spaces 
+            compute aranan-kelime-boy = function length(aranan-kelime) -
+                                        aranan-kelime-boy
+        
+            inspect kelime tallying aranan-i 
+                    for all aranan-kelime(1:aranan-kelime-boy)
+            if aranan-i = 1 
+               delete soutof end-delete
+               exit perform cycle
+            end-if
+
+            move soutof-aciklama to kelime
+            move "KUTUK"       to aranan-kelime
+            move 0 to aranan-i aranan-kelime-boy
+            inspect aranan-kelime tallying aranan-kelime-boy
+                    for trailing spaces 
+            compute aranan-kelime-boy = function length(aranan-kelime) -
+                                        aranan-kelime-boy
+        
+            inspect kelime tallying aranan-i 
+                    for all aranan-kelime(1:aranan-kelime-boy)
+            if aranan-i = 1 
+               delete soutof end-delete
+               exit perform cycle
+            end-if
+
+            move soutof-aciklama to kelime
+            move "KÜTÜK"       to aranan-kelime
+            move 0 to aranan-i aranan-kelime-boy
+            inspect aranan-kelime tallying aranan-kelime-boy
+                    for trailing spaces 
+            compute aranan-kelime-boy = function length(aranan-kelime) -
+                                        aranan-kelime-boy
+        
+            inspect kelime tallying aranan-i 
+                    for all aranan-kelime(1:aranan-kelime-boy)
+            if aranan-i = 1 
+               delete soutof end-delete
+               exit perform cycle
+            end-if
+
+         end-if
+
+     end-read 
+     end-perform 
+     end-start
+     close soutof
+     .
+
+
+ 

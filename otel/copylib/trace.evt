@@ -1,0 +1,704 @@
+* trace.evt
+* trace.evt is generated from D:\asya\acugt.ytl\otel\trace.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM grd1-Ev-Other
+     .
+
+ grd2-Event-Proc.
+     PERFORM grd2-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi,
+     move tarih-tasi to ilk-tarih son-tarih
+     move 01 to ilk-gun ilk-ay.
+*
+ Form1-Aft-Initdata.    
+     open input kllnc
+        initialize k-kodu
+        move k-kodu-tasi to k-kodu
+        read kllnc no lock invalid
+                display message box "Tanimsiz Kullanici"
+                title "Asya-Soft Yazilim"
+                set exit-pushed to true
+        end-read
+        move all low-values to ekran-detay
+        inspect k-adi    replacing trailing spaces by low-values
+        inspect k-soyadi replacing trailing spaces by low-values
+        string ekran-detay,
+        k-kodu   delimited by low-values
+        "-"      delimited by low-values 
+        k-adi    delimited by low-values
+        " "      delimited by low-values
+        k-soyadi delimited by low-values
+        into ekran-detay
+        inspect ekran-detay replacing trailing low-values by spaces
+        display sc-ekran-detay
+     close kllnc.
+*
+* agac-doldur.
+*    modify sc-tr, reset-list = 1
+*                    visible = 0  
+*      modify sc-tr, 
+*              parent = 0 
+*              PLACEMENT = TVPLACE-SORT
+*              item-to-add = "Gelen Kutusu" 
+*              giving ace-po 
+*              has-children = 1 
+*              giving per-po
+*           
+*
+*    modify sc-tr, item = per-po
+*            bitmap-HANDLE = mailbox-bmp
+*            bitmap-width  = 22
+*            bitmap-number = 1
+*            
+*        
+*
+*    modify sc-tr, 
+*              parent = ace-po, 
+*              PLACEMENT = TVPLACE-last 
+*              item-to-add = "Gelen Isler (5)"  
+*              has-children = 0
+*              giving per-po 
+*
+*    modify sc-tr, 
+*              parent = ace-po, 
+*              PLACEMENT = TVPLACE-last 
+*              item-to-add = "Bekleyen Onaylar (1)"  
+*              has-children = 0
+*              giving per-po
+*
+*      modify sc-tr, expand = 1
+*      modify sc-tr, visible = 1.
+*
+*
+*
+
+
+*
+ Form1-Ex-Other.
+        evaluate key-status
+            when 2
+                 call "/asya/ytl/obj/otel/tracegir.asy" 
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                  cancel "/asya/ytl/obj/otel/tracegir.asy"
+                  end-call
+            when 1001
+                move 1 to liste-yuklenen
+                move 3 to gelen-kutusu-durumu
+                perform trace-bilgi-temizle
+                perform grd1-baslik-yukle
+                perform grd1-gelen-detay
+            when 1002
+                move 1 to liste-yuklenen
+                move 1 to gelen-kutusu-durumu
+                perform trace-bilgi-temizle
+                perform grd1-baslik-yukle      
+                perform grd1-gelen-detay 
+            when 1003
+                move 1 to liste-yuklenen
+                move 2 to gelen-kutusu-durumu
+                perform trace-bilgi-temizle
+                perform grd1-baslik-yukle
+                perform grd1-gelen-detay                 
+            when 2001
+                move 2 to liste-yuklenen     |||| 1 - gelen kutusu,2-gonderilenler kutusu
+                perform trace-bilgi-temizle
+                perform grd1-baslik-yukle
+                perform grd1-gond-detay
+        end-evaluate.
+
+*
+ grd1-baslik-yukle.
+        modify grd1,reset-grid = 1 , mass-update = 1
+        initialize grd1-record
+        move "X"        to grd1-col-0
+        move "Tarih"    to grd1-col-1
+        move "Zaman"    to grd1-col-2
+        move "Konu"     to grd1-col-3
+        move "Staf"     to grd1-col-4
+        move "Tam"      to grd1-col-5
+        modify grd1,record-to-add(grd1-record)
+        modify grd1, mass-update = 0.
+*
+ grd1-gond-detay.
+          modify grd1, mass-update = 1
+          open input trace tracehrk kllnc
+              initialize grd-satir
+              move 1 to grd-satir
+                   
+              if cmb-filtre-tur(1:2) = '01'
+                      initialize trace-rec
+                      move ilk-tarih     to trace-olay-tarihi
+                      move k-kodu-tasi   to TRACE-KIMDEN-STAF
+                      start trace key not < TRACE-OLAY-STAF invalid
+                              continue
+                      not invalid
+                      perform until fs-trace = "10"
+                      read trace next no lock end move "10" to fs-trace
+                      not end
+                           if trace-olay-tarihi > son-tarih
+                                 exit perform 
+                           end-if
+
+                           if TRACE-KIMDEN-STAF <> k-kodu-tasi then
+                                 exit perform cycle
+                           end-if
+
+                           perform grd1-gond-detay-yukle 
+                      end-read
+                      end-perform
+                      end-start 
+              end-if
+              if cmb-filtre-tur(1:2) = '02'
+                      initialize trace-rec
+                      move k-kodu-tasi   to TRACE-KIMDEN-STAF
+                      move ilk-tarih     to trace-kayit-tarihi
+                      start trace key not < TRACE-KAYIT-STAF invalid
+                              continue
+                      not invalid
+                      perform until fs-trace = "10"
+                      read trace next no lock end move "10" to fs-trace
+                      not end
+                           if trace-kayit-tarihi > son-tarih
+                                 exit perform 
+                           end-if
+                           if TRACE-KIMDEN-STAF <> k-kodu-tasi then
+                                 exit perform cycle
+                           end-if
+
+                           perform grd1-gond-detay-yukle 
+                      end-read
+                      end-perform
+                      end-start 
+              end-if
+          close trace tracehrk kllnc
+          modify grd1, mass-update = 0.
+
+*
+ grd1-gelen-detay.
+ 
+          modify grd1, mass-update = 1
+          open input traceHRK trace kllnc
+
+          initialize grd-satir
+          move 1 to grd-satir
+
+          if cmb-filtre-tur(1:2) = '01'
+                   initialize trace-rec
+                   move ilk-tarih     to trace-olay-tarihi
+                   start trace key not < TRACE-OLAY-staf invalid
+                           continue
+                   not invalid
+                   perform until fs-trace = "10"
+                   read trace next no lock end move "10" to fs-trace
+                   not end
+           
+                        if trace-olay-tarihi > son-tarih
+                              exit perform 
+                        end-if
+          
+                        initialize tracehrk-rec
+                        move trace-no       to tracehrk-no
+                        move k-kodu-tasi    to tracehrk-staf
+                        read tracehrk no lock invalid
+                                 continue
+                        not invalid
+                             if TRACEHRK-NO <> TRACE-NO then
+                                   exit perform
+                             end-if
+                             perform grd1-GELEN-detay-yukle
+                        end-read
+                   end-read
+                   end-perform
+                   end-start 
+          end-if
+          if cmb-filtre-tur(1:2) = '02'
+                   initialize trace-rec
+                   move ilk-tarih     to trace-kayit-tarihi
+                   start trace key not < TRACE-kayit-STAF invalid
+                           continue
+                   not invalid
+                   perform until fs-trace = "10"
+                   read trace next no lock end move "10" to fs-trace
+                   not end
+                         if trace-kayit-tarihi > son-tarih
+                              exit perform 
+                        end-if
+
+                        initialize tracehrk-rec
+                        move trace-no       to tracehrk-no
+                        move k-kodu-tasi    to tracehrk-staf
+                        read tracehrk no lock invalid
+                                 continue
+                        not invalid
+                             if TRACEHRK-NO <> TRACE-NO then
+                                   exit perform
+                             end-if
+                             perform grd1-GELEN-detay-yukle
+                        end-read
+                   end-read
+                   end-perform
+                   end-start 
+          end-if
+
+          close traceHRK trace kllnc
+          modify grd1, mass-update = 0.    
+
+*
+ grd1-gond-detay-yukle.
+         
+        if tamamlananlar-dahil <> 1                     
+            initialize tracehrk-rec trace-tamalandi
+            move 1 to trace-tamalandi
+            move trace-no to tracehrk-no
+            start tracehrk key not < tracehrk-anah invalid
+                   continue
+            not invalid
+            perform until fs-tracehrk = "10"
+            read tracehrk next no lock end move "10" to fs-tracehrk
+            not end
+                if tracehrk-no <> trace-no
+                      exit perform  
+                end-if
+                if TRACEHRK-TAMAMLANMA <> 1
+                      initialize trace-tamalandi
+                      exit perform
+                end-if
+            end-read
+            end-perform
+            end-start
+            if trace-tamalandi = 1
+                 exit paragraph
+            end-if
+        end-if
+
+        initialize grd1-record
+        add 1 to grd-satir
+        modify grd1(grd-satir,1), bitmap = mailbox-bmp
+                                   bitmap-number = 1
+                                   bitmap-width  = 22
+                                   color = 0 
+        modify grd1(grd-satir,1), hidden-data = trace-anah
+
+        move TRACE-KAYIT-YIL       to x-yil
+        move TRACE-KAYIT-ay        to x-ay
+        move TRACE-KAYIT-gun       to x-gun
+        move x-tarih               to grd1-col-1
+
+        move TRACE-KAYIT-SAAT      to x-saat
+        move TRACE-KAYIT-DAKIKA    to x-dakika
+        move x-zaman               to grd1-col-2
+
+        move TRACE-BASLIK          to grd1-col-3
+
+        move TRACE-KIMDEN-STAF     to x-staf
+        perform trace-isim-soyisim
+        move x-staf-adi            to grd1-col-4
+        modify grd1,record-to-add(grd1-record).
+*
+ grd1-GELEN-detay-yukle.
+ 
+        if tamamlananlar-dahil <> 1 and TRACEHRK-TAMAMLANMA = 1                    
+              exit paragraph
+        end-if
+
+        if gelen-kutusu-durumu = 1 and tracehrk-okunma <> 1 
+              exit paragraph
+        end-if
+        if gelen-kutusu-durumu = 2 and tracehrk-okunma = 1 
+              exit paragraph
+        end-if
+
+        initialize grd1-record
+        add 1 to grd-satir
+
+        if tracehrk-okunma = 1 
+                modify grd1(grd-satir,1), bitmap = open_mail-bmp 
+                                          bitmap-number = 1
+                                          bitmap-width  = 22
+                                          color = 0 
+        else
+                modify grd1(grd-satir,1), bitmap = new_mail-bmp
+                                          bitmap-number = 1
+                                          bitmap-width  = 22
+                                          color = 0 
+        end-if          
+
+        if tracehrk-TAMAMLANMA = 1 
+                modify grd1(grd-satir,6), bitmap = YES-bmp 
+                                          bitmap-number = 1
+                                          bitmap-width  = 16
+                                          color = 0 
+        else
+                modify grd1(grd-satir,6), bitmap = NO-bmp
+                                          bitmap-number = 1
+                                          bitmap-width  = 16
+                                          color = 0 
+        end-if
+
+        modify grd1(grd-satir,1), hidden-data = trace-anah
+
+        move TRACE-KAYIT-YIL       to x-yil
+        move TRACE-KAYIT-ay        to x-ay
+        move TRACE-KAYIT-gun       to x-gun
+        move x-tarih               to grd1-col-1
+
+        move TRACE-KAYIT-SAAT      to x-saat
+        move TRACE-KAYIT-DAKIKA    to x-dakika
+        move x-zaman               to grd1-col-2
+
+        move TRACE-BASLIK          to grd1-col-3
+
+        move TRACE-KIMDEN-STAF     to x-staf
+        perform trace-isim-soyisim
+        move x-staf-adi            to grd1-col-4
+        modify grd1,record-to-add(grd1-record).
+
+
+ trace-isim-soyisim.
+        initialize k-kodu
+        move x-staf to k-kodu
+        read kllnc no lock invalid
+                display message box "Tanimsiz Kullanici"
+                title "Asya-Soft Yazilim"
+        end-read
+        move all low-values to x-staf-adi
+        inspect k-adi    replacing trailing spaces by low-values
+        inspect k-soyadi replacing trailing spaces by low-values
+        string x-staf-adi, 
+        k-adi    delimited by low-values
+        " "      delimited by low-values
+        k-soyadi delimited by low-values
+        into x-staf-adi
+        inspect x-staf-adi replacing trailing low-values by spaces.
+*
+ grd1-Ev-Other.
+        evaluate event-type,
+            when Msg-Bitmap-Dblclick
+                move 1 to bitmap-secildi               
+                if liste-yuklenen <> 1
+                     exit paragraph | gelen kutusunda degilse cik
+                end-if  
+                inquire grd1(event-data-2,1),hidden-data = trace-no
+                if trace-no not > 0
+                      exit paragraph
+                end-if
+                open i-o tracehrk
+                initialize tracehrk-rec
+                move trace-no       to tracehrk-no
+                move k-kodu-tasi    to tracehrk-staf
+                read tracehrk no lock invalid
+                         continue
+                not invalid
+                     if event-data-1 = 1
+                       if tracehrk-tamamlanma = 0
+                           if tracehrk-okunma = 1 
+                                   modify grd1(event-data-2,1), bitmap = new_mail-bmp  
+                                                             bitmap-number = 1
+                                                             bitmap-width  = 22
+                                                             color = 0 
+                                   move 0 to tracehrk-okunma
+                                   initialize tracehrk-okunma-tarihi tracehrk-okunma-zamani
+                        
+                           else
+                                   modify grd1(event-data-2,1), bitmap = open_mail-bmp 
+                                                             bitmap-number = 1
+                                                             bitmap-width  = 22
+                                                             color = 0 
+                                   move 1 to tracehrk-okunma 
+                                   accept tracehrk-okunma-tarihi from century-date
+                                   accept tracehrk-okunma-zamani from time
+                        
+                           end-if
+                      end-if
+                     end-if
+                     if event-data-1 = 6  
+                         if tracehrk-okunma = 1
+                             if tracehrk-tamamlanma = 1 
+                                     modify grd1(event-data-2,6), bitmap = no-bmp  
+                                                               bitmap-number = 1
+                                                               bitmap-width  = 22
+                                                               color = 0 
+                                     move 0 to tracehrk-tamamlanma
+                                     initialize tracehrk-tamamlanma-tarihi tracehrk-tamamlanma-zamani
+                        
+                             else
+                                     modify grd1(event-data-2,6), bitmap = yes-bmp 
+                                                               bitmap-number = 1
+                                                               bitmap-width  = 22
+                                                               color = 0 
+                                     move 1 to tracehrk-tamamlanma 
+                                     accept tracehrk-tamamlanma-tarihi from century-date
+                                     accept tracehrk-tamamlanma-zamani from time
+                        
+                             end-if
+                         else
+                                 display message box "Gelen Bildirim Okundu Yapýlmadan Tamamlandi Yapilamaz !"
+                                 title "Asya-Soft"
+                         end-if
+                     end-if
+
+                    rewrite tracehrk-rec invalid
+                            stop " "
+                    end-rewrite
+                end-read
+                close tracehrk
+                inquire grd1(event-data-2,1), hidden-data secili-anah
+                perform trace-bilgi-getir
+                ||||||||
+
+            when msg-begin-entry
+                move event-action-fail to event-action
+                if bitmap-secildi <> 1
+                        initialize link-trace-no
+                        inquire grd1(event-data-2,1),hidden-data = link-trace-no
+                        if link-trace-no not > 0
+                              exit paragraph
+                        end-if
+                        call "/asya/ytl/obj/otel/tracegir.asy" using link-trace-no
+                                on exception 
+                                perform callerr-proc
+                                exit paragraph
+                                not on exception 
+                        cancel "/asya/ytl/obj/otel/tracegir.asy"
+                        end-call
+                end-if
+                initialize bitmap-secildi
+            when msg-goto-cell  
+            when msg-goto-cell-mouse
+            when msg-begin-drag
+            when msg-end-drag
+            when msg-goto-cell-drag
+                 inquire grd1(event-data-2,1), hidden-data secili-anah
+                 perform trace-bilgi-getir
+                 inquire grd1,y in yeni-y
+                 if yeni-y < 2
+                    move 2 to yeni-y eski-y
+                 end-if
+                  modify grd1,
+                        y = yeni-y,
+                        start-x = 1
+                        start-y = yeni-y
+                        x = 11,
+                        region-color = 144
+                 move yeni-y to eski-y
+        end-evaluate
+     .
+* 
+ trace-bilgi-getir.
+        open input trace tracehrk kllnc
+        initialize trace-rec grd-satir
+        modify grd2,visible = true 
+        move 1 to grd-satir
+        move secili-anah to trace-anah
+        read trace no lock invalid
+               modify grd2,reset-grid = 1
+               continue
+        not invalid
+               move 1 to vis-sag-detay
+               initialize tracehrk-rec
+               move trace-no       to tracehrk-no
+               move k-kodu-tasi    to tracehrk-staf
+               read tracehrk no lock invalid
+                       continue
+               not invalid
+                    if tracehrk-okunma <> 1 and liste-yuklenen = 1
+                          move 0 to vis-sag-detay
+                          modify grd2,visible = false 
+                    end-if
+               end-read
+
+               modify grd2,reset-grid = 1, mass-update =1
+               initialize grd2-record
+               move " "        to grd2-col-0
+               move "Adi"      to grd2-col-1
+               move "Oku"      to grd2-col-2
+               move "Tam"      to grd2-col-3
+               modify grd2,record-to-add(grd2-record)
+                              
+               initialize tracehrk-rec
+               move trace-no to tracehrk-no
+               start tracehrk key not < tracehrk-anah invalid
+                      continue
+               not invalid
+               perform until fs-tracehrk = "10"
+               read tracehrk next no lock end move "10" to fs-tracehrk
+               not end
+                   if tracehrk-no <> trace-no 
+                         exit perform 
+                   end-if
+                   
+                   initialize kllnc-rec
+                   move tracehrk-staf  to k-kodu
+                   read kllnc no lock invalid
+                           display message box "Tanimsiz Kullanici " takas-anah new-line
+                           "Listeye Eklenmedi,Kontrol Ediniz !"
+                           title "Asya-Soft Yazilim"
+                           move "Silinmis Kullanici" to deger-50
+                   not invalid
+                        initialize takas-rec
+                        move all low-values to deger-50
+                        inspect k-adi    replacing trailing spaces by low-values
+                        inspect k-soyadi replacing trailing spaces by low-values
+                        string deger-50, 
+                        k-kodu   delimited by low-values
+                        "-"      delimited by low-values
+                        k-adi    delimited by low-values
+                        " "      delimited by low-values
+                        k-soyadi delimited by low-values
+                        into deger-50
+                        inspect deger-50 replacing trailing low-values by spaces
+                   end-read
+
+                   add 1 to grd-satir
+                   initialize grd2-record
+                   move deger-50 to grd2-col-1
+
+
+                   if TRACEHRK-OKUNMA = 1
+                         modify grd2(grd-satir,3), bitmap = yes-bmp
+                                                   bitmap-number = 1
+                                                   bitmap-width  = 16
+                   else
+                         modify grd2(grd-satir,3), bitmap = no-bmp
+                                                   bitmap-number = 1
+                                                   bitmap-width  = 16
+                   end-if
+
+                   if TRACEHRK-TAMAMLANMA = 1
+                         modify grd2(grd-satir,4), bitmap = yes-bmp
+                                                   bitmap-number = 1
+                                                   bitmap-width  = 16
+                   else
+                         modify grd2(grd-satir,4), bitmap = no-bmp
+                                                   bitmap-number = 1
+                                                   bitmap-width  = 16
+                   end-if
+ 
+                   modify grd2,record-to-add(grd2-record)
+                   modify grd2,(grd-satir,1),hidden-data = tracehrk-anah
+                   modify grd2(grd-satir,1), bitmap = people-bmp
+                                             bitmap-number = 1
+                                             bitmap-width  = 16                     
+               end-read
+               end-perform
+               end-start
+               modify grd2, mass-update = 0
+        end-read
+        close trace tracehrk kllnc
+        perform display-ekran
+         .
+*
+ display-ekran.
+        display  sc-o-tar-1 sc-o-tar-2 sc-o-tar-3 sc-o-sat-1 sc-o-sat-2  sc-not sc-baslik sc-kllnc-durum sc-kayit-no
+        Form1-La-1aaaab Form1-La-1aaaa  Form1-La-1aa Form1-La-1a Form1-La-1aaaaa.     
+*
+ grd2-Ev-Other.
+        evaluate event-type
+            when msg-begin-entry
+                move event-action-fail to event-action
+            when msg-goto-cell  
+            when msg-goto-cell-mouse
+            when msg-begin-drag
+            when msg-end-drag
+            when msg-goto-cell-drag
+                 initialize tracehrk-rec
+                 inquire grd2(event-data-2,1), hidden-data tracehrk-anah
+                 inquire grd2,y in yeni-y
+                 if yeni-y < 2
+                    move 2 to yeni-y eski-y
+                 end-if
+                 modify grd2,
+                        y = yeni-y,
+                        start-x = 1
+                        start-y = yeni-y
+                        x = 11,
+                        region-color = 481
+                move yeni-y to eski-y       
+          
+                open i-o tracehrk
+                read tracehrk no lock invalid
+                         close tracehrk
+                         exit paragraph
+                end-read
+                close tracehrk
+
+                move TRACEHRK-OKUNMA-yil(3:2)     to x-yil2 
+                move TRACEHRK-OKUNMA-ay           to x-ay2
+                move TRACEHRK-OKUNMA-gun          to x-gun2 
+                move TRACEHRK-OKUNMA-saat         to x-saat2 
+                move TRACEHRK-OKUNMA-dakika       to x-dakika2
+                move x-tarih2                     to okunma-deger
+
+                if TRACEHRK-OKUNMA-tarihi = zeroes or TRACEHRK-OKUNMA-tarihi = spaces
+                      initialize  okunma-deger
+                end-if
+
+                move TRACEHRK-TAMAMLANMA-yil(3:2) to x-yil2 
+                move TRACEHRK-TAMAMLANMA-ay       to x-ay2
+                move TRACEHRK-TAMAMLANMA-gun      to x-gun2 
+                move TRACEHRK-TAMAMLANMA-saat     to x-saat2 
+                move TRACEHRK-TAMAMLANMA-dakika   to x-dakika2
+                move x-tarih2                     to TAMAMLANMA-deger
+
+                if TRACEHRK-TAMAMLANMA-tarihi = zeroes or TRACEHRK-TAMAMLANMA-tarihi = spaces
+                      initialize  TAMAMLANMA-deger
+                end-if
+                initialize  kllnc-durum-detay
+                if TRACEHRK-OKUNMA = 1 
+                        move all low-values to kllnc-durum-detay
+                        inspect k-adi    replacing trailing spaces by low-values
+                        inspect k-soyadi replacing trailing spaces by low-values
+                        string kllnc-durum-detay, 
+                        "Okunma Zamani        : "       delimited by low-values
+                        okunma-deger                    delimited by low-values
+                        into kllnc-durum-detay
+                        inspect kllnc-durum-detay replacing trailing low-values by spaces
+                end-if
+                if TRACEHRK-TAMAMLANMA= 1 
+                        move all low-values to kllnc-durum-detay
+                        inspect k-adi    replacing trailing spaces by low-values
+                        inspect k-soyadi replacing trailing spaces by low-values
+                        string kllnc-durum-detay, 
+                        "Tamamlanma Zamani : "          delimited by low-values
+                        TAMAMLANMA-deger                delimited by low-values
+                        into kllnc-durum-detay
+                        inspect kllnc-durum-detay replacing trailing low-values by spaces
+                end-if
+                if TRACEHRK-TAMAMLANMA = 1 and TRACEHRK-OKUNMA = 1 
+                        move all low-values to kllnc-durum-detay
+                        inspect k-adi    replacing trailing spaces by low-values
+                        inspect k-soyadi replacing trailing spaces by low-values
+                        string kllnc-durum-detay, 
+                        "Okunma Zamani        : "       delimited by low-values
+                        okunma-deger                    delimited by low-values
+                        x"0D0A"                         delimited by low-values
+                        "Tamamlanma Zamani : "          delimited by low-values
+                        TAMAMLANMA-deger                delimited by low-values
+                        into kllnc-durum-detay
+                        inspect kllnc-durum-detay replacing trailing low-values by spaces
+                end-if
+
+        
+                display sc-kllnc-durum
+       end-evaluate.    
+*
+ trace-bilgi-temizle.
+        initialize trace-rec
+        modify grd2,reset-grid = 1
+        perform display-ekran.
+
+ 

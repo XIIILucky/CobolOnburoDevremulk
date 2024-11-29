@@ -1,0 +1,280 @@
+* kasagir.evt
+* kasagir.evt is generated from D:\asya\acugt.ytl\otel\kasagir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     move tarih-tasi  to kasagir-tarih of kasagir
+     move "G"         to kasagir-tip of kasagir
+     open input genel
+     initialize genel-rec
+     move 1   to genel-anahtar
+     read genel no lock invalid 
+        continue 
+     end-read 
+     close genel
+     perform fis-al.
+*
+ fis-al.
+     open i-o genelfis
+     initialize genelfis-rec 
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid 
+        continue 
+     not invalid 
+         add 1 to genelfis-log-no
+         rewrite genelfis-rec end-rewrite 
+         move GENELFIS-LOG-NO to kasagir-fis-no
+     end-read 
+     close genelfis.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 1
+        evaluate control-id 
+        when 17
+        when 2001
+            initialize doviz-cagir
+            call "/asya/ytl/obj/otel/dovizara.asy" using doviz-cagir
+                 on exception
+                    perform callerr-proc
+                 not on exception
+                    cancel "/asya/ytl/obj/otel/dovizara.asy"
+                    if doviz-cagir <> zeroes or 
+                       doviz-cagir <> spaces                            
+                       move doviz-cagir   to kasagir-doviz-kodu of kasagir
+                       display acc-06
+                       perform doviz-oku
+                    end-if
+             end-call
+        end-evaluate 
+     when 2
+        perform form-kaydet
+        if hata = 0
+           perform yeni-kayit
+           perform tum-grid-yukle
+        end-if 
+     when 3
+        perform form-sil
+        if hata = 0
+           perform yeni-kayit
+           perform tum-grid-yukle
+        end-if 
+     when 1414
+        perform yeni-kayit
+     end-evaluate.
+*
+ yeni-kayit.
+     initialize kasagir-diger lb-dovadi
+     display acc-05 acc-06 acc-07  lb-dovizadi
+     perform fis-al
+     display acc-04
+     modify cb-1, ENABLED = true.
+*
+ form-kaydet.
+     initialize hata
+     perform tarih-kontrol
+     perform doviz-oku
+     evaluate hata
+     when 1
+         display message box "Hatali Tarih Girdiniz."
+                         title "Uyari"
+                         icon 1
+           exit paragraph
+     when 2
+         display message box "Gecmis Tarihe Islem Yapilamaz.."
+                         title "Uyari"
+                         icon 1
+           exit paragraph
+     when 3
+         display message box "Doviz Kodu Hatali.."
+                         title "Uyari"
+                         icon 1
+           exit paragraph       
+     end-evaluate                          
+    
+     display message box "Bilgiler Kaydedilecek " new-line
+                         "Eminmisiniz."
+                     title "Uyari"
+                     icon 1
+                     type 2 
+                     default 2
+                     returning return-code 
+     if return-code = 2
+         exit paragraph 
+     end-if  
+     open i-o kasagir
+     read kasagir no lock invalid 
+          continue 
+     end-read 
+        accept kasagir-saat from time
+        move k-kodu-tasi to kasagir-staf
+         write kasagir-rec invalid 
+             rewrite kasagir-rec end-rewrite 
+         end-write 
+     close kasagir.
+*
+ tarih-kontrol.
+     open input takvim
+     initialize takvim-rec   
+     move kasagir-tarih   to takvim-anah
+     read takvim no lock invalid 
+          move 1          to hata
+     end-read 
+     close takvim
+     if kasagir-tarih < tarih-tasi
+        move 2            to hata
+     end-if.
+*
+ form-sil.
+     initialize hata
+     perform tarih-kontrol
+     evaluate hata
+     when 1
+         display message box "Hatali Tarih Girdiniz."
+                         title "Uyari"
+                         icon 1
+           exit paragraph
+     when 2
+         display message box "Gecmis Tarihe Islem Yapilamaz.."
+                         title "Uyari"
+                         icon 1
+           exit paragraph      
+     end-evaluate
+
+     display message box "Kayit Silinecektir." new-line
+                         "Eminmisiniz."
+                     title "Uyari"
+                     icon 1
+                     type 2 
+                     default 2
+                     returning return-code 
+     if return-code = 2
+         exit paragraph 
+     end-if 
+     open i-o kasagir
+     read kasagir no lock invalid 
+          continue 
+     end-read 
+         delete kasagir invalid 
+             continue 
+         end-delete 
+     close kasagir.
+
+*
+ doviz-oku.
+     open input doviz
+     initialize doviz-rec hata
+     move kasagir-doviz-kodu of kasagir to doviz-kodu
+     read doviz no lock invalid 
+         move "Hatali Doviz"     to D-KISA-ADI
+         move 3                  to hata
+     end-read 
+         move D-KISA-ADI         to lb-dovadi
+     close doviz
+     display lb-dovizadi
+    .
+*
+ acc-06-Aft-Procedure.
+     perform doviz-oku.
+*
+ Form1-Aft-Initdata.
+     perform tum-grid-yukle     
+     .
+*
+ baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "Tarih"     to gd-1-col-1
+     move "Fis No"    to gd-1-col-2
+     move "T"         to gd-1-col-3
+     move "Tutar"     to gd-1-col-4
+     move "Doviz"     to gd-1-col-5
+     move "Aciklama"  to gd-1-col-6
+     modify form1-gd-1,record-to-add(form1-gd-1-record).
+*
+ grid-yukle.
+     open i-o kasagir
+     open input doviz
+     initialize kasagir-rec
+     move 1             to sira
+     move tarih-tasi    to kasagir-tarih
+     start kasagir key not < kasagir-anah invalid 
+         continue 
+     not invalid 
+     perform with test after until fs-kasagir = "10"
+     read kasagir next no lock end move "10" to fs-kasagir
+     not at end 
+            if kasagir-tarih <> tarih-tasi
+                exit perform 
+            end-if 
+            add 1 to sira
+            initialize form1-gd-1-record
+            move kasagir-gun   to egun
+            move kasagir-ay    to eay
+            move kasagir-yil   to eyil
+            move etar          to gd-1-col-1
+
+            move kasagir-fis-no to gd-1-col-2
+            move kasagir-tip    to gd-1-col-3
+            move kasagir-tutar  to etut
+            move etut           to gd-1-col-4
+            initialize doviz-rec
+            move kasagir-doviz-kodu to doviz-kodu
+            read doviz no lock invalid 
+                move "Hata"  to d-kisa-adi
+            end-read 
+                move d-kisa-adi   to gd-1-col-5
+            move kasagir-aciklama to gd-1-col-6
+            modify form1-gd-1,record-to-add(form1-gd-1-record)
+
+            modify form1-gd-1(sira,1),hidden-data kasagir-anah
+     end-read 
+     end-perform
+     end-start
+     close kasagir doviz
+     modify form1-gd-1,mass-update = 0
+     .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+          move event-action-fail to event-action
+          inquire form1-gd-1(event-data-2,1),hidden-data kasagir-anah
+          perform kasagir-oku
+     end-evaluate 
+     
+     .
+*
+ kasagir-oku.
+     open input kasagir
+     read kasagir no lock invalid
+          continue 
+     not invalid 
+         display cb-1 acc-04 acc-05 acc-06 acc-07
+         perform doviz-oku
+         modify cb-1, ENABLED = false
+     end-read 
+     close kasagir
+     .
+*
+ tum-grid-yukle.
+     perform baslik-yukle
+     perform grid-yukle     
+     .
+
+ 

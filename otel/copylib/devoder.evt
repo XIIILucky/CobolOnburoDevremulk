@@ -1,0 +1,187 @@
+* devoder.evt
+* devoder.evt is generated from D:\asya\acugt.ytl\otel\devoder.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      move tarih-tasi   to ilk-tar son-tar 
+      open input genel
+      initialize genel-rec 
+      move 1        to genel-anahtar
+      read genel no lock invalid 
+           display message box "Genel Parametreler Tanimsiz..."
+                           title "Uyari"
+                           icon 1
+                 close genel
+                 exit paragraph           
+      end-read 
+      close genel
+      move muha-sirketi to hesap-dosya-adres cari-dosya-adres cek-dosya-adres.
+     .
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 2
+          perform rapor-ver
+      end-evaluate
+     
+     .
+*
+ rapor-ver.
+              open input cek hesap
+              initialize cek-rec
+ 
+              start cek key not < cek-anah invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close cek
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Tarihler Arasi Yapilan Odemeler"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Tarihler Arasi Yapilan Odemeler"   to det-filler
+     write dokumer-rec from detay
+
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici       
+     move "RRLLLRLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"         to det-dokumer-20(10:1)
+     move "D1"        to det-dokumer-20(1:2)
+     move "Tarih"     to det-1
+     move "Fis"       to det-2
+     move "Tip"       to det-3
+     move "Cek No"    to det-4
+     move "Kayit Tar" to det-5
+     move "Tutar "    to det-6
+     move "Hesap Adi" to det-7
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6  fil-7
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7
+     write dokumer-rec from detay
+*********************************
+
+              initialize fs-cek
+              perform with test after until fs-cek = "10"
+                    read cek next no lock end move "10" to fs-cek
+                    not at end
+                            if cek-odeme > son-tar
+                                exit perform 
+                            end-if 
+                            if cek-tipi not = odeme-sekli(1:1) and
+                               odeme-sekli(1:1) not = "H"
+                                  exit perform cycle 
+                            end-if
+                            if cek-durumu not = "X"
+                               exit perform cycle 
+                            end-if
+                                 
+                            initialize dokumer-rec detay
+
+                            move cek-ode-yil     to eyil
+                            move cek-ode-ay      to eay
+                            move cek-ode-gun     to egun
+                            move etar            to det-1
+
+                            move cek-isl-no      to z10
+                            move z10             to det-2
+
+                            evaluate cek-tipi
+                            when "S"
+                                 move "Senet"    to det-3
+                            when "C"
+                                 move "Cek"      to det-3
+                            when "D"
+                                 move "Aidat"    to det-3
+                            end-evaluate
+                            move cek-no          to det-4
+
+                            move cek-isl-yil     to eyil
+                            move cek-isl-ay      to eay
+                            move cek-isl-gun     to egun
+                            move etar            to det-5
+
+
+                            move cek-tutar       to etut
+                            move etut            to det-6
+
+                            initialize hesap-rec 
+                            move cek-ilk-cari   to hesap-kodu
+                            read hesap no lock invalid 
+                                 move "     "   to hesap-adi
+                            end-read
+                                 move hesap-adi to det-7
+
+                            move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7
+                            write dokumer-rec from detay
+               
+                    end-read
+              end-perform
+
+               initialize dokumer-rec detay
+               move "-"            to det-dokumer-20(5:1)
+               move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7
+               write dokumer-rec from detay
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close cek hesap
+              delete file dokumer
+     .
+
+ 

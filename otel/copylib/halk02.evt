@@ -1,0 +1,854 @@
+* halk02.evt
+* halk02.evt is generated from D:\asya\acugt.ytl\otel\halk02.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ acc-04-Event-Proc.
+     .
+
+ acc-04-Exception-Proc.
+     EVALUATE Event-Control-Id
+     WHEN 17
+        PERFORM Form1-Gd-1-Ex-Other
+     END-EVALUATE
+     .
+
+ acc-05-Exception-Proc.
+     PERFORM acc-05-Ex-Other
+     .
+
+ acc-09-Exception-Proc.
+     PERFORM acc-09-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+ 
+    move tarih-tasi to tarih.
+    perform anket-say
+    perform ekran-goster
+    perform fis-al
+    open i-o cevap1 cevap2 close cevap1 cevap2
+
+
+    .
+* 
+ anket-say.
+         open input cevap1
+          initialize cevap1-rec   anket-say
+          move tarih-tasi to CEVAP1-TARIH
+          start cevap1 key not < cevap1-anahtar invalid
+                  continue
+          not invalid
+          perform until fs-cevap1 = "10"
+          read cevap1 next no lock end move "10" to fs-cevap1
+          not end
+                   if cevap1-tarih <> tarih-tasi then
+                         exit perform
+                   end-if
+                   add 1 to anket-say
+          end-read
+          end-perform
+          end-start
+             move anket-say to anket-say-z
+             display Form1-La-2a
+
+        close cevap1.
+
+*
+ fis-al.
+    open i-o genelfis.
+    move 1 to genelfis-anahtar.
+    read genelfis no lock invalid 
+         move 1 to GENELFIS-LOG-NO.    
+    add 1 to GENELFIS-LOG-NO.
+    move GENELFIS-LOG-NO(5:) to isl-num.
+    rewrite genelfis-rec invalid write genelfis-rec.
+    close genelfis.
+    display acc-04
+     .
+     .
+ ekran-goster.
+    display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 acc-07 acc-08.
+     .
+*
+ Form1-Gd-1-Bef-Procedure.
+    if gun < 1 or gun > 31 
+      display message box "Gun Hatali..."
+      move 4 to accept-control
+      move 4 to control-id
+      exit paragraph
+    end-if.
+    if ay < 1 or ay > 12
+      display message box "Ay Hatali..."
+      move 4 to accept-control
+      move 5 to control-id
+      exit paragraph
+    end-if.
+    if yil > 2050
+      display message box "Yil Hatali..."
+      move 4 to accept-control
+      move 6 to control-id
+      exit paragraph
+    end-if.
+    if isl-num = zeroes 
+      display message box "Islem Numarasi Giriniz..."
+      move 4 to accept-control
+      move 8 to control-id
+      exit paragraph
+    end-if.
+    perform grid-goster thru grid-goster-exit.
+     .
+
+ grid-goster.
+    open i-o genelfis.
+    move 1 to genelfis-anahtar.
+    read genelfis no lock invalid move 1 to ekran-fis-1.
+    
+    add 1 to ekran-fis-1.
+ 
+    move ekran-fis-1(2:) to takas-no
+    rewrite genelfis-rec invalid write genelfis-rec.
+    close genelfis.
+    open output takas close takas open i-o takas with mass-update.
+    initialize takas-rec.
+    
+    open i-o cevap2.
+    close cevap2.
+
+    initialize halk-rec.
+    open input halk cevap2 soru.
+    start halk key not < halk-kodu invalid continue
+      not invalid
+        perform with test after until fs-halk = "10"
+          read halk next no lock end move "10" to fs-halk
+            not end
+             if halk-tipi = "D"
+              initialize takas-rec cevap2-rec soru-rec
+              move tarih      to takas-tarih cevap2-tarih
+              move isl-num    to takas-islem cevap2-no
+              move halk-ana   to takas-ana   cevap2-ana
+              move halk-alt   to takas-alt   cevap2-alt
+              move halk-soru  to takas-soru  
+              move halk-cevap to soru-kodu
+              read cevap2 no lock invalid continue
+                not invalid
+                  move cevap2-yanit       to takas-yanit
+                  move cevap2-yorum-detay to takas-aciklama
+                  move cevap2-yorum       to takas-yorum
+              end-read
+              read soru no lock invalid continue
+                not invalid
+                move soru1 to takas-cevaplar(1)
+                move soru2 to takas-cevaplar(2)
+                move soru3 to takas-cevaplar(3)
+                move soru4 to takas-cevaplar(4)
+                move soru5 to takas-cevaplar(5)
+              end-read
+              move 99 to soru-kodu
+              read soru no lock invalid continue
+                not invalid
+                move soru1 to takas-yorumlar(1)
+                move soru2 to takas-yorumlar(2)
+                move soru3 to takas-yorumlar(3)
+                move soru4 to takas-yorumlar(4)
+                move soru5 to takas-yorumlar(5)
+              end-read
+              read takas no lock invalid continue,end-read
+              write takas-rec invalid rewrite takas-rec,end-rewrite,end-write
+             end-if
+          end-read
+        end-perform
+    close halk cevap2 soru.
+
+    modify form1-gd-1, reset-grid  = 1 mass-update = 1.
+    move "Soru "    to gd-1-col-1
+    move "CK"       to gd-1-col-2
+    move "Cevap"    to gd-1-col-3
+    move "Yorum"    to gd-1-col-4
+    modify form1-gd-1,record-to-add(form1-gd-1-record)
+    move 1 to kayit-sayi
+    initialize takas-rec.
+    start takas key not < takas-anahtar invalid continue
+      not invalid
+        perform with test after until fs-takas = "10"
+          read takas next no lock end move "10" to fs-takas
+            not end 
+              initialize form1-gd-1-record
+              move takas-soru     to gd-1-col-1
+              move takas-yanit    to gd-1-col-2
+              if takas-yanit <> 0
+                 move takas-cevaplar(takas-yanit) to gd-1-col-3   
+              end-if 
+              move takas-aciklama to gd-1-col-4
+              move takas-yorum    to gd-1-col-5
+              if takas-yorum <> 0
+                 move takas-yorumlar(takas-yorum) to gd-1-col-6   
+              end-if 
+              add 1 to kayit-sayi
+              modify form1-gd-1,record-to-add(form1-gd-1-record)
+              modify form1-gd-1,
+                     y = kayit-sayi
+                     x = 1
+                     hidden-data = takas-ana
+                     x = 2
+                     hidden-data = takas-alt
+          end-read
+        end-perform
+    end-start.
+    CLOSE TAKAS.
+    modify form1-gd-1, mass-update = 0.
+ grid-goster-exit.
+    exit.
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid
+         move calis-yil   to yil-tasi
+         move calis-ay    to  ay-tasi
+         move calis-gun   to gun-tasi
+    end-read
+    close genel.
+
+*
+ Form1-Gd-1-Ev-Other.
+    evaluate event-type 
+         when msg-goto-cell
+         
+         when msg-begin-entry
+           inquire Form1-Gd-1, x in i y in ii
+           if (i = 1) or (i = 3) or (i = 6)
+             move event-action-fail to event-action,
+            else
+              inquire Form1-Gd-1(ii,2) cell-data in yed-cell-9
+              inquire Form1-Gd-1(ii,4) cell-data in yed-cell-x
+              inquire Form1-Gd-1(ii,5) cell-data in yed-cell-9-2
+           end-if
+         when msg-finish-entry
+           inquire Form1-Gd-1, x in i y in ii
+           evaluate i
+             when 2 
+             
+               inquire Form1-Gd-1(ii,i), cell-data in new-cell-9
+               inquire Form1-Gd-1(ii,1), hidden-data in takas-ana
+               inquire Form1-Gd-1(ii,2), hidden-data in takas-alt
+
+               initialize halk-rec
+               move takas-ana to halk-ana
+               move takas-alt to halk-alt
+               move "A" to halk-tipi
+               open input halk
+               read halk no lock invalid continue,end-read
+               close halk
+
+               initialize soru-rec
+               open input soru
+               move halk-cevap to soru-kodu
+               read soru no lock invalid 
+                  display message box "Hatali Cevap, Lutfen Kontrol Ediniz..."
+                  modify Form1-gd-1(ii,2), cell-data = yed-cell-9
+                 not invalid
+                   evaluate new-cell-9
+                     when 1 modify Form1-gd-1(ii,3), cell-data = soru1   
+                     when 2 modify Form1-gd-1(ii,3), cell-data = soru2   
+                     when 3 modify Form1-gd-1(ii,3), cell-data = soru3   
+                     when 4 modify Form1-gd-1(ii,3), cell-data = soru4   
+                     when 5 modify Form1-gd-1(ii,3), cell-data = soru5   
+                   end-evaluate
+               end-read
+               close soru
+               perform kaydet
+             when 4 
+               inquire Form1-Gd-1(ii,i), cell-data in new-cell-x
+               perform kaydet
+             when 5
+               inquire Form1-Gd-1(ii,5), cell-data in new-cell-9-2
+               initialize soru-rec
+               open input soru
+               move 99 to soru-kodu
+               read soru no lock invalid 
+                  display message box "Hatali Cevap, Lutfen Kontrol Ediniz..."
+                  modify Form1-gd-1(ii,5), cell-data = yed-cell-9
+                 not invalid
+                   evaluate new-cell-9-2
+                     when 1 modify Form1-gd-1(ii,6), cell-data = soru1   
+                     when 2 modify Form1-gd-1(ii,6), cell-data = soru2   
+                     when 3 modify Form1-gd-1(ii,6), cell-data = soru3   
+                     when 4 modify Form1-gd-1(ii,6), cell-data = soru4   
+                     when 5 modify Form1-gd-1(ii,6), cell-data = soru5   
+                   end-evaluate
+               end-read
+               close soru
+               perform kaydet
+           end-evaluate
+    end-evaluate.
+     .
+*
+ kaydet.
+    open i-o cevap2.
+    move gun        to cevap2-gun. 
+    move ay         to cevap2-ay.
+    move yil        to cevap2-yil.
+    move isl-num    to cevap2-no.
+    inquire Form1-Gd-1(ii,1) hidden-data in cevap2-ana.
+    inquire Form1-Gd-1(ii,2) hidden-data in cevap2-alt.
+    inquire Form1-Gd-1(ii,2), cell-data in new-cell-9.
+    inquire Form1-Gd-1(ii,4), cell-data in new-cell-x.
+    inquire Form1-Gd-1(ii,5), cell-data in new-cell-9-2.
+    move new-cell-9   to cevap2-yanit.
+    move new-cell-x   to cevap2-yorum-detay.
+    move new-cell-9-2 to cevap2-yorum-kodu.
+    write cevap2-rec invalid 
+          rewrite cevap2-rec end-rewrite
+    end-write.
+    perform log-operation-cevap2.
+    close cevap2.
+
+     .
+*
+ dosya-oku.
+     open i-o cevap1.
+        initialize cevap1-rec
+           move isl-num  to cevap1-no
+           move tarih    to cevap1-tarih
+             read cevap1 no lock invalid
+           continue
+             not invalid
+                   move cevap1-adi       to cevap1-adi    of cevap1
+                   move cevap1-soyadi    to cevap1-soyadi of cevap1
+                   move cevap1-adres1    to cevap1-adres1 of cevap1
+                   move cevap1-adres2    to cevap1-adres2 of cevap1
+                   move cevap1-ulke      to cevap1-ulke   of cevap1
+                   move cevap1-acenta    to cevap1-acenta of cevap1
+                   move cevap1-oda-no    to cevap1-oda-no of cevap1
+                   move cevap1-tel       to cevap1-tel    of cevap1
+           end-read
+           close cevap1.           
+           display acc-04 acc-05 acc-06 acc-07 acc-08 acc-09 acc-10 acc-11 acc-12.
+*
+ acc-04-Aft-Procedure.    
+    if isl-num > 0
+       perform dosya-oku
+       initialize cevap1-rec
+       move tarih to cevap1-tarih
+       move isl-num to cevap1-no
+       open i-o cevap1
+       read cevap1 no lock invalid 
+              modify acc-01,enabled = true
+       modify acc-02,enabled = true
+       modify acc-03,enabled = true
+        modify acc-04,enabled = true
+               modify      acc-cb1  ,enabled = true
+           modify acc-05, ENABLED = true
+           modify acc-06, ENABLED = true
+           modify acc-07, ENABLED = true
+           modify acc-08, ENABLED = true
+           modify acc-09, ENABLED = true
+           modify acc-10, ENABLED = true
+           modify acc-11, ENABLED = true
+           modify acc-12, ENABLED = true    
+            MODIFY Form1-Pb-2,ENABLED = TRUE    
+       not invalid
+       modify acc-01,enabled = false
+       modify acc-02,enabled = false
+       modify acc-03,enabled = false
+           modify acc-04,enabled = false
+                  modify      acc-cb1  ,enabled = false
+           modify acc-05, ENABLED = false
+           modify acc-06, ENABLED = false
+           modify acc-07, ENABLED = false
+           modify acc-08, ENABLED = false
+           modify acc-09, ENABLED = false
+           modify acc-10, ENABLED = false
+           modify acc-11, ENABLED = false
+           modify acc-12, ENABLED = false
+            MODIFY Form1-Pb-2,ENABLED = FALSE
+               perform acen-oku
+               perform ulke-oku
+       end-read       
+       close cevap1       
+    end-if
+       
+     .
+*
+ acc-08-Aft-Procedure.
+    move 4 to accept-control.
+    move 19 to control-id.
+     .
+*
+ Form1-Gd-1-Ex-Other.
+  |  close takas.
+    delete file takas.
+     
+*
+ Form1-Gd-1-Aft-Procedure.
+   | close takas.
+    delete file takas.
+     .
+*
+ acc-05-Aft-Procedure.
+*    move 4  to accept-control
+*    move 24 to control-id.
+     .
+*
+ acc-06-Aft-Procedure.
+*    move 4  to accept-control
+*    move 24 to control-id.
+     .
+*
+ acc-07-Aft-Procedure.
+*    move 4  to accept-control
+*    move 24 to control-id.
+     .
+*
+ acc-08a-Aft-Procedure.
+     perform acen-oku
+     .
+*
+ acc-07a-Aft-Procedure.
+     if cevap1-ulke of cevap1 = spaces or cevap1-ulke of cevap1 = zeros or cevap1-ulke of cevap1 = 0 then
+     display message box " Bu Alan Bos Gecilemez.."
+                      title "Uyari"
+                      icon  mb-warning-icon
+      move 4 to accept-control
+      move 24 to control-id.
+
+     
+     .
+*
+ acc-12-Aft-Procedure.
+
+    move tarih to cevap1-tarih.
+    move isl-num to cevap1-no.
+    open i-o cevap1.
+    write cevap1-rec invalid 
+          rewrite cevap1-rec invalid
+                  stop " "
+          end-rewrite
+    end-write.
+
+    perform log-operation-cevap1.
+    close cevap1.
+     modify acc-01, ENABLED = false.
+      modify acc-02, ENABLED = false.
+       modify acc-03, ENABLED = false.
+        modify acc-04, ENABLED = false.
+               modify      acc-cb1  ,enabled = false
+    modify acc-05, ENABLED = false.
+    modify acc-06, ENABLED = false.
+    modify acc-07, ENABLED = false.
+    modify acc-08, ENABLED = false.
+    modify acc-09, ENABLED = false.
+    modify acc-10, ENABLED = false.
+    modify acc-11, ENABLED = false.
+    modify acc-12, ENABLED = false.
+    MODIFY Form1-Pb-2,ENABLED = FALSE.
+    
+     .
+*
+ acc-11-Aft-Procedure.
+    perform folio-ara 
+    if cevap1-oda-no of cevap1 = spaces or 
+       cevap1-oda-no of cevap1 = zeros or 
+       cevap1-oda-no of cevap1 = 0 then
+     display message box " Bu Alan Bos Gecilemez.."
+                      title "Uyari"
+                      icon  mb-warning-icon
+    initialize CEVAP1-ADI  CEVAP1-SOYADI CEVAP1-ADRES2 CEVAP1-ADRES1
+    DISPLAY acc-05 acc-06 acc-07 acc-08
+    move 4  to accept-control
+    move 22 to control-id.
+     .
+*
+ 
+*
+ Form1-Ex-Other.
+       evaluate key-status
+         when 1
+             if control-id = 22
+                perform oda-ara
+             end-if
+             if control-id = 20
+                perform acenta-ara
+             end-if
+         when 3
+             perform sil
+         when 4
+                
+             perform tumsil
+         
+         when 5
+             perform halk-bakim
+         when 6
+               open input cevap1
+                       initialize cevap1-rec
+                       move tarih to cevap1-tarih
+                       move isl-num to cevap1-no
+                       read cevap1 no lock invalid
+                              display message box "Bir sorun olustu, anketiniz kayit edilemedi !!!!!!! Tekrar deneyiniz !!!.."
+                              exit paragraph
+                       not invalid
+                              display message box "Anket Kaydi Tamamlandi. Devam Edebilirsiniz."
+                       end-read
+               close cevap1
+
+              perform fis-al
+              initialize cevap1-adi cevap1-soyadi cevap1-adres1 cevap1-adres2
+                         cevap1-ulke cevap1-acenta cevap1-oda-no cevap1-tel
+              display acc-05 acc-06 acc-07 acc-08 acc-09 acc-10 acc-11 acc-12
+         modify acc-01,enabled = true
+       modify acc-02,enabled = true
+       modify acc-03,enabled = true
+               modify      acc-cb1  ,enabled = true
+              modify acc-04,enabled = true
+              modify acc-05, ENABLED = true
+              modify acc-06, ENABLED = true
+              modify acc-07, ENABLED = true
+              modify acc-08, ENABLED = true
+              modify acc-09, ENABLED = true
+              modify acc-10, ENABLED = true
+              modify acc-11, ENABLED = true
+              modify acc-12, ENABLED = true
+               MODIFY Form1-Pb-2,ENABLED = TRUE
+
+              move 4  to accept-control
+              move 8  to control-id
+              display acc-04
+              modify Form1-Gd-1 , reset-grid = 1
+              perform anket-say
+       WHEN 8
+                 call "/asya/ytl/obj/otel/halkrap2.asy" using rez-cagir
+                    on exception perform callerr-proc
+                               not on exception
+                       cancel "/asya/ytl/obj/otel/halkrap2.asy" 
+                 end-call
+       when 2
+               if CEVAP1-ADI = spaces then 
+                     display message box "Anket adi bos gecilemez!...."
+                     exit paragraph
+               end-if
+               perform  acc-12-Aft-Procedure 
+               open input cevap1
+                       initialize cevap1-rec
+                       move tarih to cevap1-tarih
+                       move isl-num to cevap1-no
+                       read cevap1 no lock invalid
+                              display message box "Bir sorun olustu lutfen tekrar deneyiniz !!!.."
+                              exit paragraph
+                       not invalid
+                              continue
+                       end-read
+               close cevap1
+
+               perform Form1-Gd-1-Bef-Procedure
+                             perform anket-say
+             ||   call "W$KEYBUF" using 1,x"0d" 
+       end-evaluate.
+
+*
+ sil.
+     open i-o CEVAP2.
+                 move tarih to CEVAP2-TARIH.
+                 move isl-num to cevap2-no
+                 inquire Form1-Gd-1 cursor-y in ii
+                 inquire Form1-Gd-1 cursor-y in i
+                 inquire Form1-Gd-1(ii,1) hidden-data in cevap2-ana.
+                 inquire Form1-Gd-1(ii,2) hidden-data in cevap2-alt.
+
+               read cevap2 no lock invalid
+               
+                 continue
+                 not invalid
+*                    display message box cevap2-rec
+                    delete cevap2
+                modify Form1-Gd-1, RECORD-TO-DELETE ii
+                initialize cevap2-rec
+                display message box   "Silindi.....!!!" 
+                                title "Bilginize.......!!" 
+                                icon MB-WARNING-ICON
+
+               end-read
+               close cevap2.
+*
+ tumsil.
+    display message box   " Tum Fis Silinsin mi.. !"
+                    title " Uyari.."
+                    icon mb-warning-icon
+                    type mb-yes-no
+                    default 1
+                    returning donus
+    
+    modify Form1-Gd-1, RESET-GRID 1 
+    move "10" to fs-cevap2
+    move 4  to accept-control
+    move 8 to control-id 
+    open i-o cevap2 cevap1
+       initialize cevap2-rec
+        move tarih to CEVAP2-TARIH.
+        move isl-num to cevap2-no
+     start cevap2 key not < cevap2-anahtar invalid
+           continue
+     not invalid
+         perform with test after until fs-cevap2 = "10"
+          read cevap2 next no lock
+             end
+            
+        not end
+           if    tarih   = CEVAP2-TARIH and 
+                 isl-num   = cevap2-no
+                 delete cevap2
+           end-if
+     end-read
+     end-perform
+     end-start
+      initialize cevap1-rec
+      display acc-05 acc-06 acc-07 acc-08 acc-09 acc-10 acc-11
+         move tarih to CEVAP1-TARIH.
+         move isl-num to cevap1-no
+         start cevap1 key not < cevap1-anahtar invalid
+           continue
+     not invalid
+         perform with test after until fs-cevap1 = "10"
+          read cevap1 next no lock
+             end
+                   move "10" to fs-cevap1
+                   move 4  to accept-control
+                   move 8 to control-id
+       not end
+           if     tarih     = CEVAP1-TARIH and 
+                  isl-num   = cevap1-no
+                  delete cevap1
+           end-if
+     end-read
+     end-perform
+     end-start    
+     close cevap2 cevap1. 
+*
+ cagirlo.
+     initialize ulke-cagir
+                 call "/asya/ytl/obj/otel/ulkeara.asy" using ulke-cagir
+                    on exception perform callerr-proc
+                               not on exception
+                       cancel "/asya/ytl/obj/otel/ulkeara.asy" 
+                 end-call
+                       move ulke-cagir to cevap1-ulke of cevap1
+            display acc-09
+           move 4  to accept-control
+           move 20 to control-id
+           
+           
+     .
+*
+ acc-09-Ex-Other.
+    evaluate key-status
+          when 1
+             perform cagirlo
+     end-evaluate
+     
+     .
+*
+ acc-05-Ex-Other.
+       evaluate key-status
+          when 1
+           perform adicagir
+           perform rezoku
+           perform ulke-oku
+           perform acen-oku
+       end-evaluate.
+*
+ adicagir.
+      initialize ulke-cagir
+                 call "/asya/ytl/obj/otel/rezara.asy" using rez-cagir
+                    on exception perform callerr-proc
+                               not on exception
+                       cancel "/asya/ytl/obj/otel/rezara.asy" 
+                 end-call
+                       move rez-no-cagir to cevap1-adi of cevap1
+                      .
+*
+ rezoku.
+    open input rez.
+         move cevap1-adi of cevap1 to rez-anah
+            read rez no lock invalid
+              continue
+
+                 move  cevap1-adi    of cevap1  to rez-adi
+                 move  cevap1-soyadi of cevap1  to rez-soyadi
+                 move  cevap1-adres1 of cevap1  to rez-adres1
+                 move  cevap1-adres2 of cevap1  to rez-adres2
+                 move  cevap1-ulke   of cevap1  to rez-ulke
+                 move  cevap1-acenta of cevap1  to rez-acenta
+                 move  cevap1-oda-no of cevap1  to rez-odano
+
+            not invalid
+
+                 move rez-adi    to cevap1-adi    of cevap1
+                    display acc-05
+                 move rez-soyadi to cevap1-soyadi of cevap1
+                    display acc-06
+                 move rez-adres1 to cevap1-adres1 of cevap1
+                    display acc-07
+                 move rez-adres2 to cevap1-adres2 of cevap1
+                    display acc-08
+                 move rez-ulke   to cevap1-ulke   of cevap1
+                    display acc-09
+                 move rez-acenta to cevap1-acenta of cevap1
+                    display acc-10
+                 move rez-odano  to cevap1-oda-no of cevap1
+                    display acc-11
+                 
+               perform Acc-12-Aft-Procedure 
+                                                  
+            end-read.
+      close rez.
+*
+ acen-oku.
+     open input acenta
+     move cevap1-acenta  to acenta-kodu
+     read acenta no lock invalid 
+         move "Tanimsiz......"     to lb-acenta-value
+         display lb-acenta
+     not invalid
+         move acenta-adi           to lb-acenta-value
+         display lb-acenta
+     end-read
+     close acenta.
+*
+ ulke-oku.
+     open input ulke
+     initialize ulke-rec
+     move cevap1-ulke of cevap1 to ulke-anah
+     read ulke no lock invalid
+          move "Tanimsiz......"       to lb-ulke-value
+          display lb-ulke
+     not invalid
+         move ulke-adi                to lb-ulke-value
+         display lb-ulke
+     end-read
+     close ulke.
+*
+ acc-04-Ex-Other.         
+     .
+*
+ acc-03-Aft-Procedure.
+
+     .
+     .
+     .
+
+*
+ oda-ara.
+                
+      initialize oda-cagir.
+      if cb1(1:1) = "I"
+         move "D"   to oda-db-cagir
+      end-if.
+
+      call "/asya/ytl/obj/otel/odaara.asy" using oda-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/odaara.asy" 
+      end-call.
+      move odano-cagir     to cevap1-oda-no
+      display acc-11.
+
+*
+ folio-ara.
+       initialize folara-cagir
+       move cb1(1:1)                  to folara-cagri-tipi
+       move cevap1-oda-no             to folara-odano
+       call "/asya/ytl/obj/otel/folara.asy" using folara-cagir
+            on exception 
+            perform callerr-proc
+            not on exception
+         cancel "/asya/ytl/obj/otel/folara.asy"
+         if folara-no-cagir <> zeroes
+           move folara-no-cagir to yedek-foliono
+         end-if
+       end-call
+       perform konuk-bulundu.
+*
+ konuk-bulundu.
+       open input konuk ozluk
+       initialize konuk-rec ozluk-rec
+       move yedek-foliono   to konuk-folio
+       read konuk no lock invalid
+            continue
+       not invalid
+           move konuk-adi       to cevap1-adi
+           move konuk-soyadi    to cevap1-soyadi
+           move konuk-acenta    to cevap1-acenta
+           move konuk-ulke      to cevap1-ulke
+           initialize ozluk-rec 
+           move yedek-foliono   to ozluk-folio
+           read ozluk no lock invalid
+                continue
+           not invalid
+               move ozluk-adres1     to cevap1-adres1
+               move ozluk-adres2     to cevap1-adres2
+               move ozluk-telno      to cevap1-tel
+           end-read
+       end-read
+       close konuk ozluk
+       perform acen-oku
+       perform ulke-oku
+       display acc-05 acc-06 acc-07 acc-08 acc-09 acc-10 acc-11 acc-12
+        .
+*
+ acenta-ara.
+      initialize acenta-cagir
+      call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+          on exception perform callerr-proc
+          not on exception
+          cancel "/asya/ytl/obj/otel/acenara.asy" 
+       end-call
+       move acenta-cagir     to cevap1-acenta
+       display acc-10
+       move 4 to accept-control
+       move 20 to control-id
+       perform acen-oku.
+
+ 
+*
+ halk-bakim.
+     open i-o cevap1 cevap2
+     initialize cevap1-rec cevap2-rec
+     start cevap2 key not < cevap2-anahtar invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-cevap2 = "10"
+     read cevap2 next no lock end move "10"  to fs-cevap2
+     not at end
+           initialize cevap1-rec
+           move cevap2-tarih   to cevap1-tarih
+           move cevap2-no      to cevap1-no
+           read cevap1 no lock invalid 
+                write cevap1-rec invalid 
+                    display message box "Yazilamadi..."
+                end-write 
+           end-read 
+     end-read
+     end-perform
+     end-start
+     close cevap1 cevap2
+     display message box "Bakim Islemi Tamamlandi"
+                     title "[ Uyari ]"
+                     icon 1
+
+     .
+
+ 

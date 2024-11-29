@@ -1,0 +1,121 @@
+* islkilit.evt
+* islkilit.evt is generated from D:\asya\acugt.ytl\otel\islkilit.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     perform kilit-kontrol.
+     if not dosya-kilitli
+        goback.
+     move dosya-durum              to link-islkilit-durum.
+*
+ kilit-kontrol.
+     move link-islkilit-no         to islkilit-no
+     move isyeri-adres-tasi        to islkilit-isyeri
+     open i-o islkilit.
+     if fs-islkilit = "93"
+        set dosya-kilitli          to true
+        exit paragraph.
+     close islkilit.    
+     delete file islkilit.
+     
+*
+ Form1-Aft-Initdata.
+     open input islkilit
+     if fs-islkilit <> "00"
+        exit paragraph.
+     move 1 to islkilit-anah
+     read islkilit no lock invalid
+          initialize link-islkilit-durum
+          close islkilit
+          set exit-pushed to true
+     end-read
+     close islkilit.
+     move all low-values to acc-1-value acc-2-value acc-3-value acc-4-value
+                            acc-5-value acc-6-value acc-7-value.
+
+     open input kllnc
+     move islkilit-kllnc-kodu               to k-kodu
+     read kllnc no lock invalid
+          move "*" to k-adi k-soyadi
+     end-read
+     close kllnc.
+     inspect k-adi    replacing trailing spaces by low-values
+     inspect k-soyadi replacing trailing spaces by low-values
+     string acc-1-value
+            k-adi delimited by low-values
+            " " delimited by low-values
+            k-soyadi delimited by low-values
+            into acc-1-value
+   
+     string acc-2-value,
+            islkilit-son-gun         delimited by low-values
+            "/"                      delimited by low-values  
+            islkilit-son-ay          delimited by low-values
+            "/"                      delimited by low-values  
+            islkilit-son-yil         delimited by low-values
+            " "                      delimited by low-values  
+            islkilit-son-saat        delimited by low-values
+            ":"                      delimited by low-values  
+            islkilit-son-dakika      delimited by low-values
+            ":"                      delimited by low-values  
+            islkilit-son-saniye      delimited by low-values
+            into acc-2-value
+
+     move islkilit-machine       to acc-3-value.
+     move islkilit-process-id    to acc-4-value.
+     call "c$getpid" giving temp-pid.
+     move temp-pid               to acc-5-value.
+
+     perform pid-bilgi-al.
+
+     display acc-1 acc-2 acc-3 acc-4 acc-5 acc-6 acc-7.
+*
+ Form1-Ex-Other.
+     if key-status <> 2
+        exit paragraph.
+
+     move islkilit-process-id        to kill-pid.
+     call "c$system" using kill-proc.
+     display message box kill-proc.
+
+     display message box 
+             "Kilit acildi",x"0a0d",             
+             title "Bilgi".
+     set exit-pushed to true.
+
+
+
+*/
+ pid-bilgi-al.
+     move islkilit-process-id            to pid.
+     accept cakisma-no from time
+     move cakisma-dosya                  to acurcl-file
+     call "c$system" using acurcl-proc
+     open input cakisma.
+     perform with test after until fs-cakisma = "10"
+     initialize cakisma-rec
+     read cakisma next no lock end move "10" to fs-cakisma
+     not at end
+          move function numval-c(cakisma-pid-no)   to temp-pid
+          if pid <> temp-pid
+             exit perform cycle
+          end-if
+          move cakisma-makina                      to acc-6-value
+          move cakisma-kullanici                   to acc-7-value
+          exit perform
+     end-read
+     end-perform
+     close cakisma.
+     delete file cakisma.
+
+ 

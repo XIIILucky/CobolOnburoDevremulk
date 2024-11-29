@@ -1,0 +1,828 @@
+* banttanm.evt
+* banttanm.evt is generated from D:\asya\acugt.ytl\otel\banttanm.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ cmb-0101-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cmb-0101-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Bitmap-Clicked
+        EVALUATE Event-Control-Id
+        WHEN 201
+           PERFORM gd-foto-Ev-Msg-Bitmap-Clicked
+        END-EVALUATE
+     WHEN Other
+        EVALUATE Event-Control-Id
+        WHEN 38
+           PERFORM Form1-Gd-1-Ev-Other
+        END-EVALUATE
+     END-EVALUATE
+     .
+
+ Form2-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     open input genel   genel2
+     initialize genel-rec  genel2-rec
+     move 1 to genel-anahtar         genel2-anah
+     read genel no lock invalid 
+         continue 
+     end-read 
+     read genel2 no lock invalid 
+         continue 
+     end-read 
+     close genel  genel2
+***     perform acuserve-bant-adres-aktar 
+     .
+*
+ exception-procedure.
+     evaluate key-status
+         when 2 
+              if genel2-kolbandi-algo-stok-yok not = 1
+              perform kaydet-kontrol
+              if kaydetme = 1 
+                 exit paragraph
+              end-if              
+              end-if
+              perform kaydet
+              perform grid-yukle
+              perform yeni-kayit
+         when 3 
+              if k-kodu-tasi <> "ASYA" and "X   "
+                 display message box "Giris yetkiniz yoktur.." new-line
+                                     "Lütfen Asya-Soft ile iletiþime geçiniz.."
+                 exit paragraph 
+              end-if
+              exit paragraph
+              perform sil
+         when 5 
+              perform yeni-kayit
+         when 6
+             if bant-seri-no = spaces
+                 display message box "Kol bandi numarasi secilmeden tutanak eklenemez."
+                                 title "Uyari"
+                                 icon 1                                     
+                 exit paragraph 
+             end-if 
+             perform Acu-Form2-Routine  
+     end-evaluate.
+
+*
+ yeni-kayit.
+     initialize bant-seri-no bant-durumu pasif-neden
+     move "1" to bant-durumu
+     display cmb-0101 accept-0101 accept-0102
+     modify lb-0104,
+            title = spaces
+     modify lb-0105, 
+            title = spaces
+     modify accept-0102, 
+            enabled = false
+     move 4 to accept-control
+     move 8 to control-id.
+*
+ sil.    
+     if (spaces = kolbant-rez-no  or kolbant-seri-no) or
+        (k-kodu-tasi <> "ASYA" and "X    ")
+        exit paragraph
+     end-if
+     open i-o kolbant
+     initialize kolbant-rec 
+     move bant-rez-no  to kolbant-rez-no
+     move bant-seri-no to kolbant-seri-no 
+     read kolbant no lock invalid
+          continue
+     not invalid
+         delete kolbant end-delete
+         display message box "Silme islemi tamamlandi.."
+     end-read
+     close kolbant
+     perform grid-yukle.
+*
+ kaydet.
+     open i-o kolbant musteri
+     initialize kolbant-rec 
+     move bant-rez-no  to kolbant-rez-no
+     move bant-seri-no to kolbant-seri-no
+     read kolbant no lock invalid
+          move tarih-tasi            to kolbant-kayit-tar 
+          move k-kodu-tasi           to kolbant-kayit-staff
+     not invalid
+          move pasif-neden           to kolbant-p-aciklama
+     end-read
+     move k-kodu-tasi           to kolbant-deg-staff
+     move tarih-tasi            to kolbant-deg-tar
+     move bant-durumu(1:1)      to kolbant-durumu
+     if kolbant-durumu = 2 or 3 
+        initialize musteri-rec 
+        move kolbant-mus-anah to m-profil
+        read musteri no lock invalid
+             continue
+        not invalid
+            if musteri-kol-bandi <> spaces 
+               initialize musteri-kol-bandi
+               rewrite musteri-rec invalid
+                       stop " "
+               end-rewrite
+            end-if
+        end-read
+        initialize kolbant-mus-anah
+     end-if
+     if kolbant-rez-no <> 0 
+        write kolbant-rec invalid
+              rewrite kolbant-rec end-rewrite
+        end-write
+     end-if
+     close kolbant musteri
+     display message box "Kayit islemi tamamlandi..".
+*
+ form1-aft-initdata.
+     perform kolbandi-musteri-bakimi-yap
+
+        modify accept-0102, 
+               enabled = false
+     open i-o rez 
+     initialize rez-rec  
+     move link-bant-rez-no to bant-rez-no rez-no
+     read rez no lock invalid
+          continue
+     end-read
+     
+     string adi-soyadi
+            rez-adi    delimited by "    "
+            " "        delimited by size 
+            rez-soyadi delimited by "    "
+     into adi-soyadi
+     string cin-cout
+            rez-gir-gun delimited by "   "
+            "/"         delimited by size
+            rez-gir-ay  delimited by "   "
+            "/"         delimited by size
+            rez-gir-yil delimited by "   "
+            "-"         delimited by size
+            rez-cik-gun delimited by "   "
+            "/"         delimited by size
+            rez-cik-ay  delimited by "   "
+            "/"         delimited by size
+            rez-cik-yil delimited by "   "
+     into cin-cout
+     modify lb-0101, TITLE = adi-soyadi
+     modify lb-0102, TITLE = rez-odano
+     modify lb-0103, TITLE = cin-cout
+
+     display accept-0001
+     close rez 
+     
+     perform grid-yukle
+     .
+*
+ kaydet-kontrol.
+      open i-o rez kllnc takvim
+      initialize kaydetme kllnc-rec rez-rec
+      move k-kodu-tasi to k-kodu 
+      read kllnc no lock invalid
+           continue
+      end-read
+      if bant-durumu(1:1) > 1
+         if k-konum-upgrade-yapabilir = 0
+            display message box "Pasife alma yetkiniz bulunmamaktadir." 
+            move 1 to kaydetme
+            close rez kllnc takvim
+            exit paragraph
+         end-if
+         if pasif-neden = spaces and bant-durumu(1:1) <> 4
+            display message box "Aciklama girilmeden kolbandi pasife alinamaz"
+            move 1 to kaydetme 
+            move 4 to accept-control
+            move 9 to control-id
+            close rez kllnc takvim
+            exit paragraph
+         end-if
+      else
+        move 1 to kaydetme
+        close rez kllnc takvim
+        exit paragraph
+      end-if
+      
+      if spaces = bant-seri-no 
+         move 1 to kaydetme
+         close rez kllnc takvim
+         exit paragraph
+      end-if
+      move bant-rez-no to rez-no
+      read rez no lock invalid
+           display message box "Rezervasyonu kaydetmeden kol bandi tanimlanamaz.." 
+           close rez kllnc takvim
+           move 1 to kaydetme 
+           exit paragraph
+      end-read
+      close rez kllnc 
+      if bant-durumu(1:1) = 1
+         open i-o kolbant
+         initialize kolbant-rec 
+         move bant-rez-no  to kolbant-rez-no
+         move bant-seri-no to kolbant-seri-no
+         read kolbant no lock invalid
+              continue
+         end-read
+         if kolbant-durumu > 1
+            initialize takvim-rec gun-say
+            move kolbant-deg-tar to takvim-anah 
+            start takvim key not < takvim-anah invalid
+                  continue
+            not invalid
+            perform with test after until fs-takvim = "10"
+            read takvim next no lock end move "10" to fs-takvim
+            not at end 
+                if gun-say = 2 
+                   exit perform
+                end-if
+                move takvim-anah to tmp-tar
+                add 1 to gun-say
+
+            end-read
+            end-perform
+            end-start
+            if tmp-tar < tarih-tasi
+               display message box "Belirli gun sonrasi pasif kolbantlari tekrar aktif yapilamaz.."
+               move 1 to kaydetme 
+               exit paragraph
+            end-if
+         end-if
+         perform bant-kisi-kontrol
+         close kolbant
+         if bant-fazla = 1 
+            display message box "Aktif kolbandi sayisi rezervasyon toplam kisi sayisindan fazla olamaz." new-line
+                                "Daha fazla kolbandi tanimlamasi icin kayitli kolbantlarini pasif yapmaniz gerekir."
+            move 1 to kaydetme
+            exit paragraph
+         end-if
+        
+      end-if
+      close takvim
+      if bant-seri(7:1) <> space 
+         move bant-seri(1:6) to bant-kont
+         move bant-seri      to fullbant-kont
+         perform kolbant-algo-kont
+         if hatali-bant = 1 
+            display message box "Girilen bant serisi Algoritmaya uymuyor." new-line
+                                "Bant yazma islemi iptal edilmistir.."
+            exit paragraph
+         end-if
+      else
+         display message box "Girilen bant serisi 7 haneden az olamaz.." new-line
+                            "Bant yazma islemi iptal edilmistir.."
+         exit paragraph
+      end-if
+      perform mukerrer-kayit-kontrol
+      if mukerrer-var <> 0
+         if mukerrer-rez <> bant-rez-no
+            display message box "Seri no farklý rezervasyonda tanimli.." new-line
+                                mukerrer-rez
+            move 1 to kaydetme
+         end-if        
+      end-if
+     
+      .
+*
+ mukerrer-kayit-kontrol.
+      open i-o kolbant
+      initialize kolbant-rec mukerrer-kayit mukerrer-var
+      move bant-seri-no to kolbant-seri-no
+      start kolbant key not < kolbant-anah1 invalid
+            continue
+      not invalid
+      perform with test after until fs-kolbant = "10" 
+      read kolbant next no lock end move "10" to fs-kolbant
+      not at end 
+          if bant-seri-no <> kolbant-seri-no
+             exit perform
+          end-if
+          if mukerrer-kayit(10:) = spaces
+             move kolbant-seri-no to mukerrer-seri
+             move kolbant-rez-no  to mukerrer-rez
+             move 1 to mukerrer-var
+             exit perform 
+          end-if
+
+      end-read
+      end-perform 
+      end-start
+      close kolbant
+     .
+*
+ grid-yukle.
+     modify Form1-Gd-1, reset-grid  = 1
+                        mass-update = 1
+
+     initialize form1-gd-1-record
+     move "Sr"                  to gd-1-col-1
+     move "Bant Seri No"        to gd-1-col-2
+     move "Durum"               to gd-1-col-3
+     move "Degistiren / Tarih"  to gd-1-col-4
+     move "Kayit Yapan / Tarih" to gd-1-col-5
+     move "Profil No"           to gd-1-col-6
+     move "Ex"                  to gd-1-col-7
+     move "Uz"                  to gd-1-col-8
+     move "Dz"                  to gd-1-col-9
+     modify Form1-Gd-1, 
+            record-to-add(form1-gd-1-record)
+
+     open i-o kolbant bantstok yanrez 
+     initialize kolbant-rec
+     move 2           to xiii
+     move bant-rez-no to kolbant-rez-no 
+     start kolbant key not < kolbant-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-kolbant = "10" 
+     read kolbant next no lock end move "10" to fs-kolbant
+     not at end 
+
+         if bant-rez-no <> kolbant-rez-no
+            exit perform
+         end-if    
+         initialize form1-gd-1-record kayit-tar-staff deg-tar-staff kayit-prof-sir
+         subtract 1 from xiii
+         move xiii                to gd-1-col-1
+         add 1 to xiii
+         move kolbant-seri-no     to gd-1-col-2
+         evaluate kolbant-durumu 
+             when 1 move "1-Aktif"  to gd-1-col-3
+             when 2 move "2-Zaiyat" to gd-1-col-3
+             when 3 move "3-Kayip"  to gd-1-col-3
+             when 4 move "4-C-out"  to gd-1-col-3
+         end-evaluate         
+         string deg-tar-staff
+                kolbant-deg-staff   delimited by "    "
+                "-"                 delimited by size 
+                kolbant-deg-gun     delimited by "    "
+                "/"                 delimited by size 
+                kolbant-deg-ay      delimited by "    "
+                "/"                 delimited by size 
+                kolbant-deg-yil     delimited by "    "
+           into deg-tar-staff
+           move deg-tar-staff     to gd-1-col-4
+         string kayit-tar-staff
+                kolbant-kayit-staff delimited by "    "
+                "-"                 delimited by size 
+                kolbant-kayit-gun   delimited by "    "
+                "/"                 delimited by size 
+                kolbant-kayit-ay    delimited by "    "
+                "/"                 delimited by size 
+                kolbant-kayit-yil   delimited by "    "
+           into kayit-tar-staff
+           move kayit-tar-staff   to gd-1-col-5
+         string kayit-prof-sir
+                kolbant-mus-sirket  delimited by "    "
+                "-"                 delimited by size
+                kolbant-mus-profil  delimited by "    "
+           into kayit-prof-sir
+           move kayit-prof-sir     to gd-1-col-6
+         if kolbant-ex-pax = 1
+            move "E"       to gd-1-col-7
+         end-if
+         if kolbant-uzatma = 1
+            move "U"       to gd-1-col-8
+         end-if
+         if kolbant-duzeltme = 1
+            move "D"       to gd-1-col-9
+         end-if
+         modify Form1-Gd-1, 
+                record-to-add(form1-gd-1-record)          
+         modify Form1-Gd-1(xiii,1), 
+                          hidden-data = kolbant-anah
+         initialize yanrez-rec ii
+         move kolbant-rez-no to yanrez-rezno
+         start yanrez key not < yanrez-anah invalid
+               continue
+         not invalid
+         perform with test after until fs-yanrez = "10"
+         read yanrez next no lock end move "10" to fs-yanrez 
+         not at end
+             if yanrez-rezno <> kolbant-rez-no 
+                exit perform 
+             end-if
+             if yanrez-profil-anah = kolbant-mus-anah
+                move 1 to ii
+             end-if
+         end-read
+         end-perform
+         end-start
+         if ii <> 1
+            modify form1-gd-1(xiii),
+                             ROW-COLOR = 417
+         end-if
+         add 1 to xiii
+
+     end-read
+     end-perform
+     end-start
+     close kolbant bantstok yanrez 
+     modify Form1-Gd-1, mass-update = 0
+      .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+         when msg-begin-entry     
+              move event-action-fail to event-action
+              inquire form1-gd-1(event-data-2,1), 
+                      hidden-data in yedek-anah
+              perform kayit-goruntule
+         
+     end-evaluate
+     .
+*
+ kayit-goruntule.
+      open i-o kolbant musteri
+      initialize bant-durumu kayit-tar-staff deg-tar-staff kolbant-rec adi-soyadi
+      move yedek-rez  to kolbant-rez-no
+      move yedek-seri to kolbant-seri-no 
+      read kolbant no lock invalid
+           display message box "Kayit bulunamadi.." new-line
+                               "Lutfen Asya-Soft ile iletisime geciniz.."    
+      not invalid
+          string kayit-tar-staff
+                 kolbant-kayit-staff delimited by "    "
+                 "-"                 delimited by size 
+                 kolbant-kayit-gun   delimited by "    "
+                 "/"                 delimited by size 
+                 kolbant-kayit-ay    delimited by "    "
+                 "/"                 delimited by size 
+                 kolbant-kayit-yil   delimited by "    "
+          into kayit-tar-staff
+          string deg-tar-staff
+                 kolbant-deg-staff   delimited by "    "
+                 "-"                 delimited by size 
+                 kolbant-deg-gun     delimited by "    "
+                 "/"                 delimited by size 
+                 kolbant-deg-ay      delimited by "    "
+                 "/"                 delimited by size 
+                 kolbant-deg-yil     delimited by "    "
+          into deg-tar-staff
+          move kolbant-seri-no    to bant-seri-no
+          move kolbant-durumu     to bant-durumu(1:1)
+          move kolbant-p-aciklama to pasif-neden
+          modify lb-0104, TITLE = deg-tar-staff
+          modify lb-0105, TITLE = kayit-tar-staff
+          modify accept-0101, ENABLED = false
+          display cmb-0101 accept-0101 accept-0102
+          if kolbant-mus-sirket <> spaces
+             initialize musteri-rec 
+             move kolbant-mus-anah to m-profil 
+             read musteri no lock invalid
+                  continue
+             not invalid
+                 string adi-soyadi
+                        musteri-adi    delimited by "    "
+                        " "            delimited by size 
+                        musteri-soyadi delimited by "    "
+                   into adi-soyadi
+                   modify lb-0101, TITLE = adi-soyadi
+             end-read
+
+          end-if
+      close kolbant musteri
+      .
+*
+ accept-0101-Aft-Procedure.    
+     move 4 to accept-control
+     move 19 to control-id      
+     .
+*
+ gd-foto-Ev-Msg-Bitmap-Clicked.
+     evaluate event-data-1
+     when 3
+        if event-data-2 = 2
+           move 1                 to resim-no
+           perform rezervasyon-formu-ekle-1
+           modify gd-foto(2,2), CELL-DATA(rename-dosya)
+        end-if
+        if event-data-2 = 3
+           move 2                 to resim-no
+           perform rezervasyon-formu-ekle-1
+           modify gd-foto(3,2), CELL-DATA(rename-dosya)
+        end-if
+        if event-data-2 = 4
+           move 3                 to resim-no
+           perform rezervasyon-formu-ekle-1
+           modify gd-foto(4,2), CELL-DATA(rename-dosya)
+        end-if
+        if event-data-2 = 5
+           move 4                 to resim-no
+           perform rezervasyon-formu-ekle-1
+           modify gd-foto(5,2), CELL-DATA(rename-dosya)
+        end-if
+        if event-data-2 = 6
+           move 5                 to resim-no
+           perform rezervasyon-formu-ekle-1
+           modify gd-foto(6,2), CELL-DATA(rename-dosya)
+        end-if
+     when 4
+        if event-data-2 = 2
+           move 1                 to resim-no
+           perform rezervasyon-resim-goruntule-1
+        end-if
+        if event-data-2 = 3
+           move 2                 to resim-no
+           perform rezervasyon-resim-goruntule-1
+        end-if
+        if event-data-2 = 4
+           move 3                 to resim-no
+           perform rezervasyon-resim-goruntule-1
+        end-if
+        if event-data-2 = 5
+           move 4                to resim-no
+           perform rezervasyon-resim-goruntule-1
+        end-if
+        if event-data-2 = 6
+           move 5                to resim-no
+           perform rezervasyon-resim-goruntule-1
+        end-if
+     end-evaluate.
+*
+ rezervasyon-formu-ekle-1.
+    move "Pdf Dosyalari (*.pdf)|*.pdf" to 
+          opnsav-filters
+    call "c$opensavebox" using opensave-open-box,
+                               opensave-data,
+                         giving opensave-return.
+    if opensave-return > 0
+       perform resim-upload-1
+    end-if.
+*
+ resim-upload-1.
+    move low-values           to komut1 komut2 rename-dosya
+    inspect opnsav-filename 
+            replacing trailing spaces by low-values
+    inspect opnsav-basename 
+            replacing trailing spaces by low-values
+    inspect opnsav-basename,
+            replacing all spaces by "_"
+    inspect bant-seri-no replacing trailing spaces by low-values 
+    if is-remote
+        string komut1,
+              "@[DISPLAY]:"      delimited by low-values,
+              opnsav-filename    delimited by low-values,
+              into komut1
+
+        string rename-dosya,
+               bant-seri-no    delimited by low-values
+               "-"       delimited by low-values
+               resim-no  delimited by low-values 
+               ".pdf"    delimited by low-values 
+        into rename-dosya        
+
+        CALL "RENAME" using opnsav-basename rename-dosya
+
+        string komut2,
+              base-dir           delimited by low-values
+              rename-dosya       delimited by low-values
+              into komut2
+    else
+        string komut1,
+               opnsav-filename delimited by low-values
+        into komut1
+        string rename-dosya,
+               bant-seri-no   delimited by low-values 
+               "-"      delimited by low-values
+               resim-no      delimited by low-values 
+               ".pdf"            delimited by low-values 
+        into rename-dosya        
+
+        CALL "RENAME" using opnsav-basename rename-dosya
+        string komut2,
+               base-dir        delimited by low-values
+               rename-dosya    delimited by low-values
+        into komut2
+    end-if.
+    call "c$copy" using komut1
+                        komut2
+                  giving copy-status.
+*    move rename-dosya               to resim-rez-form 
+*    display acc-rez-form
+    if copy-status <> 0
+       display message box 
+               opnsav-filename, " dosyasi",x"0a0d",
+               base-dir," klasorune kopyalanamadi ..."
+               icon mb_error_icon
+               title "Hata"
+    end-if.
+     
+     .
+*
+ rezervasyon-resim-goruntule-1.
+    move low-values to opnsav-filename
+    
+    string opnsav-filename
+           bant-seri-no delimited by low-values
+           "-"      delimited by low-values
+           resim-no      delimited by low-values 
+           ".pdf"  delimited by low-values
+    into opnsav-filename
+
+    if is-remote
+        move low-values           to komut2 local-file
+        string local-file,
+              "@[DISPLAY]:"    delimited by low-values
+               local-folder    delimited by low-values
+               opnsav-filename delimited by low-values
+        into local-file
+
+        string komut2,
+               base-dir           delimited by low-values
+               opnsav-filename    delimited by low-values
+        into komut2
+
+    else
+        move low-values           to komut2 local-file
+        string local-file,
+               local-folder       delimited by low-values
+               opnsav-filename    delimited by low-values
+        into local-file
+
+        string komut2,
+               base-dir           delimited by low-values
+               opnsav-filename    delimited by low-values
+        into komut2
+    end-if.
+
+    call "c$copy" using komut2|kopyaloanýyorrr...
+                        local-file
+                  giving copy-status.
+    if copy-status <> 0
+        display message box "Goruntulenecek Tutanak Bulunamadi..."
+                        title "[ Uyari ]"
+                        icon 1
+    end-if
+    if copy-status = 0
+       move 1 to resim-bulundu
+       if resim-bulundu = 1
+          perform resim-teklif-1
+       end-if
+    end-if.
+*
+ resim-teklif-1.
+       if is-remote 
+          set shell32-dll-uzak to true
+          set shell-execute-uzak to true
+       else
+          set shell32-dll-yerel to true
+          set shell-execute-yerel to true
+       end-if
+       call shell32-dll on exception 
+            display message box
+                   "shell32.dll dosyasi bulunamiyor ....",x"0a0d",
+                   "Excel dosyaniz otomatik olarak acilmayacaktir",x"0a0d",
+                   "Kaydettiðiniz dosyaya cift tiklayarak acabilirsiniz ... !"
+                   icon mb_error_icon 
+                   title "Hata"
+            exit paragraph.
+       if is-remote
+          move local-file(12:)   to local-file(1:)
+       end-if
+       inspect local-file replacing trailing spaces by low-values
+       inspect local-file replacing all "/"  by "\"
+
+       call shell-execute using by value 0,
+                                by reference ac-komut
+                                by reference local-file,
+                                null
+                                null
+                                by value SW_SHOW
+        on exception
+            display message box
+                   "ShellExecute Proseduru bulunamiyor ....",x"0a0d",
+                   "Excel dosyaniz otomatik olarak acilmayacaktir",x"0a0d",
+                   "Kaydettiðiniz dosyaya cift tiklayarak acabilirsiniz ... !"
+                   icon mb_error_icon 
+                   title "Hata"
+            cancel shell32-dll
+            exit paragraph
+       end-call.
+       cancel shell-execute.
+       cancel shell32-dll.
+*
+ Form2-Aft-Initdata.
+    
+     initialize i 
+    perform varying i 
+              from 1
+              by 1
+              until i > 5
+                   move i         to resim-no        
+                   perform resim-var-yok-kontrol-1
+    end-perform     
+     .
+
+*
+ resim-var-yok-kontrol-1.
+    move low-values to opnsav-filename
+    inspect bant-seri-no replacing trailing spaces by low-values 
+
+    string opnsav-filename
+           bant-seri-no delimited by low-values
+           "-"    delimited by low-values 
+           resim-no    delimited by low-values 
+           ".pdf"  delimited by low-values
+    into opnsav-filename
+
+    if is-remote
+        move low-values           to komut2 local-file
+        string local-file,
+              "@[DISPLAY]:"    delimited by low-values
+               local-folder    delimited by low-values
+               opnsav-filename delimited by low-values
+        into local-file
+
+        string komut2,
+               base-dir           delimited by low-values
+               opnsav-filename    delimited by low-values
+        into komut2
+
+    else
+        move low-values           to komut2 local-file
+        string local-file,
+               local-folder       delimited by low-values
+               opnsav-filename    delimited by low-values
+        into local-file
+
+        string komut2,
+               base-dir           delimited by low-values
+               opnsav-filename    delimited by low-values
+        into komut2
+    end-if.
+
+    call "c$copy" using komut2|kopyaloanýyorrr...
+                        local-file
+                  giving copy-status.
+    if copy-status = 0
+       initialize foto-rec
+       modify gd-foto(i+ 1,2),cell-data(opnsav-filename) 
+    end-if.
+
+*
+ cmb-0101-Ex-Ntf-Selchange.
+     if bant-durumu(1:1) = 2 or 3
+        modify accept-0102, enabled = true
+     else
+        modify accept-0102, enabled = false
+     end-if
+     .
+*
+ kolbandi-musteri-bakimi-yap.
+     open i-o kolbant musteri
+     initialize kolbant-rec 
+     move link-bant-rez-no to kolbant-rez-no
+     start kolbant key not < kolbant-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-kolbant = "10" 
+     read kolbant next no lock end move "10" to fs-kolbant
+     not at end 
+         if link-bant-rez-no <> kolbant-rez-no
+            exit perform 
+         end-if
+         if kolbant-bakim = 1 or 
+            kolbant-durumu <> 1 
+            exit perform cycle
+         end-if
+
+         initialize musteri-rec 
+         move kolbant-mus-anah to m-profil
+         read musteri no lock invalid
+              move 0 to kolbant-bakim
+              rewrite kolbant-rec end-rewrite
+         not invalid
+             if musteri-kol-bandi = spaces
+                move kolbant-seri-no to musteri-kol-bandi
+                rewrite musteri-rec end-rewrite 
+             end-if
+         end-read
+     end-read
+     end-perform 
+     end-start
+     close kolbant musteri
+     .
+
+ 

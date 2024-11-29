@@ -1,0 +1,830 @@
+* excl2mah.evt
+* excl2mah.evt is generated from C:\asya\acugt.ets\muha.922\excl2mah.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+
+     initialize deg
+     move 1 to enb-1
+     move 0 to enb-2.
+     move 1 to hesap-ilk-satir.
+
+*
+ Form1-Aft-Initdata.
+     perform gd-reset.
+
+     open input kllnc.
+     move k-kodu-tasi     to k-kodu
+     read kllnc no lock invalid
+          display message box 
+                  "Gecersiz Kullanici kodu",
+                  icon mb_error_icon
+                  title "Hata",
+                  close kllnc
+                  perform destroy-window-proc
+                  goback
+     end-read.
+     if k-super = "E" 
+        continue 
+     else
+        close kllnc
+        display message box
+                "Bu programi kullanabilmeniz icin",new-line,
+                "Supervisor yetkisinde olmaniz gerekiyor",new-line,
+                icon mb_error_icon
+                title "Bilginize",
+        perform destroy-window-proc
+        goback
+     end-if.
+     close kllnc.
+
+*
+ gd-reset.
+     modify form1-gd-1,
+            reset-grid = 1
+            mass-update = 1
+     initialize form1-gd-1-record
+     move "Fis   "        to gd-1-col-0
+     move "Sira"          to gd-1-col-1
+     move "Hesap Kodu"    to gd-1-col-2
+     move "Hesap Adi"     to gd-1-col-3
+     move "Aciklama"      to gd-1-col-4
+     move "Borc Tutar"    to gd-1-col-5
+     move "Alacak Tutar"  to gd-1-col-6
+     move "Belge No"      to gd-1-col-7
+     move "Ref"           to gd-1-col-8
+     move "BK"            to gd-1-col-9
+     move "DK"            to gd-1-col-10
+     move "Doviz Kuru"    to gd-1-col-11
+     move "Doviz Tutari"  to gd-1-col-12
+     move "Masraf"        to gd-1-col-13
+     move "Kdv"           to gd-1-col-14
+     move "Tarih"         to gd-1-col-15
+     modify form1-gd-1,
+            record-to-add(form1-gd-1-record)
+            mass-update = 0.
+     
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 1
+          perform xls-yer
+     when 2
+          perform xls-ac
+     when 3
+          perform xls-yaz
+
+     end-evaluate.
+
+*
+ xls-ac.
+     if enb-1 <> 1
+        exit paragraph.
+
+     if xls-adres = spaces
+        exit paragraph.
+
+     if hesap-ilk-satir = 0
+        move 4 to accept-control
+        move 20 to control-id
+        exit paragraph.
+
+     if hesap-son-satir < hesap-ilk-satir
+        move 4 to accept-control
+        move 22 to control-id
+        exit paragraph.
+
+     if mahsup-hesap-yer = 0
+        move 4 to accept-control
+        move 8 to control-id
+        exit paragraph.
+
+     if mahsup-sira-yer = 0
+        move 4 to accept-control
+        move 12 to control-id
+        exit paragraph.
+
+
+     if mahsup-aciklama-yer = 0
+        move 4 to accept-control
+        move 26 to control-id
+        exit paragraph.
+
+     if mahsup-borc-tl-yer = 0
+        move 4 to accept-control
+        move 24 to control-id
+        exit paragraph.
+
+     if mahsup-alac-tl-yer = 0
+        move 4 to accept-control
+        move 29 to control-id
+        exit paragraph.
+
+
+
+    inspect xls-adres replacing trailing spaces by low-values
+
+    create  application    of excel 
+            handle          in hexcelapp. 
+    modify  hexcelapp
+            @workbooks::@open(xls-adres)
+            giving hexcelwkb.
+    inquire hexcelapp,       
+            @worksheets::@item(1) in hexcelwks. 
+    modify hexcelapp, 
+            @visible = 0.
+
+    perform gd-reset.
+
+******
+     initialize frame-degiskenler
+     compute frame-kayit-sayi = hesap-son-satir - hesap-ilk-satir
+     move 6                              to frame-win-line
+     move 10                             to frame-win-pos
+     move "Belge'den bilgiler aliniyor"      to frame-title
+     perform frame-ac
+******
+
+    open input hesap
+
+    initialize durum
+    if csvden-al
+       perform read-from-csv
+    else
+       perform read-from-ole
+    end-if
+
+
+
+    close hesap
+
+    modify  hexcelwkb,
+            @close(0).
+*////@CLOSE(1) oldugu zaman kilitleme yapar dikkat
+    destroy hexcelwks. 
+    destroy hexcelwkb. 
+    modify  hexcelapp
+            workbooks::close().
+    modify  hexcelapp
+            @quit(). 
+    destroy hexcelapp.
+
+    perform frame-kapat.
+
+    move 0 to enb-1
+    move 1 to enb-2
+    display form1.
+
+*
+ xls-yer.
+     if enb-1 <> 1
+        exit paragraph.
+
+     initialize opensave-data opensave-status
+     string 
+     "Excel Calisma sayfasi (*.xls;*.xlsx)|*.xls;*.xlsx|" delimited by size
+               into opnsav-filters
+     move "xls"           to opnsav-default-ext
+     call "c$opensavebox" using opensave-open-box
+                                opensave-data
+                          giving opensave-status
+     end-call.
+     if opensave-status <> 1 
+        exit paragraph.
+
+     move opnsav-filename    to xls-adres.
+     display acc-1.
+     move 4 to accept-control
+     move 3 to control-id.
+
+     
+     .
+ log-call.
+********** PROGRAMA GIRIS LOGA GONDERILIYOR
+               initialize call-alan1
+                          call-alan2
+                          call-alan3
+                          call-alan4
+                          call-alan5
+                          call-alan6
+*               perform log-no-al
+*               move genelfis-log-no   to call-anah
+*               move "Bas.Tar: "       to call-alan1
+*               move bas-gun           to call-alan1(10:)
+*               move "/"               to call-alan1(12:)
+*               move bas-ay            to call-alan1(13:)
+*               move "/"               to call-alan1(15:)
+*               move bas-yil           to call-alan1(16:)
+*               move "Bit.Tar: "       to call-alan1(21:)
+*               move bit-gun           to call-alan1(31:)
+*               move "/"               to call-alan1(33:)
+*               move bit-ay            to call-alan1(34:)
+*               move "/"               to call-alan1(36:)
+*               move bit-yil           to call-alan1(37:)
+*               move "Yevmiye No: "    to call-alan2
+*               move numara            to call-alan2(13:)
+*               move "Fis no: "        to call-alan3
+*               move fisim             to call-alan3(9:)
+*               perform log-operation-calling  
+
+
+
+     .
+
+
+*
+ xls-yaz.
+     if enb-2 <> 1
+        exit paragraph.
+
+     inquire Form1-Gd-1, 
+             last-row in ii
+
+     if ii < 2
+        display message box 
+                "Yetersiz bilgi"
+                icon mb_warning_icon
+                title "Bilgi"
+        exit paragraph.
+
+
+     open i-o mahsup islenen genelfis takvim.
+     initialize genelfis-rec
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          close mahsup genelfis islenen
+          display message box
+                  "Mahsup fis numarasi alinamadi !!!"
+                  icon mb_error_icon
+                  title "Hata"
+                  exit paragraph
+     end-read
+     add 1            to mahsup-oto
+     rewrite genelfis-rec end-rewrite
+     close genelfis.
+
+
+******
+     initialize frame-degiskenler
+     compute frame-kayit-sayi = hesap-son-satir - hesap-ilk-satir
+     move 6                              to frame-win-line
+     move 10                             to frame-win-pos
+     move "Kayitlar olusturuluyor "      to frame-title
+     perform frame-ac
+******
+
+     perform varying i
+             from 2
+             by 1
+             until i > ii
+             
+             perform frame-goster               
+
+
+             inquire form1-gd-1(i)
+                     record-data in form1-gd-1-record
+
+             inspect form1-gd-1-record replacing all low-values by spaces
+
+             initialize mahsup-rec borcum alacagim takvim-rec
+             if mahsup-tarih-yer = 0
+                accept mahsup-tarih from century-date
+             else
+                move function numval-c(gd-1-col-15(1:2)) to mahsup-gun
+                move function numval-c(gd-1-col-15(4:2)) to mahsup-ay
+                move function numval-c(gd-1-col-15(7:4)) to mahsup-yil
+             end-if
+
+
+             move mahsup-tarih                           to takvim-anah
+             read takvim no lock invalid
+                  compute sayim = i + hesap-ilk-satir - 1
+                  display message box 
+                          sayim," numarali satirda tanimsiz tarih bilgisi",x"0a0d",
+                          "Gelen tarih bilgisi (gg.aa.yyyy) : ",mahsup-gun,".",mahsup-ay,".",mahsup-yil,x"0a0d"
+                          "Tarih formati gg.aa.yyyy olmali ",x"0a0d",
+                          "Bu satir islenmeyecektir !!!",x"0a0d0a0d"
+                          "Aktarim iptal edilsinmi ?"
+                          icon mb_warning_icon
+                          title "Hata"
+                          type mb_yes_no
+                          default 1
+                          returning return-code
+                  if return-code = 1
+                     exit perform
+                  else
+                     exit perform cycle
+                  end-if
+             end-read
+
+
+
+             if mahsup-fis-no-yer = 0
+                move mahsup-oto                          to mahsup-fis-no
+             else
+                move gd-1-col-0                          to mahsup-fis-no
+             end-if
+             move gd-1-col-1                             to mahsup-fis-sira
+             if mahsup-fis-sira = zeroes
+                display message box 
+                        "Sira numarasi 0 olamaz !!!",x"0a0d",
+                        "Bilgi : ",form1-gd-1-record,x"0a0d",
+                        "Bu satir islenmeyecektir !!!" ,x"0a0d0a0d"
+                        "Aktarim iptal edilsinmi ?"
+                        icon mb_warning_icon
+                        title "Hata"
+                        type mb_yes_no
+                        default 1
+                        returning return-code
+                  if return-code = 1
+                     exit perform
+                  else
+                     exit perform cycle
+                  end-if
+             end-if
+             move gd-1-col-2                        to mahsup-hesap-kodu
+             move gd-1-col-4                        to mahsup-aciklama
+             move "A"                               to mahsup-tipi
+             move function numval-c(gd-1-col-5)     to borcum
+             move function numval-c(gd-1-col-6)     to alacagim
+             evaluate true
+             when borcum  = zeroes and alacagim not = zeroes
+                  move "A"                          to mahsup-b-a
+                  move alacagim                     to mahsup-tutar
+             when borcum not = zeroes and alacagim = zeroes
+                  move "B"                          to mahsup-b-a
+                  move borcum                       to mahsup-tutar
+             when other
+                  display message box 
+                          mahsup-fis-sira," numarali satir'da borc ve alacak tutari 0",x"0a0d",
+                          "Bu satir islenmeyecektir !!!",x"0a0d0a0d"
+                          "Aktarim iptal edilsinmi ?"
+                          icon mb_warning_icon
+                          title "Hata"
+                          type mb_yes_no
+                          default 1
+                          returning return-code
+                  if return-code = 1
+                     exit perform
+                  else
+                     exit perform cycle
+                  end-if              
+             end-evaluate
+             move gd-1-col-7                        to mahsup-belge-no
+             move function numval-c(gd-1-col-8)     to mahsup-referans
+             move function numval-c(gd-1-col-9)     to mahsup-banka-kodu
+             move function numval-c(gd-1-col-10)    to mahsup-doviz-kodu
+             move function numval-c(gd-1-col-11)    to mahsup-doviz-kuru
+             move function numval-c(gd-1-col-12)    to mahsup-tutar-dv
+             move  gd-1-col-14                      to mahsup-kdv-oran
+
+             if mahsup-tutar-dv = zeroes or 
+                mahsup-doviz-kuru = zeroes or 
+                mahsup-doviz-kodu = zeroes or 
+                mahsup-banka-kodu = zeroes 
+                      initialize mahsup-doviz
+             else
+                move "E"                            to mahsup-doviz-e-h
+                move "D"                            to mahsup-d-e
+             end-if
+
+
+             move gd-1-col-13                       to mahsup-masraf-merkezi
+             move k-kodu-tasi                       to mahsup-staf
+             write mahsup-rec invalid
+                  display message box 
+                          mahsup-fis-sira," numarali satir islenemedi !!!",x"0a0d"
+                          "Daha once islenmis yada sira numarasi tekrarliyor"x"0a0d",
+                          "Fis : ", mahsup-fis-no,x"0a0d"
+                          "Aktarim iptal edilsinmi ?"
+                          icon mb_warning_icon
+                          title "Hata"
+                          type mb_yes_no
+                          default 1
+                          returning return-code
+                  if return-code = 1
+                     exit perform
+                  else
+                     exit perform cycle
+                  end-if   
+             not invalid
+                 perform log-operation-mahsup
+             end-write
+
+             initialize islenen-rec
+             move mahsup-fis-no                      to islenen-anahtar
+             read islenen no lock invalid
+                  move "A"                           to islenen-tipi
+                  move mahsup-tarih                  to islenen-tarih
+                  move "Excel'den alindi"            to islenen-aciklama
+                  write islenen-rec invalid 
+                         continue 
+                  end-write
+             end-read
+
+             modify form1-st-1-handle,
+                    title = i
+     end-perform
+     close mahsup islenen takvim.
+
+     perform frame-kapat.
+
+     if mahsup-fis-no-yer <> 0
+        move 0         to mahsup-oto
+     end-if
+     display message box 
+             "Aktarim tamamlanmistir ...",x"0a0d",
+             "Olusturulan Fis Bilgileri : Tarih ->", mahsup-gun,"/",mahsup-ay,"/",mahsup-yil, " Fis no ->",mahsup-oto,x"0a0d" 
+             "Lutfen kontrol ediniz "
+             title "Bilgi".
+     set exit-pushed to true.
+
+
+*
+read-from-ole.
+    perform varying i
+            from hesap-ilk-satir
+            by 1
+            until i > hesap-son-satir
+            initialize form1-gd-1-record
+
+            perform frame-goster
+
+            if mahsup-fis-no-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-fis-no-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move function numval-c(temp)        to gd-1-col-0
+            end-if
+
+            if mahsup-tarih-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-tarih-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move temp                           to gd-1-col-15
+               if temp = spaces or low-values 
+                  exit perform cycle
+               end-if
+            end-if
+
+            if mahsup-masraf-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-masraf-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move temp            to gd-1-col-13
+            end-if
+
+            if mahsup-doviz-tutar-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-doviz-tutar-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move function numval-c(temp)          to etutar-dv
+               move etutar-dv                        to gd-1-col-12
+            end-if
+
+            if mahsup-doviz-kuru-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-doviz-kuru-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move function numval-c(temp)          to etutar-kur
+               move etutar-kur                       to gd-1-col-11
+            end-if
+
+            if mahsup-ref-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-ref-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move temp            to gd-1-col-8
+            end-if
+
+            if mahsup-kdv-oran-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-kdv-oran-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move function numval-c(temp)           to gd-1-col-14
+            end-if
+
+            if mahsup-alac-tl-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-alac-tl-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move function numval-c(temp)            to etutar-tl
+               move etutar-tl                          to gd-1-col-6
+            end-if
+
+            if mahsup-borc-tl-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-borc-tl-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move function numval-c(temp)            to etutar-tl
+               move etutar-tl                          to gd-1-col-5
+            end-if
+
+
+            if mahsup-belge-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-belge-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move  temp            to gd-1-col-7
+            end-if
+
+            if mahsup-sira-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-sira-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move function numval-c(temp)              to gd-1-col-1
+            end-if
+            
+            if mahsup-hesap-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-hesap-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               evaluate combo-1-value(1:1)
+               when "A"
+                    continue
+               when "B" 
+                    inspect temp replacing trailing spaces by low-values
+                    inspect temp replacing all spaces by "."
+                    inspect temp replacing all low-values by spaces
+               when "C" 
+                    inspect temp replacing trailing spaces by low-values
+                    inspect temp replacing all spaces by "-"
+                    inspect temp replacing all low-values by spaces
+               end-evaluate
+               inspect temp replacing all low-values by spaces
+               move temp            to gd-1-col-2 hesap-kodu
+               read hesap no lock invalid
+                    move "Tanimsiz ..." to hesap-adi
+               end-read
+               move hesap-adi           to gd-1-col-3
+            end-if
+            if mahsup-aciklama-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-aciklama-yer) = hrange
+               inquire hrange          
+                       @value in temp               
+                       @text in temp1
+
+/ karakter cevirim
+               inspect temp converting X"FD" to x"8D"
+               inspect temp converting X"D0" to x"A6"
+               inspect temp converting X"DC" to x"9A"
+               inspect temp converting x"DE" to x"9E"
+               inspect temp converting x"DD" to x"98"
+               inspect temp converting x"D6" to x"99"
+               inspect temp converting x"C7" to x"80"
+               inspect temp converting x"E7" to x"87"
+               inspect temp converting x"FE" to x"9F"
+               inspect temp converting x"F0" to x"A7"
+               inspect temp converting x"FC" to x"81"
+               inspect temp converting x"FD" to x"8D"
+               inspect temp converting x"F6" to x"94"
+
+               move temp            to gd-1-col-4
+            end-if
+
+            if mahsup-banka-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-banka-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move temp            to gd-1-col-9
+            end-if
+
+
+            if mahsup-doviz-yer <> 0
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,mahsup-doviz-yer) = hrange
+               inquire hrange          
+                       @value in temp
+               move temp            to gd-1-col-10
+            end-if
+
+            inspect form1-gd-1-record replacing all low-values by spaces
+
+            modify form1-gd-1,
+                   record-to-add(form1-gd-1-record)
+
+            modify form1-st-1-handle,
+                   title = i
+
+    end-perform.
+*
+ read-from-csv.
+    initialize copy-status
+    accept to-dosya-zaman from time
+    accept to-dosya-tarih from century-date
+    accept fr-dosya-zaman from time
+    accept fr-dosya-tarih from century-date
+
+    inspect fr-dosya-1 replacing trailing spaces by low-values
+
+    modify hexcelwkb,
+           @SaveAs(by name @Filename fr-dosya-1,
+                   by name @FileFormat @xlCSV,
+                   by name @Password null,
+                   by name @WriteResPassword null,
+                   by name @ReadOnlyRecommended 0,
+                   by name @CreateBackup 0,
+                   by name @AccessMode @xlNoChange)
+
+    if is-remote 
+       call "c$copy" using fr-dosya to-dosya giving copy-status
+    else
+       call "c$copy" using fr-dosya-1 to-dosya giving copy-status
+    end-if.
+
+
+    if copy-status <> 0 
+       display message box
+            "Dosya sisteme alinamadi ...",x"0a0d",
+            x"0a0d",
+            "Kaynak : ",fr-dosya,x"0a0d",
+            "Hedef : ",to-dosya
+            icon mb_error_icon
+            title "Hata"
+       set hata to true
+       exit paragraph
+    end-if.
+
+
+    open input csv
+    initialize i ii
+    perform with test after until fs-csv = "10"
+    initialize csv-rec
+    read csv next no lock end exit perform
+    not at end
+         add 1 to ii
+         if ii < hesap-ilk-satir or 
+            ii > hesap-son-satir 
+               exit perform cycle
+         end-if
+
+
+         unstring csv-rec delimited by ";"
+         into occ(01) occ(02) occ(03) occ(04) occ(05) occ(06) occ(07) occ(08) occ(09) occ(10) 
+              occ(11) occ(12) occ(13) occ(14) occ(15) occ(16) occ(17) occ(18) occ(19) occ(20) 
+            
+            initialize form1-gd-1-record
+
+            perform frame-goster
+
+            if mahsup-fis-no-yer <> 0
+               move function numval-c(occ(mahsup-fis-no-yer))  to gd-1-col-0
+            end-if
+
+            if mahsup-tarih-yer <> 0
+               move occ(mahsup-tarih-yer)                      to gd-1-col-15
+               if gd-1-col-15 = spaces or low-values 
+                  exit perform cycle
+               end-if
+            end-if
+
+            if mahsup-masraf-yer <> 0
+               move occ(mahsup-masraf-yer)            to gd-1-col-13
+            end-if
+
+            if mahsup-doviz-tutar-yer <> 0
+               move function numval-c(occ(mahsup-doviz-tutar-yer))         to etutar-dv
+               move etutar-dv                        to gd-1-col-12
+            end-if
+
+            if mahsup-doviz-kuru-yer <> 0
+               move function numval-c(occ(mahsup-doviz-kuru-yer))          to etutar-kur
+               move etutar-kur                       to gd-1-col-11
+            end-if
+
+            if mahsup-ref-yer <> 0
+               move occ(mahsup-ref-yer)            to gd-1-col-8
+            end-if
+
+            if mahsup-kdv-oran-yer <> 0
+               move function numval-c(occ(mahsup-kdv-oran-yer))           to gd-1-col-14
+            end-if
+
+            if mahsup-alac-tl-yer <> 0
+               move function numval-c(occ(mahsup-alac-tl-yer))            to etutar-tl
+               move etutar-tl                          to gd-1-col-6
+            end-if
+
+            if mahsup-borc-tl-yer <> 0
+               move function numval-c(occ(mahsup-borc-tl-yer))            to etutar-tl
+               move etutar-tl                          to gd-1-col-5
+            end-if
+
+
+            if mahsup-belge-yer <> 0
+               move  occ(mahsup-belge-yer)           to gd-1-col-7
+            end-if
+
+            if mahsup-sira-yer <> 0
+               move function numval-c(occ(mahsup-sira-yer))              to gd-1-col-1
+            end-if
+            
+            if mahsup-hesap-yer <> 0
+               evaluate combo-1-value(1:1)
+               when "A"
+                    continue
+               when "B" 
+                    inspect occ(mahsup-hesap-yer) replacing trailing spaces by low-values
+                    inspect occ(mahsup-hesap-yer) replacing all spaces by "."
+                    inspect occ(mahsup-hesap-yer) replacing all low-values by spaces
+               when "C" 
+                    inspect occ(mahsup-hesap-yer) replacing trailing spaces by low-values
+                    inspect occ(mahsup-hesap-yer) replacing all spaces by "-"
+                    inspect occ(mahsup-hesap-yer) replacing all low-values by spaces
+               end-evaluate
+               inspect occ(mahsup-hesap-yer) replacing all low-values by spaces
+               move occ(mahsup-hesap-yer)            to gd-1-col-2 hesap-kodu
+               read hesap no lock invalid
+                    move "Tanimsiz ..." to hesap-adi
+               end-read
+               move hesap-adi           to gd-1-col-3
+            end-if
+            if mahsup-aciklama-yer <> 0
+/ karakter cevirim
+               inspect occ(mahsup-aciklama-yer) converting X"FD" to x"8D"
+               inspect occ(mahsup-aciklama-yer) converting X"D0" to x"A6"
+               inspect occ(mahsup-aciklama-yer) converting X"DC" to x"9A"
+               inspect occ(mahsup-aciklama-yer) converting x"DE" to x"9E"
+               inspect occ(mahsup-aciklama-yer) converting x"DD" to x"98"
+               inspect occ(mahsup-aciklama-yer) converting x"D6" to x"99"
+               inspect occ(mahsup-aciklama-yer) converting x"C7" to x"80"
+               inspect occ(mahsup-aciklama-yer) converting x"E7" to x"87"
+               inspect occ(mahsup-aciklama-yer) converting x"FE" to x"9F"
+               inspect occ(mahsup-aciklama-yer) converting x"F0" to x"A7"
+               inspect occ(mahsup-aciklama-yer) converting x"FC" to x"81"
+               inspect occ(mahsup-aciklama-yer) converting x"FD" to x"8D"
+               inspect occ(mahsup-aciklama-yer) converting x"F6" to x"94"
+
+               move occ(mahsup-aciklama-yer)            to gd-1-col-4
+            end-if
+
+            if mahsup-banka-yer <> 0
+               move occ(mahsup-banka-yer)            to gd-1-col-9
+            end-if
+
+
+            if mahsup-doviz-yer <> 0
+
+               move occ(mahsup-doviz-yer)            to gd-1-col-10
+            end-if
+
+            inspect form1-gd-1-record replacing all low-values by spaces
+
+            modify form1-gd-1,
+                   record-to-add(form1-gd-1-record)
+
+            modify form1-st-1-handle,
+                   title = i
+
+    end-read
+    end-perform
+    close csv.
+    delete file csv.
+
+
+
+
+ 

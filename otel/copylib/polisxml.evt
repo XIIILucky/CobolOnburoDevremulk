@@ -1,0 +1,836 @@
+      * polisxml.evt
+      * polisxml.evt is generated from D:\asya\acugt.ytl\otel\polisxml.Psf
+      * This is a generated file. DO NOT modify this file directly.
+      
+
+       Screen1-Event-Proc.
+           .
+
+       Form1-Exception-Proc.
+           PERFORM Form1-Ex-Other
+           .
+
+       Screen1-Cm-1-Event-Proc.
+           .
+      ***   start event editor code   ***
+      *
+       Form1-Bef-Create.
+            perform adresleri-tasi.
+            move xml-rez-no to polisxml-rezno
+            MOVE XML-SIRA TO POLISXML-SIRANO
+            IF POLISXML-SIRANO = 0 THEN
+              MOVE 1 TO POLISXML-SIRANO
+              END-IF
+           open i-o genel.
+           initialize genel-rec.
+           move 1 to genel-anahtar.
+           read genel no lock invalid
+                continue initialize genel-rec
+           end-read
+           close genel.
+           accept sys-zaman from time
+           move sys-zaman    to su-an
+           .
+      *
+       Form1-Bef-Initdata.
+           .
+       sira-before.
+                MOVE POLISXML-SIRANO TO YEDEK-SIRANO 
+                move 0 to veri-var 
+                MOVE 1 TO L-SIRA.
+                display button-kaydet button-sil.
+                open i-o polisxml
+                MOVE 0 TO POLISXML-SIRANO
+                MODIFY LB-1, MASS-UPDATE = 1 
+                MODIFY LB-1, RESET-LIST = 1
+  
+                START POLISXML KEY > POLISXML-ANAH
+                  INVALID CONTINUE
+                  NOT INVALID
+                    PERFORM UNTIL FS-POLISXML="10"
+                      READ POLISXML NEXT 
+                        END MOVE "10" TO FS-POLISXML
+                        NOT END 
+                         IF POLISXML-REZNO NOT = XML-REZ-NO
+                             MOVE "10" TO FS-POLISXML
+                             ELSE
+                             MOVE POLISXML-SIRANO TO 
+                              ITEMEKLE(1:1)
+                             MOVE "->" TO ITEMEKLE(2:2)
+                             MOVE POLISXML-ADI TO ITEMEKLE(4:)
+                             IF POLISXML-prb not = 1 then
+                                move "-OK" to itemekle(18:)
+                                else 
+                                move "???" to itemekle(18:)
+                             end-if  
+                             MODIFY LB-1,  
+                             ITEM-TO-ADD = ITEMEKLE 
+                             IF POLISXML-SIRANO = L-SIRA THEN
+                               ADD 1 TO L-SIRA
+                             END-IF
+                         END-IF
+                      END-READ
+                    END-PERFORM
+                      
+                END-START
+                CLOSE POLISXML
+                  IF L-SIRA NOT = 0 THEN 
+                    MOVE L-SIRA TO ITEMEKLE(1:1)
+                    MOVE "->" TO ITEMEKLE(2:2)
+                    MOVE "..< Yeni Kayit >...." TO ITEMEKLE(4:)
+                             MODIFY LB-1,  
+                             ITEM-TO-ADD = ITEMEKLE 
+                             MODIFY LB-1, SELECTION-INDEX=L-SIRA 
+                  
+                     ELSE
+                      MODIFY LB-1, SELECTION-INDEX=1
+                      MOVE 1 TO L-SIRA
+                  END-IF              
+                  MODIFY LB-1, QUERY-INDEX = L-SIRA 
+                  INQUIRE LB-1, ITEM-VALUE IN Screen1-Lb-1-Value 
+                  MODIFY LB-1, MASS-UPDATE = 0 
+
+
+
+                MOVE 1 TO L-VIS
+                DISPLAY LB-1 .
+
+                  MOVE 4 TO ACCEPT-CONTROL
+                  MOVE 67 TO CONTROL-ID.
+
+
+       ilkleme.
+
+            evaluate polisxml-sirano 
+              when 1
+               OPEN INPUT OZLUK KONUK
+                MOVE XML-FOL-NO TO OZLUK-FOLIO KONUK-FOLIO
+                READ KONUK NO LOCK INVALID CONTINUE
+                   NOT INVALID
+                      OPEN INPUT ULKE 
+                      MOVE KONUK-ULKE TO ULKE-ANAH
+                      READ ULKE NO LOCK INVALID CONTINUE
+                         NOT INVALID
+                            MOVE ULKE-AKBS TO POLISXML-UYRUK
+                      END-READ
+                      CLOSE ULKE
+                END-READ    
+                READ OZLUK NO LOCK INVALID CONTINUE
+                   NOT INVALID
+                    MOVE OZLUK-ADI        TO POLISXML-ADI
+                    MOVE OZLUK-SOYADI     TO POLISXML-SOYADI
+                    MOVE OZLUK-DOGUM-TAR  TO POLISXML-DOG-TAR
+                    MOVE OZLUK-ADRES1     TO POLISXML-ADR(1:20)
+                    MOVE OZLUK-ADRES2     TO POLISXML-ADR(20:)
+                    MOVE OZLUK-KIM-NO     TO POLISXML-KSERI 
+                                             polisxml-tckimlikno
+                    MOVE OZLUK-MESLEK     TO POLISXML-ISI
+                    MOVE OZLUK-BABA-ADI   TO POLISXML-BABAADI
+                    
+                    MOVE OZLUK-DOGUM-YERI TO POLISXML-DYERI
+                    if polisxml-uyruk  = "TC   " then 
+                       move  OZLUK-KIM-NO to POLISXML-tckimlikno
+                       move "X" to POLISXML-babaadi
+                       move "X" to POLISXML-anaadi
+                    end-if
+                    if   OZLUK-DOGUM-YERI = spaces
+                      move OZLUK-KIM-VERYER to POLISXML-DYERI
+                          
+                   
+                    end-if
+                  EVALUATE OZLUK-KIM-TURU
+                      WHEN 1     MOVE "N" TO POLISXML-KTURU
+                      WHEN 2     MOVE "P" TO POLISXML-KTURU
+                      WHEN 3     MOVE "E" TO POLISXML-KTURU
+                      WHEN OTHER MOVE "D" TO POLISXML-KTURU
+                  END-EVALUATE
+                 END-READ
+                 CLOSE OZLUK KONUK 
+              when  other
+                open input yanrez
+                initialize yanrez-rec 
+                move polisxml-rezno   to yanrez-rezno
+                move polisxml-sirano to yanrez-sirano
+                read yanrez no lock invalid 
+                   INITIALIZE POLISXML-ADI POLISXML-SOYADI 
+                             POLISXML-ISI 
+                end-read 
+                  move yanrez-adi to  POLISXML-ADI
+                  move yanrez-soyadi to POLISXML-SOYADI
+
+         
+
+                close yanrez 
+                |firat 02/04/2021 kamelya istegi rmz abi biliyor
+      *           SUBTRACT 1 FROM POLISXML-SIRANO
+      *           READ POLISXML NO LOCK INVALID
+      *           CONTINUE
+      *           END-READ
+      *            INITIALIZE POLISXML-ADI POLISXML-SOYADI 
+      *                       POLISXML-ISI 
+      *           IF POLISXML-SIRANO < 3 THEN
+      *                 OPEN INPUT OZLUK
+      *                 MOVE XML-FOL-NO TO OZLUK-FOLIO 
+      *                 READ OZLUK NO LOCK INVALID 
+      *                     INITIALIZE POLISXML-ADI POLISXML-SOYADI 
+      *                 NOT INVALID
+      *
+      *                     IF POLISXML-SIRANO = 1 THEN
+      *                        MOVE OZLUK-YANI-ADI1  TO POLISXML-ADI
+      *                        MOVE OZLUK-YANI-SOY1  TO POLISXML-SOYADI
+      *                       ELSE    
+      *                        MOVE OZLUK-YANI-ADI2  TO POLISXML-ADI
+      *                        MOVE OZLUK-YANI-SOY2  TO POLISXML-SOYADI
+      *                     END-IF
+      *                 END-READ
+      *                 close ozluk
+      *           END-IF
+      *           ADD 1 TO POLISXML-SIRANO
+            end-evaluate
+            .
+       sira-after.
+           MOVE Screen1-Lb-1-Value(1:1) TO POLISXML-SIRANO
+           MOVE 0 TO L-VIS
+           DISPLAY LB-1
+
+           open i-o polisxml
+           read polisxml  no lock invalid 
+           initialize polisxml-gerisi
+           perform ilkleme
+           
+           end-read
+           move 1 to veri-var
+           display button-kaydet button-sil
+           
+           close polisxml.
+           open input rez
+           move polisxml-rezno to rez-anah
+           read rez no lock invalid 
+           display message box "Rezervasyon bulunamadi"
+           end-read
+           close rez.
+           move xml-rez-no to polisxml-rezno
+           move rez-gir-tar to polisxml-gel-tar
+           move rez-cik-tar to polisxml-git-tar
+           move rez-gel-zaman to polisxml-gel-zaman
+           move rez-git-zaman to polisxml-git-zaman
+           move rez-odano     to polisxml-odano
+           compute kac-kisi = rez-buyuk + rez-kucuk + rez-bebek 
+                              + rez-free
+           perform xmlkontrol
+           perform Form-Refresh
+           MOVE 4 TO ACCEPT-CONTROL
+           MOVE 5 TO CONTROL-ID
+
+
+
+           .
+      *
+       Form1-Ex-Other.
+           evaluate  key-status
+              when 17 
+                   move polisxml-dosya         to link-logview-dosya-adi
+                   set link-logview-pointer  to address of polisxml-rec
+                   set link-logview-rec-size to size of polisxml-rec
+                   perform logview-call
+                   initialize key-status
+              when 1
+                   evaluate control-id
+                   when 5
+                   when 6
+                   when 11
+                      perform polis-ara thru polis-ara-exit
+                   when 16
+                      initialize uyruk-cagir
+                      call "/asya/ytl/obj/otel/uyrukara.asy" 
+                      using uyruk-cagir
+                           on exception perform callerr-proc
+                      not on exception
+                      cancel "/asya/ytl/obj/otel/uyrukara.asy" 
+                      end-call
+                      move uyruk-kodu-cagir     to polisxml-uyruk
+                      display Screen1-Ef-2g
+                   end-evaluate
+              when 2
+              if polisxml-sirano <= kac-kisi then 
+                    open i-o polisxml
+                    perform cins-yaz
+                    perform medeni-yaz
+                    perform belge-yaz
+                    move k-kodu-tasi to polisxml-staf
+                    write polisxml-rec invalid
+                       rewrite polisxml-rec 
+                       end-rewrite 
+                    end-write
+                    perform log-operation-polisxml
+                    close polisxml
+                    initialize polisxml-gerisi
+                    add 1 to polisxml-sirano
+                    move 45 to control-id
+                    move 4 to accept-control
+                    perform Form-Refresh
+                else
+               display message box "Kisi Sayisini Gectiniz..." new-line
+                      "Olmasi Gereken Kisi Sayisi:"kac-kisi
+
+                end-if
+              when 3 
+              if polisxml-sirano > 0 then 
+                 open i-o polisxml
+                  delete polisxml invalid continue 
+                  end-delete
+                  perform log-operation-polisxml
+                 close polisxml
+                 initialize polisxml-gerisi
+                    add 1 to polisxml-sirano
+                    move 45 to control-id
+                    move 4 to accept-control
+
+                    perform Form-Refresh
+               end-if
+             when 5 
+    ******            perform xml-olustur
+             end-evaluate   
+              .
+           .
+       form-refresh.
+           perform cins-goster
+           perform medeni-goster
+           perform belge-goster
+           display Screen1-Ef-10 Screen1-Ef-5 Screen1-Ef-6 
+           Screen1-Ef-7 Screen1-Cm-1 Screen1-Cm-2 Screen1-Cm-3.
+           display Screen1-Ef-2g Screen1-Ef-2b Screen1-Ef-2a 
+           Screen1-Ef-2.  
+           display Screen1-Ef-9ab. 
+           display 
+           Screen1-Ef-4 Screen1-Ef-4a
+           Screen1-Ef-4b Screen1-Ef-4ba Screen1-Ef-4bba 
+           Screen1-Ef-4bbb.
+           display Screen1-Ef-9aa Screen1-Ef-9a Screen1-Ef-9c 
+           Screen1-Ef-9b  Screen1-Ef-4bb.  
+           display Screen1-Ef-9 Screen1-Ef-8 Screen1-Ef-1                  .
+           display Screen1-Ef-10 Screen1-Ef-10a Screen1-Ef-10b 
+           Screen1-Ef-10c. 
+           display Screen1-Ef-10d Screen1-Ef-10e Screen1-Ef-1a.
+           .
+        xml-olustur.
+     
+            perform ilk-tur.
+            perform xml-hash-bul.
+            perform ikinci-tur.
+        
+        ilk-tur.
+            perform xml-dosya-ac. 
+            perform xml-konaklama-ac.
+            perform xml-kayitlari-al. 
+            perform xml-dosya-kapat.
+            .
+         ikinci-tur.
+            perform xml-dosya-ac2. 
+            perform xml-dosyabasi-at.     
+            perform xml-konaklama-ac.
+            perform xml-kayitlari-al. 
+            perform xml-dosya-kapat.
+              .
+        xml-kayitlari-al.
+                  initialize sirano
+                  open input konuk polisxml
+                  initialize konuk-rec
+                  move "I" to konuk-durumu
+                  start konuk key > konuk-oda 
+                        invalid
+                          display message box " Icerde musteri yok"
+                        not invalid
+                           perform until fs-konuk="10"
+                              read konuk next no lock
+                                  at end  move "10" to fs-konuk
+                                  not end
+                                      if konuk-durumu not = "I" then 
+                                             move "10" to fs-konuk
+                                          else
+                                             perform konuk-bulundu
+                                      end-if
+                               end-read
+                            end-perform
+                   end-start
+                   close konuk polisxml.
+                  
+        konuk-bulundu.
+               
+               initialize polisxml-rec. 
+               move konuk-rez-no to polisxml-rezno.
+               start polisxml key > polisxml-anah
+                    invalid
+                       continue
+                    not invalid
+                      perform until fs-polisxml = "10" 
+                          read polisxml next no lock 
+                              at end
+                                 move "10" to fs-polisxml
+                              not end
+                                 if polisxml-rezno not = konuk-rez-no 
+                                         move "10" to fs-polisxml
+                                    else
+                                        perform kisiekle
+                                 end-if
+                          end-read
+                      end-perform
+               end-start .
+   
+       kisiekle.
+             add 1 to sirano.
+             
+             initialize xml-satir-veri
+             move kisiac to xml-satir-veri 
+             write xml-dosya-rec from xml-satir-veri no control.  
+
+             initialize xml-satir-veri
+             move 1 to tag-sira 
+             move sirano to xml-satir-veri
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 2 to tag-sira 
+             move polisxml-tckimlikno to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 3 to tag-sira 
+             move polisxml-adi to xml-satir-veri
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 4 to tag-sira 
+             move polisxml-soyadi to xml-satir-veri
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 5 to tag-sira 
+             move polisxml-babaadi to xml-satir-veri
+             perform tagyaz
+            
+             initialize xml-satir-veri
+             move 6 to tag-sira 
+             move polisxml-anaadi to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 7 to tag-sira 
+             move polisxml-dyeri to xml-satir-veri
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 8 to tag-sira 
+             move polisxml-dog-yil to xml-satir-veri(1:4)
+             move "-"              to xml-satir-veri(5:1)
+             move polisxml-dog-ay  to xml-satir-veri(6:2)
+             move "-"              to xml-satir-veri(8:1)
+             move polisxml-dog-gun to xml-satir-veri(9:2)
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 9 to tag-sira 
+             move polisxml-uyruk to xml-satir-veri
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 10 to tag-sira 
+             move polisxml-kturu to xml-satir-veri
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 11 to tag-sira 
+             move polisxml-kseri to xml-satir-veri
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 12 to tag-sira 
+             move polisxml-nil to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 13 to tag-sira 
+             move polisxml-nilce to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 14 to tag-sira 
+             move polisxml-nmahalle to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 15 to tag-sira 
+             move polisxml-ncilt to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 16 to tag-sira 
+             move polisxml-naile to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 17 to tag-sira 
+             move polisxml-nsira to xml-satir-veri
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 18 to tag-sira 
+             move polisxml-cinsiyet to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 19 to tag-sira 
+             move polisxml-medeni to xml-satir-veri
+             perform tagyaz
+             
+             initialize xml-satir-veri
+             move 20 to tag-sira 
+             move polisxml-isi to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 21 to tag-sira 
+             move polisxml-adr to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 22 to tag-sira 
+             
+           
+             move polisxml-gel-yil  to xml-satir-veri(1:4)
+             move "-"               to xml-satir-veri(5:1)
+             move polisxml-gel-ay   to xml-satir-veri(6:2)
+             move "-"               to xml-satir-veri(8:1)
+             move polisxml-gel-gun  to xml-satir-veri(09:2)
+             move polisxml-gel-saat to xml-satir-veri(12:2)
+             move ":"               to xml-satir-veri(14:1)
+             move polisxml-gel-dakika  to xml-satir-veri(15:2)
+             move ":"               to xml-satir-veri(17:1)
+             move "00"              to xml-satir-veri(18:2)
+             perform tagyaz
+             
+
+             initialize xml-satir-veri
+             move 23 to tag-sira 
+             move polisxml-git-yil  to xml-satir-veri(1:4)
+             move "-"               to xml-satir-veri(5:1)
+             move polisxml-git-ay   to xml-satir-veri(6:2)
+             move "-"               to xml-satir-veri(8:1)
+             move polisxml-git-gun  to xml-satir-veri(09:2)
+             move polisxml-git-saat to xml-satir-veri(12:2)
+             move ":"               to xml-satir-veri(14:1)
+             move polisxml-git-dakika  to xml-satir-veri(15:2)
+             move ":"               to xml-satir-veri(17:1)
+             move "00"              to xml-satir-veri(18:2)
+             perform tagyaz
+             
+
+             initialize xml-satir-veri
+             move 24 to tag-sira 
+             move polisxml-odano to xml-satir-veri
+             perform tagyaz
+
+             initialize xml-satir-veri
+             move 25 to tag-sira 
+             move polisxml-plaka to xml-satir-veri
+             perform tagyaz
+             write xml-dosya-rec from kisikapat no control.  
+                .
+       tagyaz.
+            write xml-dosya-rec from taglar(tag-sira) no control.  
+            write xml-dosya-rec from tirnak no control.
+            INSPECT xml-satir-veri CONVERTING doschar TO "ÝÞÇÐÜÖýþçðüö"  
+            INSPECT xml-satir-veri CONVERTING doschar TO "ÝÞÇÐÜÖýþçðüö"  
+            write xml-dosya-rec from xml-satir-veri no control.  
+            write xml-dosya-rec from tirnak no control.  
+           .
+       xml-dosya-ac.
+            move "0001" to xml-dosya-no.
+            open output xml-dosya.
+            
+       xml-dosya-ac2.
+            move ".XML" to xml-dosya-no.
+            open output xml-dosya.
+       xml-dosyabasi-at.     
+            initialize xml-satir-veri
+            move ilksatir to xml-satir-veri
+            write xml-dosya-rec from xml-satir-veri no control.
+            
+            move hash to xml-satir-veri
+            write xml-dosya-rec from xml-satir-veri no control.
+       xml-konaklama-ac.     
+            move konaklama to xml-satir-veri
+            write xml-dosya-rec from xml-satir-veri no control.
+                .                                                       
+        xml-dosya-kapat.
+            move konaklamakapat to xml-satir-veri
+            write xml-dosya-rec from xml-satir-veri no control. 
+                  close xml-dosya.  
+                  .
+        
+        belge-goster.
+            evaluate polisxml-kturu 
+              when "A" 
+                move belge-satir(2) to Screen1-Cm-3-Value
+              when "N" 
+                move belge-satir(3) to Screen1-Cm-3-Value
+              when "E" 
+                move belge-satir(4) to Screen1-Cm-3-Value
+              when "D" 
+                move belge-satir(5) to Screen1-Cm-3-Value
+              when other
+                move belge-satir(1) to Screen1-Cm-3-Value
+
+             end-evaluate.
+        belge-yaz.
+             evaluate Screen1-Cm-3-Value(1:1) 
+                 when "D"  
+                    move "D" to polisxml-kturu
+                 when "A"  
+                    move "A" to polisxml-kturu
+                 when "N"  
+                    move "N" to polisxml-kturu
+                 when "E"  
+                    move "E" to polisxml-kturu
+                 when other
+  
+                    move "P" to polisxml-kturu
+                     
+              end-evaluate.
+              .
+
+        medeni-goster.
+                if polisxml-medeni = "B" then 
+                   move medeni-satir(1) to Screen1-Cm-2-Value
+                   else
+                   move medeni-satir(2) to Screen1-Cm-2-Value
+                end-if.
+        medeni-yaz.
+                if Screen1-Cm-2-Value(1:1) = "B" then 
+                      move "B" to polisxml-medeni
+                      else 
+                      move "E" to polisxml-medeni
+                   end-if.
+
+        
+        cins-goster.
+                if polisxml-cinsiyet = "E" then 
+                   move cins-satir(1) to Screen1-Cm-1-Value
+                   else
+                   move cins-satir(2) to Screen1-Cm-1-Value
+                end-if.
+        cins-yaz.
+                if Screen1-Cm-1-Value(1:1) = "E" then 
+                      move "E" to polisxml-cinsiyet
+                      else 
+                      move "K" to polisxml-cinsiyet
+                   end-if.
+        xml-hash-bul.          
+                call "system" using hashbul "no i-o"   
+                open input hsonuc
+               
+                read hsonuc 
+                end
+                display message box "Hash Degeri hesaplanamadi" 
+                end-read
+                INSPECT HSONUC-REC
+                    CONVERTING "abcdef" TO "ABCDEF"
+                move  hsonuc-rec(36:32) to hashkodu
+                CLOSE hsonuc
+                .
+        
+        uyruk-oku.
+                open input uyruk
+                move polisxml-uyruk to uyruk-kodu
+                read uyruk no lock invalid
+                       move "Gecersiz Uyruk Kodu" to l-uyruk-adi
+                       not invalid 
+                       move uyruk-adi to l-uyruk-adi
+                end-read .
+                close uyruk .
+                display label-uyruk.
+                perform xmlkontrol.
+                .
+        st-rf.    
+
+                  destroy Form1-St-1-Handle
+                   DISPLAY STATUS-BAR
+                    PANEL-WIDTHS (15, 100), 
+                    PANEL-STYLE (1, 1), 
+                    PANEL-TEXT ("F2->Kaydet,F3->Sil", hata-ack), 
+                    GRIP, 
+                    HANDLE IS Form1-St-1-Handle.
+                    .
+        xmlkontrol.
+               
+                initialize polisxml-prb polisxml-prb-ack
+                move "Kayit Gonderime uygun" to 
+                       hata-ack polisxml-prb-ack
+                perform 
+                perform ortak-kontrol
+                if polisxml-prb  = 1 then 
+                   exit perform 
+                end-if
+                perform uyruk-kontrol
+                if polisxml-prb  = 1 then 
+                   exit perform 
+                end-if
+                
+                if polisxml-uyruk  = "TC   " then 
+                      perform turk-kont
+                   else
+                     if polisxml-tckimlikno not = spaces and  
+                        polisxml-tckimlikno not = zeroes then
+                          move 1 to polisxml-prb
+                          move 
+                  "Yabanci Misafir icin Vatandaslik No girilemez"     
+                          to polisxml-prb-ack
+                          exit perform
+                     end-if 
+                end-if
+                end-perform
+                move polisxml-prb-ack to hata-ack
+                if polisxml-prb  = 1 then
+                     move 1 to vis-hata
+                     move 0 to vis-ok
+                else
+                   move 1 to vis-ok
+                   move 0 to vis-hata
+                end-if.
+                display l-hata l-ok 
+                perform st-rf
+                .
+        turk-kont. 
+               perform 
+               if polisxml-tckimlikno = spaces or  
+                  polisxml-tckimlikno = zeroes or
+                  polisxml-tckimlikno  < 
+                  0010000000
+                  move 1 to polisxml-prb
+                  move "Turk Musteriler icin TC Kimlik No giriniz" 
+                  to polisxml-prb-ack
+                  exit perform
+                end-if 
+                if polisxml-babaadi = spaces then
+                  move 1 to polisxml-prb
+                  move "Turk Musteriler icin Baba adi giriniz" 
+                  to polisxml-prb-ack
+                  exit perform
+                end-if
+                if polisxml-anaadi = spaces then
+                  move 1 to polisxml-prb
+                  move "Turk Musteriler icin Ana adi giriniz" 
+                  to polisxml-prb-ack
+                  exit perform
+                end-if
+        
+                
+                if polisxml-nil = spaces then
+                  move 1 to polisxml-prb
+                  move "Nufusa kayitli oldugu Il giriniz" 
+                  to polisxml-prb-ack
+                  exit perform
+                end-if
+                if polisxml-nilce = spaces then
+                  move 1 to polisxml-prb
+                  move "Nufusa kayitli oldugu Ilce giriniz" 
+                  to polisxml-prb-ack
+                  exit perform
+                end-if
+                end-perform. 
+                 .
+        uyruk-kontrol.
+                open input uyruk.
+                move polisxml-uyruk to uyruk-kodu
+                read uyruk no lock invalid
+                       move 1 to polisxml-prb
+                       move "Uyruk Kodu Gecersiz" to 
+                         polisxml-prb-ack l-uyruk-adi
+                     not invalid 
+                        move uyruk-adi to l-uyruk-adi
+                end-read .
+                display label-uyruk
+                close uyruk.
+        ortak-kontrol.
+               perform 
+               if polisxml-adi = spaces then
+                  move 1 to polisxml-prb
+                  move "Misafir adi zorunlu alan" to polisxml-prb-ack
+                  exit perform
+                end-if 
+                if polisxml-soyadi = spaces then
+                  move 1 to polisxml-prb
+                  move "Misafir soyadi zorunlu alan" to polisxml-prb-ack
+                  exit perform
+                end-if
+                if polisxml-dog-gun > 31 or polisxml-dog-gun < 1 or
+                   polisxml-dog-ay > 12 or polisxml-dog-ay < 1  or
+                   polisxml-dog-yil > yil-tasi or polisxml-dog-yil < 1900
+                
+                    then
+                  move 1 to polisxml-prb
+                  move "Gecerli bir dogum tarihi giriniz" 
+                  to polisxml-prb-ack
+                  exit perform
+                end-if
+                if polisxml-kseri = spaces 
+                or polisxml-kseri = zeroes then
+                  move 1 to polisxml-prb
+                  move "Lutfen Kimlik Seri No Giriniz" 
+                  to polisxml-prb-ack
+                  exit perform
+                end-if
+                if polisxml-adr = spaces then
+                  move 1 to polisxml-prb
+                  move "Misafir adresi eksik" to polisxml-prb-ack
+                  exit perform
+                end-if
+
+                end-perform.
+*
+         polis-ara.
+              initialize polisara-link
+              call "/asya/ytl/obj/otel/polisara.asy"
+                using polisara-link
+                on exception
+                   perform callerr-proc
+                not on exception
+                   cancel "/asya/ytl/obj/otel/polisara.asy" 
+                end-call.
+
+                if polisara-rez-no <> zeroes
+                   perform polisxml-yukle
+                end-if.
+         polis-ara-exit.
+               exit.
+         polisxml-yukle.
+               move polisxml-anah to yedek-anahtar
+               move polisxml-durumu  to yedek-konuk-durumu.
+               open input polisxml.
+               move polisara-anahtar to polisxml-anah
+               read polisxml no lock invalid
+                    continue
+               not invalid
+                   continue
+               end-read
+               close polisxml.
+               move yedek-anahtar   to polisxml-anah.
+               move rez-gir-tar to polisxml-gel-tar
+               move rez-cik-tar to polisxml-git-tar
+               move rez-gel-zaman to polisxml-gel-zaman
+               move rez-git-zaman to polisxml-git-zaman
+               move rez-odano     to polisxml-odano               
+               move xml-fol-no    to polisxml-folio-no.
+               perform form-refresh.
+               perform xmlkontrol.
+               move 4 to accept-control.
+      *
+       Form1-Aft-Initdata.
+      *-------------------------\*  
+      *-----DIL AYARLA----------\*    
+      *-------------------------\*    
+           perform dil-ayarla-proc.
+      */------------------------\*         
+           
+           .
+       

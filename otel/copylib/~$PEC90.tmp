@@ -1,0 +1,562 @@
+* 
+ Screen1-Bef-Create.
+    move 0 to vis-1.
+    perform adresleri-tasi.
+
+    open input genel.
+    move 1 to genel-anahtar
+    read genel no lock invalid
+          display message box 
+                  "Genel parametre tanimsiz ..."
+                  icon mb_error_icon
+                  close genel
+                  set exit-pushed to true
+    end-read
+    close genel.
+
+
+    move tarih-tasi        to tarih tarih-onburo
+    move all low-values    to http-adres
+    string http-adres
+           "http://www.tcmb.gov.tr/kurlar/today.xml" delimited by low-values
+*           yil-tasi                         delimited by low-values
+*           ay-tasi                          delimited by low-values
+*           "/"                              delimited by low-values
+*           gun-tasi                         delimited by low-values
+*           ay-tasi                          delimited by low-values
+*           yil-tasi                         delimited by low-values
+*           ".xml"                          delimited by low-values
+           into http-adres.
+    inspect http-adres 
+            replacing all low-values by spaces.
+     .
+
+*Tarihli olursa
+*http://www.tcmb.gov.tr/kurlar/200707/04072007.html
+*Gunun olursa
+*http://www.tcmb.gov.tr/kurlar/today.html
+*
+*<?xml version="1.0" encoding="ISO-8859-9"?>
+*<?xml-stylesheet type="text/xsl" href="isokur.xsl"?>
+*<Tarih_Date Tarih="20.08.2010" Date="08/20/2010">
+************** TEK SATORON ACILIMDA VAR AMA YANYANA GELÝYERÝ
+*</Tarih_Date>
+
+
+*/ Tek saitirn acilimi
+*<Currency Kod="USD" CurrencyCode="USD">
+*<Unit>1</Unit>
+*<Isim>AMERÝKAN DOLARI</Isim>
+*<CurrencyName>US DOLLAR</CurrencyName>
+*<ForexBuying>1.5068</ForexBuying>
+*<ForexSelling>1.5141</ForexSelling>
+*<BanknoteBuying>1.5057</BanknoteBuying>
+*<BanknoteSelling>1.5164</BanknoteSelling>
+*<CrossRateUSD>1</CrossRateUSD>
+*<CrossRateOther></CrossRateOther>
+*</Currency>
+
+*
+ Screen1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+    modify Screen1-De-1, 
+           value = calisma-tarihi.
+    modify Screen1-St-1-Handle, title = http-adres.
+    perform call-asya-readhttp.
+    perform grid-reset.
+    perform parse-kurlar.
+*
+ parse-kurlar.
+ 
+
+
+ 
+    initialize kurlar-deg
+    unstring http-buffer 
+             delimited by "Kod="
+             into bos
+                  kurlar-satir(01)
+                  kurlar-satir(02)
+                  kurlar-satir(03)
+                  kurlar-satir(04)
+                  kurlar-satir(05)
+                  kurlar-satir(06)
+                  kurlar-satir(07)
+                  kurlar-satir(08)
+                  kurlar-satir(09)
+                  kurlar-satir(10)
+                  kurlar-satir(11)
+                  kurlar-satir(12)
+                  kurlar-satir(13)
+                  kurlar-satir(14)
+                  kurlar-satir(15)
+                  kurlar-satir(16)
+                  kurlar-satir(17)
+                  kurlar-satir(18)
+                  kurlar-satir(19)
+                  kurlar-satir(20)
+                  kurlar-satir(21)
+                  kurlar-satir(22)
+                  kurlar-satir(23)
+                  kurlar-satir(24)
+                  kurlar-satir(25)
+                  kurlar-satir(26)
+                  kurlar-satir(27)
+                  kurlar-satir(28)
+                  kurlar-satir(29)
+                  kurlar-satir(30)
+    open input doviz
+    move 1 to kur-adet
+    perform varying i
+            from 1
+            by 1
+            until i > max-kur
+*/ gelen dovizi parse et
+            move 0 to ii
+            inspect kurlar-satir(i) tallying ii for all "Unit"
+            if ii = 0 
+               exit perform cycle
+            end-if
+            initialize screen1-gd-1-record
+            move kurlar-satir(i)(2:3)   to gd-1-col-1
+            perform doviz-bul
+            move d-adi-1                to gd-1-col-2
+
+
+            initialize bos br dalis dsatis ealis esatis
+            move all low-values to xml-parse-kelime xml-parse-deger
+            string "<Unit>"            delimited by low-values into xml-parse-kelime
+            perform parsci-basi
+            move xml-parse-deger       to br
+
+            move all low-values to xml-parse-kelime xml-parse-deger
+            string "<ForexBuying>"     delimited by low-values into xml-parse-kelime
+            perform parsci-basi
+            move xml-parse-deger       to dalis
+
+            move all low-values to xml-parse-kelime xml-parse-deger
+            string "<ForexSelling>"    delimited by low-values into xml-parse-kelime
+            perform parsci-basi
+            move xml-parse-deger       to dsatis
+
+            move all low-values to xml-parse-kelime xml-parse-deger
+            string "<BanknoteBuying>"  delimited by low-values into xml-parse-kelime
+            perform parsci-basi
+            move xml-parse-deger       to ealis
+
+            move all low-values to xml-parse-kelime xml-parse-deger
+            string "<BanknoteSelling>" delimited by low-values into xml-parse-kelime
+            perform parsci-basi
+            move xml-parse-deger       to esatis
+
+            
+            move function numval-c(dalis)    to etutar
+            move etutar                      to gd-1-col-3   
+            move function numval-c(dsatis)   to etutar
+            move etutar                      to gd-1-col-4   
+            move function numval-c(ealis)    to etutar
+            move etutar                      to gd-1-col-5   
+            move function numval-c(esatis)   to etutar
+            move etutar                      to gd-1-col-6 
+
+            move function numval-c(br)       to 5-z
+            move 5-z                         to gd-1-col-8 
+
+            add 1                            to kur-adet
+            modify screen1-gd-1,
+                   record-to-add(screen1-gd-1-record)
+            if donus = "E"
+               modify Screen1-Gd-1(kur-adet,2),
+                      bitmap = yes-bmp
+                      bitmap-number = 1
+                      bitmap-width = 16
+                      hidden-data = "E"
+            else
+               modify Screen1-Gd-1(kur-adet,2),
+                      bitmap = no-bmp
+                      bitmap-number = 1
+                      bitmap-width = 16
+                      hidden-data = "H"
+            end-if            
+                 
+    end-perform.
+    close doviz.
+    if kur-adet < 2
+       display message box
+               "Kurlar alinamadi !!!"
+               icon mb_warning_icon
+               title "Kur ...".
+
+*<Currency Kod="USD" CurrencyCode="USD">
+*<Unit>1</Unit>
+*<Isim>AMERÝKAN DOLARI</Isim>
+*<CurrencyName>US DOLLAR</CurrencyName>
+*<ForexBuying>1.5068</ForexBuying>
+*<ForexSelling>1.5141</ForexSelling>
+*<BanknoteBuying>1.5057</BanknoteBuying>
+*<BanknoteSelling>1.5164</BanknoteSelling>
+*<CrossRateUSD>1</CrossRateUSD>
+*<CrossRateOther></CrossRateOther>
+*</Currency>
+
+*
+ parsci-basi.
+    move 0 to xml-parse-i xml-parse-ii xml-parse-iii xml-parse-boy
+    inspect xml-parse-kelime tallying xml-parse-boy for all low-values
+    compute xml-parse-boy = function length(xml-parse-kelime) - xml-parse-boy
+
+    perform varying ii
+            from 1
+            by 1
+            until ii > function length(kurlar-satir(i))
+                  if xml-parse-kelime(1:xml-parse-boy) = kurlar-satir(i)(ii:xml-parse-boy)
+                     compute xml-parse-i = xml-parse-boy + ii
+                     perform varying xml-parse-i
+                             from xml-parse-i
+                             by 1
+                             until xml-parse-i > function length(kurlar-satir(i))
+                                   if kurlar-satir(i)(xml-parse-i:1) = "<"
+                                      perform nokta-virgul
+                                      exit paragraph
+                                   else
+                                      add 1 to xml-parse-ii
+                                      move kurlar-satir(i)(xml-parse-i:1)  to xml-parse-deger(xml-parse-ii:1)
+                                   end-if
+                     end-perform
+                  end-if
+    end-perform.
+    perform nokta-virgul.
+
+*
+ nokta-virgul.
+    if genel-nokta-virgul = ","
+        inspect xml-parse-deger replacing all "." by "V"
+        inspect xml-parse-deger replacing all "," by "."
+        inspect xml-parse-deger replacing all "V" by ","
+    end-if.
+    
+*
+ grid-reset.
+    modify Screen1-Gd-1, 
+           reset-grid = 1
+           mass-update = 1
+    initialize screen1-gd-1-record
+    move "Kur"               to gd-1-col-1
+    move "Kur adi"           to gd-1-col-2
+    move "Carpn"             to gd-1-col-8
+    move "Doviz Alis"        to gd-1-col-3    
+    move "Doviz Satis"       to gd-1-col-4
+    move "Efektif Alis"      to gd-1-col-5
+    move "Efektif Satis"     to gd-1-col-6
+    modify screen1-gd-1,
+           record-to-add(screen1-gd-1-record)
+    modify Screen1-Gd-1, 
+           mass-update = 0.
+
+
+*
+ eski-kur.
+    perform grid-reset.
+
+    inquire Screen1-De-1, 
+            value in tarih.
+
+    display message box 
+            gun,"/",ay,"/",yil," tarihli merkez bankasi kurlari aliniyor"
+            icon mb_default-icon
+            title "Bilginize ...".
+
+*http://www.tcmb.gov.tr/kurlar/200707/04072007.html
+    move all low-values    to http-adres
+    string http-adres
+           "http://www.tcmb.gov.tr/kurlar/" delimited by low-values
+           yil                              delimited by low-values
+           ay                               delimited by low-values
+           "/"                              delimited by low-values
+           gun                              delimited by low-values
+           ay                               delimited by low-values
+           yil                              delimited by low-values
+           ".xml"                          delimited by low-values
+           into http-adres.
+    inspect http-adres 
+            replacing all low-values by spaces.
+
+
+    modify Screen1-St-1-Handle, 
+            title = http-adres.
+    perform call-asya-readhttp.
+    perform grid-reset.
+    perform parse-kurlar.
+
+    
+*
+ kaydet.
+     accept simdi from time
+    if bugun-tar = tarih-tasi and tarih-onburo = tarih-tasi and simdi-saat = 15 then 
+       display message box "Saat 15:00 ile 16:00 kur alamassiniz"
+       exit paragraph
+    end-if  
+    if kur-adet < 2
+       display message box 
+               "Kurlar alinamadi !!!"
+               icon mb_error_icon
+               title "Hata"
+               exit paragraph.
+
+    inquire Screen1-De-1, 
+            value in tarih.
+
+    move tarih-onburo to tarih
+    accept bugun-tar    from century-date
+    accept simdi from time
+    if bugun-tar = tarih-tasi and tarih-onburo = tarih-tasi and simdi-saat >= 16 then 
+       move tarih to st
+
+       move function date-of-integer(function integer-of-date(st) + 1 ) to skurtar
+       move skurtar to kurtar
+
+    else
+       move  tarih to kurtar
+    end-if
+
+    open input banka
+    move onkpara-merkez-banka-kodu    to banka-kodu
+    read banka no lock invalid
+         display message box 
+                 "Onburo calisma parametreleri - Onkasa bolumunde Merkez",new-line
+                 "Bankasi banka kodu tanimlamasi bulunamadi",new-line,new-line
+                 "Kurlar aktarilamiyor once tanimlamayi yapiniz"
+                 icon mb_error_icon
+                 title "Hata"
+         close banka
+         exit paragraph
+    end-read
+    close banka.
+       
+    open input doviz banka
+    open i-o kur
+    perform varying i
+            from 2
+            by 1
+            until i > kur-adet
+            inquire screen1-gd-1(i),
+                    record-data in screen1-gd-1-record
+            inquire screen1-gd-1(i,2),
+                    hidden-data in donus
+            if donus <> "E"
+               exit perform cycle
+            end-if
+
+            initialize banka-rec
+            start banka key not < banka-kodu invalid
+                  continue
+            not invalid
+            initialize fs-banka
+            perform with test after until fs-banka = "10"
+            read banka next no lock end move "10" to fs-banka
+            not at end
+
+                    if banka-merkez-bankasindan-al not = "E"
+                       exit perform cycle
+                    end-if
+
+
+*                    if onkpara-merkez-banka-kodu <> banka-kodu 
+*                       exit perform cycle
+*                    end-if
+
+                           
+                    initialize kur-rec
+                    move kurtar                          to kur-tarih
+                    move banka-kodu                      to kur-banka
+                    perform doviz-bul
+                    move doviz-kodu                      to kur-doviz
+                    read kur no lock invalid
+                         move function numval-c(gd-1-col-8)   to birim
+                         move function numval-c(gd-1-col-3)   to doviz-alis
+                         compute doviz-alis = doviz-alis / birim 
+                         move function numval-c(gd-1-col-4)   to doviz-satis
+                         compute doviz-satis = doviz-satis / birim 
+                         move function numval-c(gd-1-col-5)   to efektif-alis
+                         compute efektif-alis = efektif-alis / birim 
+                         move function numval-c(gd-1-col-6)   to efektif-satis
+                         compute efektif-satis = efektif-satis / birim 
+                         move k-kodu-tasi                     to doviz-staf
+        
+        
+        
+                         evaluate banka-cevrim
+                         when 1
+                            move efektif-satis                to doviz-alis                       
+                         when 2
+                            move doviz-satis                  to doviz-alis
+                         end-evaluate
+                          
+                         if onkpara-merkez-banka-kodu <> kur-banka and 
+                            banka-merkez-bankasina-orani <> 0 and banka-merkez-bankasindan-al = "E"
+                              compute doviz-alis = doviz-alis + ((doviz-alis * banka-merkez-bankasina-orani) / 100)
+                              compute doviz-satis = doviz-satis + ((doviz-satis * banka-merkez-bankasina-orani) / 100)
+                              compute efektif-alis = efektif-alis + ((efektif-alis * banka-merkez-bankasina-orani) / 100)
+                              compute efektif-satis = efektif-satis + ((efektif-satis * banka-merkez-bankasina-orani) / 100)
+                         end-if
+        
+                         rewrite kur-rec invalid
+                                 write kur-rec end-write
+                         end-rewrite
+                         perform log-operation-kur
+                    not invalid
+                        display message box "Kurlar daha once alinmistir." new-line
+                                            "Duzeltmeler icin kur girisini kullanabilirsiniz." new-line
+                                            "Islem iptal edilmistir.."
+                        exit perform 
+                    end-read    
+
+            end-read
+            end-perform
+            end-start
+
+
+
+
+    end-perform
+      
+*/ TL YAZILIYOR
+    move "TL "             to gd-1-col-1
+    perform doviz-bul
+    if donus <> "E"
+       move "YTL"          to gd-1-col-1
+       perform doviz-bul
+       if donus <> "E"
+          display message box
+          "Turk lirasi tanimlamasi bulunamadi ...",new-line,new-line
+          "Doviz kodlari tanimlama programinda TL tanimlamasi Merkez Bankasi Kodu",new-line
+          "bolumune TL veya YTL giriniz !!!"
+          icon mb_error_icon
+          title "Hata ..."
+        end-if
+    end-if
+
+
+    if donus = "E"
+            initialize banka-rec
+            start banka key not < banka-kodu invalid
+                  continue
+            not invalid
+            initialize fs-banka
+            perform with test after until fs-banka = "10"
+            read banka next no lock end move "10" to fs-banka
+            not at end
+                    if banka-merkez-bankasindan-al <> "E"
+                       exit perform cycle
+                    end-if
+                 
+                    initialize kur-rec
+                    move kurtar                       to kur-tarih
+                    move banka-kodu                  to kur-banka
+                    move doviz-kodu                  to kur-doviz
+                    move 1                           to doviz-alis doviz-satis 
+                                                        efektif-alis efektif-satis
+                    move k-kodu-tasi                 to doviz-staf
+                    rewrite kur-rec invalid
+                            write kur-rec end-write
+                    end-rewrite
+            end-read
+            end-perform
+    end-if
+
+    close doviz kur banka.
+
+    display message box 
+            "Merkez Bankasi Kurlari Alindi"
+            title "Bilginize ...".
+    set exit-pushed to true.
+
+*
+ doviz-bul.
+    initialize doviz-rec donus
+    start doviz key not < doviz-kodu invalid
+          continue
+    not invalid
+    initialize fs-doviz
+    perform with test after until fs-doviz = "10"
+    read doviz next no lock end move "10" to fs-doviz
+    not at end            
+         if d-merkez-banka-kodu = gd-1-col-1
+            move "E" to donus
+            exit perform
+         end-if
+    end-read
+    end-perform
+    end-start
+
+    if donus <> "E"
+       initialize d-adi-1
+    end-if
+     .
+
+*
+ Screen1-Gd-1-Ev-Msg-Begin-Entry.
+    move event-action-fail to event-action.
+     .
+*
+ Screen1-De-1-Ex-Ntf-Changed.
+    perform eski-kur.
+     .
+*
+ Screen1-Ex-Other.
+     if key-status = 2
+        perform kaydet
+     else
+        if key-status = 15
+           move 1 to vis-1
+        end-if
+        display Screen1-De-1 Screen1-De-1a
+     end-if.
+     
+     .
+*
+ call-asya-readhttp.
+     if is-remote
+        set ASYA-ReadHttp-Remote to true
+        set ASYAdll_Remote       to true
+     else
+        set ASYA-ReadHttp-local to true
+        set ASYAdll_local       to true
+     end-if.
+
+     call asyadll on exception
+          perform callerr-proc
+     end-call
+
+     inspect http-adres replacing trailing spaces by low-values
+     move all low-values to http-buffer
+     move function length(http-buffer)        to http-buffer-size
+
+
+
+     call ASYA_ReadHttp using 
+                        by reference http-adres,
+                        by reference http-buffer
+                        by value http-buffer-size
+     on exception
+          display message box
+                  "Asyadll.dll (ASYA_ReadHttp) bulunamadi !!!",x"0a0d",
+                  "Kurlar alinamiyor, Luten Tekrar Deneyiniz ...",x"0a0d",
+                  "Server'dan cekilecek *"
+                  icon mb_error_icon
+                  title "Hata"
+          cancel asyadll
+          call "c$copy" using "/asya/ytl/dll/asyadll.dll" 
+                              "@[DISPLAY]:c:\acucorp\acucbl701\acugt\bin\asyadll.dll"
+          set exit-pushed to true
+    not on exception
+    cancel ASYA_ReadHttp
+    cancel asyadll
+    end-call.
+      
+*

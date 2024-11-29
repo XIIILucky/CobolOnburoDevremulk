@@ -1,0 +1,542 @@
+* grupfiy.evt
+* grupfiy.evt is generated from D:\asya\acugt.ytl\otel\grupfiy.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      move link-grupfiy-kodu       to acc-grup-no
+      move link-grupfiy-bas-tar    to acc-grup-bas-tar 
+      move link-grupfiy-bit-tar    to acc-grup-bit-tar
+      open input genel
+      initialize genel-rec
+      move 1   to genel-anahtar
+      read genel no lock invalid
+           display message box "Genel Parametre Tanimsiz..."
+                           title "Uyari"
+                           icon 1
+               close genel
+               exit paragraph 
+      end-read 
+      close genel
+      open input kllnc
+      initialize kllnc-rec 
+      move k-kodu-tasi          to k-kodu
+      read kllnc no lock invalid
+            display message box "Hatali Kullanici Kodu..."
+                            title "Uyari"
+                            icon 2
+             close kllnc
+             exit paragraph
+      end-read 
+      close kllnc
+     .
+*
+ Form1-Aft-Initdata.
+      if k-fiy-sup not = 1
+         modify Form1-St-1-Handle, TITLE = "Yetkisiz Kullanici Kodu.."                                   
+         modify form1-gd-1,enabled = false
+         modify Form1-Pb-2,enabled = false         
+      end-if 
+      open input gruplar
+      initialize gruplar-rec 
+      move acc-grup-no                      to gruplar-kodu
+      read gruplar no lock invalid 
+           move "Tanimsiz Grup Secimi...."  to gruplar-adi
+      end-read  
+           move gruplar-adi                 to acc-grup-adi
+      close gruplar
+      display accept-0102
+      if link-grup-link-var = 2
+         perform grid-goster 
+      end-if 
+     
+     .
+*
+ accept-0105-Aft-Procedure.
+     if acc-grup-bas-tar = zeroes
+        exit paragraph 
+     end-if 
+     open input takvim
+     initialize takvim-rec 
+     move acc-grup-bas-tar    to takvim-anah
+     read takvim no lock invalid 
+          display message box "Baslangic Tarihi Hatali.."
+                          title "Uyari"
+                          icon 1
+              close takvim
+              exit paragraph 
+     end-read 
+     close takvim
+     
+     .
+*
+ accept-0108-Aft-Procedure.
+     if acc-grup-bit-tar = zeroes
+        exit paragraph 
+     end-if 
+     open input takvim
+     initialize takvim-rec 
+     move acc-grup-bit-tar    to takvim-anah
+     read takvim no lock invalid 
+          display message box "Bitis Tarihi Hatali.."
+                          title "Uyari"
+                          icon 1
+              close takvim
+              exit paragraph 
+     end-read 
+     close takvim
+     
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 3
+         if k-fiy-sup = 1
+            perform kayit-sil
+         end-if 
+     when 5
+         perform grid-goster
+     when 17
+             move grupfiy-dosya        to link-logview-dosya-adi
+             set link-logview-pointer  to address of grupfiy-rec
+             set link-logview-rec-size to size of grupfiy-rec
+             perform logview-call
+             initialize key-status
+                
+     end-evaluate
+     
+     .
+*
+ grid-goster.
+     perform accept-0105-Aft-Procedure 
+     perform accept-0108-Aft-Procedure
+     perform baslik-yukle
+     perform grid-yan-yukle
+     perform grid-yukle
+     modify Form1-Pb-1, ENABLED = false
+     delete file takas
+     .
+*
+ baslik-yukle.
+     modify form1-gd-1,reset-grid  = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "Kisi"           to gd-1-col-1
+     open i-o genelfis
+     initialize genelfis-rec 
+     move 1             to genelfis-anahtar
+     read genelfis no lock invalid 
+          continue 
+     not invalid
+          add 1 to ekran-fis-1 
+          move ekran-fis-1    to takas-no
+          rewrite genelfis-rec end-rewrite 
+     end-read 
+     close genelfis
+     open output takas close takas open i-o takas 
+
+     open input blok konum
+     initialize blok-rec i ydk-blok-konum
+     move acc-grup-no      to blok-kodu
+     start blok key not < blok-anahtar invalid 
+           continue 
+     not invalid 
+     perform with test after until fs-blok = "10"
+     read blok next no lock end move "10"  to fs-blok
+     not at end
+             if blok-kodu <> acc-grup-no
+                 exit perform 
+             end-if
+             
+             initialize takas-rec 
+             move blok-kodu       to takas-blok-kodu
+             move blok-konum      to takas-blok-konum
+             read takas no lock invalid                  
+                  write takas-rec end-write 
+             end-read 
+     end-read 
+     end-perform
+     end-start
+
+
+     initialize takas-rec
+     start takas key not < takas-anahtar invalid 
+           continue 
+     not invalid 
+     perform with test after until fs-takas = "10"
+     read takas next no lock end move "10"  to fs-takas
+     not at end 
+             
+             add 1                       to i
+             evaluate i
+             when 1
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-2
+             when 2
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-3
+             when 3
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-4
+             when 4
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-5
+             when 5
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-6
+             when 6
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-7
+             when 7
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-8
+             when 8
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-9
+             when 9
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-10
+             when 10
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi          to gd-1-col-11
+             when 11
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi           to gd-1-col-12
+             when 12
+                initialize konum-rec 
+                move takas-blok-konum          to konum-anahtar grid-gizli-konum
+                read konum no lock invalid 
+                     move "Tanimsiz.."   to konum-adi
+                end-read 
+                move konum-adi           to gd-1-col-13
+
+             end-evaluate 
+             compute takas-kolon = i + 1
+             rewrite takas-rec end-rewrite 
+             modify form1-gd-1(1,i + 1),
+                    hidden-data = grid-gizli-konum
+     end-read 
+     end-perform
+     end-start
+     close blok konum takas
+             modify form1-gd-1,
+                    record-to-add(form1-gd-1-record)
+     
+     .
+*
+ grid-yan-yukle. 
+     move 0 to cock
+     move 1 to kk
+     perform varying i
+              from 1
+              by 1 
+              until i > 16
+                initialize form1-gd-1-record
+                   initialize form1-gd-1-record
+                   add 1       to kk
+                   move i      to zz 
+                   evaluate true
+                   when i > 0 and 
+                        i <= 4                      
+                      add 1 to kisi
+                      compute cock-hes = (kisi + 9) 
+                      string cock-hes(1:1) 
+                          "-Kisi + " delimited by size
+                          cock-hes(2:1) delimited by size
+                          " -Cocuk" delimited by size 
+                      into gd-1-col-1
+
+                      modify form1-gd-1,record-to-add(form1-gd-1-record)
+                      modify form1-gd-1(kk,1),
+                             hidden-data = cock-hes
+                    when i > 4 and 
+                         i <= 8
+                         if i = 5
+                           initialize kisi
+                         end-if 
+                      add 1     to kisi
+                      compute cock-hes = (kisi + 19)
+                      string cock-hes(1:1) 
+                          "-Kisi + " delimited by size
+                          cock-hes(2:1) delimited by size
+                          " -Cocuk" delimited by size 
+                      into gd-1-col-1
+
+                      modify form1-gd-1,record-to-add(form1-gd-1-record)
+                      modify form1-gd-1(kk,1),
+                             hidden-data = cock-hes
+                   when i > 8 and i <= 12 
+                         if i = 9
+                           initialize kisi
+                         end-if 
+                      add 1     to kisi
+                      compute cock-hes = (kisi + 29)
+                      string cock-hes(1:1) 
+                          "-Kisi + " delimited by size
+                          cock-hes(2:1) delimited by size
+                          " -Cocuk" delimited by size 
+                      into gd-1-col-1
+
+                      modify form1-gd-1,record-to-add(form1-gd-1-record)
+                      modify form1-gd-1(kk,1),
+                             hidden-data = cock-hes
+
+                   when i > 12 and i <= 16 
+                         if i = 13
+                           initialize kisi
+                         end-if 
+                      add 1     to kisi
+                      compute cock-hes = (kisi + 39)
+                      string cock-hes(1:1) 
+                          "-Kisi + " delimited by size
+                          cock-hes(2:1) delimited by size
+                          " -Cocuk" delimited by size 
+                      into gd-1-col-1
+
+                      modify form1-gd-1,record-to-add(form1-gd-1-record)
+                      modify form1-gd-1(kk,1),
+                             hidden-data = cock-hes
+                   end-evaluate 
+     end-perform. 
+
+*
+ grid-yukle.
+
+     open i-o grupfiy takas 
+     initialize grupfiy-rec ydk-blok-konum 
+     move 2 to i
+     move acc-grup-no          to grupfiy-kodu
+     move acc-grup-bas-tar     to grupfiy-bas-tarih
+     move acc-grup-bit-tar     to grupfiy-bit-tarih
+     start grupfiy key not < grupfiy-anahtar invalid 
+           continue 
+     not invalid 
+     perform with test after until fs-grupfiy = "10"
+     read grupfiy next no lock end move "10"  to fs-grupfiy
+     not at end 
+             if grupfiy-kodu <> acc-grup-no
+                 exit perform 
+             end-if
+             if grupfiy-bas-tarih <> acc-grup-bas-tar
+                 exit perform 
+             end-if 
+             if grupfiy-bit-tarih <> acc-grup-bit-tar
+                 exit perform 
+             end-if 
+             initialize takas-rec 
+             move grupfiy-kodu   to takas-blok-kodu
+             move grupfiy-konum  to takas-blok-konum
+             read takas no lock invalid 
+                  continue 
+             end-read 
+
+         
+             if grupfiy-child = 0
+                     evaluate grupfiy-pax 
+                     when 1
+                        modify form1-gd-1(2,takas-kolon),
+                        cell-data grupfiy-ayrilan-tutar 
+                     when 2
+                        modify form1-gd-1(6,takas-kolon),
+                        cell-data grupfiy-ayrilan-tutar 
+                     when 3
+                        modify form1-gd-1(10,takas-kolon),
+                        cell-data grupfiy-ayrilan-tutar 
+                     when 4
+                        modify form1-gd-1(14,takas-kolon),
+                        cell-data grupfiy-ayrilan-tutar 
+                     when 5
+                        modify form1-gd-1(18,takas-kolon),
+                        cell-data grupfiy-ayrilan-tutar 
+                     end-evaluate
+             else
+                     evaluate true
+                     when grupfiy-pax = 1 and 
+                          grupfiy-child > 0                    
+                             modify form1-gd-1(2 + grupfiy-child,takas-kolon),
+                             cell-data grupfiy-ayrilan-tutar
+                     when grupfiy-pax = 2 and 
+                          grupfiy-child > 0
+        
+                             modify form1-gd-1(6 + grupfiy-child,takas-kolon),
+                             cell-data grupfiy-ayrilan-tutar
+                     when grupfiy-pax = 3 and 
+                          grupfiy-child > 0
+                             modify form1-gd-1(10 + grupfiy-child,takas-kolon),
+                             cell-data grupfiy-ayrilan-tutar
+        
+                     when grupfiy-pax = 4 and 
+                          grupfiy-child > 0
+                             modify form1-gd-1(14 + grupfiy-child,takas-kolon),
+                             cell-data grupfiy-ayrilan-tutar
+        
+                     when grupfiy-pax = 5 and 
+                          grupfiy-child > 0
+                             modify form1-gd-1(16 + grupfiy-child,takas-kolon),
+                             cell-data grupfiy-ayrilan-tutar
+                             
+                     end-evaluate 
+             end-if
+
+
+            
+
+     end-read 
+     end-perform
+     end-start
+     close grupfiy takas
+     modify form1-gd-1,
+            mass-update = 0.
+ 
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-finish-entry
+          if k-fiy-sup = 1
+             perform kayit-yaz
+          else
+             display message box "Fiyat Degistirme Yetkiniz Yok.."
+                             title "Uyari"
+                             icon 1
+              exit paragraph
+          end-if 
+     end-evaluate.
+*
+ kayit-yaz.
+     open i-o grupfiy
+     initialize grupfiy-rec  temp-kisi
+     move acc-grup-no          to grupfiy-kodu
+     move acc-grup-bas-tar     to grupfiy-bas-tarih
+     move acc-grup-bit-tar     to grupfiy-bit-tarih
+     inquire form1-gd-1(1,event-data-1),
+             hidden-data = grupfiy-konum
+
+     inquire form1-gd-1(event-data-2,1),
+             hidden-data = temp-kisi
+
+     move temp-kisi(1:1) to grupfiy-pax
+     move temp-kisi(2:1) to grupfiy-child
+
+     inquire form1-gd-1(event-data-2,event-data-1),
+             cell-data = grupfiy-ayrilan-tutar
+
+     move k-kodu-tasi          to grupfiy-staf
+     write grupfiy-rec invalid 
+         rewrite grupfiy-rec end-rewrite 
+     end-write
+        perform log-operation-grupfiy
+     close grupfiy
+     .
+*
+ kayit-sil.
+    if acc-grup-no = zeroes
+       display message box "Grup Numarasi Olmadan Kayit Silinemez..."
+                       title "Uyari"
+                       icon 1
+        exit paragraph                
+    end-if 
+    display message box acc-grup-no" 'Nolu Grubun;" new-line
+                        acc-grup-bas-gun "/" acc-grup-bas-ay "/" acc-grup-bas-yil "-"
+                        acc-grup-bit-gun "/" acc-grup-bit-ay "/" acc-grup-bit-yil new-line
+                        "Tarihleri Arasindaki Fiyatlari Silinecektir."new-line
+                        "Eminmisiniz.?"
+                    title "Uyari"
+                    icon 1
+                    type 2
+                    default 2
+                    returning return-code 
+    if return-code = 2
+        exit paragraph 
+    end-if 
+        
+    open i-o grupfiy
+    initialize grupfiy-rec 
+    move acc-grup-no          to grupfiy-kodu
+    move acc-grup-bas-tar     to grupfiy-bas-tarih
+    move acc-grup-bit-tar     to grupfiy-bit-tarih
+    start grupfiy key not < grupfiy-anahtar invalid 
+          display message box "Silinecek Kayit Bulunamadi..."
+                          title "Uyari"
+                          icon 1
+             close grupfiy
+             exit paragraph
+    not invalid 
+    perform with test after until fs-grupfiy = "10"
+    read grupfiy next no lock end move "10"  to fs-grupfiy
+    not at end 
+            if grupfiy-kodu <> acc-grup-no or
+               grupfiy-bas-tarih <> acc-grup-bas-tar or
+               grupfiy-bit-tarih <> acc-grup-bit-tar
+                  exit perform 
+            end-if 
+            delete grupfiy end-delete 
+            perform log-operation-grupfiy
+    end-read 
+    end-perform
+    end-start
+    close grupfiy
+    display message box "Fiyatlar Silindi..."new-line
+                        "Lutfen Kontrol Ediniz.."
+                    title "Uyari"
+                    icon 1
+    set exit-pushed to true 
+     .
+
+ 

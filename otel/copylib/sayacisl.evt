@@ -1,0 +1,731 @@
+* sayacisl.evt
+* sayacisl.evt is generated from D:\asya\acugt.ytl\otel\sayacisl.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM gd1-Ev-Other
+     .
+
+ gd1-Exception-Proc.
+     PERFORM gd1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+*/   
+
+     open i-o sayac sayachrk close sayac sayachrk
+     open input genel.
+     move 1 to genel-anahtar
+     read genel no lock invalid
+          initialize mesaj-link
+          move 17 to mesaj-no
+          perform mesaj-ver
+          goback
+     end-read
+     close genel
+     .
+
+*
+ Form1-Ex-Other.
+         if sadece-kapali = 1 then
+                    exit paragraph
+          end-if
+      evaluate key-status
+         when 1
+       
+            if control-ID = 5 then
+                  initialize oda-cagir
+                  move "D"   to oda-db-cagir
+                  call "/asya/ytl/obj/otel/odaara.asy" using oda-cagir
+                        on exception perform callerr-proc
+                           not on exception
+                           cancel "/asya/ytl/obj/otel/odaara.asy" 
+                   end-call
+                   move odano-cagir     to txt-oda-no
+                   display Form1-Ef-1
+            end-if
+            if control-ID = 37 then
+                  initialize depkod-cagir
+                      call "/asya/ytl/obj/otel/depara.asy" using depkod-cagir
+                            on exception perform callerr-proc
+                               not on exception
+                               cancel "/asya/ytl/obj/otel/depara.asy" 
+                       end-call
+                 move depkod-dep-kodu     to onb-depart
+                 display Form1-Ef-3
+            end-if 
+          WHEN 2   
+             open input sayac
+             move  txt-sayac-kodu  to  sayac-kodu
+             read sayac no lock invalid
+                     close sayac
+                     exit paragraph
+             end-read
+             close sayac
+             if txt-ilk-endeks = spaces or txt-ilk-endeks = zeroes then
+                   exit paragraph
+             end-if
+ 
+             open i-o sayachrk
+                     initialize sayachrk-rec
+     
+                     move txt-oda-no          to  SAYACHRK-ODA  
+                     move date-islem-tarihi   to  SAYACHRK-ISLEM-TAR
+                     move txt-sayac-kodu      to  SAYACHRK-SAYAC-KODU      
+                     move kayit-kaynak-folio  to  SAYACHRK-KAYNAK-FOLIO 
+                     move date-islem-saati    to  SAYACHRK-ZAMAN 
+                     read sayachrk no lock invalid
+                             move okunan-ad-soyad       to sayachrk-ad-soyad
+                             accept SAYACHRK-ZAMAN from time
+                     not invalid
+                             move SAYACHRK-KAYNAK-FOLIO to kayit-kaynak-folio
+                     end-read
+
+                     move kayit-kaynak-folio            to SAYACHRK-KAYNAK-FOLIO
+
+                     move txt-ilk-endeks    to sayachrk-ilk-endeks
+                     move txt-son-endeks    to sayachrk-son-endeks
+
+                     if txt-ilk-endeks not = ZEROES then
+                             move date-ilk-endeks   to sayachrk-ilk-oku-tar
+                     end-if
+                     if txt-son-endeks not = ZEROES then
+                            move date-son-endeks   to sayachrk-son-oku-tar
+                     end-if
+
+                     move txt-iskonto-tutar to SAYACHRK-ISKONTO-TUTAR
+
+                     write sayachrk-rec invalid
+                             rewrite sayachrk-rec invalid
+                                   stop " "
+                             end-rewrite
+                     end-write 
+ 
+             close sayachrk
+
+             perform gd-baslik-at
+             perform gd-guncelle
+
+             accept date-islem-saati from time
+             perform ust-satir-doldur
+       when 4
+            perform departman-isle
+            accept date-islem-saati from time
+            perform ust-satir-doldur
+        when 99
+             call "/asya/ytl/obj/otel/sayactan.asy"  
+                            on exception perform callerr-proc
+                               not on exception
+                  cancel "/asya/ytl/obj/otel/sayactan.asy" 
+             end-call
+      end-evaluate.
+
+*
+ Form1-Ef-1-Aft-Procedure.
+      
+     open input konuk
+       initialize konuk-rec txt-adi txt-soyadi txt-cin txt-cout kayit-kaynak-folio okunan-ad-soyad  okunan-kaynak-folio
+       move "I"           to KONUK-durumu
+       move  txt-oda-no   to KONUK-ODANO
+       start konuk key not < konuk-oda invalid
+               move 5 to control-id
+               move 4 to accept-control
+       not invalid
+       perform until fs-konuk = "10"
+       read konuk next no lock end move "10" to fs-konuk
+       not end
+                if KONUK-ODANO not = txt-oda-no
+                      move 5 to control-id
+                      move 4 to accept-control
+                      exit perform 
+                end-if
+                if konuk-fol-kodu not = "R" then
+                        exit perform cycle
+                end-if
+                move konuk-adi to txt-adi 
+                move konuk-soyadi to txt-soyadi 
+           
+                move all low-values to  okunan-ad-soyad
+                inspect konuk-adi replacing
+                       trailing spaces by low-values
+                 inspect konuk-soyadi replacing
+                       trailing spaces by low-values
+   
+                string okunan-ad-soyad
+                konuk-adi     delimited by low-values
+                " "           delimited by low-values
+                konuk-soyadi  delimited by low-values
+                into okunan-ad-soyad
+
+                inspect okunan-ad-soyad replacing
+                                trailing low-values by spaces 
+
+                move konuk-gel-tar(7:2) to etarih-gun
+                move konuk-gel-tar(5:2) to etarih-ay
+                move konuk-gel-tar(1:4) to etarih-yil
+                move etarih             to txt-cin
+
+                move konuk-git-tar(7:2) to etarih-gun
+                move konuk-git-tar(5:2) to etarih-ay
+                move konuk-git-tar(1:4) to etarih-yil
+                move etarih             to txt-cout
+
+                move konuk-folio to kayit-kaynak-folio txt-folio okunan-kaynak-folio
+                exit perform
+       end-read
+       end-perform
+       end-start
+     display Form1-Ef-1a Form1-Ef-1aa Form1-Ef-1ab Form1-Ef-1aaa Form1-Ef-1aab
+     close konuk
+
+     perform gd-baslik-at
+     perform gd-guncelle
+
+     .
+*
+ Form1-Aft-Initdata.
+ 
+       call "c$narg" using link-var
+       if link-var = 1 then
+           move link-oda-numarasi to txt-oda-no
+           display Form1-Ef-1
+           perform Form1-Ef-1-Aft-Procedure
+        end-if
+       open i-o sayachrk
+       close sayachrk
+ 
+     .
+*
+ gd-baslik-at.
+      modify gd1,reset-grid = 1 
+      initialize gd1-record
+      move "Islem Tar."      to gd1-col-1
+      move "Kodu"            to gd1-col-2
+      move "Sayac Adi"       to gd1-col-3
+      move "Ilk Endeks"      to gd1-col-4
+      move "Ilk Tarih"       to gd1-col-5
+      move "Son Endeks"      to gd1-col-6
+      move "Son Tarih"       to gd1-col-7
+      move "Tutar"           to gd1-col-8
+      move "Iskonto"         to gd1-col-9
+      move "Odn. Tutar"      to gd1-col-10
+      move "Kaynak Folio"    to gd1-col-11
+      modify gd1,record-to-add(gd1-record)
+
+      .
+*
+ gd-guncelle.
+         if sadece-kapali = 1 then
+                 move 1  to kosul9
+         else
+                 move 0  to kosul9
+         end-if
+         open input sayachrk sayac
+             initialize sayachrk-rec ii
+             move 1 to ii
+             move txt-oda-no          to SAYACHRK-ODA  
+             MOVE kosul9              TO SAYACHRK-KAPALI 
+             move high-values         to SAYACHRK-ISLEM-tar
+             start sayachrk key not > SAYACHRK-AKTIF invalid
+                     continue
+             not invalid
+             perform until fs-sayachrk = "10"
+             read sayachrk previous no lock end move "10" to fs-sayachrk 
+             not end
+                    if SAYACHRK-ODA not =  txt-oda-no  then
+                         exit perform
+                    end-if
+                    if SAYACHRK-KAPALI not = kosul9 then
+                        exit perform cycle
+                    end-if
+                     add 1 to ii
+                     initialize gd1-record odenecek-tutar hesap-tutar
+                     move SAYACHRK-ISLEM-yil      to etarih-yil
+                     move SAYACHRK-ISLEM-ay       to etarih-ay
+                     move SAYACHRK-ISLEM-gun      to etarih-gun
+                     move etarih                  to gd1-col-1
+                     move SAYACHRK-ISLEM-tar      to gd1-col-12
+                     move sayachrk-zaman          to gd1-col-13
+                     move SAYACHRK-SAYAC-KODU     to gd1-col-2 sayac-kodu
+                     read sayac no lock invalid
+                            move "Tanimsiz !!" to gd1-col-3
+                            initialize sayac-rec
+                     not invalid
+                            move Sayac-adi     to gd1-col-3   
+                     end-read
+
+                     move sayachrk-ilk-endeks      to z-endeks
+                     move z-endeks                 to gd1-col-4
+                     move sayachrk-son-endeks      to z-endeks
+                     move z-endeks                 to gd1-col-6
+
+                     if  sayachrk-ilk-oku-tar not = zeroes then
+                           move sayachrk-ilk-oku-yil to etarih-yil
+                           move sayachrk-ilk-oku-ay  to etarih-ay
+                           move sayachrk-ilk-oku-gun to etarih-gun
+                           move etarih               to gd1-col-5
+                     end-if
+                     if  sayachrk-son-oku-tar not = zeroes then
+                           move sayachrk-son-oku-yil to etarih-yil
+                           move sayachrk-son-oku-ay  to etarih-ay
+                           move sayachrk-son-oku-gun to etarih-gun
+                           move etarih               to gd1-col-7
+                     end-if
+
+                     move SAYACHRK-ISKONTO-TUTAR   to z-tutar9 
+                     move z-tutar9                 to gd1-col-9
+                     move SAYACHRK-KAYNAK-FOLIO    to gd1-col-11
+                     move "-"                      to gd1-col-11(9:1)
+                     move sayachrk-ad-soyad        to gd1-col-11(10:80)
+                     
+                     
+                     if sayachrk-son-endeks not = zeroes then
+                         compute hesap-tutar = ( sayachrk-son-endeks - sayachrk-ilk-endeks ) * sayac-deger
+                         move hesap-tutar              to z-tutar9
+                         move z-tutar9                 to gd1-col-8
+
+                         compute odenecek-tutar = hesap-tutar - SAYACHRK-ISKONTO-TUTAR
+                         move odenecek-tutar           to z-tutar9
+                         move z-tutar9                 to gd1-col-10
+
+                        ||||-sayac aciklama
+                         move sayachrk-ilk-endeks to sayac-ilk-endeks
+                         move sayachrk-son-endeks to sayac-son-endeks
+                         
+                         move SAYACHRK-ISKONTO-TUTAR to sayac-iskonto 
+                         |||||
+                     end-if
+                    
+
+                     modify gd1,record-to-add(gd1-record)
+
+
+                     if sadece-kapali = 1 then
+                              modify gd1(ii,10),row-color = 48
+                              modify gd1(ii,4),cell-color = 45
+                              modify gd1(ii,6),cell-color = 45
+                              modify gd1(ii,7),cell-color = 112
+                     else
+                             if odenecek-tutar < 0 then
+                                modify gd1(ii,10),cell-color = 352
+                             end-if
+                             if odenecek-tutar > 0  
+                                modify gd1(ii,10),cell-color = 176
+                             end-if
+                     end-if
+                     
+             end-read
+             end-perform
+             end-start
+
+         close sayachrk sayac
+         .
+*
+ Form1-Ef-2-Aft-Procedure.
+       accept date-islem-saati from time
+       PERFORM Form1-Ef-1-Aft-Procedure
+       perform ust-satir-dolduR
+     .
+*
+ ust-satir-doldur.
+        open input sayac
+           initialize sayac-rec
+           move txt-sayac-kodu to sayac-kodu
+           read sayac no lock invalid
+                    move 14 to control-id
+                    move 4  to accept-control
+                    move "Tanimsiz Kod ! " to txt-sayac-adi
+           not invalid
+                move sayac-adi to txt-sayac-adi
+           end-read
+       display Form1-Ef-2a
+       close sayac
+
+        open input sayachrk
+        initialize sayachrk-rec odenecek-tutar hesap-tutar
+        move txt-oda-no          to  SAYACHRK-ODA  
+        move date-islem-tarihi   to  SAYACHRK-ISLEM-TAR
+        move txt-sayac-kodu      to  SAYACHRK-SAYAC-KODU      
+        move kayit-kaynak-folio  to  SAYACHRK-KAYNAK-FOLIO
+        move date-islem-saati    to  sayachrk-zaman
+        read sayachrk no lock invalid
+                move kayit-kaynak-folio to txt-folio-baslik(1:8)
+                move "-"                to txt-folio-baslik(9:1)
+                move okunan-ad-soyad    to txt-folio-baslik(10:80)
+                modify sc-kayit-folio , title = txt-folio-baslik
+                initialize sayachrk-rec
+                 
+        not invalid
+            move kayit-kaynak-folio to txt-folio-baslik(1:8)
+            move "-"                to txt-folio-baslik(9:1)
+            move sayachrk-ad-soyad  to txt-folio-baslik(10:80)
+            modify sc-kayit-folio , title = txt-folio-baslik
+
+            if sayachrk-kapali = 1 then
+                 initialize sayachrk-rec
+            end-if
+        end-read
+
+        
+         move SAYACHRK-ISLEM-TAR  to date-islem-tarihi
+         move sayachrk-ilk-endeks to txt-ilk-endeks  
+         move sayachrk-son-endeks to txt-son-endeks    
+
+         if sayachrk-ilk-oku-tar not = ZEROES then
+                 move sayachrk-ilk-oku-tar to date-ilk-endeks
+         end-if
+         if sayachrk-son-oku-tar not = ZEROES then
+                 move sayachrk-son-oku-tar to date-son-endeks
+         end-if
+
+         move SAYACHRK-ISKONTO-TUTAR to txt-iskonto-tutar
+         
+         if sayachrk-son-endeks not = zeroes then
+              compute hesap-tutar = ( sayachrk-son-endeks - sayachrk-ilk-endeks ) * sayac-deger
+              move hesap-tutar              to z-tutar9
+              move z-tutar9                 to gd1-col-8
+
+              compute odenecek-tutar = hesap-tutar - SAYACHRK-ISKONTO-TUTAR
+              move odenecek-tutar           to z-tutar9
+              move z-tutar9                 to gd1-col-10
+              move z-tutar9   to txt-odenecek-tutar
+          end-if
+
+          if odenecek-tutar = zeroes then
+              move "        0"   to txt-odenecek-tutar
+          end-if
+          modify sc-odenecek,title = txt-odenecek-baslik
+
+         display Form1-De-1 Form1-Ef-2 Form1-Ef-2 Form1-Ef-2a Form1-Ef-2aa Form1-De-1a Form1-Ef-2aaa Form1-De-1aa Form1-Ef-2aaaa
+     close sayachrk
+         .
+*
+ gd1-Ev-Other.
+   
+     evaluate event-type
+       when msg-goto-cell
+       when msg-goto-cell-mouse
+          if sadece-kapali = 1 then
+              exit paragraph
+          end-if
+             inquire gd1, x in i y in ii
+             inquire gd1(ii,12) cell-data in date-islem-tarihi
+             inquire gd1(ii,13) cell-data in date-islem-saati
+             inquire gd1(ii,2)  cell-data in txt-sayac-kodu
+             inquire gd1(ii,11) cell-data in kayit-kaynak-folio 
+             perform ust-satir-doldur
+       when msg-begin-entry
+            move event-action-fail to event-action
+      end-evaluate
+           .
+*
+ Form1-Ef-2aaa-Aft-Procedure.
+       if txt-son-endeks < txt-ilk-endeks and txt-son-endeks not = zeroes then
+             display message box "Girilen Son Deger Ilk Degerden Kucuk Olamaz !"
+             move 25 to control-id
+             move 4  to accept-control
+       end-if
+     .
+*
+ gd1-Ex-Other.
+     if sadece-kapali = 1 and key-status <> 8 then
+              exit paragraph
+      end-if
+      evaluate key-status
+        when 3
+              if function numval(txt-odenecek-tutar) <= 0 then
+                      move "Secili Satirdaki Sayac Bilgileri Kapatilacaktir , Devam Etmek Istiyor musunuz ?"  to uyari-mesaji
+              else 
+                      move "Hareketi FOLIO'ya ISLEMEDEN Kapatiyorsunuz !!! , Devam Etmek Istiyor musunuz ?"     to uyari-mesaji
+              end-if
+              display message box uyari-mesaji
+              title "[ ASYA-SOFT YAZILIM ]"
+              type 2
+              default 2
+              icon 2
+              returning return-code 
+              if return-code not = 1 then
+                     exit paragraph
+              end-if
+  
+             open i-o sayachrk
+                initialize sayachrk-rec silindi
+                move txt-oda-no          to  SAYACHRK-ODA  
+                move date-islem-tarihi   to  SAYACHRK-ISLEM-TAR
+                move txt-sayac-kodu      to  SAYACHRK-SAYAC-KODU      
+                move kayit-kaynak-folio  to  SAYACHRK-KAYNAK-FOLIO 
+                move date-islem-saati    to  sayachrk-zaman
+                read sayachrk no lock invalid
+                        display message box "islem gerceklestirilemedi , tekrar deneyiniz !"
+                        icon 4
+                not invalid
+                        move 1 to SAYACHRK-KAPALI
+                        REWRITE SAYACHRK-REC INVALID
+                                STOP " "
+                        END-REWRITE
+                        move 1 to silindi
+                end-read
+              close sayachrk
+              
+              if silindi = 1 then
+                   perform gd-baslik-at
+                   perform gd-guncelle
+              end-if
+              accept date-islem-saati from time
+              perform ust-satir-doldur
+        when 4
+            perform departman-isle 
+            accept date-islem-saati from time
+            perform ust-satir-doldur
+        WHEN 8 
+             inquire gd1, x in i y in ii
+             inquire gd1(ii,12) cell-data in date-islem-tarihi
+             inquire gd1(ii,13) cell-data in date-islem-saati
+             inquire gd1(ii,2)  cell-data in txt-sayac-kodu
+             inquire gd1(ii,11) cell-data in kayit-kaynak-folio 
+              
+
+             initialize sayachrk-rec  
+             move txt-oda-no          to  SAYACHRK-ODA  
+             move date-islem-tarihi   to  SAYACHRK-ISLEM-TAR
+             move txt-sayac-kodu      to  SAYACHRK-SAYAC-KODU      
+             move kayit-kaynak-folio  to  SAYACHRK-KAYNAK-FOLIO
+             move date-islem-saati    to  sayachrk-zaman
+        
+             call "/asya/ytl/obj/otel/sayaclzr.asy" using  sayachrk-anah
+             on exception
+                  perform callerr-proc
+             not on exception
+                  cancel "/asya/ytl/obj/otel/sayaclzr.asy" 
+             end-call
+      end-evaluate
+     .
+*
+ Departman-Isle.
+
+              if okunan-kaynak-folio not = kayit-kaynak-folio then
+                   display message box "Sectiginiz Kaydin Folio'su Islenecek Oda Folio'su Ile Esit Olmalidir !!!" new-line
+                   "Islem Yapilamaz . . ."
+                   exit paragraph
+              end-if
+
+              if  odenecek-tutar <= 0 then
+                   display message box "Secilen Kayit [0] yada [-] Bakiye Olamaz !"
+                   exit paragraph
+              end-if
+
+
+              open input depkod
+                  move onb-depart to depkod-kodu
+                  read depkod no lock invalid
+                        display message box "Tanimsiz Departman Kodu !"
+                        icon 3
+                        close depkod
+                        exit paragraph
+                  not invalid
+                         if depkod-ba not = "B" then
+                               display message box "Bir Borc Departmani Seciniz !"
+                               icon 2
+                               close depkod
+                               exit paragraph
+                         end-if
+                  end-read
+              close depkod
+
+              display message box  depkod-kodu "-" depkod-adi " Departmanina " odenecek-tutar " TL Tutarlik Hareket Islenecektir , Devam Etmek Istiyor musunuz ?"  
+              title "[ ASYA-SOFT YAZILIM ]"
+              type 2
+              default 2
+              icon 2
+              returning return-code 
+              if return-code not = 1 then
+                     exit paragraph
+              end-if
+             
+             call "c$sleep" using 0.5
+             open i-o sayachrk
+                initialize sayachrk-rec silindi
+                move txt-oda-no          to  SAYACHRK-ODA  
+                move date-islem-tarihi   to  SAYACHRK-ISLEM-TAR
+                move txt-sayac-kodu      to  SAYACHRK-SAYAC-KODU      
+                move kayit-kaynak-folio  to  SAYACHRK-KAYNAK-FOLIO  
+                move date-islem-saati    to  sayachrk-zaman
+                read sayachrk no lock invalid
+                        display message box "islem gerceklestirilemedi , tekrar deneyiniz !"
+                        icon 4
+                not invalid
+                        perform yaz-romhrk
+                        move 1 to SAYACHRK-KAPALI
+                        move 1 to sayachrk-folio-islendi
+                        REWRITE SAYACHRK-REC INVALID
+                                STOP " "
+                        END-REWRITE
+                        move 1 to silindi
+                end-read
+              close sayachrk
+              
+              if silindi = 1 then
+                   perform gd-baslik-at
+                   perform gd-guncelle
+              end-if.
+
+*
+ yaz-romhrk.
+     perform islem-no-al
+     open i-o romhrk yromhrk hrk2 onkasa 
+     initialize romhrk-rec
+     move okunan-kaynak-folio                to romhrk-folio
+     move cekgir-oto2                        to romhrk-islem
+     move "M"                                to romhrk-islem-tipi
+     move "R"                                to romhrk-islem-tipi2
+     move onb-depart                         to romhrk-depkod 
+     move tarih-tasi                         to romhrk-tarih 
+     move "B"                                to romhrk-BA        
+     move odenecek-tutar                     to romhrk-tl-tutar 
+     accept romhrk-zaman from time
+     move cekgir-oto2                        to romhrk-cekno
+     move k-kodu-tasi                        to romhrk-staf
+     OPEN I-O KONUK
+     write romhrk-rec invalid stop " " 
+         not invalid
+           move romhrk-rec   to yromhrk-rec 
+            move romhrk-folio to yromhrk-kaynak-folio
+             move romhrk-rec to hrkgir-rec
+             perform onkasa-artir
+             perform konuk-artir 
+             write yromhrk-rec 
+                invalid stop " " 
+                   not invalid
+                         move romhrk-anah  to hrk2-anah
+                         move romhrk-folio to hrk2-kaynak-folio
+                        write hrk2-rec invalid stop " " end-write
+             end-write
+             end-write
+     close romhrk yromhrk hrk2  onkasa  KONUK
+
+       open i-o nt
+               initialize not-rec
+               if konuk-fol-kodu = "R"
+                  move  "RHR"     to NOT-DOS
+                  move romhrk-anah to  NOT-DOS-ANAH 
+
+                  else
+                  move  "EHR"      to NOT-DOS
+                  move exthrk-anah to  NOT-DOS-ANAH 
+
+               end-if
+               move sayac-aciklama  to not1
+
+              write not-rec invalid
+                display message box "Cakisma Hatasi 232352"
+              end-write
+      close nt
+
+     display message box "Kayit  Folioya Islendi ..."new-line
+                   "Yapilan Islemin Ciktisini Almak Istiyor musunuz ?"
+                   title "[ Asya-Soft ]"
+                   type 2
+                   default 1
+                   returning return-code
+     if return-code <> 1 then
+           exit paragraph
+     end-if
+
+     call "/asya/ytl/obj/otel/sayaclzr.asy" using  sayachrk-anah
+     on exception
+          perform callerr-proc
+     not on exception
+          cancel "/asya/ytl/obj/otel/sayaclzr.asy" 
+     end-call
+    
+     .
+*
+ islem-no-al.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          initialize genelfis-rec 
+          move 1 to genelfis-anahtar
+          not invalid 
+          continue 
+     end-read
+     add 1 to cekgir-oto
+     move cekgir-oto to cekgir-oto2
+     write genelfis-rec invalid 
+     rewrite genelfis-rec 
+     end-rewrite
+     end-write
+     close genelfis.
+
+*
+ onkasa-artir.
+       move hrkgir-tarih    to onkasa-tarih.
+       move hrkgir-depkod   to onkasa-dep.
+       read onkasa no lock invalid 
+            go onkasa-yeni-isle
+            not invalid continue 
+       end-read.
+       compute onkasa-tutar-tl   = onkasa-tutar-tl + hrkgir-tl-tutar.
+       compute onkasa-tutar-dv   = onkasa-tutar-dv + hrkgir-dv-tutar.
+       rewrite onkasa-rec invalid 
+               write onkasa-rec 
+               end-write continue
+       end-rewrite.
+ 
+ onkasa-yeni-isle.
+       initialize onkasa-rec.
+       move hrkgir-tarih    to onkasa-tarih.
+       move hrkgir-depkod   to onkasa-dep.
+       move hrkgir-tl-tutar to onkasa-tutar-tl.
+       move hrkgir-dv-tutar to onkasa-tutar-dv.
+       write onkasa-rec invalid 
+             rewrite onkasa-rec 
+             end-rewrite continue 
+       end-write.
+
+*
+ konuk-artir.
+           move hrkgir-folio   to konuk-folio 
+           read konuk no lock invalid 
+                        exit paragraph
+           not invalid 
+                   continue
+           end-read 
+           if hrkgir-ba = "B"
+              compute konuk-top-borc = konuk-top-borc + hrkgir-tl-tutar 
+           if hrkgir-ba = "A"
+              compute konuk-top-alac = konuk-top-alac + hrkgir-tl-tutar 
+          rewrite konuk-rec invalid 
+                  continue
+          END-REWRITE.
+*
+ Form1-Ef-3-Aft-Procedure.
+              open input depkod
+                  move onb-depart to depkod-kodu
+                  read depkod no lock invalid
+                        modify sc-departman-adi, title = "Tanimsiz Departman Kodu !"
+                  not invalid
+                        modify sc-departman-adi, title = depkod-adi
+                  end-read
+              close depkod
+     .
+
+
+*
+ Form1-Cb-1-Link.
+         perform gd-baslik-at
+         perform gd-guncelle
+     .
+*
+ Form1-De-1-Aft-Procedure.
+      accept date-islem-saati from time
+     .
+
+ 

@@ -1,0 +1,198 @@
+* devgunsor.evt
+* devgunsor.evt is generated from D:\asya\acugt.ytl\otel\devgunsor.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+***   start event editor code   ***
+
+*
+ guncel-borc-bul.
+ 
+              open input devremulk taksit odemeler
+              initialize devremulk-rec guncel-taksit-toplam guncel-odeme-toplam  link-aidat-borc-tl link-aidat-borc-dv
+              move link-devremulk-no to devremulk-no 
+              start devremulk key not < devremulk-anah invalid
+                      continue
+              not invalid
+              perform until fs-devremulk = "10" 
+              read devremulk next no lock end move "10" to fs-devremulk
+              not end
+                    
+                        
+              | FILTRELER
+                  if  devremulk-no not = link-devremulk-no  then
+                          exit perform   
+                   end-if
+
+                  if devremulk-durumu not = "Y" then
+                            exit perform cycle
+                  end-if
+
+                initialize taksit-rec alt-toplam
+                move devremulk-no           to taksit-devremulk-no
+                move txt-donem-bas-tar      to taksit-tarih
+                start taksit key not < taksit-dev-tarih invalid
+                        continue
+                not invalid
+                perform until fs-taksit = "10" 
+                read taksit next no lock end move "10" to fs-taksit
+                not end
+                      if taksit-devremulk-no not =  devremulk-no then
+                          exit perform
+                      end-if
+                     if txt-donem-bit-tar   not >= taksit-tarih  then
+                           exit perform 
+                     end-if
+
+                     add taksit-tutar to guncel-taksit-toplam 
+      
+                end-read
+                end-perform
+                end-start
+
+       
+                initialize odemeler-rec
+                move devremulk-no to odemeler-devremulk-no
+                move txt-donem-bas-tar   to odemeler-tarih
+                start odemeler key not < odemeler-dev-tar invalid
+                        continue
+                not invalid
+                perform until fs-odemeler = "10" 
+                read odemeler next no lock end move "10" to fs-odemeler
+                not end
+                       
+                if odemeler-devremulk-no not = devremulk-no then
+                      exit perform
+                end-if
+                       evaluate odemeler-islem-turu
+                           when "SO"
+                               continue 
+                           when "IO"
+                               continue 
+                           when "SP"               
+                           when "NP"               
+                           when "PM"
+                           when "AG"               
+                           when "DP"                
+                           when "GS"               
+                           when "GN"
+                           WHEN "PP"
+                           WHEN "SS"
+                           when "AV"
+                           WHEN "AI"
+                           WHEN "AO"
+                                exit perform cycle 
+                           when "FO"
+                               continue                 
+                           when "PI"
+                               continue 
+                           WHEN OTHER 
+                                 exit perform  cycle
+                           end-evaluate
+                 
+                     if txt-donem-bit-tar not >= odemeler-tarih then
+                           exit perform 
+                     end-if
+
+                    add odemeler-tutar to guncel-odeme-toplam 
+
+                end-read
+                end-perform
+                end-start
+         
+                           |||guncel borcc bulll
+             
+             initialize odemeler-rec 
+                move devremulk-no to odemeler-devremulk-no
+                move txt-donem-bas-tar   to odemeler-tarih
+                start odemeler key not < odemeler-dev-tar invalid
+                        continue
+                not invalid
+                perform until fs-odemeler = "10" 
+                read odemeler next no lock end move "10" to fs-odemeler
+                not end
+                       
+                       if odemeler-devremulk-no not = devremulk-no then
+                              exit perform
+                       end-if
+                       evaluate odemeler-islem-turu
+                           WHEN "AI"
+                           WHEN "AO"
+                                   CONTINUE
+                           WHEN OTHER 
+                                exit perform cycle 
+                        end-evaluate
+       
+                        move odemeler-tutar    to tl-tutari 
+                        perform  odeme-dv-hesapla
+ 
+                        if odemeler-hareket-turu = "A"
+                               compute guncel-doviz-toplam = guncel-doviz-toplam - para-hesapla
+                        else
+                               compute guncel-doviz-toplam = guncel-doviz-toplam + para-hesapla
+                        end-if
+             end-read
+            end-perform
+            end-start
+
+           end-read
+           end-perform
+           end-start
+
+           close  devremulk taksit odemeler 
+           move guncel-doviz-toplam to doviz-tutari link-aidat-borc-dv
+           perform odeme-tl-hesapla
+           move para-hesapla to link-aidat-borc-tl
+           compute link-guncel-borc = guncel-taksit-toplam - guncel-odeme-toplam
+ 
+           set exit-pushed to true
+     .
+*
+ odeme-tl-hesapla.
+     open input kur
+     initialize kur-rec para-hesapla
+     move tarih-tasi           to kur-tarih
+     move 01                   to kur-banka
+     move devremulk-aidat-doviz-kodu          to kur-doviz
+     read kur no lock invalid        
+                CONTINUE
+     not invalid
+              if DOVIZ-ALIS > 0.00001 then 
+                  compute para-hesapla rounded = doviz-tutari * DOVIZ-ALIS
+              END-IF
+     end-read
+     close kur
+     .
+
+*
+ odeme-dv-hesapla.
+     open input kur
+     initialize kur-rec para-hesapla
+     move odemeler-tarih       to kur-tarih
+     move 01                   to kur-banka
+     move devremulk-aidat-doviz-kodu          to kur-doviz
+     read kur no lock invalid        
+                CONTINUE
+     not invalid
+              if DOVIZ-ALIS > 0.00001 then 
+                  compute para-hesapla rounded = tl-tutari / DOVIZ-ALIS
+              END-IF
+     end-read
+     close kur
+     .
+
+*
+ form2-Bef-Create.
+         perform adresleri-tasi
+         open input genel
+         move 1 to GENEL-ANAHTAR
+         read genel no lock invalid
+                 continue
+         end-read
+         move DONEM-BASI to txt-donem-bas-tar 
+         move tarih-tasi to txt-donem-bit-tar
+         close genel
+     .
+
+
+
+ 

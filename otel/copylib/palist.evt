@@ -1,0 +1,634 @@
+* palist.evt
+* palist.evt is generated from D:\asya\acugt.ytl\otel\palist.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     PERFORM Form1-Ev-Other
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ gd-6-Event-Proc.
+     PERFORM gd-6-Ev-Other
+     .
+***   start event editor code   ***
+
+*
+ Form1-Aft-Initdata.
+      OPEN I-O PAHRK CLOSE PAHRK
+      perform baslik-yukle-tumrez
+      perform tumrez-cagir
+
+     .
+*
+ Form1-Bef-Create.
+             perform adresleri-tasi
+      open input genel
+      initialize genel-rec
+      move 1     to genel-anahtar
+      read genel no lock invalid
+           continue
+      end-read
+      close genel
+
+      move tarih-tasi to ilk-tarih son-tarih filtre-ilk-tarih filtre-son-tarih
+     .
+*
+ Form1-Bef-Initdata.
+     
+     .
+*
+ tarih-kontrol.
+    open input takvim
+    initialize takvim-rec
+    move ilk-tarih      to takvim-anah
+    read takvim no lock invalid
+         display message box "ilk Tarih Tanimsiz..."
+                         title "[ Uyari ]"
+                         icon 1
+            
+    end-read
+    close takvim
+
+    open input takvim
+    initialize takvim-rec
+    move son-tarih      to takvim-anah
+    read takvim no lock invalid
+         display message box "Son Tarih Tanimsiz..."
+                         title "[ Uyari ]"
+                         icon 1            
+    end-read
+    close takvim
+
+    .
+
+*
+ baslik-yukle-tumrez.
+      modify gd-6,
+             reset-grid = 1
+             mass-update = 1
+     move "R.No"        to gd-6-col-1
+     move "Adi"         to gd-6-col-2
+     move "Soyadi"      to gd-6-col-3
+     move "Acenta"      to gd-6-col-4
+     move "C/in Tarihi" to gd-6-col-5
+     move "C/Out Tarih" to gd-6-col-6
+     move "Pax"         to gd-6-col-7
+     move "Chi"         to gd-6-col-8
+     move "Free"        to gd-6-col-9
+     move "Bebek"       to gd-6-col-10
+     move "Voucher"     to gd-6-col-11
+     move "ProfilNo"   to gd-6-col-12
+     move "O.No"        to gd-6-col-13
+     move "Folio No"    to gd-6-col-14
+     move "Anket"    to gd-6-col-15
+     modify gd-6, RECORD-TO-ADD(gd6-rec).
+         
+     initialize gd6-rec
+     move grid-occ(1)       to gd-6-col-1
+     move grid-occ(2)       to gd-6-col-2
+     move grid-occ(3)       to gd-6-col-3
+     move grid-occ(4)       to gd-6-col-4
+     move grid-occ(5)       to gd-6-col-5
+     move grid-occ(6)       to gd-6-col-6
+     move grid-occ(7)       to gd-6-col-7
+     move grid-occ(8)       to gd-6-col-8
+     move grid-occ(9)       to gd-6-col-9
+     move grid-occ(10)      to gd-6-col-10
+     move grid-occ(11)      to gd-6-col-11
+     move grid-occ(12)      to gd-6-col-12
+     move grid-occ(13)      to gd-6-col-13
+     move grid-occ(14)      to gd-6-col-14
+     move "."               to gd-6-col-16               
+     modify gd-6,record-to-add(gd6-rec).
+ 
+*
+ tumrez-cagir.
+     open input rez acenta kodlar02 ulke yanrez doviz odalar  konuk
+     initialize gel-toplam      
+                gel-toplam-buyuk
+                gel-toplam-kucuk
+                gel-toplam-free 
+                gel-toplam-bebek
+     initialize rez-rec satir-say gel-toplam
+    | move 1   to gel-toplam  
+     move 2   to satir-say
+     move filtre-ilk-tarih     to rez-gir-tar
+     start rez key not < rez-gir invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-rez = "10"
+     read rez next no lock end move "10"  to fs-rez 
+     not at end
+
+        if ( rez-gir-tar < filtre-ilk-tarih or
+           rez-gir-tar > filtre-son-tarih ) and sadece-inhouse <> 1 
+            exit perform cycle 
+        end-if 
+        if rez-durumu not = "I" and 
+           silinmis-rez-goster = 0 
+             exit perform cycle
+        end-if
+
+        if rez-k-g-b  not = "K"
+           exit perform cycle
+        end-if
+
+        if REZ-folio = zeroes and sadece-cin = 1   
+           exit perform cycle
+        end-if
+ 
+        if sadece-inhouse = 1 then
+             initialize konuk-rec
+             move  rez-folio to konuk-folio
+             read konuk no lock invalid
+                     exit perform cycle
+             not invalid
+                   if konuk-durumu <> "I" then
+                         exit perform cycle
+                   end-if
+             end-read
+        end-if
+
+        perform varying k from 1 by 1 until k > 7
+             move rez-no to yanrez-rezno
+             move k      to yanrez-sirano
+             read yanrez no lock invalid
+                     continue
+             not invalid
+                  if sadece-prof = 1 and yanrez-profil-no = zeroes then
+                        exit perform cycle
+                  end-if
+                  perform anket-kontrol
+                  if anketi-girilmeyen = 1 and anket-var = 1 then 
+                       exit perform cycle 
+                  end-if
+
+                  if yanrez-adi <> spaces or yanrez-soyadi <> spaces then
+                        perform rez-detay-ata
+                  end-if
+             end-read
+        end-perform
+        
+     end-read
+     end-perform
+     end-start
+     close rez acenta kodlar02 ulke yanrez doviz odalar konuk  
+     display acc-99 acc-98 acc-97 acc-96 acc-95
+                modify GD-6(2),
+                           row-color = 481
+                           not row-headings 
+     modify gd-6,
+            mass-update = 0.
+*
+ rez-detay-ata.
+
+        initialize gd6-rec
+        if yanrez-sirano = 1 then
+                move rez-no      to gd-6-col-1
+                move rez-buyuk          to ydk-buyuk
+                move ydk-buyuk          to gd-6-col-7
+                move rez-kucuk          to ydk-kucuk
+                move ydk-kucuk          to gd-6-col-8
+                move rez-free           to ydk-fre
+                move ydk-fre            to gd-6-col-9
+                move rez-bebek          to ydk-bebe
+                move ydk-bebe           to gd-6-col-10
+        end-if
+        move yanrez-adi     to gd-6-col-2
+        move yanrez-soyadi  to gd-6-col-3
+        initialize acenta-rec
+        move rez-acenta  to acenta-kodu
+        read acenta no lock invalid
+             move "Tanimsiz..."     to gd-6-col-4
+        not invalid
+            move acenta-adi     to gd-6-col-4
+        end-read
+        move rez-gir-gun        to gd-6-col-5(1:2)
+        move "/"                to gd-6-col-5(3:1)
+        move rez-gir-ay         to gd-6-col-5(4:2)
+        move "/"                to gd-6-col-5(6:1)
+        move rez-gir-yil        to gd-6-col-5(7:4)  
+
+        move rez-cik-gun        to gd-6-col-6(1:2)
+        move "/"                to gd-6-col-6(3:1)
+        move rez-cik-ay         to gd-6-col-6(4:2)
+        move "/"                to gd-6-col-6(6:1)
+        move rez-cik-yil        to gd-6-col-6(7:4)  
+
+        move rez-voucher        to gd-6-col-11
+        move yanrez-profil-no   to gd-6-col-12
+        move rez-odano          to gd-6-col-13
+        move rez-folio          to gd-6-col-14
+
+        if grid-occ(1) <> spaces
+             move rez-no        to kelime
+             move grid-occ(1)   to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                exit paragraph
+             end-if
+        end-if
+        if grid-occ(2) <> spaces
+             move function upper-case(yanrez-adi) to kelime
+             move function upper-case(grid-occ(2))  to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+
+               exit paragraph
+             end-if
+        end-if
+
+        if grid-occ(3) <> spaces
+             move function upper-case(yanrez-soyadi)   to kelime
+             move function upper-case(grid-occ(3))  to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+               exit paragraph
+             end-if
+        end-if
+
+        if grid-occ(4) <> spaces  
+             initialize acenta-rec 
+             move rez-acenta   to acenta-kodu
+             read acenta no lock invalid
+                  move "Tanimsiz..."  to acenta-adi
+             not invalid
+                 move acenta-adi      to ydk-acenta-adi
+             end-read
+             move function upper-case(ydk-acenta-adi) to kelime
+             move function upper-case(grid-occ(4))  to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                exit paragraph
+             end-if
+        end-if
+        if grid-occ(5) <> spaces
+             move gd-6-col-5        to kelime
+             move grid-occ(5)       to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                exit paragraph
+             end-if
+        end-if
+        if grid-occ(6) <> spaces
+             move gd-6-col-6        to kelime
+             move grid-occ(6)       to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+               exit paragraph
+             end-if
+        end-if
+        if grid-occ(7) <> spaces
+             move rez-buyuk        to kelime
+             move grid-occ(7)       to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+
+                exit paragraph
+             end-if
+        end-if
+        if grid-occ(8) <> spaces
+             move rez-kucuk        to kelime
+             move grid-occ(8)       to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                       exit paragraph
+             end-if
+        end-if
+        if grid-occ(9) <> spaces
+             move rez-free        to kelime
+             move grid-occ(9)       to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                        exit paragraph
+             end-if
+        end-if
+        if grid-occ(10) <> spaces
+             move rez-bebek        to kelime
+             move grid-occ(10)       to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                        exit paragraph
+             end-if
+        end-if
+     
+        if grid-occ(11) <> spaces         
+             move function upper-case(rez-voucher) to kelime
+             move function upper-case(grid-occ(11))  to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                exit paragraph         
+             end-if
+        end-if
+
+           if grid-occ(12) <> spaces         
+             move  yanrez-profil-no  to kelime
+             move function upper-case(grid-occ(12))  to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                exit paragraph         
+             end-if
+        end-if
+
+        if grid-occ(13) <> spaces         
+             move  rez-odano  to kelime
+             move function upper-case(grid-occ(13))  to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                exit paragraph         
+             end-if
+        end-if
+
+         if grid-occ(14) <> spaces         
+             move  rez-folio  to kelime
+             move function upper-case(grid-occ(14))  to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0 
+                exit paragraph         
+             end-if
+        end-if
+
+        if yanrez-sirano = 1 then
+            add 1        to gel-toplam
+            add rez-buyuk    to gel-toplam-buyuk
+            add rez-kucuk    to gel-toplam-kucuk
+            add rez-free     to gel-toplam-free
+            add rez-bebek    to gel-toplam-bebek
+        end-if
+
+        add 1            to satir-say
+        modify gd-6, RECORD-TO-ADD(gd6-rec)
+
+        modify gd-6(satir-say,12), hidden-data = yanrez-profil-sirket
+        modify gd-6(satir-say,1),  hidden-data = rez-no
+        if anket-var = 1 
+                modify gd-6(satir-say,15),  bitmap = yes-bmp
+                                               bitmap-number = 1
+                                               bitmap-width  = 16
+                                               color = 0 
+        else
+                modify gd-6(satir-say,15),  bitmap = no-bmp
+                                               bitmap-number = 1
+                                               bitmap-width  = 16
+                                               color = 0 
+        end-if.
+*
+ anket-kontrol.
+    open input pahrk 
+            initialize pahrk-rec anket-var 
+            move yanrez-profil-sirket to PAHRK-PROFIL-KUTUPHANE
+            move yanrez-profil-no     to PAHRK-PROFIL-no
+            start pahrk key not < pahrk-anah invalid
+                    continue
+            not invalid
+            perform until fs-pahrk = "10"
+            read pahrk next no lock end move "10" to fs-pahrk
+            not end
+                   if yanrez-profil-sirket <> PAHRK-PROFIL-KUTUPHANE
+                         exit perform 
+                   end-if
+                   if yanrez-profil-no <> PAHRK-PROFIL-no
+                         exit perform 
+                   end-if
+                   move 1 to anket-var
+            end-read
+            end-perform
+            end-start
+
+    close pahrk .
+*
+ gd-6-Ev-Other.
+    evaluate event-type
+     when msg-goto-cell-mouse
+             inquire gd-6, y in g-satir 
+     when msg-begin-entry
+          if event-data-2 not = 2
+              move event-action-fail to event-action
+          end-if
+     when msg-finish-entry
+         inquire gd-6(event-data-2,event-data-1), 
+                    cell-data in grid-occ(event-data-1)
+         perform baslik-yukle-tumrez
+         perform tumrez-cagir
+    end-evaluate.
+
+*
+ Form1-Ex-Other.
+     evaluate key-status
+             when 5
+                    move ilk-tarih to filtre-ilk-tarih
+                    move son-tarih to filtre-son-tarih
+                    perform baslik-yukle-tumrez
+                    perform tumrez-cagir  
+             when 6|ctrl - f folio
+                  inquire gd-6,cursor-y in sayac
+                  inquire gd-6(sayac,14),
+                       cell-data in ydk-konuk-folio
+                   if ydk-konuk-folio = zeroes then
+                         exit paragraph
+                   end-if
+                   perform folio-cagir
+             when 18|ctrl - r rezervasyon
+                       inquire gd-6,cursor-y in sayac
+                       inquire gd-6(sayac,1),
+                               hidden-data in ydk-rez
+                     if ydk-rez = zeroes then
+                         exit paragraph
+                     end-if
+                     perform rez-cagir
+             when 19
+                       initialize mis-cagir
+                       inquire gd-6,cursor-y in sayac 
+                       inquire gd-6(sayac,12), cell-data in mis-no-cagir
+                       inquire gd-6(sayac,12), hidden-data in mis-sirket-cagir 
+
+                        if  mis-no-cagir = zeroes then
+                               display message box "Secili Kaydin Profili Acilmamis !" 
+                                       title "Asya-Soft Yazilim"
+                               exit paragraph
+                       end-if
+
+
+                       move 2    to mis-kim-cagir
+                       call "/asya/ytl/obj/otel/musteri.asy" using mis-cagir
+                            on exception perform callerr-proc
+                        not on exception
+                       cancel "/asya/ytl/obj/otel/musteri.asy" 
+                       end-call
+             when 14 |ctrl - n register kart
+                      initialize ydk-folio
+                      inquire gd-6,cursor-y in sayac
+                      inquire gd-6(sayac,14), cell-data in ydk-folio
+                      if ydk-folio = spaces then
+                             exit paragraph
+                     end-if
+                     perform reg-kart
+             WHEN 23
+      
+                 inquire gd-6,cursor-y in sayac 
+                 inquire gd-6(sayac,12), cell-data in palink-profil-no
+                 inquire gd-6(sayac,12), hidden-data in palink-profil-sirket 
+                 inquire gd-6(sayac,13), cell-data in palink-oda-no
+                 move 1 to palink-anket-no
+
+                 if  palink-profil-no = zeroes then
+                       display message box "Secili Kaydin Profili Acilmamis !" new-line
+                               "Once Profili Aciniz ...."
+                               title "Asya-Soft Yazilim"
+                       exit paragraph
+                 end-if
+                 call "/asya/ytl/obj/otel/pagiris.asy" using  palink-profil-sirket palink-profil-no palink-anket-no palink-oda-no
+                      on exception 
+                             perform callerr-proc
+                      not on exception
+                          cancel "/asya/ytl/obj/otel/pagiris.asy"
+                 end-call  
+      end-evaluate
+     .
+*
+ rez-cagir.
+
+       initialize dokcagir-tasi
+       set dokcagir-tasi-call-rez1   to true
+       move ydk-rez                   to dokcagir-rez-no
+       perform dokcagir-call
+       move dokcagir-rez-no          to rez-no.
+*
+ folio-cagir.
+       initialize dokcagir-tasi
+       set dokcagir-tasi-call-folio1      to true
+       move ydk-konuk-folio               to dokcagir-konuk-folio
+       perform dokcagir-call
+       move dokcagir-konuk-folio          to konuk-folio.
+*
+ reg-kart.
+      open input konuk
+      initialize konuk-rec
+      move ydk-folio           to konuk-folio
+      read konuk no lock invalid
+           display message box "Konuk Kaydi Bulunamadi..."
+                           title "[ Uyari ]"
+                           icon 1
+           close konuk
+           exit paragraph
+      end-read
+      close konuk
+      initialize dokcagir-tasi
+      set dokcagir-tasi-call-cin2 to true
+      move konuk-rez-no           to dokcagir-konuk-rez-no      
+      move konuk-folio            to dokcagir-konuk-folio
+      perform dokcagir-call
+      move dokcagir-konuk-rez-no  to konuk-rez-no
+      move dokcagir-konuk-folio   to konuk-folio.
+*
+ dokcagir-call.
+     call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+          on exception 
+             perform callerr-proc
+          not on exception
+             cancel "/asya/ytl/obj/otel/dokcagir.asy"
+     end-call.
+*
+ Form1-Ev-Other.
+     
+     .
+
+ 

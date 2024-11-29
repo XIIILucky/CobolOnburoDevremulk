@@ -1,0 +1,273 @@
+* malzeme.evt
+* malzeme.evt is generated from D:\asya\acugt.ytl\otel\malzeme.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 1
+         evaluate control-id
+         when 5
+         when 18
+              initialize doviz-cagir
+              call "/asya/ytl/obj/otel/dovizara.asy" using doviz-cagir
+                    on exception perform callerr-proc
+                       not on exception
+                       cancel "/asya/ytl/obj/otel/dovizara.asy" 
+               end-call
+               move doviz-cagir     to malzeme-doviz-kodu
+               display accept-0101
+               perform doviz-oku
+         when 15
+              initialize depkod-cagir
+              call "/asya/ytl/obj/otel/depara.asy"   using depkod-cagir
+                    on exception perform callerr-proc
+                       not on exception
+                       cancel "/asya/ytl/obj/otel/depara.asy" 
+               end-call
+               move depkod-dep-kodu  to malzeme-onb-dep
+               display accept-0105
+               perform depart-oku
+         end-evaluate
+     when 2
+         perform form-kaydet
+     when 3
+         perform form-sil
+     when 4
+         perform form-rapor
+     end-evaluate
+     
+     .
+*
+ form-kaydet.
+     if malzeme-doviz-kodu = zeroes or 
+        malzeme-doviz-kodu = spaces or
+        malzeme-doviz-kodu = 0
+         display message box "Malzeme Doviz Kodu Bos Gecilemez..."
+                         title "[ Uyari ]"
+                         icon 1
+         exit paragraph 
+     end-if 
+
+     if malzeme-kodu = zeroes or 
+        malzeme-kodu = spaces or
+        malzeme-kodu = 0 
+         display message box "Malzeme Kodu Bos Gecilemez..."
+                         title "[ Uyari ]"
+                         icon 1
+         exit paragraph 
+     end-if 
+
+     display message box "Kaydetmek Istediginizden Eminmisiniz."
+                     title "[ Uyari ]"
+                     icon 1 
+                     type 2
+                     default 1
+                     returning return-code 
+     if return-code = 2
+        exit paragraph 
+     end-if 
+     open i-o malzeme
+     write malzeme-rec invalid 
+        rewrite malzeme-rec end-rewrite 
+     end-write 
+     close malzeme
+
+     initialize malzeme-rec dv-adi dp-adi
+     perform form-update
+     move 4 to accept-control
+     move 5 to control-id 
+     perform baslik-yukle
+     perform grid-yukle.
+*
+ form-sil.
+     if malzeme-doviz-kodu = zeroes or spaces
+         display message box "Malzeme Doviz Kodu Bos Gecilemez..."
+                         title "[ Uyari ]"
+                         icon 1
+         exit paragraph 
+     end-if 
+
+     if malzeme-kodu = zeroes or spaces
+         display message box "Malzeme Kodu Bos Gecilemez..."
+                         title "[ Uyari ]"
+                         icon 1
+         exit paragraph 
+     end-if 
+
+     display message box "Silmek Istediginizden Eminmisiniz."
+                     title "[ Uyari ]"
+                     icon 1 
+                     type 2
+                     default 2
+                     returning return-code 
+     if return-code = 2
+        exit paragraph 
+     end-if 
+     open i-o malzeme
+        delete malzeme invalid 
+            display message box "Kayit Silinemedi.." new-line
+                                "Lutfen Tekrar Deneyiniz."
+                            title "[ Uyari ]"
+                            icon 1
+             close malzeme
+             exit paragraph 
+        end-delete 
+     close malzeme
+     display message box "Malzeme Silindi."new-line
+                         "Lutfen Kontrol Ediniz."
+                     title "[ Uyari ]"
+                     icon 1
+     initialize malzeme-rec dv-adi dp-adi
+     perform form-update
+     move 4 to accept-control
+     move 5 to control-id 
+     perform baslik-yukle
+     perform grid-yukle.
+*
+ form-rapor.
+     .
+*
+ accept-0102-Aft-Procedure.
+     open input malzeme
+     read malzeme no lock invalid 
+           initialize malzeme-adi malzeme-tutar malzeme-onb-dep dp-adi
+     not invalid 
+          perform depart-oku
+          perform doviz-oku
+     end-read 
+     close malzeme
+     
+     perform form-update
+     
+     .
+*
+ Form1-Aft-Initdata.
+     open i-o malzeme close malzeme
+     perform baslik-yukle
+     perform grid-yukle
+     
+     .
+*
+ baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     move "Dv"         to gd-1-col-1
+     move "M.K"        to gd-1-col-2
+     move "M.Adi"      to gd-1-col-3
+     move "Tutar"      to gd-1-col-4
+     move "Onb.Dep"    to gd-1-col-5
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+      .
+*
+ grid-yukle.
+     open input malzeme
+     initialize malzeme-rec 
+     start malzeme key not < malzeme-anah invalid 
+           continue 
+     not invalid 
+     perform with test after until fs-malzeme = "10"
+     read malzeme next no lock end move "10"  to fs-malzeme
+     not at end
+            initialize form1-gd-1-record
+            move malzeme-doviz-kodu   to gd-1-col-1
+            move malzeme-kodu         to gd-1-col-2
+            move malzeme-adi          to gd-1-col-3
+            move malzeme-tutar        to etut
+            move etut                 to gd-1-col-4
+            move malzeme-onb-dep      to gd-1-col-5
+            modify form1-gd-1,record-to-add(form1-gd-1-record)
+     end-read 
+     end-perform
+     end-start
+     close malzeme
+     modify form1-gd-1,mass-update = 0
+     .
+* 
+ form-update.
+     display accept-0101 accept-0102 accept-0103 
+             accept-0104 accept-0105 lb-adi-goster lb-dp-adi l-htipi cb-grup.
+*
+ doviz-oku.
+     if malzeme-doviz-kodu not = 0
+     
+      open input doviz
+      initialize doviz-rec 
+      move malzeme-doviz-kodu   to doviz-kodu
+      read doviz no lock invalid 
+           display message box "Doviz Kodu Bulunamadi..."
+                           title "[ Uyari ]"
+                           icon 1
+           move 4  to accept-control
+           move 5  to control-id 
+           initialize dv-adi
+      not invalid 
+          move D-KISA-ADI     to dv-adi
+      end-read 
+      close doviz
+      display lb-adi-goster
+     end-if
+     .
+*
+ accept-0101-Aft-Procedure.
+     perform doviz-oku
+     
+     .
+*
+ depart-oku.
+     if malzeme-onb-dep not = spaces
+      open input depkod
+      initialize depkod-rec 
+      move malzeme-onb-dep        to depkod-anah
+      read depkod no lock invalid 
+            display message box "Departman Kodu Bulunamadi..."
+                            title "[ Uyari ]"
+                            icon 1
+            move 4   to accept-control
+            move 15  to control-id 
+            initialize dp-adi
+      not invalid 
+            move depkod-adi       to dp-adi 
+      end-read
+      close depkod
+     else
+       initialize dp-adi
+     end-if
+     display lb-dp-adi
+     .
+*
+ accept-0105-Aft-Procedure.
+     perform depart-oku
+     
+     .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+     when msg-goto-cell
+     when msg-goto-cell-mouse
+          inquire form1-gd-1(event-data-2,1),cell-data in malzeme-doviz-kodu
+          inquire form1-gd-1(event-data-2,2),cell-data in malzeme-kodu
+          perform accept-0102-Aft-Procedure
+     end-evaluate
+     
+     .
+
+ 

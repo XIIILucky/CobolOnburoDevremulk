@@ -1,0 +1,421 @@
+* cast2don.evt
+* cast2don.evt is generated from D:\asya\acugt.ytl\otel\cast2don.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM exception-procedure
+     .
+***   start event editor code   ***
+*
+ exception-procedure.
+      evaluate key-status
+         when 121
+              perform devremulk-cast-bakim
+              display message box "Islem Tamamlandi =) "
+     end-evaluate
+     .
+* 
+ devremulk-cast-bakim.
+        open output castdon close castdon
+        open i-o devremulk donhrk donhrk2 castdon takvim rez donem         
+            initialize devremulk-rec 
+            start devremulk key not < devremulk-anah invalid
+                    continue
+            not invalid
+            perform until fs-devremulk = "10"
+            read devremulk next no lock end move "10"  to fs-devremulk
+            not end
+                    initialize duzeltme-iptal
+                    modify sc-label-dev , title = devremulk-no
+                    if devremulk-durumu <> "Y" then
+                          exit perform cycle
+                    end-if
+                    if donhrk-yeniden-olustur = 1 then
+                            perform donhrk-duzelt-kaydet  
+                            if duzeltme-iptal = 1 then 
+                                    exit perform cycle
+                            end-if
+                    end-if
+
+                    perform donhrk-cast-sil
+                    perform donhrk-top-rez-gun-hesapla
+                    perform donhrk-cast-kaydet
+            end-read
+            end-perform
+            end-start
+        close devremulk  donhrk donhrk2 castdon takvim rez donem
+         .
+*
+ donhrk-cast-sil.
+
+             initialize castdon-rec 
+             move devremulk-no            to CASTDON-DEVREMULK-NO
+             start castdon key not < castdon-anah1 invalid 
+                     continue 
+             not invalid 
+             perform with test after until fs-castdon = "10"
+             read castdon next no lock end move "10" to fs-castdon
+             not at end
+                     if devremulk-no <> CASTDON-DEVREMULK-NO then
+                             exit perform
+                     end-if
+                     delete castdon end-delete
+                                                                         
+                    perform log-operation-castdon
+             end-read 
+             end-perform
+             end-start
+
+         .
+   
+*
+ gun-bul.
+     initialize gun-s 
+     read rez no lock invalid
+             continue
+     not invalid
+            if rez-durumu <> "I"
+                  exit paragraph
+            end-if
+
+            if rez-k-g-b <> "K"
+                 exit paragraph
+            end-if
+
+            move rez-gir-tar to takvim-anah
+            start takvim key not < takvim-anah
+                 invalid 
+                     continue
+                  not invalid
+                     perform until fs-takvim = "10"
+                        read takvim next no lock
+                            end move "10" to fs-takvim
+                            not end
+                              if takvim-anah >= rez-cik-tar
+                                  move "10" to fs-takvim
+                                else
+                                  add 1 to gun-s                      
+                              end-if 
+                        end-read
+                     end-perform  
+            end-start
+        end-read .
+*
+ dev-donem-gun-bul.
+       move donhrk-BAS-TAR to takvim-anah
+       start takvim key not < takvim-anah
+            invalid 
+                continue
+             not invalid
+                perform until fs-takvim = "10"
+                   read takvim next no lock
+                       end move "10" to fs-takvim
+                       not end
+                         if takvim-anah >= donhrk-BIT-TAR
+                             move "10" to fs-takvim
+                           else
+                             add 1 to gun-s                      
+                         end-if 
+                   end-read
+                end-perform  
+       end-start .
+*
+ donhrk-top-rez-gun-hesapla.
+
+     initialize donem-rec
+     move devremulk-devre-donem to donem-kodu
+     start donem key not < donem-anah invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-donem = "10"
+     read donem next no lock end move "10" to fs-donem
+     not at end
+            if devremulk-devre-donem <> donem-kodu then
+                  exit perform
+            end-if
+
+            move donem-kodu    to donhrk-KODU
+            MOVE DONEM-YILI    TO DONHRK-YILI
+            MOVE devremulk-oda-no     TO DONHRK-ODA
+            move DONEM-BAS-TAR to donhrk-BAS-TAR
+            move DONEM-BIT-TAR to donhrk-BIT-TAR 
+            move devremulk-no  to donhrk-devremulk-no
+            read donhrk no lock invalid
+                    continue
+            not invalid
+                                   
+                   initialize rez-rec donhrk-toplam-rez
+                   move donhrk-rez-no to rez-no
+                   perform gun-bul
+
+                   add gun-s to donhrk-toplam-rez
+                
+                   initialize rez-rec
+                   move donhrk-rez-no-2 to rez-no
+                   perform gun-bul
+                   add gun-s to donhrk-toplam-rez
+                
+                   initialize rez-rec
+                   move donhrk-rez-no-3 to rez-no
+                   perform gun-bul
+                   add gun-s to donhrk-toplam-rez
+                
+                   initialize rez-rec
+                   move donhrk-rez-no-4 to rez-no
+                   perform gun-bul
+                   add gun-s to donhrk-toplam-rez
+                
+                   initialize rez-rec
+                   move donhrk-rez-no-5 to rez-no
+                   perform gun-bul
+                   add gun-s to donhrk-toplam-rez
+                   
+                   move donhrk-toplam-rez to donhrk-trez-a-gun 
+  
+                   perform dev-donem-gun-bul
+                   compute donhrk-trez-k-gun = gun-s - donhrk-trez-a-gun
+
+                   if  donhrk-trez-k-gun < 0  AND k-kodu-tasi = "ASYA" then
+                       |  display message box "Devremulk No: " devremulk-no " Acilan Rezervasyonlarin Toplam Gunu , Donem Gununden Buyuktur " new-line
+                       |  "Lutfen Kontrol Ediniz ! ... "
+                       |  icon 3
+                   end-if
+
+                   rewrite donhrk-rec invalid
+                           stop " "
+                   end-rewrite
+            end-read
+
+     end-read 
+     end-perform
+     end-start.
+
+   
+*
+ donhrk-cast-kaydet.
+
+     initialize donhrk-rec 
+     move devremulk-devre-donem     to donhrk-kodu
+     move devremulk-oda-no          to donhrk-oda
+     move devremulk-no              to donhrk-devremulk-no
+     start donhrk key not < donhrk-anah4 invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-donhrk = "10"
+     read donhrk next no lock end move "10" to fs-donhrk
+     not at end
+             if donhrk-kodu <> devremulk-devre-donem or
+                donhrk-oda  <> devremulk-oda-no  or
+                devremulk-no <> donhrk-devremulk-no
+                         exit perform 
+             end-if
+             
+             if donhrk-donem-kapali = 1 then
+                   exit perform cycle
+             end-if
+
+             initialize takvim-anah takvim-sayi
+             move donhrk-BAS-TAR to takvim-anah
+             start takvim key not < takvim-anah invalid 
+                         continue 
+             not invalid 
+             perform until fs-takvim = "10"
+             read takvim next no lock end move "10" to fs-takvim
+             not end
+                    if takvim-anah = donhrk-BIT-TAR then
+                          exit perform
+                    end-if
+
+                    add 1 to takvim-sayi
+
+                    initialize castdon-rec
+                    move takvim-anah       to castdon-tarih
+                    move devremulk-no      to castdon-devremulk-no
+                    move donhrk-oda        to castdon-oda-no
+                    move donhrk-tip-donem  to CASTDON-TIPI
+
+                    if takvim-sayi <= donhrk-trez-a-gun then
+                         move 1 to CASTDON-DOLU
+                    else
+                         move 0 to CASTDON-DOLU
+                    end-if
+
+                    write castdon-rec invalid
+                            display message box "Cast Tarihlerinde Cakisma Var Donhrk-duzelt-islemi Yapiniz !!! devno: " devremulk-no new-line
+                           "Tarih : " takvim-anah
+                           exit perform
+                    end-write
+                    perform log-operation-castdon
+             end-read
+             end-perform
+             end-start
+
+             perform log-operation-donhrk
+     end-read 
+     end-perform
+     end-start
+      .
+
+*
+
+ donhrk-duzelt-kaydet.
+           open output takas close takas
+           open i-o takas
+           initialize donhrk2-rec donhrk-rez-var
+           move DEVREMULK-ODA-NO         to donhrk2-oda
+           move DEVREMULK-DEVRE-DONEM    to donhrk2-kodu
+           move devremulk-no             to donhrk2-devremulk-no
+           start donhrk2 key not < donhrk2-anah4 invalid
+                   continue
+           not invalid
+           perform until fs-donhrk2 = "10" 
+           read donhrk2 next no lock end move "10" to fs-donhrk2
+           not end
+                    if  donhrk2-kodu <> DEVREMULK-DEVRE-DONEM or
+                        donhrk2-oda <> DEVREMULK-ODA-NO or 
+                        donhrk2-devremulk-no <> devremulk-no
+                         exit perform 
+                    end-if
+
+
+                  if ( donhrk2-rez-no not = zeroes )
+                       or ( donhrk2-rez-no-2 not = zeroes ) 
+                       or ( donhrk2-rez-no-3 not = zeroes ) 
+                       or ( donhrk2-rez-no-4 not = zeroes ) 
+                       or ( donhrk2-rez-no-5 not = zeroes ) 
+                       or ( donhrk2-tip-donem not = spaces ) then
+
+                        move 1 to donhrk-rez-var
+                        initialize takas-rec
+                        move donhrk2-anah     to takas-anah
+                        move donhrk2-tip-donem to takas-tip-donem
+
+                        move donhrk2-rez-no to takas-rez-no
+                        move donhrk2-tip-1   to takas-tip-1
+
+                        move donhrk2-rez-no-2 to takas-rez-no-2
+                        move donhrk2-tip-2    to takas-tip-2
+
+                        move donhrk2-rez-no-3 to takas-rez-no-3
+                        move donhrk2-tip-3   to takas-tip-3
+
+                        move donhrk2-rez-no-4 to takas-rez-no-4
+                        move donhrk2-tip-4    to takas-tip-4
+
+                        move donhrk2-rez-no-5 to takas-rez-no-5
+                        move donhrk2-tip-5    to takas-tip-5
+
+                        move donhrk2-devremulk-no   to takas-devno
+                        move donhrk2-donem-kapali   to takas-donem-kapali
+                        write takas-rec invalid
+                                stop " "
+                        end-write
+                  end-if
+           end-read
+           end-perform
+           end-start
+
+
+
+
+     initialize donhrk2-rec 
+     move DEVREMULK-DEVRE-DONEM     to donhrk2-kodu
+     move DEVREMULK-ODA-NO          to donhrk2-oda
+     move devremulk-no              to donhrk2-devremulk-no
+     start donhrk2 key not < donhrk2-anah4 invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-donhrk2 = "10"
+     read donhrk2 next no lock end move "10" to fs-donhrk2
+     not at end
+             if donhrk2-kodu <> DEVREMULK-DEVRE-DONEM or
+                donhrk2-oda <> DEVREMULK-ODA-NO or 
+                donhrk2-devremulk-no <> devremulk-no
+                 exit perform 
+             end-if
+
+             delete donhrk2  end-delete
+             perform log-operation-donhrk
+     end-read 
+     end-perform
+     end-start
+
+
+     initialize donem-rec 
+     move DEVREMULK-DEVRE-DONEM          to donem-kodu
+     move devremulk-baslama-yil           to donem-yili
+     start donem key not < donem-anah invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-donem = "10"
+     read donem next no lock end move "10" to fs-donem
+     not at end
+             if donem-kodu <> DEVREMULK-DEVRE-DONEM
+                 exit perform 
+             end-if
+             if donem-yili > devremulk-bitis-yil 
+                 exit perform 
+             end-if
+
+             initialize donhrk2-rec 
+             move DEVREMULK-oda-no   to donhrk2-oda
+             move donem-kodu         to donhrk2-kodu
+             move donem-yili         to donhrk2-yili
+             move devremulk-no       to donhrk2-devremulk-no  
+             read donhrk2 no lock invalid 
+                 continue 
+             end-read 
+                  move donem-bas-tar      to donhrk2-bas-tar
+                  move donem-bit-tar      to donhrk2-bit-tar                  
+                  move devremulk-durumu   to donhrk2-durumu            
+                  move donem-staf         to donhrk2-STAF  
+              if donhrk-rez-var = 1 then
+
+                 move donhrk2-anah to takas-anah
+                 read takas no lock invalid
+                          continue
+                 not invalid
+                        move takas-tip-donem  to donhrk2-tip-donem
+
+                        move takas-rez-no to donhrk2-rez-no  
+                        move takas-tip-1   to donhrk2-tip-1 
+
+                        move takas-rez-no-2 to donhrk2-rez-no-2 
+                        move takas-tip-2    to  donhrk2-tip-2 
+  
+                        move takas-rez-no-3 to donhrk2-rez-no-3 
+                        move takas-tip-3    to  donhrk2-tip-3   
+
+                        move takas-rez-no-4 to donhrk2-rez-no-4
+                        move takas-tip-4    to  donhrk2-tip-4   
+
+                        move takas-rez-no-5 to donhrk2-rez-no-5
+                        move takas-tip-5   to  donhrk2-tip-5   
+ 
+                        move takas-devno        to donhrk2-devremulk-no              
+                        move takas-donem-kapali to donhrk2-donem-kapali   
+                 end-read
+
+              end-if
+              write donhrk2-rec invalid 
+                   rewrite donhrk2-rec end-rewrite 
+              end-write       
+               perform log-operation-donhrk
+     end-read 
+     end-perform
+     end-start
+
+     close takas 
+        .
+*
+ Form1-Bef-Create.
+       perform adresleri-tasi
+     .
+*
+ Form1-Aft-Initdata.
+     
+     .
+
+
+ 

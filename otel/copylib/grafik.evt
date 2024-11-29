@@ -1,0 +1,535 @@
+* grafik.evt
+* grafik.evt is generated from D:\asya\acugt.ytl\otel\grafik.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Acu-theme-combo-Cmd-Goto.
+     EVALUATE Event-Type
+* set focus for toolbar
+     WHEN CMD-GOTO
+        ACCEPT theme-combo
+     END-EVALUATE
+     .
+
+ Acu-grafik-combo-Cmd-Goto.
+     EVALUATE Event-Type
+* set focus for toolbar
+     WHEN CMD-GOTO
+        ACCEPT grafik-combo
+     END-EVALUATE
+     .
+
+ Acu-rapor-combo-Cmd-Goto.
+     EVALUATE Event-Type
+* set focus for toolbar
+     WHEN CMD-GOTO
+        ACCEPT rapor-combo
+     END-EVALUATE
+     .
+
+ Screen1-Event-Proc.
+     .
+
+ grafik-combo-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Resized
+           PERFORM Screen1-Ex-Ntf-Resized
+        WHEN Ntf-Selchange
+           EVALUATE Event-Control-Id
+           WHEN 17
+              PERFORM grafik-combo-Ex-Ntf-Selchange
+           WHEN 19
+              PERFORM rapor-combo-Ex-Ntf-Selchange
+           END-EVALUATE
+        END-EVALUATE
+     END-IF
+     .
+
+ Screen1-Cm-1-Event-Proc.
+* 
+     EVALUATE Event-Control-Id
+     WHEN 3
+        PERFORM Acu-theme-combo-Cmd-Goto
+     WHEN 17
+        PERFORM Acu-grafik-combo-Cmd-Goto
+     WHEN 19
+        PERFORM Acu-rapor-combo-Cmd-Goto
+     END-EVALUATE
+     .
+
+ theme-combo-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM theme-combo-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Screen1-Pb-1e-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM Screen1-Pb-1e-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ Screen1-Pb-1f-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM Screen1-Pb-1f-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ Screen1-Pb-1fa-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM Screen1-Pb-1fa-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ Screen1-Pb-1fba-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM Screen1-Pb-1fba-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ Screen1-Rb-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM Screen1-Rb-1-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ Screen1-Rb-1a-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM Screen1-Rb-1a-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ Screen1-Rb-1b-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM Screen1-Rb-1b-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ Screen1-Rb-1c-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM Screen1-Rb-1c-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ 3d-cb-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM 3d-cb-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+ Screen1-Ex-Ntf-Resized.
+     inquire Form1-handle, 
+             lines in window-lines
+             size in window-size.
+     modify tee-chart,
+            lines(window-lines - 7),
+            size(window-size).
+*
+ Form1-Aft-Initdata.
+     initialize num-param
+     call "c$narg" using num-param.
+     if num-param <> 0 
+        move link-grafik-adres to grafik-adres
+     else
+       move "c:\asya\ytl\liste\graf"   to grafik-adres
+       perform load-file
+     end-if
+     modify tee-chart, visible = 0.
+     perform grafik-islemler.
+     perform load-theme-combo.
+     perform load-grafik-combo.
+     modify tee-chart, visible = 1.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+*
+ grafik-islemler.
+     perform init-graph.
+     perform dosya-islem.
+*
+ init-graph.
+     modify tee-chart,
+            @ClearChart()
+            @Header::@Text::Clear()
+            @RemoveAllSeries(),
+            @Legend::@CheckBoxes(1),
+            @Legend::Symbol::Squared(1),
+            @SetTheme(ctWindowsXp,cpdefault)
+            @Axis::@Bottom::@Labels::@MultiLine(1)
+            @Zoom::@Enable(0).
+      
+     initialize graph-degiskenler.
+*
+ dosya-islem.
+     modify rapor-combo, 
+            reset-list = 1
+            mass-update = 1
+     initialize rapor-combo-value
+     set rapor-combo-tum-kayitlar to true
+     perform dosya-oku
+     modify rapor-combo,
+            mass-update = 0.
+*
+ dosya-oku.
+     open input grafik.
+     initialize fs-grafik kayit-durum
+     perform with test after until fs-grafik = "10"
+     initialize grafik-rec
+     read grafik next no lock end move "10" to fs-grafik
+     not at end
+          evaluate true
+          when grafik-islem-baslik
+               perform graph-baslik
+          when grafik-islem-grafik-turu
+               move grafik-seri    to graph-turu
+          end-evaluate
+          if rapor-combo-tek-kayit
+             if grafik-kume-no and 
+                grafik-seri-adi = rapor-combo-value
+                       move "E" to kayit-durum
+             else
+                if grafik-kume-no and 
+                   grafik-seri-adi <> rapor-combo-value
+                       move space to kayit-durum
+                       exit perform cycle
+                end-if
+             end-if
+             if kayit-durum <> "E"
+                exit perform cycle
+             end-if
+          else
+             if grafik-kume-no
+                modify rapor-combo,
+                       item-to-add(grafik-seri-adi)
+                if kayit-durum = space
+                   move "E" to kayit-durum
+                   move grafik-seri-adi    to rapor-combo-value
+                else
+                   move "X" to kayit-durum
+                end-if
+             end-if
+          end-if
+
+          if kayit-durum = "X"
+             exit perform cycle
+          end-if
+          evaluate true
+          when grafik-islem-seri
+               perform seri-ekle
+          when grafik-islem-toplam-deger
+               perform toplam-serisi-ekle
+          when grafik-legend-adi
+               perform legend-title
+          when grafik-x-ekseni-degerleri
+               perform x-eksen-degerleri
+          when grafik-y-ekseni-degerleri
+               perform y-eksen-degerleri
+          end-evaluate
+     end-read
+     end-perform.
+     close grafik.
+
+
+     if rapor-combo-tum-kayitlar
+        modify rapor-combo,
+               value = rapor-combo-value
+     end-if
+
+     perform toplam-tamamla.
+
+*
+ graph-baslik.
+     Use Tee-Chart @Header
+     Modify ^@Text::@Add(grafik-rec(record-position grafik-seri-adi:)).
+     perform graph-baslik-ozellik.
+
+*
+ graph-baslik-ozellik.
+     Use Tee-Chart @Header
+     Modify 
+            ^@Transparent(0),
+            ^@Bevel(bvRaised),
+            ^@BevelWidth(2)
+            ^@Font::@Bold(1)
+            ^@Gradient::@Visible(1)
+            ^@Alignment(taCenter).
+*
+ legend-title.
+     Use Tee-chart @Legend,
+         Modify ^@Title::@Text::@Add(grafik-seri-adi).
+
+*
+ seri-ekle.
+     move grafik-seri   to graph-son-seri.
+     if graph-onceki-seri <> grafik-seri
+        modify tee-chart, 
+               @AddSeries(graph-turu)
+               @Aseries(grafik-seri)::@Clear(),
+               @Aseries(grafik-seri)::@Title(grafik-seri-adi)
+               
+        move grafik-seri    to graph-onceki-seri
+     end-if.
+
+     Use tee-chart @Aseries(grafik-seri),
+         Modify ^@Add(grafik-deger-1,grafik-deger-2,@clTeeColor),
+                ^@Marks::@Style(@Smsvalue)
+                ^@Marks::@Gradient::@Visible(1)
+                ^@Marks::@Symbol::@Visible(1)
+                ^@Marks::@Arrow::@Visible(1)
+                
+     end-Use.
+
+     
+
+*
+ toplam-serisi-ekle.
+     move grafik-seri   to graph-son-seri.
+     if graph-onceki-seri <> grafik-seri
+        modify tee-chart, 
+               @AddSeries(scline),
+               @Aseries(grafik-seri)::@Clear(),
+               @Aseries(grafik-seri)::@Title(grafik-seri-adi)
+
+        move grafik-seri    to graph-onceki-seri
+     end-if.
+
+     Use tee-chart @Aseries(grafik-seri),
+         Modify ^@Add(grafik-deger-1,grafik-deger-2,@clTeeColor),
+                ^@depth(3)
+     end-Use.     
+            
+*
+ load-theme-combo.
+     modify theme-combo,
+            reset-list = 1
+            mass-update = 1
+            item-to-add("0-Varsayilan",
+                        "1-Excel",
+                        "2-Klasik",
+                        "3-Is",
+                        "4-Web",
+                        "5-Windows XP"
+                        "6-Mavi gokyuzu").,
+     move "0-Varsayilan"     to theme-combo-value
+     modify theme-combo,
+            value = theme-combo-value
+            mass-update = 0.
+
+*
+ load-grafik-combo.
+     modify grafik-combo,
+            reset-list = 1
+            mass-update = 1
+            item-to-add("Line                                    0000",
+                        "Bar                                     0001",
+                        "Area                                    0003",
+                        "Point                                   0004",
+                        "Pie                                     0005",
+                        "FastLine                                0006"
+                        "Line                                    0007",
+                        "Bar                                     0008",
+                        "Area                                    0009",
+                        "Point                                   0004",
+                        "Pie                                     0005",
+                        "FastLine                                0006"
+                        "Line                                    0000",
+                        "Bar                                     0001",
+                        "Area                                    0003",
+                        "Point                                   0004",
+                        "Pie                                     0005",
+                        "FastLine                                0006"
+                        "Line                                    0000",
+                        "Bar                                     0001",
+                        "Area                                    0003",
+                        "Point                                   0004",
+                        "Pie                                     0005",
+                        "FastLine                                0006"
+                        "Line                                    0000",
+                        "Bar                                     0001",
+                        "Area                                    0003",
+                        "Point                                   0004",
+                        "Pie                                     0005",
+                        "FastLine                                0006"
+                        
+                        
+                        
+                        
+                        
+                        )
+     perform grafik-combo-refresh.
+
+     modify grafik-combo,
+            value = grafik-combo-value
+            mass-update = 0.
+
+*
+ theme-combo-Ex-Ntf-Selchange.
+     perform clear-tool.
+     move 1  to graph-tool-secimi.
+     modify tee-chart,
+            @SetTheme(theme-combo-value(1:1),@cpdefault).
+     .
+*
+ Screen1-Rb-1-Ev-Cmd-Clicked.
+     perform clear-tool.
+     Modify tee-chart,
+            @Tools::@Add(tcSelector).
+
+*
+ Screen1-Rb-1a-Ev-Cmd-Clicked.
+     perform clear-tool.
+     Modify tee-chart,
+            @Tools::@Add(tcRotate).
+     
+     .
+*
+ Screen1-Rb-1b-Ev-Cmd-Clicked.
+     perform clear-tool.
+     Modify tee-chart,
+            @Tools::@Add(5).
+     
+     .
+*
+ Screen1-Pb-1e-Ev-Cmd-Clicked.
+     Modify tee-chart,
+            @ShowEditor(1).
+     
+     .
+*
+ Screen1-Pb-1fba-Ev-Cmd-Clicked.
+     Modify tee-chart,
+            @Export::@SaveChartDialog().
+*
+ Screen1-Pb-1f-Ev-Cmd-Clicked.
+     Modify tee-chart,
+            @Printer::@ShowPreview().
+     .
+*
+ Screen1-Pb-1fa-Ev-Cmd-Clicked.
+     Modify tee-chart,
+            @Export::@CopyToClipboardBitmap().
+     Display message box
+            "Grafik panoya kopyalandi"
+            title "Bilginize ...".
+
+*
+ Screen1-Rb-1c-Ev-Cmd-Clicked.
+     Modify tee-chart
+            @Zoom::Undo().
+     .
+*
+ clear-tool.
+     Modify tee-chart,
+            @Tools::Clear().
+*
+ 3d-cb-Ev-Cmd-Clicked.
+     inquire 3d-cb, 
+             value in 3d-cb-value.
+     if 3d-cb-value = 1
+        Modify tee-chart,
+               @Aspect::@View3D(1)
+     else
+        Modify tee-chart,
+               @Aspect::@View3D(0)
+     end-if.
+
+*
+ grafik-combo-Ex-Ntf-Selchange.
+     perform varying graph-i
+             from 0
+             by 1
+             until graph-i > graph-son-seri
+             modify tee-chart,
+                    @ChangeSeriesType(graph-i,graph-turu)
+     end-perform.
+     perform graph-baslik-ozellik.
+
+*
+ toplam-tamamla.
+     .
+*     if graph-onceki-seri <> grafik-seri
+*        modify tee-chart, 
+*               @AddSeries(scArea),
+*               @Aseries(grafik-seri)::@Clear(),
+*               @Aseries(grafik-seri)::@Title(grafik-seri-adi)
+*        move grafik-seri    to graph-onceki-seri
+*     end-if.***
+
+*     Use tee-chart @Aseries(grafik-seri),
+*         Modify ^@Add(grafik-deger-1,grafik-deger-2,@clTeeColor),
+*                ^@Marks::@Style(@Smsvalue)
+*                ^@AsArea::Transparency(70)
+*     end-Use.   
+
+*
+ load-file.
+      call "c$opensavebox" using opensave-open-box
+                                 opensave-data.
+
+      move OPNSAV-FILENAME to grafik-adres.
+*
+ rapor-combo-Ex-Ntf-Selchange.
+      perform init-graph.
+      modify tee-chart, visible = 0.
+      set rapor-combo-tek-kayit to true
+      perform dosya-oku.
+      modify tee-chart, visible = 1.
+     .
+*
+ x-eksen-degerleri. 
+      modify tee-chart,
+             @Axis::@Left::@Automatic(0)
+             @Axis::@Left::@Maximum(grafik-deger-2)
+             @Axis::@Left::@Minimum(grafik-deger-1).
+* 
+ y-eksen-degerleri.
+       modify tee-chart,
+             @Axis::@Bottom::@Automatic(0)
+             @Axis::@Bottom::Maximum(grafik-deger-2)
+             @Axis::@Bottom::Minimum(grafik-deger-1).
+*
+ grafik-combo-refresh.
+    evaluate graph-turu
+    when 0000
+    move "Line                                    0000" to grafik-combo-value
+    when 0001
+    move "Bar                                     0001" to grafik-combo-value
+    when 0003
+    move "Area                                    0003" to grafik-combo-value
+    when 0004
+    move "Point                                   0004" to grafik-combo-value
+    when 0005
+    move "Pie                                     0005" to grafik-combo-value
+    when 0006
+    move "FastLine                                0006" to grafik-combo-value
+    end-evaluate.
+
+ 

@@ -1,0 +1,486 @@
+* otokur.evt
+* otokur.evt is generated from D:\asya\acugt.ytl\otel\otokur.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Screen1-Event-Proc.
+     .
+
+ Screen1-Exception-Proc.
+     PERFORM Screen1-Ex-Other
+     .
+
+ Screen1-Wb-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Wb-Navigate-Complete
+        PERFORM Screen1-Wb-1-Ev-Msg-Wb-Navigate-Complete
+     END-EVALUATE
+     .
+
+ Screen1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM Screen1-Gd-1-Ev-Msg-Begin-Entry
+     END-EVALUATE
+     .
+
+ Screen1-De-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Changed
+           PERFORM Screen1-De-1-Ex-Ntf-Changed
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*Tarihli olursa
+*http://www.tcmb.gov.tr/kurlar/200707/04072007.html
+*Gunun olursa
+*http://www.tcmb.gov.tr/kurlar/today.html
+*
+
+ Screen1-Wb-1-Ev-Msg-Wb-Navigate-Complete.
+*    vbhjkxzclhbkjxz
+     if in-progress
+        exit paragraph.
+     modify Screen1-De-1, enabled = false
+     set in-progress to true.
+     perform grid-reset.
+*/ biz buna rimp diyoruz sadece 50 satirrrrrrrrrrrrrrrrr
+     call "c$sleep" using 2.
+     modify screen1-ef-1, value = " "
+     modify screen1-ef-1, value = action-copy
+     modify Screen1-Wb-1, clear-selection(1)
+     modify Screen1-Wb-1, select-all(1).
+     modify Screen1-Wb-1, copy-selection(1).
+     if is-remote
+        perform clipboard-islem
+     else
+        perform clipboard-islem-yerel
+     end-if
+     modify screen1-ef-1, value = " "
+     modify screen1-ef-1, value = action-copy
+* Ramazan ekleme
+     modify Screen1-Wb-1, clear-selection(1)
+
+     initialize buf-start buf-end
+     if buf(1:9) = "Asya-Soft"
+        initialize islem-durum
+        modify Screen1-De-1, enabled = true
+        exit paragraph.
+
+     perform varying buf-i 
+             from 1
+             by 1 
+             until buf-i > 10000
+             if buf(buf-i:7) = "USD/TRY"
+                move buf-i       to buf-start
+             end-if
+             if buf(buf-i:12) = "APRAZ KURLAR" 
+                move buf-i       to buf-end
+                exit perform 
+             end-if
+     end-perform
+
+     if buf-start <> 0 and buf-end <> 0 
+        continue
+     else
+        display message box 
+                "Kurlar Merkez Bankasi sitesinden alinamadi ...!",x"0a0"
+                "Lutfen tekrar deneyiniz"
+                icon mb_error_icon
+                title "Hata"
+        set exit-pushed to true
+        initialize islem-durum
+        modify Screen1-De-1, enabled = true
+        exit paragraph
+     end-if.
+     move buf(buf-start:) to buf(1:)
+     move all low-values  to buf(buf-end - buf-start:)
+     open input doviz
+     move 1 to buf-pnt kur-adet
+     perform with test after until 1 = 0
+     initialize kur-text-rec
+     if buf-pnt > buf-end
+        exit perform
+     end-if
+     unstring buf delimited by x"0d"
+              into kur-text-rec
+              pointer buf-pnt
+     add 1 to buf-pnt kur-adet
+
+     initialize screen1-gd-1-record
+     move kur-text-kur-kodu                         to gd-1-col-1
+     perform doviz-bul
+     move kur-text-adi                              to gd-1-col-2
+     move function numval-c(kur-text-doviz-alis)    to etutar
+     move etutar                                    to gd-1-col-3
+     move function numval-c(kur-text-doviz-satis)   to etutar
+     move etutar                                    to gd-1-col-4
+     move function numval-c(kur-text-efektif-alis)  to etutar
+     move etutar                                    to gd-1-col-5
+     move function numval-c(kur-text-efektif-satis) to etutar
+     move etutar                                    to gd-1-col-6
+     modify screen1-gd-1,
+            record-to-add(screen1-gd-1-record)
+
+     if donus = "E"
+        modify Screen1-Gd-1(kur-adet,2),
+               bitmap = yes-bmp
+               bitmap-number = 1
+               bitmap-width = 16
+               hidden-data = "E"
+     else
+        modify Screen1-Gd-1(kur-adet,2),
+               bitmap = no-bmp
+               bitmap-number = 1
+               bitmap-width = 16
+               hidden-data = "H"
+     end-if
+
+     end-perform.
+     close doviz.
+     initialize islem-durum.
+     modify Screen1-De-1, enabled = true.
+
+          
+*              1         2         3         4         5         6         7         8
+*123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+*123      12345678901234567890123456    123456789    123456789       123456789    123456789
+*USD/TRY  1 ABD DOLARI                     1.2000       1.2058          1.1992       1.2076
+*AUD/TRY  1 AVUSTRALYA DOLARI              1.0608       1.0677          1.0559       1.0741
+*DKK/TRY  1 DANÝMARKA KRONU               0.22815      0.22927         0.22799      0.22980
+*EUR/TRY  1 EURO                           1.7009       1.7091          1.6997       1.7117
+*GBP/TRY  1 ÝNGÝLÝZ STERLÝNÝ               2.4465       2.4593          2.4448       2.4630
+*CHF/TRY  1 ÝSVÝÇRE FRANGI                 1.0203       1.0269          1.0188       1.0284
+*SEK/TRY  1 ÝSVEÇ KRONU                   0.18374      0.18565         0.18361      0.18608
+*CAD/TRY  1 KANADA DOLARI                  1.2045       1.2099          1.2000       1.2145
+*KWD/TRY  1 KUVEYT DÝNARI                  4.2570       4.3131          4.1931       4.3778
+*NOK/TRY  1 NORVEÇ KRONU                  0.22054      0.22203         0.22039      0.22254
+*SAR/TRY  1 SUUDÝ ARABÝSTAN RÝYALÝ        0.32189      0.32247         0.31948      0.32489
+*JPY/TRY  100 JAPON YENÝ                   1.0354       1.0423          1.0316       1.0463
+*BGL/TRY  1 BULGAR LEVASI                                              0.81691      0.92119
+*SYP/TRY  1 SURÝYE LÝRASI                                              0.01951      0.02926
+*JOD/TRY  1 ÜRDÜN DÝNARI                                                1.5910       1.7941
+*ILS/TRY  1 YENÝ ÝSRAÝL ÞEKELÝ                                         0.29222      0.30721
+*RON/TRY  1 YENÝ RUMEN LEYÝ                                            0.47563      0.53635
+*IRR/TRY  100 ÝRAN RÝYALÝ                                              0.01030      0.01546
+*
+     .
+*
+ Screen1-Aft-Initdata.
+    modify Screen1-De-1, 
+           value = calisma-tarihi.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ grid-reset.
+    modify Screen1-Gd-1, 
+           reset-grid = 1
+           mass-update = 1
+    initialize screen1-gd-1-record
+    move "Kur"               to gd-1-col-1
+    move "Kur adi"           to gd-1-col-2
+    move "Doviz Alis"        to gd-1-col-3    
+    move "Doviz Satis"       to gd-1-col-4
+    move "Efektif Alis"      to gd-1-col-5
+    move "Efektif Satis"     to gd-1-col-6
+    modify screen1-gd-1,
+           record-to-add(screen1-gd-1-record)
+    modify Screen1-Gd-1, 
+           mass-update = 0.
+
+
+*
+ eski-kur.
+    if in-progress
+       exit paragraph.
+
+    perform grid-reset.
+    modify screen1-wb-1, value = "about:Asya-Soft Otelcilik Sistemleri".
+
+    perform with test after until not in-progress
+            continue 
+    end-perform.
+
+
+    inquire Screen1-De-1, 
+            value in tarih.
+
+
+    display message box 
+            gun,"/",ay,"/",yil," tarihli merkez bankasi kurlari aliniyor"
+            icon mb_default-icon
+            title "Bilginize ...".
+
+*http://www.tcmb.gov.tr/kurlar/200707/04072007.html
+    move all low-values    to internet-adres
+    string internet-adres
+           "http://www.tcmb.gov.tr/kurlar/" delimited by low-values
+           yil                              delimited by low-values
+           ay                               delimited by low-values
+           "/"                              delimited by low-values
+           gun                              delimited by low-values
+           ay                               delimited by low-values
+           yil                              delimited by low-values
+           ".html"                          delimited by low-values
+           into internet-adres.
+    inspect internet-adres 
+            replacing all low-values by spaces.
+    modify Screen1-Wb-1,
+           value = internet-adres.
+    
+*
+ kaydet.
+
+    if kur-adet < 2
+       display message box 
+               "Kurlar alinamadi !!!"
+               icon mb_error_icon
+               title "Hata"
+               exit paragraph.
+
+    inquire Screen1-De-1, 
+            value in tarih.
+    open input genel.
+    move 1 to genel-anahtar
+    read genel no lock invalid
+          display message box 
+                  "Genel parametre tanimsiz ..."
+                  icon mb_error_icon
+                  close genel
+                  set exit-pushed to true
+    end-read
+    close genel.
+
+    open input banka
+    move onkpara-merkez-banka-kodu    to banka-kodu
+    read banka no lock invalid
+         display message box 
+                 "Onburo calisma prametreleri - Onkasa bolumunde Merkez",new-line
+                 "Bankasi banka kodu tanimlamasi bulunamadi",new-line,new-line
+                 "Kurlar aktarilamiyor once tanimlamayi yapiniz"
+                 icon mb_error_icon
+                 title "Hata"
+         close banka
+         exit paragraph
+    end-read
+    close banka.
+       
+    open input doviz 
+    open i-o kur
+    perform varying i
+            from 2
+            by 1
+            until i > kur-adet
+            inquire screen1-gd-1(i),
+                    record-data in screen1-gd-1-record
+            inquire screen1-gd-1(i,2),
+                    hidden-data in donus
+            if donus <> "E"
+               exit perform cycle
+            end-if
+
+            initialize kur-rec
+            move tarih                           to kur-tarih
+            move onkpara-merkez-banka-kodu       to kur-banka
+            perform doviz-bul
+            move doviz-kodu                      to kur-doviz
+            move function numval-c(gd-1-col-3)   to doviz-alis
+            move function numval-c(gd-1-col-4)   to doviz-satis
+            move function numval-c(gd-1-col-5)   to efektif-alis
+            move function numval-c(gd-1-col-6)   to efektif-satis
+            move k-kodu-tasi                     to doviz-staf
+            rewrite kur-rec invalid
+                    write kur-rec end-write
+            end-rewrite
+
+    end-perform
+      
+*/ TL YAZILIYOR
+    move "TL "             to gd-1-col-1
+    perform doviz-bul
+    if donus <> "E"
+       move "YTL"          to gd-1-col-1
+       perform doviz-bul
+       if donus <> "E"
+          display message box
+          "Turk lirasi tanimlamasi bulunamadi ...",new-line,new-line
+          "Doviz kodlari tanimlama programinda TL tanimlamasi Merkez Bankasi Kodu",new-line
+          "bolumune TL veya YTL giriniz !!!"
+          icon mb_error_icon
+          title "Hata ..."
+        end-if
+    end-if
+
+    if donus = "E"
+            initialize kur-rec
+            move tarih                       to kur-tarih
+            move onkpara-merkez-banka-kodu   to kur-banka
+            move doviz-kodu                  to kur-doviz
+            move 1                           to doviz-alis doviz-satis 
+                                                efektif-alis efektif-satis
+            move k-kodu-tasi                 to doviz-staf
+            rewrite kur-rec invalid
+                    write kur-rec end-write
+            end-rewrite
+    end-if
+
+    close doviz kur.
+
+    display message box 
+            "Internetten Merkez Bankasi Kurlari Alindi"
+            title "Bilginize ...".
+    set exit-pushed to true.
+
+*
+ doviz-bul.
+    initialize doviz-rec donus
+    start doviz key not < doviz-kodu invalid
+          continue
+    not invalid
+    initialize fs-doviz
+    perform with test after until fs-doviz = "10"
+    read doviz next no lock end move "10" to fs-doviz
+    not at end
+         if d-merkez-banka-kodu = gd-1-col-1
+            move "E" to donus
+            exit perform
+         end-if
+    end-read
+    end-perform
+    end-start
+     .
+*
+ Screen1-Bef-Create.
+    move 0 to vis-1.
+    perform adresleri-tasi.
+    move tarih-tasi        to tarih
+    move all low-values    to internet-adres
+    string internet-adres
+           "http://www.tcmb.gov.tr/kurlar/" delimited by low-values
+           yil-tasi                         delimited by low-values
+           ay-tasi                          delimited by low-values
+           "/"                              delimited by low-values
+           gun-tasi                         delimited by low-values
+           ay-tasi                          delimited by low-values
+           yil-tasi                         delimited by low-values
+           ".html"                          delimited by low-values
+           into internet-adres.
+    inspect internet-adres 
+            replacing all low-values by spaces.
+     .
+*
+ Screen1-Gd-1-Ev-Msg-Begin-Entry.
+    move event-action-fail to event-action.
+     .
+*
+ Screen1-De-1-Ex-Ntf-Changed.
+    perform eski-kur.
+     .
+
+*
+ clipboard-islem.
+     initialize buf
+     call "@[DISPLAY]:C:\windows\system32\user32.dll" 
+     on exception
+           display message box "user32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph
+     end-call      .
+     call "@[DISPLAY]:C:\windows\system32\kernel32.dll" on exception
+           display message box "kernel32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:C:\windows\system32\msvcrt.dll" on exception
+           display message box "msvcrt.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:OpenClipboard" using by value 0
+          giving hwnd.
+
+     call "@[DISPLAY]:GetClipboardData" using by value cf_text
+                                        giving hglobal.
+
+     call "@[DISPLAY]:GlobalLock" using by value hglobal
+                                  returning ptr
+
+     call "@[DISPLAY]:lstrlenA" using by value ptr 
+                               returning boy.
+
+     if boy > 0
+     call "@[DISPLAY]:RtlMoveMemory" using by reference buf
+                                     by value ptr
+                                     by value boy
+     end-call
+
+     call "@[DISPLAY]:GlobalUnlock" using hglobal.
+     call "@[DISPLAY]:CloseClipboard".
+     cancel "@[DISPLAY]:user32.dll".
+     cancel "@[DISPLAY]:kernel32.dll".
+     cancel "@[DISPLAY]:msvcrt.dll".
+*/
+ clipboard-islem-yerel.
+     initialize buf
+     call "user32.dll" 
+     on exception
+           display message box "user32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph
+     end-call      .
+     call "kernel32.dll" on exception
+           display message box "kernel32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "msvcrt.dll" on exception
+           display message box "msvcrt.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "OpenClipboard" using by value 0
+          giving hwnd.
+
+     call "GetClipboardData" using by value cf_text
+                                        giving hglobal.
+
+     call "GlobalLock" using by value hglobal
+                                  returning ptr
+
+     call "lstrlenA" using by value ptr 
+                               returning boy.
+
+     if boy > 0
+     call "RtlMoveMemory" using by reference buf
+                                     by value ptr
+                                     by value boy
+     end-call
+
+     call "GlobalUnlock" using hglobal.
+     call "CloseClipboard".
+     cancel "user32.dll".
+     cancel "kernel32.dll".
+     cancel "msvcrt.dll".
+
+*
+ Screen1-Ex-Other.
+     if key-status = 2
+        perform kaydet
+     else
+        if key-status = 15
+           move 1 to vis-1
+        end-if
+        display Screen1-De-1
+     end-if.
+
+ 

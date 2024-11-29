@@ -1,0 +1,320 @@
+* smshavuz.evt
+* smshavuz.evt is generated from D:\asya\acugt.ytl\otel\smshavuz.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Create.
+      perform adresleri-tasi
+
+      open i-o smsliste 
+      initialize smsliste-rec kayit-sira
+      move 0                  to smsliste-gonderildi-mi
+      start smsliste key not < smsliste-gonderildi-mi invalid 
+                   continue 
+      not invalid 
+      perform with test after until fs-smsliste = "10"
+      read smsliste next no lock end move "10" to fs-smsliste
+      not at end 
+
+             if smsliste-gonderildi-mi > 0
+                 exit perform 
+             end-if
+             add 1     to kayit-sira 
+     end-read
+     end-perform
+     end-start
+     modify label1, title = kayit-sira 
+     close smsliste
+
+     .
+
+*
+ Form1-Aft-Initdata.
+  
+       .
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 2
+        modify Form1-Pb-1, ENABLED = false
+        modify Form1-St-1-Handle,            
+           panel-index = 3
+           panel-text  = "Status :Active"
+
+        move "Start Date :"   to start-status-t 
+        accept ilk-tar from century-date 
+        move ilk-yil     to eyil
+        move ilk-ay      to eay
+        move ilk-gun     to egun
+        move etarih      to ytarih
+
+        modify Form1-St-1-Handle,            
+           panel-index = 4
+           panel-text  = netarih 
+
+        move "Start Time :"   to start-status
+        accept zaman from time 
+        move saat   to esaat 
+        move dakika to edakika 
+        move saniye to esaniye 
+        move ezaman to yzaman
+
+        modify Form1-St-1-Handle,            
+           panel-index = 5
+           panel-text  = nezaman
+      perform baslik-yukle
+      perform until 1 = 0 
+        | call "c$sleep" using 300
+         perform toplu-sms-gonder
+      end-perform 
+      end-evaluate
+     .
+*
+ toplu-sms-gonder.
+
+      perform grid-yukle.
+*
+ baslik-yukle.
+      modify form1-gd-1,reset-grid = 1
+*                        mass-update = 1
+      initialize form1-gd-1-record
+      move "Sira"   to gd-1-col-1
+      move "T"      to gd-1-col-2
+      move "N"      to gd-1-col-3
+      move "*"      to gd-1-col-4
+      move "Telefon No" to gd-1-col-5
+      move "Kime"   to gd-1-col-6
+      move "Tarih"  to gd-1-col-7
+      move "Zaman"  to gd-1-col-8
+      move "Mesaj"  to gd-1-col-9
+      move "Donus"  to gd-1-col-10
+      modify form1-gd-1,record-to-add(form1-gd-1-record)
+      .
+*
+ grid-yukle.
+      open i-o smsliste devremulk donem
+      initialize smsliste-rec kayit-sira
+      move 0                  to smsliste-gonderildi-mi
+      start smsliste key not < smsliste-gonderildi-mi invalid 
+                   continue 
+      not invalid 
+      perform with test after until fs-smsliste = "10"
+      read smsliste next no lock end move "10" to fs-smsliste
+      not at end 
+
+             if smsliste-gonderildi-mi > 0
+                 exit perform 
+             end-if
+             add 1                     to kayit-sira 
+            |  accept smsliste-zaman     from time
+             accept smsliste-gon-zaman from time
+             accept smsliste-gon-tar   from century-date
+
+
+             initialize form1-gd-1-record
+             move kayit-sira           to zsira
+             move zsira                to gd-1-col-1
+             move smsliste-tip         to gd-1-col-2
+             move smsliste-nereden     to gd-1-col-3
+             move smsliste-anah        to gd-1-col-4
+             move smsliste-gon-numara  to gd-1-col-5
+             move smsliste-gon-kisi    to gd-1-col-6
+             move smsliste-gon-tar     to gd-1-col-7
+             move smsliste-gon-zaman   to gd-1-col-8
+             move smsliste-gon-mesaj   to gd-1-col-9
+             move smsliste-donus-kodu  to gd-1-col-10
+       
+
+             move smsliste-anah(1:8) to devremulk-no
+             read devremulk no lock invalid
+                     initialize devremulk-rec
+                     move 9 to smsliste-gonderildi-mi
+             not invalid
+                     
+                     move devremulk-devre-donem to donem-kodu
+                     move yil-tasi              to donem-yili
+                     read donem no lock invalid
+                             initialize donem-rec
+                     end-read
+
+
+                     move smsliste-sms-gun to sms-gun
+                     move smsliste-sms-ay  to sms-ay
+                     move smsliste-sms-yil to sms-yil
+                     initialize sms-tarih2
+                     move sms-tarih        to sms-tarih2
+        
+                     move smsliste-tutar to z-tutar
+                     inspect devremulk-sozlesme-no replacing trailing low-value by spaces
+        
+                     inspect smsliste-gon-mesaj replacing
+                              all "[SOZLESME]"   by  devremulk-sozlesme-no
+        
+                     inspect smsliste-gon-mesaj  replacing
+                              all "[GONTUTAR]"  by z-tutar
+        
+                     inspect smsliste-gon-mesaj  replacing
+                              all "[SMSTARIH]"  by sms-tarih2
+        
+                     move DONEM-BAS-YIL   to eyil
+                     move DONEM-BAS-ay    to eay
+                     move DONEM-BAS-gun   to egun
+
+                     inspect smsliste-gon-mesaj  replacing
+                                      all "[DONEMTR1]"  by etarih
+
+                     move DONEM-bit-YIL   to eyil
+                     move DONEM-bit-ay    to eay
+                     move DONEM-bit-gun   to egun
+
+                     inspect smsliste-gon-mesaj  replacing
+                                      all "[DONEMTR2]"  by etarih
+
+                     move smsliste-gon-mesaj   to sms-url-mesaj 
+                     move smsliste-gon-numara  to sms-url-numara
+                     move sms-url              to tarayici-value
+                     move smsliste-gon-mesaj   to gd-1-col-9
+
+                     inspect gd-1-col-9 replacing trailing low-value by spaces
+ 
+                     display tarayici
+                     perform sms-drek-gonder
+
+                  move function numval(buf)     to z-buf
+                  move z-buf                    to smsliste-donus-kodu 
+ 
+                  if  function numval(smsliste-donus-kodu) not > 13  then
+                       move  function numval(smsliste-donus-kodu) to gd-1-col-11
+                       move  "HATA" to gd-1-col-10
+                       rewrite smsliste-rec invalid
+                              stop "smsliste-yazamadi"
+                       end-rewrite
+                  else   
+                        move  function numval(smsliste-donus-kodu) to gd-1-col-11
+                        move 1                        to smsliste-gonderildi-mi
+                        move  "GONDERILDI" to gd-1-col-10
+                        rewrite smsliste-rec invalid
+                              stop "smsliste-yazamadi"
+                       end-rewrite
+                  end-if
+                  
+          end-read
+
+            modify form1-gd-1,record-to-add(form1-gd-1-record)
+      end-read 
+      end-perform
+      end-start
+      close smsliste devremulk donem
+*      modify form1-gd-1,mass-update = 0
+     .
+*
+ sms-drek-gonder.
+     call "c$sleep" using 1.5.
+     modify tarayici, clear-selection(1)
+     call "c$sleep" using 0.5.
+     modify tarayici, select-all(1).
+     call "c$sleep" using 0.5.
+     modify tarayici, copy-selection(1).
+     call "c$sleep" using 0.5.
+     if is-remote
+        perform clipboard-islem
+     else
+        perform clipboard-islem-yerel
+     end-if
+               .
+*
+ clipboard-islem.
+     initialize buf
+     call "@[DISPLAY]:C:\windows\system32\user32.dll" 
+     on exception
+           display message box "user32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph
+     end-call      .
+     call "@[DISPLAY]:C:\windows\system32\kernel32.dll" on exception
+           display message box "kernel32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:C:\windows\system32\msvcrt.dll" on exception
+           display message box "msvcrt.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:OpenClipboard" using by value 0
+          giving hwnd.
+
+     call "@[DISPLAY]:GetClipboardData" using by value cf_text
+                                        giving hglobal.
+
+     call "@[DISPLAY]:GlobalLock" using by value hglobal
+                                  returning ptr
+
+     call "@[DISPLAY]:lstrlenA" using by value ptr 
+                               returning boy.
+
+     if boy > 0
+     call "@[DISPLAY]:RtlMoveMemory" using by reference buf
+                                     by value ptr
+                                     by value boy
+     end-call
+
+     call "@[DISPLAY]:GlobalUnlock" using hglobal.
+     call "@[DISPLAY]:CloseClipboard".
+     cancel "@[DISPLAY]:user32.dll".
+     cancel "@[DISPLAY]:kernel32.dll".
+     cancel "@[DISPLAY]:msvcrt.dll".
+*/
+ clipboard-islem-yerel.
+     initialize buf
+     call "user32.dll" 
+     on exception
+           display message box "user32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph
+     end-call      .
+     call "kernel32.dll" on exception
+           display message box "kernel32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "msvcrt.dll" on exception
+           display message box "msvcrt.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "OpenClipboard" using by value 0
+          giving hwnd.
+
+     call "GetClipboardData" using by value cf_text
+                                        giving hglobal.
+
+     call "GlobalLock" using by value hglobal
+                                  returning ptr
+
+     call "lstrlenA" using by value ptr 
+                               returning boy.
+
+     if boy > 0
+     call "RtlMoveMemory" using by reference buf
+                                     by value ptr
+                                     by value boy
+     end-call
+
+     call "GlobalUnlock" using hglobal.
+     call "CloseClipboard".
+     cancel "user32.dll".
+     cancel "kernel32.dll".
+     cancel "msvcrt.dll".
+
+ 

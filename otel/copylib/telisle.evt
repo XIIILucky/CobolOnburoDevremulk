@@ -1,0 +1,350 @@
+* telisle.evt
+* telisle.evt is generated from D:\asya\acugt.ytl\otel\telisle.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM gd-Ev-Msg-Begin-Entry
+     END-EVALUATE
+     .
+
+ Form1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM gda-Ev-Cmd-Goto
+     WHEN Msg-Begin-Heading-Drag
+        PERFORM Acc-07a-Aft-Procedure
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi. 
+    open input genel
+    move 1    to genel-anahtar
+    read genel no lock invalid 
+        continue 
+    end-read 
+    close genel.
+*
+ ekran-goster.
+    display acc-01 acc-02 acc-03 acc-04 acc-05
+            acc-06 acc-07 .
+    
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+         when 2
+            
+              perform takas-olustur
+              exit paragraph
+      end-evaluate .
+
+*
+ Form1-Aft-Initdata.
+    move gun-tasi to ilk-gun son-gun.
+    move ay-tasi  to ilk-ay  son-ay.
+    move yil-tasi to ilk-yil son-yil.
+    move "H" to com-01-value
+    move "H" to com-02-value
+    perform ekran-goster.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+
+*
+ takas-olustur.
+    
+   
+
+   
+    open input teldata
+    initialize teldata-rec kayit-sayi
+    modify gd reset-grid = 1  
+
+
+
+          initialize gd-rec
+          move "Tarih"             to gd-tarih
+            
+          move "No  "   to gd-oda
+         
+      
+         move  "Aranan No"  to   gd-telno
+         move  "Kontor"       to gd-kontur
+        move "Tutar" to gd-tutar
+      
+     
+         move "Arama Zamani" to gd-zaman
+         move "Sure"       to gd-sure  
+         modify gd record-to-add gd-rec
+         add 1 to kayit-sayi
+
+
+
+
+
+
+
+     initialize secili-satir eski-satir
+
+    move ilk-tarih to teldata-tarih
+    if oda-num not = spaces move oda-num to teldata-odano, end-if
+    
+    start teldata key not < teldata-anah invalid 
+         continue
+    not invalid 
+    perform with test after until fs-teldata = "10"
+    read teldata next no lock end move "10"  to fs-teldata 
+    not at end
+         if teldata-tarih > son-tarih
+             exit perform 
+         end-if
+         if  TELDATA-folio > 0 then exit perform cycle
+         end-if
+
+         if oda-num not = spaces and oda-num not = teldata-odano
+           exit perform cycle
+         end-if
+         initialize gd-rec
+          move teldata-gun            to xgun
+          move teldata-ay             to xay
+          move teldata-yil            to xyil
+          move xtarih                 to gd-tarih
+            
+          move TELDATA-ODANO   to gd-oda
+         
+      
+         move  TELDATA-NUMARA   to   gd-telno
+         move  teldata-kontur         to z-kon 
+                      move z-kon to gd-kontur
+                       move teldata-satis          to z-1
+                      move z-1                    to gd-tutar
+      
+     
+         move TELDATA-SANT-ZAMAN  to gd-zaman
+         move  TELDATA-SURE       to gd-sure  
+         modify gd record-to-add gd-rec
+         add 1 to kayit-sayi
+          modify gd(kayit-sayi,1)  hidden-data teldata-anah
+       
+    end-read 
+    end-perform 
+    end-start
+    close teldata 
+     .
+*
+ acc-07a-Aft-Procedure.
+    modify gda reset-grid = 1  
+     open input konuk 
+     initialize konuk-rec kayita-sayi secilia-satir eskia-satir
+
+      move "Tip"             to  Gda-tip
+      move "Misafir Adi"     to  Gda-adi
+                    
+
+                   modify gda record-to-add gda-rec
+                   add 1 to kayita-sayi
+                  
+                 
+
+
+
+     move oda-num2 to konuk-odano
+     move "I" to konuk-durumu
+     start konuk key >= konuk-oda   invalid continue
+         not invalid
+           perform until fs-konuk = "10" 
+               read konuk next no lock end move "10" to fs-konuk
+                 not end
+               if konuk-durumu not = "I" or konuk-odano not = oda-num2
+                  exit perform
+               end-if
+               initialize gda-rec
+               move KONUK-FOL-KODU to Gda-tip
+               string konuk-adi delimited by "   "
+                     " " delimited by size
+                     konuk-soyadi  delimited by "   "
+                     into Gda-adi
+                    
+
+                   modify gda record-to-add gda-rec
+                   add 1 to kayita-sayi
+                   if KONUK-FOL-KODU = "E" then move kayita-sayi to secilia-satir  end-if
+                   modify gda(kayita-sayi,1)  hidden-data konuk-folio
+                end-read
+           
+     end-perform
+     end-start
+     close konuk
+     if secilia-satir not > 1 move 2 to secilia-satir end-if
+     perform secilia-goster
+
+     .
+
+
+
+ secilia-goster.
+    if eskia-satir > 1 and <= kayita-sayi 
+      modify gda(eskia-satir,1)
+                            bitmap = null
+                            row-color = 0        
+    end-if
+    move secilia-satir to eskia-satir
+
+     if  secilia-satir > 1 and <= kayita-sayi
+      modify gda(secilia-satir,1)
+                            bitmap = yes-bmp
+                            bitmap-number = 1
+                            bitmap-width = 16
+                            row-color = 481
+      end-if
+       .
+*
+secili-goster.
+    if eski-satir > 1 and <= kayit-sayi 
+      modify gd(eski-satir,1)
+                            bitmap = null
+                            row-color = 0        
+    end-if
+    move secili-satir to eski-satir
+
+     if  secili-satir > 1 and <= kayit-sayi
+      modify gd(secili-satir,1)
+                            bitmap = yes-bmp
+                            bitmap-number = 1
+                            bitmap-width = 16
+                            row-color = 481
+      end-if
+       .
+                       
+*
+ gda-Ev-Cmd-Goto.
+    move event-action-fail to event-action
+    if   event-data-2 > 1 and <= kayita-sayi
+     move event-data-2 to secilia-satir
+      perform secilia-goster
+    end-if
+     .
+*
+ gd-Ev-Msg-Begin-Entry.
+    move event-action-fail to event-action
+    if   event-data-2 > 1 and <= kayit-sayi
+     move event-data-2 to secili-satir
+      perform secili-goster
+      perform gonder
+    end-if 
+     .
+*
+ gonder.
+      initialize olmadi
+      open input konuk teldata
+      inquire gda(secilia-satir,1) hidden-data in folio-text
+        move function numval(folio-text) to konuk-folio
+        read konuk no lock invalid move 1 to olmadi
+           not invalid
+          if konuk-durumu not = "I" 
+            move 1 to olmadi
+          end-if
+        end-read
+         inquire gd(secili-satir,1) hidden-data in teldata-anah
+         read teldata no lock invalid 
+           move 1 to olmadi
+           not invalid
+           if  TELDATA-folio > 0 then move 1 to olmadi end-if
+          if  TELDATA-SATIS not > 0 then move 1 to olmadi end-if
+          if olmadi = 0
+
+           if teldata-tarih < tarih-tasi then 
+              display message box "Gecmis tarihli telefon gorusmesini almaktasiniz" 
+           end-if
+           end-if
+         end-read
+
+      close konuk teldata
+       move teldata-gun            to xgun
+          move teldata-ay             to xay
+          move teldata-yil            to xyil
+          move xtarih                 to gd-tarih
+            
+          move TELDATA-ODANO   to gd-oda
+         
+      
+         move  TELDATA-NUMARA   to   gd-telno
+         move  teldata-kontur         to z-kon 
+                      move z-kon to gd-kontur
+                       move teldata-satis          to z-1
+                      move z-1                    to gd-tutar
+      
+     
+         move TELDATA-SANT-ZAMAN  to gd-zaman
+
+         string konuk-adi delimited by "   "
+                     " " delimited by size
+                     konuk-soyadi  delimited by "   "
+                     into Gda-adi
+                    
+      if olmadi = 0  
+         display message box gd-tarih " tarihinde " gd-zaman " de " TELDATA-ODANO " nolu aboneden yapilan"  new-line
+                      gd-telno " nolu telefon ile yapilan " gd-kontur new-line 
+                      " kontur karsiligi " gd-tutar " TL tutar  " new-line new-line
+ 
+                      oda-num2 " nolu odadaki " Gda-adi " e ait folioya " new-line 
+                      "Gelen Cek giris ekraninda aciklama girip kaydederseniz islenecektir" new-line  new-line
+                      "Devam Edilsin mi?   "
+
+
+         
+         
+         icon 2 type 2 default 2 giving sonuc title "Folio'ya Islensin mi?"
+         if sonuc = 1
+          initialize dokcagir-tasi
+              set dokcagir-tasi-call-cekgir3   to true
+                      move konuk-folio to  dokcagir-konuk-folio     
+                 move 1 to  link-pen  
+             move  TELPARA-DEPKOD to dokcagir-dep-kodu    
+             move teldata-satis to  dokcagir-cout-tutar 
+      
+              move konuk-folio                 to dokcagir-konuk-folio
+               string "SMAMI"  delimited by size
+                      gd-tarih(1:5)    delimited by "      "
+                      "-"     delimited by size
+                     gd-zaman(1:5)    delimited by "      "
+                     "Ab:"     delimited by size
+                     TELDATA-ODANO delimited by "      "
+                     "Tel"  delimited by size
+                     gd-telno   into mesaj-title
+
+             
+              call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     cancel "/asya/ytl/obj/otel/dokcagir.asy"
+           end-call
+      
+
+
+
+
+         end-if
+     end-if
+
+      .
+
+*
+  
+
+ 

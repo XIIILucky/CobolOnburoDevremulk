@@ -1,0 +1,183 @@
+* konukduz.evt
+* konukduz.evt is generated from D:\asya\acugt.ytl\otel\konukduz.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ com-03-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM com-03-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ com-01-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+*
+ Form1-Aft-Initdata.
+    move "O" to ack-kpl.
+    move "E" to cik-eh.
+    move "I" to fol-dur.
+    display com-01 com-02 com-03.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ acc-01-Aft-Procedure.
+    initialize folara-cagir fol-kod
+    move fol-dur    to folara-cagri-tipi
+*********    move "I"    to folara-cagri-tipi
+    move oda-num  to folara-odano
+     call "/asya/ytl/obj/otel/folara.asy" using folara-cagir
+          on exception perform callerr-proc
+      not on exception
+          cancel "/asya/ytl/obj/otel/folara.asy" 
+     end-call
+    move folara-no-cagir to fol-kod.
+
+    if fol-kod = zeroes
+      move 4 to accept-control
+      move 1001 to control-id
+      exit paragraph
+    end-if.
+
+    open input konuk.
+    initialize konuk-rec kay-knt.
+    move fol-dur   to konuk-durumu
+*************    move "I" to konuk-durumu.
+    move fol-kod to konuk-folio.
+    read konuk no lock invalid 
+      display message box "Gecersiz Folio Numarasi..."
+      move 4 to accept-control
+      move 1001 to control-id
+      move "X" to kay-knt
+      move all "*" to konuk-adi konuk-soyadi
+    end-read.
+    modify acc-02a, VALUE konuk-folio.
+    modify acc-02, VALUE konuk-adi.
+    modify acc-03, VALUE konuk-soyadi.
+    move konuk-fol-kodu to Fol-RE.
+
+    evaluate konuk-acik-kapali
+      when "O" move "O" to ack-kpl 
+      when "C" move "C" to ack-kpl 
+    end-evaluate.
+    evaluate konuk-cik-cikma
+      when "E" move "E" to cik-eh
+      when "H" move "H" to cik-eh
+    end-evaluate.
+    move konuk-git-saat   to cik-saat
+    move konuk-git-dakika to cik-dakika
+    display com-01 com-02 acc-05 acc-06.
+    close konuk.
+
+    open input genel.
+    initialize genel-rec.
+    move 1 to genel-anahtar. 
+    read genel no lock invalid 
+         display message box 
+         "Genel Parametreler Girilmemis...".
+    close genel.
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 17 
+           move konuk-dosya         to link-logview-dosya-adi
+           set link-logview-pointer  to address of konuk-rec
+           set link-logview-rec-size to size of konuk-rec
+           perform logview-call
+           initialize key-status
+      when 1
+          evaluate control-id
+          when 1001
+          when 14
+          initialize oda-cagir
+          if fol-dur = "I"
+             move "D"  to oda-db-cagir
+          end-if
+          call "/asya/ytl/obj/otel/odaara.asy" using
+               oda-cagir
+          on exception 
+             perform callerr-proc
+          not on exception 
+          cancel "/asya/ytl/obj/otel/odaara.asy"
+          end-call
+             if odano-cagir <> spaces
+                move odano-cagir  to oda-num
+                display acc-01
+             end-if
+          move 4 to accept-control
+          move 1001 to control-id
+          end-evaluate
+
+      when 2
+        if fol-kod = zeroes or oda-num = spaces
+           move 4 to accept-control
+           move 1001 to control-id
+           exit paragraph
+        end-if
+        open i-o konuk
+        evaluate ack-kpl
+          when "O" move "O" to konuk-acik-kapali
+          when "C" move "C" to konuk-acik-kapali
+        end-evaluate 
+        evaluate cik-eh
+          when "E" move "E" to konuk-cik-cikma
+          when "H" move "H" to konuk-cik-cikma
+        end-evaluate
+        move cik-saat       to konuk-git-saat
+        move cik-dakika     to konuk-git-dakika
+        rewrite konuk-rec invalid continue
+        end-rewrite
+            perform log-operation-konuk
+        close konuk
+
+        modify acc-01, VALUE spaces
+        modify acc-02a,VALUE zeroes
+        modify acc-02, VALUE spaces
+        modify acc-03, VALUE spaces
+        initialize oda-num fol-adi fol-soy
+        cik-saat cik-dakika 
+        move "O" to ack-kpl
+        move "E" to cik-eh
+        display com-01 com-02 acc-05 acc-06
+        move 4 to accept-control
+        move 1001 to control-id
+    end-evaluate.
+     .
+*
+ com-03-Ex-Ntf-Selchange.
+    move "O" to ack-kpl.
+    move "E" to cik-eh.
+    display com-01 com-02.
+    initialize oda-num fol-adi fol-soy
+    cik-saat cik-dakika fol-kod
+    display acc-01 acc-02 acc-03 acc-02a acc-05
+     .
+*
+ acc-01-Bef-Procedure.
+    move "O" to ack-kpl.
+    move "E" to cik-eh.
+    display com-01 com-02.
+    initialize fol-adi fol-soy
+    cik-saat cik-dakika fol-kod
+    display acc-02 acc-03 acc-02a acc-05
+     
+     .
+ 

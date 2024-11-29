@@ -1,0 +1,217 @@
+* stafara.evt
+* stafara.evt is generated from D:\asya\acugt.ytl\otel\stafara.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Lb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM Form1-Lb-1-Ex-Cmd-Dblclick
+        WHEN Ntf-Pl-First
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-First
+        WHEN Ntf-Pl-Last
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Last
+        WHEN Ntf-Pl-Next
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Next
+        WHEN Ntf-Pl-Nextpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Nextpage
+        WHEN Ntf-Pl-Prev
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prev
+        WHEN Ntf-Pl-Prevpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prevpage
+        WHEN Ntf-Pl-Search
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Search
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+Form1-Bef-Create.
+     perform adresleri-tasi.
+*
+ Form1-Aft-Initdata.
+     open input kllnc.
+     perform kolon-ayarla.
+     perform  Form1-Lb-1-Ex-Ntf-Pl-First
+*     set reading-forwards to true
+*     modify form1-lb-1, mass-update = 1
+*     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, selection-index = 1
+                        mass-update = 0.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+get-next-item.
+    evaluate state-flag
+*       when reading-backwards
+        when "b"
+             move kayit-sayisi to number-reads-needed
+*       when at-end
+        when "e"
+             exit paragraph
+*       when reading-forwards
+        when "f"
+          move 1 to number-reads-needed
+
+*       when at-start
+       when "s"
+          move low-values to k-kodu
+          start kllnc key not < k-kodu invalid
+                     exit paragraph
+          end-start
+          add 1 to kayit-sayisi giving number-reads-needed
+    end-evaluate.
+
+    perform number-reads-needed times
+       read kllnc next record
+          at end     set at-end to true
+                     exit paragraph
+       end-read
+    end-perform
+    perform kayit-yerlestir
+
+
+    modify form1-lb-1, item-to-add = form1-lb-1-value
+
+    set reading-forwards to true.
+
+get-prev-item.
+    evaluate state-flag
+       when "b"
+*       when reading-backwards
+          move 1 to number-reads-needed
+*       when at-end
+       when  "e"
+          move high-values to k-kodu
+              start kllnc key not > k-kodu
+                   invalid key      exit paragraph
+              end-start
+           add 1 to kayit-sayisi giving number-reads-needed
+       when "f"
+*       when reading-forwards
+          move kayit-sayisi to number-reads-needed
+       when "s"
+*       when at-start
+          exit paragraph
+    end-evaluate.
+
+    perform number-reads-needed times
+       read kllnc previous record
+          at end     set at-start to true
+                     exit paragraph
+          end-read
+    end-perform
+    perform kayit-yerlestir
+
+    modify form1-lb-1, 
+       insertion-index = 1
+       item-to-add = form1-lb-1-value
+
+    set reading-backwards to true.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Next.
+    perform get-next-item.
+     
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prev.
+    perform get-prev-item.
+     
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Nextpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+     
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prevpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+
+     
+     .
+*
+ Form1-Lb-1-Ex-Ntf-Pl-First.
+     move low-values to k-kodu
+     start kllnc key not < k-kodu
+           invalid key    exit paragraph
+     end-start
+
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Last.
+     move high-values to k-kodu
+     start kllnc, key not > k-kodu 
+           invalid key    exit paragraph
+     end-start
+     set reading-backwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Search.
+     inquire form1-lb-1, search-text in arama-kelime
+     move arama-kelime to k-kodu
+     start kllnc key not < k-kodu
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0
+     if at-end
+        perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+     end-if.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2000
+
+     when 2001
+        inquire form1-lb-1,selection-index in i
+             inquire form1-lb-1(i),value in koda-gore
+             move koda-gore-kodu     to staf-cagir
+             set exit-pushed to true
+    end-evaluate.
+
+ kolon-ayarla.
+    modify form1-lb-1,data-columns = 0
+                                display-columns = 0
+                                data-columns(1,5)
+                                display-columns(1,6)
+     .
+
+ kayit-yerlestir.
+              move k-kodu   to koda-gore-kodu
+              move k-adi    to koda-gore-adi(1:20)
+              move k-soyadi to koda-gore-adi(22:20)
+              move koda-gore     to form1-lb-1-value
+    .
+*
+*
+ Form1-Lb-1-Ex-Cmd-Dblclick.
+    move 2001 to key-status.
+    perform  Form1-Ex-Other.
+
+*
+ Form1-Aft-Routine.
+     close kllnc.
+ 

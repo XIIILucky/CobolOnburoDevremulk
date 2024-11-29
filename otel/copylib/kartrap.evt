@@ -1,0 +1,430 @@
+* kartrap.evt
+* kartrap.evt is generated from D:\asya\acugt.ytl\otel\kartrap.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ Form1-Aft-Create.
+     perform adresleri-tasi
+     open input genel.
+     move 1 to genel-anahtar.
+     read genel no lock invalid
+          display message box 
+               "Onburo genel parametresi tanimsiz ..."
+               icon mb_error_icon
+               title "Hata"
+               close genel
+               goback
+     end-read.
+     close genel.
+     move "/asya/ytl/data/cost/" to genelfis-adresi
+     move cost-sirketi of genel to cst-genel-dosya-adres
+                                   genelfis-dosya-adres
+                                   odenmez-dosya-adres
+                                   kart-dosya-adres
+                                    skart-dosya-adres
+                                   errorlog-dosya-adres
+     open input cst-genel
+     move 1 to cst-genel-anahtar
+     read cst-genel no lock invalid
+          display message box 
+               "Cost genel parametresi tanimsiz ..."
+               icon mb_error_icon
+               title "Hata"
+               close cst-genel
+               goback
+     end-read.
+     close cst-genel
+     
+     open input kart odenmez konuk skart kllnc       
+     initialize ilk-kart son-kart
+     initialize kart-rec
+   
+     move calisma-tarihi to cin-tarih cot-tarih
+     display form1
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+       when 1
+         evaluate control-id
+           when 101
+           when 121
+             initialize kartara-cagir
+             move ilk-kart to kartara-kart
+             perform ara-kart
+             move kartara-kart to ilk-kart
+             display acc-ilk-kart
+           when 102
+           when 122
+             initialize kartara-cagir
+             move son-kart to kartara-kart
+             perform ara-kart
+             move kartara-kart to son-kart
+             display acc-son-kart
+         end-evaluate
+       when 2
+         perform raporla
+     end-evaluate
+     .
+*
+ Before-Procedureler.
+     
+     .
+*
+ After-Procedureler.
+     
+     .
+*
+ ara-kart.
+     call "/asya/ytl/obj/otel/kartara2.asy"
+       using kartara-cagir
+       on exception perform callerr-proc
+       not on exception
+         cancel "/asya/ytl/obj/otel/kartara2.asy"
+     end-call
+     .
+*
+*
+ Form1-Aft-Routine.
+     close kart odenmez skart konuk  kllnc
+     .
+
+*
+ raporla.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock
+       invalid
+         accept print-no from time
+       not invalid
+         add 1 to print-no
+         rewrite genelfis-rec, end-rewrite
+     end-read
+     close genelfis
+
+     initialize dokumer-rec
+                dokumer-anah
+                dokumer-ozellikler-rec
+                dokumer-dosya
+     
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+
+     open output dokumer
+
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W" to det-dokumer-20(1:)
+     move "Kart Raporu" to det-filler
+     write dokumer-rec from detay, end-write
+
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B" to det-dokumer-20(1:)
+     move "Kart Raporu" to det-filler
+     write dokumer-rec from detay, end-write
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay, end-write
+
+*/ BASLIKLAR 
+     initialize dokumer-rec detay
+     move "D1"         to det-dokumer-20(1:)     
+     move "Kart No"    to det-01
+     move "Folio  "    to det-02
+     move "Oda"        to det-03
+     move "Giris Tar." to det-04
+     move "Cikis Tar." to det-05
+     move "M.Adi"      to det-06
+     move "M.Soyadi"   to det-07
+     move "%"          to det-08
+     move "Limit"      to det-09
+     move "S.Staff"       to det-10
+     move "Sil Tarihi"    to det-11
+     move "Saat"          to det-12 
+     move "K.Staf"        to det-13
+     move "N"             to det-14
+     perform dokumer-pipe-at
+     write dokumer-rec from detay, end-write
+
+     initialize dokumer-rec detay
+     move "D2"         to det-dokumer-20(1:)     
+     move "-"          to det-dokumer-20(5:)
+     perform dokumer-cizgi-cek
+     perform dokumer-pipe-at
+     write dokumer-rec from detay, end-write
+
+
+     open input odalar
+     if silinmis = 1 then 
+        move ilk-kart to skart-no
+     start skart key >= skart-anah
+       invalid
+         initialize mesaj-link
+         move 04 to mesaj-no
+         perform mesaj-ver
+       not invalid
+         initialize fs-skart
+         perform with test after
+                 until fs-skart = "10"
+           perform skart-oku
+         end-perform
+     end-start
+
+     else
+     move ilk-kart to kart-no
+     start kart key >= kart-no
+       invalid
+         initialize mesaj-link
+         move 04 to mesaj-no
+         perform mesaj-ver
+       not invalid
+         initialize fs-kart
+         perform with test after
+                 until fs-kart = "10"
+           perform kart-oku
+         end-perform
+     end-start
+     end-if
+     close dokumer odalar
+     call dokumer-prog
+       on exception
+         perform callerr-proc
+       not on exception
+         cancel dokumer-prog
+     end-call
+
+     delete file dokumer
+     set exit-pushed to true
+     .
+*
+ kart-oku.
+     read kart next no lock
+       end
+         move "10" to fs-kart
+       not at end
+         if ( kart-no > son-kart and son-kart > spaces )
+            move "10" to fs-kart
+         else
+            if ((kart-cin >= cin-tarih and 
+                kart-cot <= cot-tarih)      or filtre-yok = 0 )   and
+               (rapor-hepsi or rapor-tipi = " " or 
+                (rapor-musteri and kart-musteri) or
+                (rapor-odenmez and kart-odenmez) or
+                (rapor-ikram   and kart-ikram))
+
+               initialize dokumer-rec detay
+               move kart-no          to det-01
+               move kart-kim         to det-02
+               if kart-musteri
+                  perform konuk-oku
+                                                           | 18/10/2017 lckxiii
+                  initialize odalar-rec                   
+                  move konuk-odano   to det-03 odalar-anah
+                  read odalar no lock invalid 
+                       continue
+                  end-read
+                  if odalar-uzun-no not = spaces
+                     move odalar-uzun-no to det-03
+                  end-if
+
+                  move konuk-gel-gun to egun
+                  move konuk-gel-ay  to eay
+                  move konuk-gel-yil to eyil
+                  move etarih        to det-04
+                  move konuk-git-gun to egun
+                  move konuk-git-ay  to eay
+                  move konuk-git-yil to eyil
+                  move etarih        to det-05
+                  move konuk-adi     to det-06
+                  move konuk-soyadi  to det-07
+               else
+                  perform odenmez-oku
+                  initialize odalar-rec                   
+                  move konuk-odano   to det-03 odalar-anah
+                  read odalar no lock invalid 
+                       continue
+                  end-read
+                  if odalar-uzun-no not = spaces
+                     move odalar-uzun-no to det-03
+                  end-if
+                  move kart-cin-gun  to egun
+                  move kart-cin-ay   to eay
+                  move kart-cin-yil  to eyil
+                  move etarih        to det-04
+                  move kart-cot-gun  to egun
+                  move kart-cot-ay   to eay
+                  move kart-cot-yil  to eyil
+                  move etarih        to det-05
+                  move odenmez-adi   to det-06
+                  move odenmez-adi(20:) to det-07
+               end-if
+               move kart-ind         to det-08
+               move kart-tutar       to z-18
+               move z-18             to det-09
+
+                 move kart-staf to k-kodu 
+               read kllnc no lock invalid 
+                 move "Silinmis " to k-adi
+                 move "Kullanici" to k-soyadi
+                end-read
+                string k-adi delimited by "  "
+                     " " delimited by size
+                     k-soyadi delimited by "   "
+                     into det-10
+
+               perform dokumer-pipe-at
+               write dokumer-rec from detay, end-write
+            end-if
+         end-if
+     end-read
+     .
+*
+*
+ skart-oku.
+     read skart next no lock
+       end
+         move "10" to fs-skart
+       not at end
+         if ( skart-no > son-kart and son-kart > spaces )
+            move "10" to fs-skart
+         else
+            if ((skart-cin >= cin-tarih and 
+                skart-cot <= cot-tarih)   or filtre-yok = 0 ) and
+               (rapor-hepsi or rapor-tipi = " " or 
+                (rapor-musteri and skart-musteri) or
+                (rapor-odenmez and skart-odenmez) or
+                (rapor-ikram   and skart-ikram))
+
+               initialize dokumer-rec detay
+               move skart-no          to det-01
+               move skart-kim         to det-02
+               if skart-musteri
+                 move skart-folio to kart-folio
+                  perform konuk-oku
+                  initialize odalar-rec                   
+                  move konuk-odano   to det-03 odalar-anah
+                  read odalar no lock invalid 
+                       continue
+                  end-read
+                  if odalar-uzun-no not = spaces
+                     move odalar-uzun-no to det-03
+                  end-if
+                  move konuk-gel-gun to egun
+                  move konuk-gel-ay  to eay
+                  move konuk-gel-yil to eyil
+                  move etarih        to det-04
+                  move konuk-git-gun to egun
+                  move konuk-git-ay  to eay
+                  move konuk-git-yil to eyil
+                  move etarih        to det-05
+                  move konuk-adi     to det-06
+                  move konuk-soyadi  to det-07
+               else
+                  move skart-kim to kart-kim
+                  perform odenmez-oku
+                  initialize odalar-rec                   
+                  move konuk-odano   to det-03 odalar-anah
+                  read odalar no lock invalid 
+                       continue
+                  end-read
+                  if odalar-uzun-no not = spaces
+                     move odalar-uzun-no to det-03
+                  end-if
+                  move skart-cin-gun  to egun
+                  move skart-cin-ay   to eay
+                  move skart-cin-yil  to eyil
+                  move etarih        to det-04
+                  move skart-cot-gun  to egun
+                  move skart-cot-ay   to eay
+                  move skart-cot-yil  to eyil
+                  move etarih        to det-05
+                  move odenmez-adi   to det-06
+                  move odenmez-adi(20:) to det-07
+               end-if
+               move skart-nereden-silindi to det-14
+               move skart-ind         to det-08
+               move skart-tutar       to z-18
+               move z-18             to det-09
+                move  skart-tarih(7:2)  to egun
+                  move skart-tarih(5:2)   to eay
+                  move skart-tarih(1:4)  to eyil
+                  move etarih        to det-11
+                  move skart-saat(1:2)   to det-12(1:2)
+                  move skart-saat(3:2)   to det-12(4:2)
+                  
+                  move ":" to det-12(3:1) 
+
+               move skart-silen-staf to k-kodu 
+               read kllnc no lock invalid 
+                 move "Silinmis " to k-adi
+                 move "Kullanici" to k-soyadi
+                end-read
+                string k-adi delimited by "  "
+                     " " delimited by size
+                     k-soyadi delimited by "   "
+                     into det-10
+
+               move skart-staf to k-kodu 
+               read kllnc no lock invalid 
+                 move "Silinmis " to k-adi
+                 move "Kullanici" to k-soyadi
+                end-read
+                string k-adi delimited by "  "
+                     " " delimited by size
+                     k-soyadi delimited by "   "
+                     into det-13
+
+               perform dokumer-pipe-at
+               write dokumer-rec from detay, end-write
+            end-if
+         end-if
+     end-read
+     .
+*
+ konuk-oku.
+     move kart-folio to konuk-anah
+     read konuk no lock
+       invalid
+         move all "*" to konuk-rec
+     end-read
+     .
+*
+ odenmez-oku.
+     move kart-kim to odenmez-anah
+     read odenmez no lock
+       invalid
+         move all "*" to odenmez-rec
+     end-read
+     .
+*
+ dokumer-pipe-at.
+     move "|" to fil-01 fil-02 fil-03 fil-04 fil-05
+                 fil-06 fil-07 fil-08 fil-09 fil-10 fil-11 fil-12 fil-13 fil-14
+     .
+*
+ dokumer-cizgi-cek.
+     move all "-" to det-01 det-02 det-03 det-04 det-05
+                     det-06 det-07 det-08 det-09 det-10 det-11 det-12 det-13 det-14
+     .
+ 

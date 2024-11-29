@@ -1,0 +1,735 @@
+* wakeup.evt
+* wakeup.evt is generated from D:\asya\acugt.ytl\otel\wakeup.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.           
+     call "c$narg" using link-var 
+
+     open input genel.
+     move 1 to genel-anahtar
+     read genel no lock invalid
+          initialize mesaj-link
+          move 17 to mesaj-no
+          perform mesaj-ver
+          goback
+     end-read
+     close genel.
+     move tarih-tasi     to uyandirma-tarih wakeup-islem-tarihi.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 1
+         evaluate control-id
+         when 12
+         when 2001
+             initialize acenta-cagir
+             call "/asya/ytl/obj/otel/acenara.asy" 
+                  using acenta-cagir  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     if acenta-cagir <> spaces
+                        move acenta-cagir to accept-acenta-kodu
+                        display accept-0104
+                           perform acenta-oku
+                     end-if
+             end-call
+        when 2003
+        when 2004
+             initialize firma-cagir
+             call "/asya/ytl/obj/otel/firmara.asy" 
+                  using firma-cagir  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     if firma-cagir <> spaces
+                        move firma-cagir to accept-firma-kodu
+                        display accept-0105
+                        perform firma-oku
+                     end-if
+             end-call
+        when 2008
+        when 2009         
+            initialize gruplar-cagir
+            call "/asya/ytl/obj/otel/gruplara.asy" using gruplar-cagir 
+                 on exception perform callerr-proc
+                 not on exception
+            cancel "/asya/ytl/obj/otel/gruplara.asy" 
+            end-call
+            if gruplar-cagir <> spaces
+               move gruplar-cagir   to accept-grup-kodu
+               display accept-0106
+                  perform grup-oku
+            end-if 
+         end-evaluate
+     when 2
+         perform uyandirma-olustur
+     when 5
+         perform form-tazele
+     end-evaluate
+     
+     .
+*
+ form-tazele.
+         perform baslik-yukle
+         perform grid-yukle.
+*
+ uyandirma-olustur.
+     display message box "Uyandirmalar Kaydedilecektir." new-line
+                         "Eminmisiniz.?"
+                     title "Uyari"
+                     icon 1
+                     type 2
+                     default 2
+                     returning return-code
+     if return-code = 2
+         exit paragraph
+     end-if 
+
+     accept olusturma-tarih from century-date
+     accept olusturma-zaman from time
+
+     inquire Form1-Gd-1, 
+           last-row in son-satir
+     initialize uyandirma-iptal-edildi               
+     open i-o wakeup telayar konuk rez telkod
+     move 1                         to k
+     perform varying k
+               from 2
+               by 1
+               until k > son-satir                       
+                     inquire form1-gd-1(k),
+                             record-data in form1-gd-1-record
+                          
+                     if gd-1-col-9 = spaces                          
+                         perform wakeup-sifirlandi
+                         exit perform cycle 
+                     else
+                        continue 
+                     end-if 
+                    
+                     initialize wakeup-rec
+                     move uyandirma-tarih                   to wakeup-tarih
+                     move function numval(gd-1-col-2)       to wakeup-rez-no
+                     move gd-1-col-1                        to wakeup-odano
+                     read wakeup no lock invalid 
+                          continue 
+                     end-read
+
+                          if wakeup-gonderildi = 1
+                              exit perform cycle 
+                          end-if 
+
+
+                          move function numval(gd-1-col-9)      to wakeup-saat1
+                          move function numval(gd-1-col-10)     to wakeup-dak1
+
+                          move function numval(gd-1-col-11)     to wakeup-saat2
+                          move function numval(gd-1-col-12)     to wakeup-dak2
+
+                          move 1                                to wakeup-gonderildi
+                          move olusturma-tarih                  to wakeup-islem-tarihi
+                          move olusturma-zaman                  to wakeup-islem-zaman
+                          move k-kodu-tasi                      to wakeup-staf
+
+                          write wakeup-rec invalid 
+                              rewrite wakeup-rec end-rewrite 
+                          end-write
+                            perform dosya-olustur
+     end-perform
+     close wakeup telayar konuk rez telkod
+     display message box "Uyandirmalar Tamamlandi.." new-line
+                         "Kontrol Ediniz..."
+                     title "Uyari"
+                     icon 1
+     if link-var = 1
+         set exit-pushed to true 
+     end-if 
+     .
+*
+ Form1-Aft-Initdata.
+    open i-o wakeup close wakeup
+    if link-var = 0
+     perform baslik-yukle
+     perform grid-yukle
+    end-if
+    if link-var = 1
+     perform baslik-yukle
+     perform grid-yukle      
+    end-if. 
+
+*
+ baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "Oda"           to gd-1-col-1
+     move "Rez"           to gd-1-col-2
+     move "Adi"           to gd-1-col-3
+     move "Soyadi"        to gd-1-col-4
+     move "Giris Tarihi"  to gd-1-col-5
+     move "Cikis Tarihi"  to gd-1-col-6
+     move "Acenta Adi"    to gd-1-col-7
+     move "Firma Adi"     to gd-1-col-8
+     move "Saat"          to gd-1-col-9
+     move "Dak."          to gd-1-col-10
+     move "2.Saat"        to gd-1-col-11
+     move "2.Dak."        to gd-1-col-12 
+     move "Grup Adi"      to gd-1-col-13
+     move "Durum"         to gd-1-col-14
+     modify form1-gd-1,
+            record-to-add(form1-gd-1-record).
+*
+ grid-yukle.
+     if link-var = 0
+        open input konuk acenta firma wakeup gruplar
+        initialize konuk-rec 
+        move "I"               to konuk-durumu
+           perform inhouse-yukle
+     end-if
+     if link-var = 1
+        open input konuk acenta firma wakeup gruplar
+        initialize konuk-rec 
+        move "I"               to konuk-durumu
+        move link-wakeup-odano to konuk-odano
+           perform inhouse-yukle        
+     end-if
+
+    .
+*
+ inhouse-yukle.
+     move 1 to kayit-sayi
+     start konuk key not < konuk-oda invalid 
+          continue
+     not invalid 
+     perform with test after until fs-konuk = "10"
+     read konuk next no lock end move "10" to fs-konuk
+     not at end 
+             if konuk-durumu <> "I"
+                 exit perform 
+             end-if
+             if link-var not = 0
+               if link-wakeup-odano not = spaces
+                  if konuk-odano <> link-wakeup-odano
+                      exit perform 
+                  end-if 
+               end-if 
+             end-if
+             if konuk-fol-kodu not = "R"
+                 exit perform cycle
+             end-if
+             if konuk-acenta not = accept-acenta-kodu and
+                accept-acenta-kodu not = spaces 
+                   exit perform cycle 
+             end-if 
+
+             if konuk-firma not = accept-firma-kodu and
+                accept-firma-kodu not = spaces 
+                   exit perform cycle 
+             end-if 
+
+             if konuk-grup-no not = accept-grup-kodu and
+                accept-grup-kodu not = spaces 
+                   exit perform cycle 
+             end-if 
+
+             add 1                      to kayit-sayi
+             initialize form1-gd-1-record
+             move konuk-odano           to gd-1-col-1 gd-hidden-odano
+             move konuk-rez-no          to gd-1-col-2 gd-hidden-rezno
+             move konuk-adi             to gd-1-col-3
+             move konuk-soyadi          to gd-1-col-4
+
+             move konuk-gel-gun         to egun
+             move konuk-gel-ay          to eay
+             move konuk-gel-yil         to eyil
+             move etar                  to gd-1-col-5
+
+             move konuk-git-gun         to egun
+             move konuk-git-ay          to eay
+             move konuk-git-yil         to eyil
+             move etar                  to gd-1-col-6
+
+             if konuk-firma not = spaces
+                initialize firma-rec 
+                move konuk-firma            to firma-kodu
+                read firma no lock invalid
+                     move "Tanimsiz..."     to firma-adi
+                end-read 
+                     move firma-adi         to gd-1-col-8
+             end-if
+                initialize acenta-rec 
+                move konuk-acenta           to acenta-kodu
+                read acenta no lock invalid
+                     move "Tanimsiz..."     to acenta-adi
+                end-read 
+                     move acenta-adi        to gd-1-col-7
+
+             move uyandirma-tarih           to gd-hidden-tarih 
+             move konuk-grup-no             to gd-hidden-grupno
+
+             if konuk-grup-no not = zeroes or 
+                konuk-grup-no not = spaces 
+                     initialize gruplar-rec 
+                     move konuk-grup-no             to gruplar-kodu
+                     read gruplar no lock invalid 
+                          move spaces         to gruplar-adi
+                     end-read 
+                          move gruplar-adi          to gd-1-col-13
+             end-if 
+
+      
+                 perform wakeup-islenen-bul
+
+
+             modify form1-gd-1,
+             record-to-add(form1-gd-1-record)
+
+             modify form1-gd-1(kayit-sayi,1),
+               hidden-data gd-hidden-data
+     end-read 
+     end-perform
+     end-start
+     close konuk acenta firma gruplar wakeup
+     modify form1-gd-1,mass-update = 0
+    .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+        evaluate event-data-1 
+        when 1
+        when 2
+        when 3
+        when 4
+        when 5
+        when 6
+        when 7
+        when 8
+        when 13
+        when 14
+             move event-action-fail  to event-action    
+        end-evaluate
+     when msg-finish-entry
+                
+        evaluate event-data-1
+        when 9
+            
+            inquire form1-gd-1(event-data-2),
+                    record-data in form1-gd-1-record
+                    
+            if gd-1-col-9 not = spaces      
+                    open i-o wakeup
+                    initialize wakeup-rec
+                    move uyandirma-tarih   to wakeup-tarih
+                    move gd-1-col-2        to wakeup-rez-no
+                    move gd-1-col-1        to wakeup-odano
+                    read wakeup no lock invalid                       
+                          close wakeup
+                          exit paragraph
+                    end-read 
+                         move 0  to wakeup-gonderildi
+                         rewrite wakeup-rec end-rewrite 
+                    close wakeup
+            else
+                    open i-o wakeup
+                    initialize wakeup-rec
+                    move uyandirma-tarih   to wakeup-tarih
+                    move gd-1-col-2        to wakeup-rez-no
+                    move gd-1-col-1        to wakeup-odano
+                    read wakeup no lock invalid                       
+                          close wakeup
+                          exit paragraph
+                    end-read 
+                         move 0  to wakeup-gonderildi
+                         initialize wakeup-zaman1 wakeup-zaman2
+                         rewrite wakeup-rec end-rewrite 
+                    close wakeup
+               
+            end-if 
+        when 10
+            inquire form1-gd-1(event-data-2),
+                    record-data in form1-gd-1-record
+                    
+            if gd-1-col-10 not = spaces      
+                    open i-o wakeup
+                    initialize wakeup-rec
+                    move uyandirma-tarih   to wakeup-tarih
+                    move gd-1-col-2        to wakeup-rez-no
+                    move gd-1-col-1        to wakeup-odano
+                    read wakeup no lock invalid 
+                          close wakeup
+                          exit paragraph
+                    end-read 
+                         move 0  to wakeup-gonderildi
+                         rewrite wakeup-rec end-rewrite 
+                    close wakeup
+            else
+                    open i-o wakeup
+                    initialize wakeup-rec
+                    move uyandirma-tarih   to wakeup-tarih
+                    move gd-1-col-2        to wakeup-rez-no
+                    move gd-1-col-1        to wakeup-odano
+                    read wakeup no lock invalid                       
+                          close wakeup
+                          exit paragraph
+                    end-read 
+                         move 0  to wakeup-gonderildi
+                         initialize wakeup-zaman1 wakeup-zaman2
+                         rewrite wakeup-rec end-rewrite 
+                    close wakeup
+
+            end-if 
+
+        when 11
+            inquire form1-gd-1(event-data-2),
+                    record-data in form1-gd-1-record
+                    
+            if gd-1-col-11 not = spaces      
+                    open i-o wakeup
+                    initialize wakeup-rec
+                    move uyandirma-tarih   to wakeup-tarih
+                    move gd-1-col-2        to wakeup-rez-no
+                    move gd-1-col-1        to wakeup-odano
+                    read wakeup no lock invalid 
+                          close wakeup
+                          exit paragraph
+                    end-read 
+                         move 0  to wakeup-gonderildi
+                         rewrite wakeup-rec end-rewrite 
+                    close wakeup
+            else
+                    open i-o wakeup
+                    initialize wakeup-rec
+                    move uyandirma-tarih   to wakeup-tarih
+                    move gd-1-col-2        to wakeup-rez-no
+                    move gd-1-col-1        to wakeup-odano
+                    read wakeup no lock invalid                       
+                          close wakeup
+                          exit paragraph
+                    end-read 
+                         move 0  to wakeup-gonderildi
+                         initialize wakeup-zaman1 wakeup-zaman2
+                         rewrite wakeup-rec end-rewrite 
+                    close wakeup
+
+            end-if  
+        when 12
+            inquire form1-gd-1(event-data-2),
+                    record-data in form1-gd-1-record
+                    
+            if gd-1-col-12 not = spaces      
+                    open i-o wakeup
+                    initialize wakeup-rec
+                    move uyandirma-tarih   to wakeup-tarih
+                    move gd-1-col-2        to wakeup-rez-no
+                    move gd-1-col-1        to wakeup-odano
+                    read wakeup no lock invalid 
+                          close wakeup
+                          exit paragraph
+                    end-read 
+                         move 0  to wakeup-gonderildi
+                         rewrite wakeup-rec end-rewrite 
+                    close wakeup
+            else
+                    open i-o wakeup
+                    initialize wakeup-rec
+                    move uyandirma-tarih   to wakeup-tarih
+                    move gd-1-col-2        to wakeup-rez-no
+                    move gd-1-col-1        to wakeup-odano
+                    read wakeup no lock invalid                       
+                          close wakeup
+                          exit paragraph
+                    end-read 
+                         move 0  to wakeup-gonderildi                         
+                         initialize wakeup-zaman1 wakeup-zaman2
+                         rewrite wakeup-rec end-rewrite 
+                    close wakeup
+            end-if
+        end-evaluate
+     end-evaluate     
+     .
+*
+ wakeup-islenen-bul.
+     initialize wakeup-rec
+     move konuk-rez-no              to wakeup-rez-no
+     move konuk-odano               to wakeup-odano
+     start wakeup key not < wakeup-anah1 invalid 
+           continue 
+     not invalid 
+     perform with test after until fs-wakeup = "10"
+     read wakeup next no lock end move "10"  to fs-wakeup
+     not at end 
+             if wakeup-rez-no <> konuk-rez-no or 
+                wakeup-odano  <> konuk-odano 
+                  exit perform
+             else
+                if wakeup-tarih <> uyandirma-tarih  
+                   exit perform cycle 
+                end-if 
+                move wakeup-saat1              to gd-1-col-9  gd-hidden-saat1
+                move wakeup-dak1               to gd-1-col-10 gd-hidden-dakika1
+                move wakeup-saat2              to gd-1-col-11 gd-hidden-saat2
+                move wakeup-dak2               to gd-1-col-12 gd-hidden-dakika2 
+
+                evaluate wakeup-islem-durumu 
+                when 1
+                     move "OK"                       to gd-1-col-14
+                     modify form1-gd-1(kayit-sayi,14),
+                       cell-color = 112
+ 
+                when 0
+                     move "CEVAP YOK"                to gd-1-col-14
+                     modify form1-gd-1(kayit-sayi,14),
+                       cell-color = 176
+                end-evaluate                
+             end-if 
+
+
+     end-read 
+     end-perform
+     end-start
+
+       .
+*
+ acenta-oku.
+     if accept-acenta-kodu not = spaces
+        open input acenta
+        initialize acenta-rec
+        move accept-acenta-kodu   to acenta-kodu
+        read acenta no lock invalid
+             move "Tanimsiz..."   to acenta-adi
+        end-read
+             move acenta-adi      to accept-acenta-adi
+        close acenta 
+     else
+        move "Tum Acentalar" to accept-acenta-adi
+     end-if 
+     display accept-0104-1
+     .
+*
+ firma-oku.
+     if accept-firma-kodu not = spaces
+        open input firma
+        initialize firma-rec 
+        move accept-firma-kodu   to firma-kodu
+        read firma no lock invalid
+             move "Tanimsiz..."  to firma-adi
+        end-read 
+             move firma-adi      to accept-firma-adi
+        close firma
+     else
+        move "Tum Firmalar"      to accept-firma-adi
+     end-if
+     display accept-0105-1
+     .
+*
+ grup-oku.
+     if accept-grup-kodu not = spaces
+        open input gruplar
+        initialize gruplar-rec 
+        move accept-grup-kodu   to gruplar-kodu
+        read gruplar no lock invalid 
+             move "Tanimsiz..." to gruplar-adi
+        end-read 
+             move gruplar-adi   to accept-grup-adi
+        close gruplar
+     else
+        move "Tum Gruplar"  to accept-grup-adi
+     end-if
+     display accept-0106-1
+     .
+*
+ dosya-olustur.
+         if  telpara-dishat-ac-kapa = 1 then             
+             initialize telayaru-dosya-adi telayar-rec telayaru-rec
+             move wakeup-odano to telayaru-dosya-adi
+             move ".uya"       to telayaru-dosya-adi(5:4)
+
+             open output telayaru  
+           
+
+
+            if telpara-dishat-ac-kapa-dahili = 1
+             initialize telkod-rec 
+             start telkod key not < telkod-anah invalid 
+                 continue 
+             not invalid 
+             perform with test after until fs-telkod = "10"
+             read telkod next no lock end move "10" to fs-telkod
+             not at end 
+                     if tel-onb-oda = wakeup-odano
+                         move tel-oda to wakeup-odano  
+                     else
+                        exit perform cycle 
+                     end-if 
+             end-read 
+             end-perform
+             end-start             
+            end-if
+             move wakeup-odano        to telayaru-odano  telayar-odano
+ 
+*             initialize rez-rec 
+*             move wakeup-rez-no            to rez-no
+*             read rez no lock invalid
+*                  continue 
+*             not invalid 
+*                  initialize konuk-rec
+*                  move rez-folio           to konuk-folio
+*                  read konuk no lock invalid 
+*                       continue 
+*                  not invalid 
+*                       if konuk-folio > 0
+*                          move konuk-folio to telayar-folio  telayaru-folio
+*                       end-if 
+
+                       move wakeup-zaman1  to telayar-saat
+                       move wakeup-tarih   to telayar-tarih
+
+                       move telayar-saat   to telayaru-saat 
+                       move telayar-tarih  to telayaru-tarih  
+*                       move konuk-adi      to telayar-adi telayaru-adi
+*                       move konuk-soyadi   to telayar-soy telayaru-soy
+*                       if uyandirma-iptal-edildi = 1
+                          move "U "           to telayar-islem telayaru-islem 
+*                       else
+*                          move "I "           to telayar-islem telayaru-islem                           
+*                       end-if 
+
+                       write telayar-rec invalid 
+                            continue 
+                       end-write
+
+                       write telayaru-rec end-write
+                       
+*                  end-read 
+*             end-read
+             close telayaru
+         end-if.
+*
+ wakeup-sifirlandi.
+         initialize wakeup-rec uyandirma-iptal-edildi
+         move uyandirma-tarih                   to wakeup-tarih
+         move function numval(gd-1-col-2)       to wakeup-rez-no
+         move gd-1-col-1                        to wakeup-odano
+         read wakeup no lock invalid 
+              continue  
+         not invalid
+              if wakeup-zaman1 = zeroes
+                 move 1  to uyandirma-iptal-edildi
+                 perform dosya-olustur
+              end-if 
+         end-read.
+*
+ Form1-Mn-1-MI-SeciliGrubaUygula-Link.
+          initialize end-x end-y
+          inquire form1-gd-1,
+                     cursor-x         in end-x
+                     cursor-y         in end-y.
+
+          inquire form1-gd-1(end-Y),
+                  RECORD-data in form1-gd-1-record
+         if accept-grup-kodu = spaces
+              display message box "Lutfen Grup Kodu Giriniz.." 
+                              title "Uyari"
+                              icon 1
+                 move 4    to accept-control
+                 move 2008 to control-id 
+                 exit paragraph 
+         end-if  
+
+         if accept-grup-kodu not = spaces
+            display message box accept-grup-kodu" 'Nolu Gruba Uyandirma Uygulanacaktir." new-line
+                               "Eminmisiniz..??"
+                            title "Uyari"
+                            icon 1
+                            type 2 
+                            default 2
+                            returning return-code
+
+            if return-code = 2
+                exit paragraph 
+            end-if 
+
+            open input konuk rez
+            open i-o wakeup  telayar
+            initialize konuk-rec uyandirma-iptal-edildi
+            move "I"                to konuk-durumu           
+            start konuk key not < KONUK-oda invalid 
+                  continue 
+            not invalid 
+            perform with test after until fs-konuk = "10"
+            read konuk next no lock end move "10" to fs-konuk
+            not at end 
+                     if konuk-durumu <> "I"  
+                         exit perform 
+                     end-if
+                     if konuk-grup-no <> accept-grup-kodu
+                         exit perform cycle 
+                     end-if 
+                     if konuk-fol-kodu not = "R"
+                         exit perform cycle 
+                     end-if 
+                     initialize wakeup-rec
+                     move uyandirma-tarih   to wakeup-tarih
+                     move konuk-rez-no      to wakeup-rez-no
+                     move konuk-odano       to wakeup-odano
+                     read wakeup no lock invalid
+                        move function numval(gd-1-col-9)   to wakeup-saat1
+                        move function numval(gd-1-col-10)  to wakeup-dak1
+        
+                        move function numval(gd-1-col-11)  to wakeup-saat2
+                        move function numval(gd-1-col-12)  to wakeup-dak2
+
+                        move 1                             to wakeup-gonderildi
+                        move olusturma-tarih               to wakeup-islem-tarihi
+                        move olusturma-zaman               to wakeup-islem-zaman
+                        move k-kodu-tasi                   to wakeup-staf
+                               
+                        write wakeup-rec invalid 
+                           rewrite wakeup-rec end-rewrite 
+                        end-write
+                     not invalid 
+                        move function numval(gd-1-col-9)   to wakeup-saat1
+                        move function numval(gd-1-col-10)  to wakeup-dak1
+        
+                        move function numval(gd-1-col-11)  to wakeup-saat2
+                        move function numval(gd-1-col-12)  to wakeup-dak2
+
+                        move 1                             to wakeup-gonderildi
+                        move olusturma-tarih               to wakeup-islem-tarihi
+                        move olusturma-zaman               to wakeup-islem-zaman
+                        move k-kodu-tasi                   to wakeup-staf
+                               
+                        rewrite wakeup-rec end-rewrite 
+                     end-read
+                     if wakeup-saat1 = zeroes
+                        move  1 to uyandirma-iptal-edildi
+                     end-if 
+                     perform dosya-olustur
+            end-read 
+            end-perform
+            end-start
+            close konuk wakeup rez telayar
+               perform form-tazele
+            display message box accept-grup-kodu "'Nolu grup icin uyandirmalar islendi.."
+                               title "Uyari"
+                               icon 1
+          end-if.
+
+
+ 

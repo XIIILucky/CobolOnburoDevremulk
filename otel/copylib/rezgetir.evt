@@ -1,0 +1,543 @@
+* rezgetir.evt
+* rezgetir.evt is generated from D:\asya\acugt.ytl\otel\rezgetir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ arama-combo-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM arama-combo-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Lb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM Form1-Lb-1-Ex-Cmd-Dblclick
+        WHEN Ntf-Pl-First
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-First
+        WHEN Ntf-Pl-Last
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Last
+        WHEN Ntf-Pl-Next
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Next
+        WHEN Ntf-Pl-Nextpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Nextpage
+        WHEN Ntf-Pl-Prev
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prev
+        WHEN Ntf-Pl-Prevpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prevpage
+        WHEN Ntf-Pl-Search
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Search
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     initialize fiyat-ref oda-ref
+     perform adresleri-tasi.
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid continue
+     end-read
+    
+     close genel.
+*
+ Form1-Aft-Initdata.
+     modify arama-combo,reset-list = 1 
+                        mass-update = 1
+     modify arama-combo,
+            item-to-add("1-Ada gore","2-Soyada gore","3-Giris tarihi")
+     modify arama-combo,
+            item-to-add("4-Acenta","5-Voucher","6-Rez No")
+     move "1-Ada gore"  to arama-combo-value.
+     move 1 to arama.
+     modify arama-combo,mass-update = 0
+                        value = arama-combo-value.
+     perform rez-to-xrez.
+     open input xrez.
+
+     perform kolon-ayarla.
+     perform  Form1-Lb-1-Ex-Ntf-Pl-First
+     modify form1-lb-1, selection-index = 1
+                        mass-update = 0.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+get-next-item.
+    evaluate state-flag
+*       when reading-backwards
+        when "b"
+             move kayit-sayisi to number-reads-needed
+*       when at-end
+        when "e"
+             exit paragraph
+*       when reading-forwards
+        when "f"
+          move 1 to number-reads-needed
+
+*       when at-start
+       when "s"
+          move low-values to xrez-rec
+          move rez-cagri-durumu to xrez-durumu
+          evaluate arama
+             when 1
+               start xrez key not < xrez-ad    invalid
+                     exit paragraph
+               end-start
+             when 2
+               start xrez key not < xrez-soy    invalid
+                     exit paragraph
+               end-start
+             when 3
+               start xrez key not < xrez-gir     invalid
+                     exit paragraph
+               end-start
+             when 4
+               start xrez key not < xrez-acen       invalid
+                     exit paragraph
+               end-start
+             when 5
+               start xrez key not < xrez-vouc invalid
+                     exit paragraph
+               end-start
+             when 6
+               start xrez key not < xrez-no invalid
+                     exit paragraph
+               end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+    end-evaluate.
+
+    perform varying i from 1 by 1 until i > number-reads-needed
+        read xrez next no lock end 
+                      set at-end to true
+                      exit paragraph
+        not at end
+               if xrez-durumu <> rez-cagri-durumu
+                      set at-end to true
+                      exit paragraph
+               end-if
+               if xrez-gir-tar <> calisma-tarihi or
+                  xrez-c-in = "E"
+                  subtract 1 from i 
+                  exit perform cycle
+               end-if
+        end-read
+    end-perform
+    perform kayit-yerlestir
+
+
+    modify form1-lb-1, item-to-add = form1-lb-1-value
+
+    set reading-forwards to true.
+
+get-prev-item.
+    evaluate state-flag
+       when "b"
+*       when reading-backwards
+          move 1 to number-reads-needed
+*       when at-end
+       when  "e"
+          move high-values to xrez-rec
+          move rez-cagri-durumu  to xrez-durumu
+          evaluate arama
+          when 1 
+              start xrez key not > xrez-ad    
+                   invalid key      exit paragraph
+              end-start
+          when 2
+              start xrez key not > xrez-soy   
+                   invalid key      exit paragraph
+              end-start
+          when 3
+              start xrez key not > xrez-gir    
+                   invalid key      exit paragraph
+              end-start
+          when 4
+              start xrez key not > xrez-acen   
+                   invalid key      exit paragraph
+              end-start
+          when 5
+              start xrez key not > xrez-vouc 
+                   invalid key      exit paragraph
+              end-start
+          when 6
+              start xrez key not > xrez-no
+                   invalid key      exit paragraph
+              end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+       when "f"
+*       when reading-forwards
+          move kayit-sayisi to number-reads-needed
+       when "s"
+*       when at-start
+          exit paragraph
+    end-evaluate.
+
+    perform varying i from 1 by 1 until i > number-reads-needed
+        read xrez previous no lock end 
+                      set at-start to true
+                      exit paragraph
+        not at end
+               if xrez-durumu <> rez-cagri-durumu
+                  set at-start to true
+                  exit paragraph
+               end-if
+               if xrez-gir-tar <> calisma-tarihi or
+                  xrez-c-in = "E"
+                  subtract 1 from i 
+                  exit perform cycle
+               end-if
+        end-read
+    end-perform
+
+    perform kayit-yerlestir
+
+    modify form1-lb-1, 
+       insertion-index = 1
+       item-to-add = form1-lb-1-value
+
+    set reading-backwards to true.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Next.
+    perform get-next-item.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prev.
+    perform get-prev-item.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Nextpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prevpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-First.
+     move low-values to xrez-rec
+     move rez-cagri-durumu     to xrez-durumu
+     evaluate arama
+     when 1 
+     start xrez key not < xrez-ad   
+           invalid key    exit paragraph
+     end-start
+     when 2
+     start xrez key not < xrez-soy   
+           invalid key    exit paragraph
+     end-start
+     when 3
+     start xrez key not < xrez-gir    
+           invalid key    exit paragraph
+     end-start
+     when 4
+     start xrez key not < xrez-acen   
+           invalid key    exit paragraph
+     end-start
+     when 5
+     start xrez key not < xrez-vouc 
+           invalid key    exit paragraph
+     end-start
+     when 6
+     start xrez key not < xrez-no
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Last.
+     move high-values to xrez-rec
+     move rez-cagri-durumu     to xrez-durumu
+     evaluate arama
+     when 1 
+     start xrez, key not > xrez-ad    
+           invalid key    exit paragraph
+     end-start
+     when 2 
+     start xrez, key not > xrez-soy   
+           invalid key    exit paragraph
+     end-start
+     when 3 
+     start xrez, key not > xrez-gir    
+           invalid key    exit paragraph
+     end-start
+     when 4 
+     start xrez, key not > xrez-acen   
+           invalid key    exit paragraph
+     end-start
+     when 5 
+     start xrez, key not > xrez-vouc 
+           invalid key    exit paragraph
+     end-start
+     when 6
+     start xrez, key not > xrez-no
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+     set reading-backwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Search.
+     inquire form1-lb-1, search-text in arama-kelime
+     move rez-cagri-durumu     to xrez-durumu
+     evaluate arama
+     when 1 
+     move arama-kelime to xrez-adi
+     start xrez key not < xrez-ad    
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 2 
+     move arama-kelime to xrez-soyadi
+     start xrez key not < xrez-soy   
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 3 
+     move arama-kelime(1:2) to xrez-gir-gun
+     move arama-kelime(4:2) to xrez-gir-ay 
+     move arama-kelime(7:4) to xrez-gir-yil
+     start xrez key not < xrez-gir     
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 4 
+     move arama-kelime(1:4) to xrez-acenta
+     start xrez key not < xrez-acen   
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 5 
+     move arama-kelime to xrez-voucher
+     start xrez key not < xrez-vouc 
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 6
+     move arama-kelime to xrez-no
+     start xrez key not < xrez-no
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     end-evaluate.
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0
+     if at-end
+        perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+     end-if.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2000
+
+     when 2001
+        inquire form1-lb-1,selection-index in i
+        inquire form1-lb-1(i),value in form1-lb-1-value
+        evaluate arama
+        when 1 
+        when 2 
+        when 3 
+        when 4
+        when 5 
+             inquire form1-lb-1(i),value in form1-lb-1-value
+             move lb-1-col-6     to rez-no-cagir
+             set exit-pushed to true
+        when 6
+             inquire form1-lb-1(i),value in form1-lb-1-value
+             move lb-1-col-1(01:08) to rez-no-cagir
+             set exit-pushed to true
+        end-evaluate
+     end-evaluate.
+
+ kolon-ayarla.
+ arama-combo-Ex-Ntf-Selchange.
+     move arama-combo-value(1:1)  to arama
+     perform kolon-ayarla.
+     perform Form1-Lb-1-Ex-Ntf-Pl-First.
+
+ kayit-yerlestir.
+    evaluate arama
+         when 1 
+              move xrez-adi         to det-1
+              move xrez-soyadi      to det-2
+              move xrez-gir-gun     to egun
+              move xrez-gir-ay      to eay
+              move xrez-gir-yil     to eyil
+              move etarih           to det-3
+              move xrez-acenta      to det-4
+*              move xrez-telno       to det-4(6:)
+              move xrez-voucher     to det-5
+              move xrez-anah        to det-6
+              move xrez-odano       to det-7
+              move detay            to form1-lb-1-value
+         when 2
+              move xrez-adi         to det-2
+              move xrez-soyadi      to det-1
+              move xrez-gir-gun     to egun
+              move xrez-gir-ay      to eay
+              move xrez-gir-yil     to eyil
+              move etarih           to det-3
+              move xrez-acenta      to det-4
+*              move xrez-telno       to det-4(6:)
+              move xrez-voucher     to det-5
+              move xrez-anah        to det-6
+              move xrez-odano       to det-7
+              move detay            to form1-lb-1-value
+         when 3
+              move xrez-adi         to det-2
+              move xrez-soyadi      to det-3
+              move xrez-gir-gun     to egun
+              move xrez-gir-ay      to eay
+              move xrez-gir-yil     to eyil
+              move etarih           to det-1
+              move xrez-acenta      to det-4
+*              move xrez-telno       to det-4(6:)
+              move xrez-voucher     to det-5
+              move xrez-anah        to det-6
+              move xrez-odano       to det-7
+              move detay            to form1-lb-1-value
+         when 4
+              move xrez-adi         to det-2
+              move xrez-soyadi      to det-3
+              move xrez-gir-gun     to egun
+              move xrez-gir-ay      to eay
+              move xrez-gir-yil     to eyil
+              move etarih           to det-4
+              move xrez-acenta      to det-1
+*              move xrez-telno       to det-1(6:)
+              move xrez-voucher     to det-5
+              move xrez-anah        to det-6
+              move xrez-odano       to det-7
+              move detay            to form1-lb-1-value
+         when 5
+              move xrez-adi         to det-2
+              move xrez-soyadi      to det-3
+              move xrez-gir-gun     to egun
+              move xrez-gir-ay      to eay
+              move xrez-gir-yil     to eyil
+              move etarih           to det-4
+              move xrez-acenta      to det-5
+*              move xrez-telno       to det-5(6:)
+              move xrez-voucher     to det-1
+              move xrez-anah        to det-6
+              move xrez-odano       to det-7
+              move detay            to form1-lb-1-value
+         when 6
+              move xrez-adi         to det-2
+              move xrez-soyadi      to det-3
+              move xrez-gir-gun     to egun
+              move xrez-gir-ay      to eay
+              move xrez-gir-yil     to eyil
+              move etarih           to det-4
+              move xrez-acenta      to det-5
+*              move xrez-telno       to det-5(6:)
+              move xrez-voucher     to det-6
+              move xrez-anah        to det-1
+              move xrez-odano       to det-7
+              move detay            to form1-lb-1-value
+    end-evaluate.
+*
+ Form1-Lb-1-Ex-Cmd-Dblclick.
+    move 2001 to key-status.
+    perform  Form1-Ex-Other.
+*
+ Form1-Aft-Routine.
+    close xrez.
+    delete file xrez.
+ rez-to-xrez.
+     open i-o genelfis.
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          move 1 to ekran-fis-1
+     end-read
+     add 1 to ekran-fis-1
+     rewrite genelfis-rec invalid
+             write genelfis-rec end-write
+     end-rewrite
+     close genelfis.
+    
+     move ekran-fis-1(2:) to xrez-ara-no
+     open output xrez close xrez open i-o xrez mass-update.
+     open input rez acenta.
+*/   acenta-adi rez-telno'da
+     initialize rez-rec
+     move calisma-tarihi      to rez-gir-tar
+     move "I"                 to rez-durumu
+     move rez-cagri-durumu    to rez-durumu
+     start rez key not < rez-gir invalid
+           continue
+     not invalid
+     initialize fs-rez
+     perform with test after until fs-rez = "10"
+     read rez next no lock end move "10" to fs-rez
+     not at end
+          if rez-gir-tar > calisma-tarihi or 
+             rez-durumu <> rez-cagri-durumu
+                 move "10" to fs-rez
+                 exit perform
+          end-if
+          if rez-c-in = "E" 
+             exit perform cycle
+          end-if
+          if rez-k-g-b  not = "K" 
+             exit perform cycle
+          end-if
+                 
+         if onkpara-referans-var = 1 then 
+            perform ref-filtre
+            if not ref-gecti then 
+                exit perform cycle
+            end-if
+          end-if
+
+          initialize xrez-rec
+          move rez-rec    to xrez-rec
+          move rez-acenta to acenta-kodu
+          read acenta no lock invalid
+               move "Tanimsiz ..." to acenta-adi
+          end-read
+*          move acenta-adi          to xrez-telno
+          write xrez-rec end-write
+     end-read
+     end-perform
+     end-start
+     close rez xrez acenta.
+*
+ Form1-Pb-1-Link.
+     modify form1-lb-1,reset-list = 1           
+     perform Form1-Aft-Routine
+     perform Form1-Aft-Initdata
+     modify form1-lb-1,MASS-UPDATE = 0
+     .
+
+ 

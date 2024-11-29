@@ -1,0 +1,877 @@
+* dov-boz.evt
+* dov-boz.evt is generated from D:\asya\acugt.ytl\otel\dov-boz.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    call "c$narg" using link-var
+    perform adresleri-tasi.
+    open i-o genel.
+     move 1 to genel-anahtar.
+     read genel no lock invalid
+          display message box 
+                  "Modul genel parametresi tanimsiz",new-line,
+                  "Lutfen tanimlayiniz ..."
+                  icon mb_error_icon
+                  title "Hata"
+                  close genel
+                  goback
+     end-read.
+     close genel.
+    open i-o genel2.
+     move 1 to genel2-anah.
+     read genel2 no lock invalid
+          display message box 
+                  "Modul genel parametresi tanimsiz",new-line,
+                  "Lutfen tanimlayiniz ..."
+                  icon mb_error_icon
+                  title "Hata"
+                  close genel2
+                  goback
+     end-read.
+     close genel2.
+    if link-var = 5  then 
+        if onkpara-dovboz-elle not = 1 
+        move 0 to m-enb
+        else
+        move 1 to m-enb
+        end-if
+        else
+        move 1 to m-enb
+
+    end-if    .
+*
+ Form1-Aft-Initdata.
+*    if k-kodu-tasi = "ASYA" stop " " end-if
+    initialize dov-boz-rec.
+    move tarih-tasi to dov-boz-tarih dov-boz-belge-tar.
+    move "D" to dov-boz-tipi.
+    move "1" to Dov-Boz-Belge.
+    move genel2-dovboz-banka to dov-boz-banka
+    perform acc-04-Aft-Procedure
+    
+    move 4  to accept-control             | firat 7/7/2021 2506 numaralý task
+    move 44 to control-id
+
+    perform ekran-goster.
+    
+
+      if onkpara-dov-boz-tlden = "E" then 
+         move 1 to accept-02-enable
+         display acc-09   acc-10
+      else
+         move 0 to accept-02-enable
+         display acc-09   acc-10
+      end-if .
+      if link-var > 1 then
+         open input konuk
+         move link-fol-no to konuk-folio
+         read konuk no lock 
+           invalid 
+              display message box " Hatali Bag"
+              close konuk
+              set exit-pushed to true
+              exit paragraph
+           not invalid
+               move konuk-odano   to dov-boz-oda
+               move konuk-folio   to dov-boz-folio
+               move konuk-adi     to dov-boz-adi
+               move konuk-soyadi  to dov-boz-soy
+               move konuk-ulke    to dov-boz-ulke
+             
+               if link-var > 4
+                  move link-ban to  dov-boz-banka     
+                  move link-dov to  dov-boz-doviz
+                  move link-dv  to   dov-boz-dv-tutar
+                  else
+                  move onkpara-banka to dov-boz-banka
+                  move onkpara-doviz to dov-boz-doviz
+               end-if  
+                  display acc-04 acc-05 acc-11 acc-12 acc-2 acc-oda
+                  perform acc-04-Aft-Procedure
+                  perform acc-05-Aft-Procedure
+                  perform acc-06-before
+                  move link-tl       to dov-boz-net-tl-tutar   tmp-tl
+                  move  link-tl       to dov-boz-tl-tutar  
+                  display acc-13  acc-09
+                  perform acc-13-Aft-Procedure
+                  display acc-10
+                  if link-var > 4
+                     move link-dv  to   dov-boz-dv-tutar  
+                   
+                  end-if
+                  display acc-06
+                  perform  degistimi
+                  move 22 to control-id
+                  move 4 to accept-control
+                 close konuk
+         end-read
+      end-if.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+ acc-06-before.
+      if link-var > 0 then
+      
+       perform kur-bul
+       compute dov-boz-tl-tutar  rounded = 
+             dov-boz-net-tl-tutar / dov-boz-kur-tutar * dov-boz-dv-tutar
+             move    dov-boz-net-tl-tutar to tmp-tl
+         display acc-07
+      end-if.
+    
+ kur-bul.
+     if link-var > 5   and link-cin = 1 then 
+        compute  dov-boz-kur-tutar rounded = link-tl / link-dv
+      else
+ 
+    
+       open input kur
+       initialize kur-rec
+       move dov-boz-tarih to kur-tarih
+       move dov-boz-banka to kur-banka
+       move dov-boz-doviz to kur-doviz
+    read kur no lock invalid close kur 
+             display message box "Kurlar girilmemis..." 
+             move 1 to gec-gecme
+             exit paragraph
+             not invalid continue
+    end-read
+    close kur
+    
+    
+    evaluate true
+      when dov-boz-tipi = "D" move doviz-alis   to dov-boz-kur-tutar,
+      when dov-boz-tipi = "E" move efektif-alis to dov-boz-kur-tutar
+    end-evaluate
+    end-if
+    .
+ ekran-goster.        
+    display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 
+            acc-07 acc-08 acc-09 acc-10 acc-11 acc-12
+            acc-13 acc-14 acc-15 acc-16 acc-17 acc-18
+            com-01 com-02 acc-oda cb-1.
+    initialize banka-adi ulke-adi d-adi-1.
+    modify lb-banka-e, title = banka-adi.
+    modify lb-doviz-e, title = d-adi-1.
+    modify lb-ulke-e,  title = ulke-adi
+    if k-kodu-tasi = "ASYA" or "X   "
+       modify acc-01,enabled = true
+       modify acc-02,enabled = true
+       modify acc-03,enabled = true
+       
+    end-if 
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 1
+          if control-id = 10 or
+             control-id = 1001
+             perform banka-ara thru banka-ara-exit
+          end-if
+          if control-id = 12  or
+             control-id = 1002
+             perform doviz-ara thru doviz-ara-exit
+          end-if
+          if control-id = 28 or
+             control-id = 1003 
+             perform ulke-ara thru ulke-ara-exit
+          end-if
+      when 2
+           initialize gec-gecme
+        if dov-boz-banka = zeroes 
+          display message box "Banka kodu bos gecilemez, Lutfen kontrol ediniz..."
+          move 1 to gec-gecme
+          move 4  to accept-control
+          move 10 to control-id
+          exit paragraph
+        end-if
+        open input konuk
+        read konuk no lock invalid
+        move 1 to gec-gecme
+          move 4  to accept-control
+          move 10 to control-id
+          close konuk
+          exit paragraph
+        end-read
+
+        if dov-boz-doviz = zeroes 
+          display message box "Doviz kodu bos gecilemez, Lutfen kontrol ediniz..."
+          move 1 to gec-gecme
+          move 4  to accept-control
+          move 12 to control-id
+          close konuk
+          exit paragraph
+        end-if
+        if dov-boz-ulke  = spaces 
+          display message box "Ulke  kodu bos gecilemez, Lutfen kontrol ediniz..."
+          move 1 to gec-gecme
+          move 4  to accept-control
+          move 28 to control-id
+          close konuk
+          exit paragraph
+        end-if
+        if dov-boz-dv-tutar = zeroes 
+          display message box "Tutar bos gecilemez, Lutfen kontrol ediniz..."
+          move 1 to gec-gecme
+          move 4  to accept-control
+          move 41 to control-id
+          close konuk
+          exit paragraph
+        end-if
+        perform degistimi
+        if ( dov-boz-net-tl-tutar not = 0 or 
+           dov-boz-dv-tutar not = 0 ) then 
+          if    onkpara-dovboz-elle  = 1 and link-var > 0 then 
+             continue
+             else
+           
+            
+              perform hesapla
+              end-if
+        end-if
+        close konuk
+        if gecmez
+           exit paragraph
+        end-if 
+        open i-o genelfis
+        move 1 to genelfis-anahtar
+        read genelfis no lock invalid 
+        initialize genelfis-rec 
+        move 1 to genelfis-anahtar
+        
+        end-read
+        add 1 to dov-boz-oto
+        move dov-boz-oto to dov-boz-fisno    
+        if DOV-BOZ-ALIS-SATIS(1:1) = 1
+           move 1 to dov-boz-fisno(1:1)
+        end-if
+        rewrite genelfis-rec invalid write genelfis-rec,end-write,end-rewrite
+        close genelfis
+        
+        
+        initialize mesaj-degiskenler
+        move " [ Kaydet Soru ] " to mmesaj-title
+        move " GIRDIGINIZ BILGILER KAYDEDILECEKTIR " to mmesaj-1
+        move " EMIN MISINIZ.....E->Evet, H->Hayir  " to mmesaj-2 
+        move dov-boz-fisno                           to mmesaj-2
+        move "Nolu Fis..."                           to mmesaj-2(10:)
+        move 2           to mmesaj-type
+        move 1           to mmesaj-icon
+        move 1           to mmesaj-default
+        perform mmesaj-ver
+        if donus-kodu = 2
+           exit paragraph
+        end-if 
+
+
+        
+        
+        move k-kodu-tasi to dov-boz-staf
+        Accept zaman from time
+        move zaman to dov-boz-zaman
+        open i-o dov-boz
+         if onkpara-dovboz-komisyon-bas = 1 and DOV-BOZ-KOMISYON > 0 then
+              OPEN i-o konu3 onkasa
+              
+                perform komisyon-folio-bul
+                perform kom-bas
+              close konu3 onkasa
+           
+         end-if
+
+        write dov-boz-rec invalid rewrite dov-boz-rec,end-write
+        close dov-boz
+        initialize mesaj-degiskenler
+        move "Kaydettiginiz Fis Listelensin Mi ?"  to mmesaj-1
+        move dov-boz-fisno                      to mmesaj-2
+        move "Nolu Fis..."                      to mmesaj-2(10:)
+         move " [ Listele Sor ] " to mmesaj-title
+         move 2           to mmesaj-type
+         move 1           to mmesaj-icon
+         move 1           to mmesaj-default
+         perform mmesaj-ver
+         if donus-kodu not = 2
+            move dov-boz-fisno to dov-fis-no
+            move dov-boz-gun   to dov-fis-gun 
+            move dov-boz-ay    to dov-fis-ay
+            move dov-boz-yil   to dov-fis-yil
+            call "/asya/ytl/obj/otel/dovfisi.asy" using dov-fis-cagir
+                on exception perform callerr-proc
+            not on exception
+            cancel "/asya/ytl/obj/otel/dovfisi.asy" 
+            end-call
+         end-if 
+         if link-var > 1 then 
+             set exit-pushed to true
+             exit paragraph
+         end-if
+        initialize dov-boz-rec
+        move tarih-tasi to dov-boz-tarih dov-boz-belge-tar
+        move "D" to dov-boz-tipi
+        move "1" to dov-boz-belge
+        perform ekran-goster
+        move 4  to accept-control
+        move 44 to control-id
+    end-evaluate.
+     . 
+*
+ kom-bas.
+
+            initialize exthrk-rec genelfis-rec
+              move  konu3-folio    to exthrk-folio
+            open i-o genelfis
+            move 1 to genelfis-anahtar
+            read genelfis no lock invalid
+                 initialize genelfis-rec 
+                 move 1 to genelfis-anahtar
+                 not invalid continue 
+            end-read
+            add 1 to cekgir-oto
+              move  cekgir-oto   to exthrk-islem
+            add 1 to cekgir-oto
+            rewrite genelfis-rec invalid 
+                    write genelfis-rec 
+                    end-write continue
+            end-rewrite
+            close genelfis.
+
+            open i-o EXThrk yromhrk hrk2
+
+            
+            
+            
+                   move onkpara-dovboz-kom-dep      to exthrk-depkod
+                  move "B" to EXThrk-ba
+                  compute extHRK-TL-TUTAR = DOV-BOZ-KOMISYON
+                  compute extHRK-dv-TUTAR = DOV-BOZ-KOMISYON 
+            
+
+                 move tarih-tasi to exthrk-tarih
+                 move "E" to extHRK-ISLEM-TIPI
+                 accept exthrk-zaman from time
+                 move 1 to extHRK-ref  
+                 write exthrk-rec invalid 
+                   display message box "yazamadim "
+                   stop " "
+                 end-write
+                 perform log-operation-exthrk
+                 PERFORM onkasa-artir
+                 move exthrk-anah to hrk2-anah
+                 move konuk-folio to hrk2-kaynak-folio
+                 write hrk2-rec invalid stop " "
+                 end-write
+                 move exthrk-rec to yromhrk-rec
+                 move konuk-folio to yROMHRK-folio 
+                 move konu3-folio to yromhrk-kaynak-folio
+                 write yromhrk-rec invalid stop " "
+                 end-write
+
+                   move "A" to EXThrk-ba
+                  move cekgir-oto                      to exthrk-islem  yromhrk-islem
+                  move onkpara-dovboz-kom-tah-dep      to exthrk-depkod
+                move exthrk-anah to hrk2-anah
+                move konuk-folio to hrk2-kaynak-folio
+                write hrk2-rec invalid stop " "
+                end-write
+               write exthrk-rec invalid stop " "
+                end-write
+                perform log-operation-exthrk
+               write yromhrk-rec invalid stop " "
+                 end-write
+
+                PERFORM onkasa-artir
+                open i-o nt
+                     initialize not-rec
+    
+          move  "EHR"     to NOT-DOS
+          move exthrk-anah to  NOT-DOS-ANAH 
+      
+           MOVE DOV-BOZ-DV-TUTAR TO Z-7
+           MOVE Z-7 TO NOT1
+           MOVE d-adi-1  TO NOT1(8:5)
+           MOVE "X" TO NOT1(13:1)
+           MOVE DOV-BOZ-KUR-TUTAR TO Z-KUR
+           MOVE Z-KUR TO NOT1(14:)
+           MOVE "%" TO NOT1(22:1)
+           MOVE DOV-BOZ-KOM-ORANI TO NOT1(23:3)
+           move "KOM" to  NOT1(25:)
+           move konu3-adi to not1(30:)
+           move " " to  NOT1(40:1)
+           move konu3-soyadi to not1(41:)
+          Write  not-rec  invalid rewrite not-rec end-write
+
+                close  EXThrk yromhrk hrk2 nt .
+                       
+         
+*
+ komisyon-folio-bul. 
+    
+         move 0 to bulundu
+         initialize konu3-rec
+         move "I" to konu3-durumu
+         move tarih-tasi to konu3-git-tar
+         start konu3 key >= konu3-git invalid 
+               continue
+               not invalid
+               perform until fs-konu3 = "10" 
+                 read konu3 next no lock end move "10" to fs-konu3
+                     not end
+                      if konu3-git-tar not = tarih-tasi or konu3-durumu not = "I"
+                           move "10" to fs-konu3
+                           exit perform cycle
+                      end-if
+                     if konu3-duzeltme not = 2 then 
+                           exit perform cycle
+                     end-if
+                     
+                     move 1 to bulundu
+                     exit paragraph 
+                end-read
+              end-perform 
+         end-start.
+         if bulundu = 0 then 
+           perform duzeltme-ac
+        end-if  .
+          
+*
+
+ onkasa-artir.
+        initialize onkasa-rec
+       move EXTHRK-tarih    to onkasa-tarih.
+       move EXTHRK-depkod   to onkasa-dep.
+       read onkasa no lock invalid 
+            compute onkasa-tutar-tl   = onkasa-tutar-tl + EXTHRK-tl-tutar
+            compute onkasa-tutar-dv   = onkasa-tutar-dv + EXTHRK-dv-tutar
+               write onkasa-rec invalid   continue
+             end-write
+            not invalid 
+            compute onkasa-tutar-tl   = onkasa-tutar-tl + EXTHRK-tl-tutar
+            compute onkasa-tutar-dv   = onkasa-tutar-dv + EXTHRK-dv-tutar
+               rewrite onkasa-rec invalid 
+                  continue
+              end-rewrite
+       end-read
+      .      
+        
+        
+        
+*
+ duzeltme-ac.
+   
+      initialize  konu3-rec
+
+
+             open i-o genelfis
+             move 1 to genelfis-anahtar
+             read genelfis no lock invalid  stop " "
+             not invalid
+              
+               add 1 to folio-oto
+                  
+                  rewrite genelfis-rec end-rewrite
+             end-read .
+           close genelfis
+         
+
+          
+         move 1 to   konu3-rez-tipi           
+         
+             move tarih-tasi to konu3-gel-tar konu3-git-tar
+        move gun-tasi to  egun
+        move ay-tasi  to eay
+        move yil-tasi to eyil
+        move etarih to   konu3-adi   
+          move " DOV-BOZ " to    konu3-adi(10:) 
+          move  " KOMISYON FOLIOSU" to   konu3-soyadi  
+             move rezpara-banka          to    konu3-banka.
+             move rezpara-doviz       to        konu3-doviz           .
+             move rezpara-pan-tipi    to     konu3-pan-tipi      .
+             move rezpara-odeme-tipi  to   konu3-odeme-tipi      .
+             move rezpara-ulke        to         konu3-ulke           .
+             move rezpara-anlasma     to      konu3-anlasma       .
+             move rezpara-pazar       to       konu3-pazar       .
+             move rezpara-aygun       to    konu3-kur-aygun     .
+          
+
+         
+          move "N" to  konu3-vip
+
+                                      
+          move folio-oto to   KONU3-FOLIO 
+
+          move "9997" to  konu3-odano 
+
+       
+          move "01" to      konu3-ODA-KONUMU   konu3-FIYAT-KONUMU      
+        
+        
+        
+          move 1 to    KONU3-KUR-DEGERI 
+          move k-kodu-tasi to  KONU3-STAF         
+
+          
+          move "I" to KONU3-DURUMU   
+
+          move "E" to  KONU3-FOL-KODU    
+         
+         
+          move 0 to KONU3-REZ-NO 
+         
+          move "0001" to  KONU3-ACENTA 
+          
+          move 2 to konu3-duzeltme    
+        
+          
+              write konu3-rec
+                invalid stop" " 
+              end-write
+          
+              
+
+                display message box "Duzeltme Foliosu acildi"
+
+              
+
+         
+
+
+
+      .
+
+
+
+
+
+
+ hesapla.
+     if link-var > 4 then 
+        if dov-boz-net-tl-tutar > 0 and  dov-boz-tl-tutar = 0 
+          move    dov-boz-net-tl-tutar  to  dov-boz-tl-tutar
+        end-if
+
+        exit paragraph
+     end-if
+    perform kur-bul 
+  
+    compute dov-boz-tl-tutar rounded = dov-boz-kur-tutar * dov-boz-dv-tutar.
+    compute dov-boz-komisyon rounded = ( dov-boz-tl-tutar / 1000 ) * dov-boz-kom-orani.
+    compute dov-boz-net-tl-tutar rounded = dov-boz-tl-tutar - dov-boz-komisyon.
+    move    dov-boz-net-tl-tutar to tmp-tl
+    display acc-08 acc-09 acc-10.
+     .
+*
+     .
+*
+ acc-06-Aft-Procedure.
+    if link-var = 0 then  
+          perform hesapla 
+      end-if .
+
+*
+ type-after.
+      if link-var = 2 then 
+          initialize dov-boz-dv-tutar
+          perform kur-bul 
+          perform degistimi
+      end-if
+      .
+*
+ acc-04-Aft-Procedure.
+      initialize gec-gecme
+      perform banka-oku  thru banka-oku-exit.
+      if gec-gecme =0 and link-var =2  then 
+           initialize dov-boz-dv-tutar
+           perform kur-bul 
+           perform degistimi
+      end-if  .
+*
+ acc-05-Aft-Procedure.
+     initialize gec-gecme
+     perform doviz-oku  thru doviz-oku-exit.
+     if gec-gecme =0 and link-var = 2  then 
+           initialize dov-boz-dv-tutar
+           perform kur-bul 
+           perform degistimi
+     end-if  .
+     perform hesapla.
+
+*
+ acc-13-Aft-Procedure.
+     perform ulke-oku  thru ulke-oku-exit.
+     
+     .     
+
+*
+ banka-ara.
+      initialize banka-cagir.
+      call "/asya/ytl/obj/otel/bankaara.asy" using banka-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/bankaara.asy" 
+       end-call.
+       move banka-cagir     to dov-boz-banka.
+ banka-oku.
+       open input banka.
+       initialize banka-rec.
+       move dov-boz-banka    to banka-kodu
+       read banka        no lock invalid 
+            move 4  to accept-control
+            move 10 to control-id
+            move 1 to gec-gecme
+            not invalid continue 
+       end-read
+       close banka.
+       modify lb-banka-e, title = banka-adi.
+        
+       display acc-04.
+ banka-oku-exit.
+       exit.
+ banka-ara-exit.
+       exit.
+*
+ doviz-ara.
+      initialize doviz-cagir.
+      call "/asya/ytl/obj/otel/dovizara.asy" using doviz-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/dovizara.asy" 
+       end-call.
+       move doviz-cagir     to dov-boz-doviz.
+ doviz-oku.
+       open input doviz.
+       initialize doviz-rec.
+       move dov-boz-doviz    to doviz-kodu
+       read doviz         no lock invalid 
+            move 1 to gec-gecme
+            move 4  to accept-control
+            move 12 to control-id
+            not invalid continue 
+       end-read
+       close doviz.
+       modify lb-doviz-e, title = d-adi-1.
+       display acc-05.
+ doviz-oku-exit.
+       exit.
+ doviz-ara-exit.
+       exit.
+*
+ ulke-ara.
+      initialize ulke-cagir.
+      call "/asya/ytl/obj/otel/ulkeara.asy" using ulke-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/ulkeara.asy" 
+       end-call.
+       move ulke-cagir     to dov-boz-ulke.
+ ulke-oku.
+       open input ulke.
+       initialize ulke-rec.
+       move dov-boz-ulke     to ulke-anah
+       read ulke          no lock invalid 
+            move 4  to accept-control
+            move 28 to control-id
+            not invalid continue 
+       end-read
+       close ulke.
+       modify lb-ulke-e, title = ulke-adi.
+       display acc-13.
+ ulke-oku-exit.
+       exit.
+ ulke-ara-exit.
+       exit.
+*
+ mmesaj-ver.
+      inspect mmesaj-1 replacing trailing spaces by low-values
+      inspect mmesaj-2 replacing trailing spaces by low-values
+      inspect mmesaj-3 replacing trailing spaces by low-values
+      display message box mmesaj-1, new-line, mmesaj-2, new-line, mmesaj-3
+              title   = mmesaj-title
+              type    = mmesaj-type
+              icon    = mmesaj-icon
+              default = mmesaj-default
+              returning donus-kodu.
+*
+ ortalama-kur-bul.
+      
+      open input kur exthrk
+     initialize kur-rec top-ort-dov
+     move dov-boz-tl-tutar to kalan-odeme-tl
+
+     move link-ban to kur-banka
+     move link-dov to kur-doviz
+     initialize exthrk-rec 
+     move konuk-folio to exthrk-rec
+     start exthrk key > exthrk-anah1
+         invalid continue
+         not invalid 
+         perform until fs-exthrk = "10"
+            read exthrk next no lock
+              end move "10" to fs-exthrk
+              not end
+                 if exthrk-folio <> konuk-folio
+                      move "10" to fs-exthrk
+                   else
+                    if exthrk-ba = "B"
+                      move exthrk-tarih to kur-tarih
+                           read kur no lock invalid 
+                              display message box 
+                               "Arada kur kaydi silinmis"
+                               move 1 to doviz-alis
+                           end-read 
+                     if exthrk-tl-tutar > konuk-TOP-ALAC
+                         subtract konuk-top-alac from exthrk-tl-tutar   
+                         initialize konuk-top-alac
+                         if kalan-odeme-tl > exthrk-tl-tutar
+                              subtract exthrk-tl-tutar 
+                                 from  kalan-odeme-tl
+                             else 
+                               move kalan-odeme-tl to exthrk-tl-tutar
+                               initialize kalan-odeme-tl 
+                          end-if  
+                              compute top-ort-dov rounded = 
+                                    top-ort-dov +
+                                   ((exthrk-tl-tutar - konuk-top-alac)
+                                    / doviz-alis )
+                              
+                         else
+                               subtract exthrk-tl-tutar 
+                                    from konuk-top-alac   
+                       end-if
+                     end-if
+                 end-if
+            end-read       
+         end-perform
+     end-start  
+     if kalan-odeme-tl > konuk-top-alac  then
+     move tarih-tasi to kur-tarih
+            read kur no lock invalid 
+                 display message box 
+                 "Arada kur kaydi silinmis"
+                    move 1 to doviz-alis
+              end-read 
+             compute top-ort-dov rounded = 
+                          top-ort-dov +
+                        ((kalan-odeme-tl - konuk-top-alac)
+                          / doviz-alis )
+     end-if                 
+     close kur exthrk.
+     compute  dov-boz-kur-tutar rounded = dov-boz-tl-tutar / top-ort-dov
+
+     .
+*
+ degistimi.
+       
+       if dov-boz-dv-tutar = 0 and dov-boz-net-tl-tutar > 0 then
+       move  dov-boz-net-tl-tutar to dov-boz-tl-tutar 
+******************************************    
+**** Eger extra folio kapaniyorsa bakiyesi kadar
+**** kuru hesapla      ********************    
+
+             if konuk-fol-kodu = "R" then 
+             move konuk-kur-degeri to dov-boz-kur-tutar
+             else
+             perform ortalama-kur-bul
+             end-if
+
+
+*          evaluate true
+*              when dov-boz-tipi = "D" move doviz-alis   to dov-boz-kur-tutar,
+*              when dov-boz-tipi = "E" move efektif-alis to dov-boz-kur-tutar
+*          end-evaluate
+
+           compute dov-boz-dv-tutar rounded =
+                 dov-boz-net-tl-tutar /  dov-boz-kur-tutar
+                 display acc-06   acc-09
+                move " " to dov-boz-elle
+          else
+           if tmp-tl not = dov-boz-net-tl-tutar then 
+             
+             compute dov-boz-kur-tutar rounded = 
+                     dov-boz-net-tl-tutar / dov-boz-dv-tutar
+
+             initialize  dov-boz-kom-orani dov-boz-komisyon
+             move   dov-boz-net-tl-tutar to dov-boz-tl-tutar
+             display acc-07 acc-08 acc-09
+              move "X" to dov-boz-elle 
+             
+             ELSE 
+              move " " to dov-boz-elle
+
+           end-if
+      end-if  .
+        
+     
+       
+*
+ ODA-AFTER.
+        open input odalar
+        MOVE DOV-BOZ-oda TO ODALAR-ANAH
+        READ ODALAR NO LOCK INVALID 
+           DISPLAY MESSAGE BOX "Tanimsiz Oda Girdiniz"
+           move 4 to accept-control
+           move 44 to control-id
+        not invalid
+         
+        initialize folara-cagir
+        move DOV-BOZ-oda to folara-odano        
+        move fol-durum(1:1) to folara-cagri-tipi
+        call "/asya/ytl/obj/otel/folara.asy"
+          using folara-cagir
+          on exception
+            perform callerr-proc
+          not on exception
+            cancel "/asya/ytl/obj/otel/folara.asy"
+            open input konuk
+           move folara-no-cagir to DOV-BOZ-folio  konuk-folio
+            display acc-2
+          read konuk no lock 
+
+            invalid 
+               display message box " Hatali Bag"
+               close konuk
+               move 4 to accept-control
+                move 44 to control-id
+         
+            not invalid
+                move konuk-folio   to dov-boz-folio
+                move konuk-adi     to dov-boz-adi
+                move konuk-soyadi  to dov-boz-soy
+                move konuk-ulke    to dov-boz-ulke
+                move konuk-odano   to dov-boz-oda
+                 move konuk-ulke    to dov-boz-ulke
+                  if dov-boz-banka = spaces 
+                     move ONKPARA-BANKA to dov-boz-banka
+                  end-if
+                  move ONKPARA-doviz to dov-boz-doviz
+                  display acc-04 acc-05 acc-11
+                       acc-12 acc-13 acc-oda
+                  perform acc-04-Aft-Procedure
+                  perform acc-05-Aft-Procedure
+                   perform acc-06-before
+
+                  move 41 to control-id
+                  move 4 to accept-control
+                 close konuk
+          end-read
+
+         
+        end-call
+        end-read
+        close odalar.
+
+     .
+*
+ acc-07-Aft-Procedure.
+       perform hesapla.
+     .
+ 

@@ -1,0 +1,445 @@
+*
+ dokcagir-call.
+     perform isaretle-sec
+     call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+          on exception 
+             perform callerr-proc
+          not on exception
+             cancel "/asya/ytl/obj/otel/dokcagir.asy"
+     end-call.
+     perform isaretle-secme. 
+*
+ narg-islemler.
+
+    evaluate key-status
+    when 4
+         inquire grid0 cursor-y in satir-yer
+         if devre-yer not = 0 then 
+            inquire grid0(satir-yer,devre-yer) 
+                    cell-data in devremulk-no
+            perform isaretle-sec
+            call "/asya/ytl/obj/otel/devmulk.asy" using devremulk-no
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     cancel "/asya/ytl/obj/otel/devmulk.asy"
+            end-call
+            perform isaretle-secme 
+          end-if
+    when 7
+          
+         inquire grid0 cursor-y in satir-yer
+         if grup-yer not = 0 
+            inquire grid0(satir-yer,grup-yer) 
+                    cell-data in x6hanedir
+            move function numval(x6hanedir) to link-grup-kodu
+            perform isaretle-sec
+            initialize dokcagir-tasi
+            set dokcagir-tasi-call-gruplar to true
+            move link-grup-kodu                to dokcagir-gruplar-numero     
+            perform dokcagir-call
+            perform isaretle-secme 
+         end-if 
+
+  
+
+    when 19
+         inquire grid0 cursor-y in satir-yer
+         if pno-yer not = 0 and sir-yer not = 0 then 
+            inquire grid0(satir-yer,pno-yer) 
+                    cell-data in mis-no-cagir2
+            inquire grid0(satir-yer,sir-yer) 
+                    cell-data in mis-sirket-cagir
+            move 5 to mis-kim-cagir
+            perform isaretle-sec
+             
+            call "/asya/ytl/obj/otel/musteri.asy" using mis-cagir
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     cancel "/asya/ytl/obj/otel/musteri.asy"
+            end-call
+             
+            perform isaretle-secme 
+         else   
+            if rez-yer not = 0 and sira-yer not = 0 
+               open input yanrez
+               inquire grid0(satir-yer,rez-yer) 
+                       cell-data in yanrez-rezno
+               inquire grid0(satir-yer,sira-yer) 
+                       cell-data in yanrez-sirano
+               read yanrez no lock invalid 
+                    continue
+               not invalid
+                    initialize mis-cagir 
+                    initialize mis-cagir
+                    move yanrez-profil-no to mis-no-cagir2
+                    move yanrez-profil-sirket  to  mis-sirket-cagir
+                    move 5 to mis-kim-cagir
+              
+                    perform isaretle-sec
+                    call "/asya/ytl/obj/otel/musteri.asy" using mis-cagir
+                          on exception 
+                             perform callerr-proc
+                          not on exception
+                             cancel "/asya/ytl/obj/otel/musteri.asy"
+                    end-call
+             
+                    perform isaretle-secme 
+               end-read
+               close yanrez
+            end-if
+          end-if
+    when 20
+    when 21
+    when 6
+    when 11
+    when 16
+    when 17
+    when 14
+         open input konuk 
+           
+         inquire grid0 cursor-y in satir-yer
+         perform test after until not (konuk-folio  = 99999999 or konuk-folio = 0)  
+         evaluate true 
+         when fol-yer not = 0
+              inquire grid0(satir-yer,fol-yer) 
+                      cell-data in konuk-folio
+         when rez-yer not = 0
+              open input rez
+              inquire grid0(satir-yer,rez-yer) 
+                      cell-data in rez-no
+              read rez no lock invalid 
+                   display message box 
+                           "Rez okunamadi" 
+                   close rez 
+                   exit perform
+              not invalid
+                  if rez-folio = 0 then 
+                     if rez-gir-tar = tarih-tasi or key-status = 16
+                        move 99999998 to konuk-folio
+                     else      
+                        display message box 
+                                "Rezervasyon C/IN olmamis" 
+                        close rez 
+                        exit perform
+                     end-if  
+                  else
+                     move rez-folio to konuk-folio
+                  end-if
+              end-read
+              close rez
+         when other 
+              display message box 
+                      "Listede register kartina ulasacak  detay bulunmamaktadir" 
+              exit perform 
+         end-evaluate 
+         read konuk no lock invalid 
+              evaluate true
+              when konuk-folio = 99999998 and key-status = 14 
+                   display message box 
+                           "C/In Islemi Yapacaksiniz. Emin Misiniz? ",
+                           icon mb_warning_icon
+                           title "Bilginize ..."
+                           type mb_yes_no,
+                           default 2
+                           returning uyari
+                   if uyari = 1
+**************************> rezcin.asy
+                      move rez-no                 to konuk-rez-no
+                      initialize dokcagir-tasi
+                      set dokcagir-tasi-call-cin2 to true
+                      move konuk-rez-no           to dokcagir-konuk-rez-no      
+                      move konuk-folio            to dokcagir-konuk-folio
+                      perform dokcagir-call
+                      move dokcagir-konuk-rez-no  to konuk-rez-no
+                      move dokcagir-konuk-folio   to konuk-folio
+
+                   end-if
+              when konuk-folio = 99999998 and  key-status = 16 
+**************************> PROFORMA CALL
+                   initialize dokcagir-tasi
+                   set dokcagir-tasi-call-proforma2  to true
+                   move rez-no                       to dokcagir-rez-no
+                   move konuk-folio                  to dokcagir-konuk-folio
+                   perform dokcagir-call
+                   move dokcagir-rez-no              to rez-no
+                   move dokcagir-konuk-folio         to konuk-folio
+              when other
+                   display message box "Bagli register karti bulunamadi"
+              end-evaluate
+         not invalid
+             if key-status = 16 then 
+                 if konuk-fol-kodu not = "R" then
+                    display message box "Lutfen Oda Folyosu Seciniz"
+                 else
+*********************> profat.asy
+                    initialize dokcagir-tasi
+                    set dokcagir-tasi-call-proforma2   to true
+                    move rez-no                        to dokcagir-rez-no
+                    move konuk-folio                   to dokcagir-konuk-folio
+                    perform dokcagir-call
+                    move dokcagir-rez-no               to rez-no
+                    move dokcagir-konuk-folio          to konuk-folio
+                 end-if
+             end-if
+
+             if key-status = 21 then 
+                if konuk-fol-kodu not = "R" then
+                   display message box 
+                           "Lutfen Oda Folyosu Seciniz"
+                else
+**************************> ozlukgir.asy
+                   initialize dokcagir-tasi
+                   set dokcagir-tasi-call-ozlukgir1 to true
+                   move konuk-folio                 to dokcagir-konuk-folio
+                   perform dokcagir-call
+                   move dokcagir-konuk-folio        to konuk-folio
+                end-if
+             end-if
+
+             if key-status = 14 then
+**********************> rezcin.asy
+                initialize dokcagir-tasi
+                set dokcagir-tasi-call-cin2          to true
+                move konuk-rez-no                    to dokcagir-konuk-rez-no      
+                move konuk-folio                     to dokcagir-konuk-folio
+                perform dokcagir-call
+                move dokcagir-konuk-folio            to konuk-folio
+                move dokcagir-konuk-rez-no           to konuk-rez-no
+             end-if
+
+             if key-status = 6 then
+**************************> folio.asy
+                initialize dokcagir-tasi
+                set dokcagir-tasi-call-folio1      to true
+                move konuk-folio                   to dokcagir-konuk-folio
+                perform dokcagir-call
+                move dokcagir-konuk-folio          to konuk-folio
+             end-if
+                 
+             if key-status = 11
+                initialize dokcagir-tasi
+                set dokcagir-tasi-call-kfolio     to true
+                move konuk-folio                   to dokcagir-konuk-folio
+                perform dokcagir-call
+                move dokcagir-konuk-folio          to konuk-folio
+             end-if
+
+             if key-status = 20 then
+                if konuk-durumu = "H" then
+                   display message box "Oda C/out Olmus"
+                else
+********************> cout.asy
+                   initialize dokcagir-tasi
+                   set dokcagir-tasi-call-cout2 to true
+                   move konuk-odano             to dokcagir-konuk-odano
+                   move konuk-folio             to dokcagir-konuk-folio
+                   perform dokcagir-call
+                   move dokcagir-konuk-odano    to konuk-odano
+                   move dokcagir-konuk-folio    to konuk-folio
+                end-if
+             end-if
+
+             if key-status = 17 then
+**************************> folfat.asy
+                open input romhrk
+                if konuk-fol-kodu = "R"
+                   initialize romhrk-rec
+                   move konuk-folio to romhrk-folio
+                   start romhrk key > romhrk-anah  invalid 
+                         continue
+                   not invalid
+                   perform until fs-romhrk = "10" 
+                   read romhrk next no lock end move "10" to fs-romhrk
+                   not end
+                       if romhrk-folio not = konuk-folio 
+                          move "10" to fs-romhrk
+                       else
+                          if romhrk-ref = 0 or romhrk-ref not  numeric then 
+                             move 1 to romhrk-ref
+                          end-if
+                          if romhrk-ba = "B" 
+                             add romhrk-tl-tutar to balans(romhrk-ref)
+                          else
+                             subtract romhrk-tl-tutar from balans(romhrk-ref)
+                          end-if
+                          move 1 to penvar(romhrk-ref)
+                       end-if
+                   end-read
+                   end-perform
+                   end-start
+                else
+                   continue
+                end-if
+
+                close romhrk
+                initialize dokcagir-tasi
+                set dokcagir-tasi-call-folfat2  to true
+                move konuk-odano                to dokcagir-konuk-odano
+                move konuk-folio                to dokcagir-konuk-folio
+                perform dokcagir-call
+                move dokcagir-konuk-odano       to konuk-odano
+                move dokcagir-konuk-folio       to konuk-folio
+             end-if
+
+         end-read
+              
+         if konuk-folio = 99999999 then
+            add 1 to satir-yer
+            modify grid0 cursor-y = satir-yer   
+         end-if
+
+         if konuk-folio = 0 and satir-yer > 2 then
+            subtract 1 from satir-yer 
+            modify grid0 cursor-y = satir-yer   
+         end-if
+         end-perform
+
+         close konuk 
+
+    when 18 
+         open input rez 
+           
+         inquire grid0 cursor-y in satir-yer
+         perform test after until not (rez-no  = 99999999 or rez-no  = 0)  
+         evaluate true 
+         when rez-yer not = 0
+              inquire grid0(satir-yer,rez-yer) 
+                      cell-data in rez-no
+         when fol-yer not = 0
+              open input konuk
+              inquire grid0(satir-yer,fol-yer) 
+                      cell-data in konuk-folio
+              read konuk no lock invalid 
+                    display message box 
+                           "Folio okunamadi" 
+                    close konuk 
+                    exit perform
+              not invalid
+                    move konuk-rez-no to rez-no
+              end-read
+              close konuk
+         when other 
+              display message box 
+                      "Listede rezervasyona ulasacak detay bulunmamaktadir" 
+              exit perform 
+         end-evaluate 
+
+         read rez no lock invalid 
+              display message box 
+                      "Bagli rezervasyon bulunamadi"
+              exit perform 
+         not invalid
+**************************> rez.asy
+             initialize dokcagir-tasi
+             set dokcagir-tasi-call-rez1   to true
+             move rez-no                   to dokcagir-rez-no
+             perform dokcagir-call
+             move dokcagir-rez-no          to rez-no
+         end-read
+
+         if rez-no = 99999999 then
+            add 1 to satir-yer
+            modify grid0 cursor-y = satir-yer   
+         end-if
+
+         if rez-no = 0 and satir-yer > 2 then
+            subtract 1 from satir-yer 
+            modify grid0 cursor-y = satir-yer   
+         end-if
+         end-perform
+         close rez 
+     when 23 
+         open input rez 
+           
+         inquire grid0 cursor-y in satir-yer
+         perform test after until not (rez-no  = 99999999 or rez-no  = 0)  
+         evaluate true 
+         when rez-yer not = 0
+              inquire grid0(satir-yer,rez-yer) 
+                      cell-data in rez-no
+         when fol-yer not = 0
+              open input konuk
+              inquire grid0(satir-yer,fol-yer) 
+                      cell-data in konuk-folio
+              read konuk no lock invalid 
+                    display message box 
+                           "Folio okunamadi" 
+                    close konuk 
+                    exit perform
+              not invalid
+                    move konuk-rez-no to rez-no
+              end-read
+              close konuk
+         when other 
+              display message box 
+                      "Listede rezervasyona ulasacak detay bulunmamaktadir" 
+              exit perform 
+         end-evaluate 
+
+         read rez no lock invalid 
+              display message box 
+                      "Bagli rezervasyon bulunamadi"
+              exit perform 
+         not invalid
+**************************> rez.asy
+             initialize dokcagir-tasi
+             set dokcagir-tasi-call-kartkap2  to true
+             move rez-odano                   to dokcagir-rez-odano
+             move rez-no                      to dokcagir-rez-no
+             perform dokcagir-call
+             move dokcagir-rez-no             to rez-no
+         end-read
+
+         if rez-no = 99999999 then
+            add 1 to satir-yer
+            modify grid0 cursor-y = satir-yer   
+         end-if
+
+         if rez-no = 0 and satir-yer > 2 then
+            subtract 1 from satir-yer 
+            modify grid0 cursor-y = satir-yer   
+         end-if
+         end-perform
+         close rez 
+     end-evaluate.
+
+*
+ grid-kayit-yerlestir2.
+    
+      initialize i ii.
+     
+     perform varying i from 1 by 1 until i > grid0-kisit-detay-sayi
+             move grid0-kisit-index(i)      to ii
+             move dokumer-rec(grid0-bp(ii):grid0-au(ii)) to 
+                  baslik
+             if baslik(1:3) = "Rez"  and rez-yer = 0 then 
+                   move i to rez-yer   
+               end-if
+            if baslik(1:4) = "Devr"  and devre-yer = 0 then 
+                   move i to devre-yer   
+            end-if
+            if baslik(1:3) = "Sir"  and sira-yer = 0 then 
+                   move i to sira-yer   
+               end-if
+            if baslik(1:5) = "Folio"  and fol-yer = 0 then 
+                   move i to fol-yer   
+              end-if
+              if baslik(1:2) = "Gr"  and grup-yer = 0 then 
+                   move i to grup-yer   
+              end-if
+            if baslik(1:5) = "Tarih"  and tar-yer =  0 then 
+               move i to tar-yer
+            end-if
+            if  baslik(1:6) = "Numara"  and num-yer =  0 then 
+               move i to num-yer
+            end-if
+            if  baslik(1:6) = "Sirket"  and sir-yer =  0 then 
+               move i to sir-yer
+            end-if
+            if  baslik(1:4) = "P.No"  and pno-yer =  0 then 
+               move i to pno-yer
+            end-if
+     end-perform.
+

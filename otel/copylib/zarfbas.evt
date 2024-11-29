@@ -1,0 +1,160 @@
+* zarfbas.evt
+* zarfbas.evt is generated from D:\asya\acugt.ytl\otel\zarfbas.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+
+     
+*
+ Form1-Bef-Create.
+          perform adresleri-tasi
+          move tarih-tasi to  gel-tarih 
+          move 1   to baslangic-sayfa
+          move 999 to bitis-sayfa
+     .
+*
+ Form1-Ex-Other.
+       evaluate key-status
+            when 2
+             open output takas close takas
+             open i-o takas
+             open input rez  konuk   yanrez
+             initialize rez-rec link-zarf-kacinci  kayit-sayisi  toplam-pax yazdirilan-pax takas-sirax 
+             |move "I" to REZ-DURUMU
+             |move gel-tarih to rez-gir-tar
+             start rez key not < rez-anah invalid
+                     continue
+             not invalid
+             perform until fs-rez = "10" 
+             read rez next no lock end move  "10" to fs-rez
+             not end
+                
+                    if rez-gir-tar <> gel-tarih then
+                          exit perform cycle
+                    end-if
+
+                    if rez-durumu <> "I" then
+                          exit perform cycle
+                    end-if
+
+                    if rez-no <> txt-rez-no and txt-rez-no <> zeroes then
+                                  exit perform cycle
+                    end-if
+
+                    if rez-grup-no <> txt-grup-no and txt-grup-no <> zeroes then
+                          exit perform cycle
+                    end-if
+
+                    | add 1 to kayit-sayisi
+                     IF cmb-cin(1:2) = "02"
+                       move rez-folio    to konuk-folio
+                       read konuk no lock invalid 
+                            continue
+                       not invalid
+                             exit perform cycle  
+                       end-read
+                    end-if
+                
+
+                    compute don-sayi = REZ-BUYUK + REZ-KUCUK + REZ-BEBEK + REZ-FREE 
+                   
+                    perform varying i from 1 by 1 until i > don-sayi
+                    add 1 to takas-sirax
+                          initialize yanrez-rec 
+                          move rez-no to yanrez-rezno
+                          move i      to yanrez-sirano
+                          read yanrez no lock invalid
+                                initialize takas-rec
+                                move rez-odano         to takas-oda
+                                move rez-no            to takas-rez-no
+                                move 9                 to takas-yanrez-no
+                                move takas-sirax       to takas-sira
+                                write takas-rec invalid
+                                        stop " "
+                                end-write  continue
+                          not invalid
+                                initialize takas-rec
+                                move rez-odano         to takas-oda
+                                move rez-no            to takas-rez-no
+                                move yanrez-sirano     to takas-yanrez-no
+                                move takas-sirax       to takas-sira
+                                write takas-rec invalid
+                                        stop " "
+                                end-write
+                          end-read
+                    end-perform
+  
+             end-read
+             end-perform
+             end-start
+
+             initialize takas-rec link-zarf-kacinci toplam-pax kayit-sayisi
+             move high-values to takas-oda
+             start takas key not > takas-rec invalid
+                     continue
+             not invalid
+             perform until fs-takas = "10"
+             read takas previous no lock end move "10" to fs-takas
+             not end
+                      MOVE takas-rez-no      TO link-zarf-rez-no  acikalama-2
+                      add 1                  TO link-zarf-kacinci kayit-sayisi                             
+                      move takas-yanrez-no   TO link-zarf-yan-id
+                      initialize link-zarf-icmal-ver
+
+                      if link-zarf-kacinci = 1 then
+                            display message box "Gonderilecek Yaziciyi Seciniz ve Islem Tamamlandi Mesajini Almadan Programi Kapatmayiniz ! " new-line
+                            title "Asya-Soft Yazilim"
+                      end-if
+                      add 1 to toplam-pax
+                      if toplam-pax >= baslangic-sayfa
+                      and yazdirilan-pax < bitis-sayfa
+                            move takas-rez-no   to   acikalama-2
+                            modify lb-aciklama , visible = true
+                            display lb-aciklama
+
+                            call "c$sleep" using 0.5
+                            call "/asya/ytl/obj/otel/zarfdok1.asy" using link-zarf
+                                    on exception perform callerr-proc
+                                    not on exception
+                            Cancel "/asya/ytl/obj/otel/zarfdok1.asy" 
+                            end-call
+                            add 1 to yazdirilan-pax
+                      end-if
+
+             end-read
+             end-perform
+             end-start
+             
+              if islem-bitince-not-ver = 1 and yazdirilan-pax >= 1 then
+                    move 1 to link-zarf-icmal-ver
+                    move gel-gun     to zarf-gun 
+                    move gel-ay      to zarf-ay
+                    move gel-yil     to zarf-yil
+                    move txt-grup-no to Grup-No
+
+                    move zarf-aciklama to link-zarf-aciklama
+                    call "/asya/ytl/obj/otel/zarfdok1.asy" using link-zarf
+                                   on exception perform callerr-proc
+                                   not on exception
+                            Cancel "/asya/ytl/obj/otel/zarfdok1.asy" 
+                    end-call
+
+              end-if
+
+              close rez  konuk yanrez takas
+              delete file takas
+              modify lb-aciklama , visible = false
+              if kayit-sayisi <> zeroes then
+                      display message box "Tum kayitlar Yaziciya Gonderildi, Islem Tamam "
+                        title "Asya-Soft Yazilim"
+              else
+                   display message box "Raporlanacak Kayit Bulunamadi ! "
+                   title "Asya-Soft Yazilim"
+              end-if
+       end-evaluate
+     .
+ 

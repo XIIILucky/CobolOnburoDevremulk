@@ -1,0 +1,4557 @@
+* onbmahf.evt
+* onbmahf.evt is generated from D:\asya\acugt.ytl\otel\onbmahf.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ acc-ref-Exception-Proc.
+     PERFORM acc-ref-Ex-Other
+     .
+
+ Form1-Cb-1aaa-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Clicked
+           PERFORM Form1-Cb-1aaa-Ev-Cmd-Clicked
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ mahsup-deg.
+     
+      if genel-e-arsiv-yil > 2000 then 
+      if mahsup-belge-no not = spaces 
+                     move "02" to mahsup-edefter-dokuman-tipi
+                     move mahsup-tarih to mahsup-edefter-belge-tarihi
+                     move k-kodu-tasi to mahsup-edefter-belgeyi-giren-staf
+              end-if
+    end-if.
+*
+  dov-kont.
+     initialize hesap-rec
+       move mahsup-hesap-kodu      to   hesap-kodu
+     read hesap no lock invalid continue
+     end-read
+      if not hesap-doviz-li
+        initialize    mahsup-banka-kodu 
+                      mahsup-doviz-kodu 
+                      mahsup-d-e        
+                     mahsup-doviz-kuru  
+                     mahsup-tutar-dv
+      
+      end-if  .
+ 
+       .
+ acc-yil-Aft-Procedure.
+     initialize gec-gecme.
+     open input takvim.
+     move tarih   to takvim-anah
+     read takvim no lock invalid
+          move 1 to gec-gecme
+     end-read
+     close takvim.
+
+     if girilemez-tarih <> zeroes 
+        if tarih < girilemez-tarih
+         if k-kodu-tasi not = "ASYA" and "X   "
+           move 1 to gec-gecme
+           display message box
+                   girilemez-gun,"/",girilemez-ay,"/",girilemez-yil,
+                   " tarihinden onceye mahsup fisi kesilemez ....",
+                   icon mb_error_icon
+                   title "Hata"
+         end-if
+        end-if
+     end-if.
+*
+ acc-numara-Aft-Procedure.
+     initialize gec-gecme.
+     if numara = zeroes 
+        open i-o genelfis 
+        move 1 to genelfis-anahtar
+        read genelfis no lock invalid
+             display message box
+                     "mgenel parametre'de genelfis fis tanimlamalari eksik !!!",new-line,
+                     "Lutfen tanimlayiniz ..."
+                     icon mb_error_icon
+                     title "Hata"
+                     destroy form1-handle
+                     close genelfis
+                     goback
+        end-read
+        add 1 to mahsup-oto
+        move mahsup-oto to numara
+        if mgenel-referans = "E"
+
+
+           open i-o referans
+             move ref   to referans-kodu
+             move "A"   to referans-tipi
+             read referans no lock invalid           
+                  continue
+             end-read
+             add 1 to referans-fisno-ekle
+             move referans-fisno-ekle   to numara
+             add 6 to referans-fisno-ekle
+             rewrite referans-rec end-rewrite
+
+           close referans
+        else
+           add 6 to mahsup-oto
+           rewrite genelfis-rec end-rewrite
+        end-if
+        close genelfis
+        display acc-numara
+     end-if.
+
+     open input islenen.
+     move numara to no-kont
+     perform 6 times
+
+     move no-kont to islenen-fis-no
+     read islenen no lock invalid
+          continue
+     not invalid
+          move 1 to gec-gecme
+          display message box 
+                  islenen-fis-no," numarali fis ",islenen-gun,"/",
+                  islenen-ay,"/",islenen-yil," tarih kayitli",new-line,
+                  "Lutfen kontrol ediniz",
+                  icon mb_error_icon
+                  title "Hata"
+     end-read
+     add 1 to no-kont 
+     end-perform
+     close islenen.
+     
+     .
+*
+ acc-ref-Aft-Procedure.
+     initialize gec-gecme.
+     if mgenel-referans = "E"
+        continue else 
+             exit paragraph.
+     
+
+     open input referans.
+     move ref   to referans-kodu
+     move "A"   to referans-tipi
+     read referans no lock invalid
+         initialize referans-ip
+          perform acuserve-adres-aktar
+
+          move 1 to gec-gecme
+          move "Tanimsiz ..." to referans-adi
+     not invalid
+          
+             perform acuserve-adres-aktar
+         
+     end-read
+     close referans.
+     display lb-ref.
+     if referans-fisno-ekle not numeric
+        move 0 to referans-fisno-ekle
+     end-if.
+     if nereden <> "E"
+        move 0 to numara
+        display acc-numara.     
+     .
+
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     move tarih-tasi     to tarih.
+        open input genel
+    move 1 to genel-anahtar
+    read genel no lock
+      invalid
+        move 3 to mesaj-no
+        perform mesaj-ver
+        set exit-pushed to true
+      not invalid
+        continue
+*        move muha-sirketi to odenmez-dosya-adres
+    end-read
+    close genel
+     move muha-sirketi of genel-rec to muhasebe-entegre-sirketi
+    if genel-resmi-muha not = spaces then 
+       move 1 to resmi-var
+       else
+       move 0 to resmi-var
+    end-if
+    move genel-muha-ref to ref
+     if ONKPARA-REFERANS-VAR = 1  and genel-muha-ref not > 0  then 
+       move 1 to ref-var
+       else
+       move 0 to ref-var
+    end-if
+     initialize referans-ip
+        perform acuserve-adres-aktar.
+     
+     open input mgenel.
+     open i-o odalar2.
+     move 1 to mgenel-anahtar.
+     read mgenel no lock invalid
+          display message box 
+                  "mgenel parametre tanimsiz ..."
+                  icon mb_error_icon
+                  title "Hata"
+                  close mgenel
+                  destroy form1-handle
+                  goback
+     end-read.
+     close mgenel.
+     initialize referans-ip
+
+     if mgenel-referans = "E" 
+        move 1 to vis-1
+       
+     else
+        move 0 to vis-1
+        
+     end-if.
+
+     move 1 to enable-1
+     move 0 to enable-2.
+     if genel-otel-kod = "libert"
+        move 1 to  dov-hes-calis
+     end-if
+    
+     
+     .
+*
+ Form1-Ex-Other.
+
+
+
+
+     if key-status = 2001 or 
+        key-status = 2002 or
+        key-status = 2003 
+        
+      open i-o takvim
+         move tarih to takvim-anah
+        read takvim no lock 
+                invalid 
+                   display message box "Takvim tanimli degil" 
+                not invalid
+                if takvim-onbmah2 not = 1 
+                      move 1 to sonuc
+                   else
+                       
+                       display message box "Mukerrer Mahsup yapmak uzeresiniz Devam edilsin mi? " title "Mukerrer  Kayit" type 2 giving sonuc
+                end-if
+        end-read      
+      
+        close takvim
+         if sonuc = 2 then 
+           exit paragraph
+         end-if
+
+
+         else 
+             exit paragraph
+        end-if
+          move tarih  to muhasebe-tar
+        perform muhasebe-entegre-kontrol
+        if  muh-isl-durdur = 1 
+          exit paragraph
+        end-if
+       if key-status = 2002 and 2 = 1    ||/// 16.11.2015 salih.y kaldiridii
+           call "/asya/ytl/obj/otel/acfkont.asy" 
+                    using  tarih 
+                         on exception 
+                     perform callerr-proc
+                     exit paragraph
+                    not on exception 
+                 cancel "/asya/ytl/obj/otel/acfkont.asy"
+          end-call
+      end-if
+       
+     if key-status = 2001
+        perform yaz-boggam
+        exit paragraph.
+
+     if key-status = 2003
+        move 1 to enable-1 
+        move 0 to enable-2
+        modify form1-gd-1,reset-grid =1 
+        display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+        perform dil-ayarla-proc
+*/-----------------------------\*         
+        move 4 to accept-control
+        move 4 to control-id
+        close borc-dep alac-dep kasa-borc-dep kasa-alac-dep takas-acenta takaskar
+        delete file borc-dep alac-dep  kasa-borc-dep kasa-alac-dep takas-acenta  takaskar
+
+        exit paragraph.
+
+*       display message box  "geldi".
+     perform Acc-Yil-Aft-Procedure.
+     if gec-gecme = 1 
+        move 4 to accept-control
+        move 4 to control-id
+        exit paragraph.
+
+     perform Acc-Numara-Aft-Procedure.
+     if gec-gecme = 1 
+        move 4 to accept-control
+        move 8 to control-id
+        exit paragraph.
+
+     move "E" to nereden.
+     perform Acc-Ref-Aft-Procedure.
+     if gec-gecme = 1 
+        move 4 to accept-control
+        move 12 to control-id
+        exit paragraph.
+
+     open i-o genelfis.
+     move 1 to genelfis-anahtar.
+     read genelfis no lock invalid move 1 to ekran-fis-1.
+      
+     add 1 to ekran-fis-1.
+     move ekran-fis-1 to borc-dep-no borc-fat-no.
+      
+     add 1 to ekran-fis-1.
+     move ekran-fis-1 to kasa-borc-dep-no.
+      
+     add 1 to ekran-fis-1.
+     move ekran-fis-1 to kasa-alac-dep-no.
+     add 1 to ekran-fis-1.
+      
+     add 1 to ekran-fis-1.
+     move ekran-fis-1 to alac-dep-no.
+      
+     add 1 to ekran-fis-1.
+     move ekran-fis-1 to takas-acenta-no takaskar-no.
+
+     rewrite genelfis-rec invalid write genelfis-rec end-write end-rewrite.
+     close genelfis.
+     
+     open output borc-dep   close borc-dep
+     open output borc-fat close borc-fat. 
+     open i-o borc-dep  with mass-update. 
+     open i-o borc-fat  with mass-update.
+
+     open output alac-dep close alac-dep open i-o alac-dep with mass-update.
+     open output kasa-borc-dep close kasa-borc-dep open i-o kasa-borc-dep with mass-update.
+     open output kasa-alac-dep close kasa-alac-dep open i-o kasa-alac-dep with mass-update.
+     open output takas-acenta close takas-acenta open i-o takas-acenta with mass-update.
+     open output takaskar close takaskar open i-o takaskar with mass-update.
+
+     initialize kasa-borc-dep-rec kasa-alac-dep-rec borc-dep-rec alac-dep-rec takas-acenta-rec borc alac.
+
+****|HAKAN|*** PROGRAMDAKÝ ARIZA YÜZÜNDEN BENÝ UÐRAÞTIRAN
+**** DÝÐER PROGRAMCI ARKADAÞLARA SESLENÝYORUZ
+*****
+*          
+           
+    perform fatdetay-oku
+
+ 
+***2*********************************************************||/// 16.11.2015 salih.y kaldiridii
+****    2. tur
+*     close    borc-dep   
+*      borc-fat alac-dep       
+*      kasa-borc-dep 
+*      kasa-alac-dep 
+*      takas-acenta   
+*      takaskar   .    
+*     if key-status = 2002
+*           call "/asya/ytl/obj/otel/acfkont.asy" 
+*                    using  tarih 
+*                         on exception 
+*                     perform callerr-proc
+*                     exit paragraph
+*                    not on exception 
+*                 cancel "/asya/ytl/obj/otel/acfkont.asy"
+*          end-call
+*      end-if
+*
+*       open output borc-dep   close borc-dep
+*     open output borc-fat close borc-fat. 
+*     open i-o borc-dep  with mass-update. 
+*     open i-o borc-fat  with mass-update.
+*
+*     open output alac-dep close alac-dep open i-o alac-dep with mass-update.
+*     open output kasa-borc-dep close kasa-borc-dep open i-o kasa-borc-dep with mass-update.
+*     open output kasa-alac-dep close kasa-alac-dep open i-o kasa-alac-dep with mass-update.
+*     open output takas-acenta close takas-acenta open i-o takas-acenta with mass-update.
+*     open output takaskar close takaskar open i-o takaskar with mass-update.
+*
+*     initialize kasa-borc-dep-rec kasa-alac-dep-rec borc-dep-rec alac-dep-rec takas-acenta-rec borc alac.
+*      
+*
+*        perform fatdetay-oku
+* 
+*
+******************************************************       
+     move 0 to enable-1
+     move 1 to enable-2
+     display form1.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*  
+        open input doviz 
+     modify form1-gd-1,reset-grid =1,mass-update = 1.
+     move "Hesap kodu"       to gd-1-col-1
+     move "Hesap adi"        to gd-1-col-2
+     move "Aciklama"         to gd-1-col-3
+     MOVE "Ref"              to gd-1-col-4
+     move "Borc Tutar"       to gd-1-col-5
+     move "Alacak Tutar"     to gd-1-col-6
+     move "Doviz tutar"      to gd-1-col-7
+     move "Doviz"            to gd-1-col-8
+     move "Fat no "          to gd-1-col-9
+     modify form1-gd-1,record-to-add(form1-gd-1-record).
+     
+     open input hesap.
+     initialize borc-dep-rec alac-dep-rec kasa-borc-dep-rec kasa-alac-dep-rec borc alac
+     start borc-dep key not < borc-dep-anah2 invalid continue
+     not invalid
+     initialize fs-borc-dep
+     perform with test after until fs-borc-dep = "10"
+     read borc-dep next no lock end move "10" to fs-borc-dep
+     not at end
+          if tahakkuksuz = 1 then 
+              if function numval(borc-dep-fatura-no) > 0 then 
+                continue
+                else
+                 
+                 delete borc-dep invalid stop " "  end-delete
+                 exit perform cycle
+              end-if
+          end-if
+          initialize form1-gd-1-record
+          move borc-dep-hesap           to gd-1-col-1 hesap-kodu
+          read hesap no lock invalid
+                 add 1 to tanimsiz-sayi
+                 move "Tanimsiz ..."   to hesap-adi
+          end-read
+          move hesap-adi             to gd-1-col-2
+          move borc-dep-aciklama     to gd-1-col-3
+          move borc-dep-ref          to gd-1-col-4 
+          move borc-dep-fatura-no    to   gd-1-col-9 
+          if onkpara-referans-var = 1 and ref-var = 1  then 
+              evaluate onkpara-referans-nerden
+              when 1
+                 move ref-adi(borc-dep-ref)          to gd-1-col-4
+              when 2
+                 continue 
+              end-evaluate 
+            end-if
+          
+          move borc-dep-tutar        to etutar
+          if borc-dep-ba = "B"
+             move etutar             to gd-1-col-5
+          else
+             move etutar             to gd-1-col-6
+          end-if
+          modify form1-gd-1,record-to-add(form1-gd-1-record)
+          if borc-dep-ba = "B"
+             add borc-dep-tutar to borc
+          else
+             add borc-dep-tutar to alac
+          end-if
+     end-read
+     end-perform
+     end-start
+     initialize borc-dep-rec alac-dep-rec 
+     
+     start alac-dep key not < alac-dep-anah2 invalid continue
+     not invalid
+     initialize fs-alac-dep
+     perform with test after until fs-alac-dep = "10"
+     read alac-dep next no lock end move "10" to fs-alac-dep
+     not at end
+          initialize form1-gd-1-record
+           if tahakkuksuz = 1 then 
+              if function numval(alac-dep-fatura-no) > 0 or alac-dep-corr   = "C" then 
+                continue
+                else
+                 delete alac-dep invalid stop " " end-delete
+                   exit perform cycle
+              end-if
+          end-if  
+          
+          move alac-dep-hesap           to gd-1-col-1 hesap-kodu
+          read hesap no lock invalid
+               add 1 to tanimsiz-sayi
+               move "Tanimsiz ..."   to hesap-adi
+          end-read
+          move hesap-adi             to gd-1-col-2
+          move alac-dep-aciklama     to gd-1-col-3
+          
+            move alac-dep-ref          to gd-1-col-4
+            
+            if onkpara-referans-var = 1 and ref-var = 1 then 
+              evaluate onkpara-referans-nerden
+              when 1  
+              move ref-adi(alac-dep-ref)          to gd-1-col-4
+              when 2
+                 continue 
+              end-evaluate 
+            end-if
+          move alac-dep-tutar-tl     to etutar
+        
+          if alac-dep-ba = "B"
+             move etutar             to gd-1-col-5
+          else
+             move etutar             to gd-1-col-6
+          end-if
+            move  alac-dep-tutar-dv     to etutar
+             move etutar             to gd-1-col-7
+               initialize doviz-rec
+             move alac-dep-doviz    to doviz-kodu
+             read doviz no lock invalid continue
+             end-read
+             move d-kisa-adi to gd-1-col-8
+                move alac-dep-fatura-no    to   gd-1-col-9 
+          modify form1-gd-1,record-to-add(form1-gd-1-record)
+          if alac-dep-ba = "B"
+             add alac-dep-tutar-tl to borc
+          else
+             add alac-dep-tutar-tl to alac
+          end-if
+           
+     end-read
+     end-perform
+     end-start
+********************* KASALAR **********************************
+     start kasa-borc-dep key not < kasa-borc-dep-anah2 invalid continue
+     not invalid
+     initialize fs-kasa-borc-dep
+     perform with test after until fs-kasa-borc-dep = "10"
+     read kasa-borc-dep next no lock end move "10" to fs-kasa-borc-dep
+     not at end
+           if tahakkuksuz = 1 then 
+              if function numval(kasa-borc-dep-fatura-no) > 0 then 
+                continue
+                else
+                 delete kasa-borc-dep invalid stop " " end-delete
+                   exit perform cycle
+              end-if
+          end-if
+          initialize form1-gd-1-record
+          move kasa-borc-dep-hesap           to gd-1-col-1 hesap-kodu
+          read hesap no lock invalid
+               add 1 to tanimsiz-sayi
+               move "Tanimsiz ..."   to hesap-adi
+          end-read
+          move hesap-adi             to gd-1-col-2
+          move kasa-borc-dep-aciklama     to gd-1-col-3
+          move kasa-borc-dep-tutar        to etutar
+          move kasa-borc-dep-ref          to gd-1-col-4
+           if onkpara-referans-var = 1 and ref-var = 1  then 
+              evaluate onkpara-referans-nerden
+              when 1
+                  move ref-adi(kasa-borc-dep-ref)          to gd-1-col-4
+              when 2
+                  continue 
+              end-evaluate 
+            end-if
+          if kasa-borc-dep-ba = "B"
+             move etutar             to gd-1-col-5
+          else
+             move etutar             to gd-1-col-6
+          end-if
+             move kasa-borc-dep-fatura-no    to   gd-1-col-9 
+          modify form1-gd-1,record-to-add(form1-gd-1-record)
+          if kasa-borc-dep-ba = "B"
+             add kasa-borc-dep-tutar to borc
+          else
+             add kasa-borc-dep-tutar to alac
+          end-if
+     end-read
+     end-perform
+     end-start
+            
+
+     initialize kasa-borc-dep-rec kasa-alac-dep-rec 
+     start kasa-alac-dep key not < kasa-alac-dep-anah2 invalid continue
+     not invalid
+     initialize fs-kasa-alac-dep
+     perform with test after until fs-kasa-alac-dep = "10"
+     read kasa-alac-dep next no lock end move "10" to fs-kasa-alac-dep
+     not at end
+           if tahakkuksuz = 1 then 
+              if function numval(kasa-alac-dep-fatura-no) > 0 then 
+                continue
+                else
+                 delete kasa-alac-dep invalid stop " " end-delete
+                   exit perform cycle
+              end-if
+          end-if
+          initialize form1-gd-1-record
+          move kasa-alac-dep-hesap           to gd-1-col-1 hesap-kodu
+          read hesap no lock invalid
+               add 1 to tanimsiz-sayi
+               move "Tanimsiz ..."   to hesap-adi
+          end-read
+          move hesap-adi             to gd-1-col-2
+          move kasa-alac-dep-aciklama     to gd-1-col-3
+          move kasa-alac-dep-tutar     to etutar
+            move kasa-alac-dep-ref          to gd-1-col-4
+             if onkpara-referans-var = 1 and ref-var = 1 then 
+               evaluate onkpara-referans-nerden
+               when 1              
+                  move ref-adi(kasa-alac-dep-ref)          to gd-1-col-4
+               when 2
+                  continue 
+               end-evaluate 
+            end-if
+          if kasa-alac-dep-ba = "B"
+             move etutar             to gd-1-col-5
+          else
+             move etutar             to gd-1-col-6
+          end-if
+             move kasa-alac-dep-fatura-no    to   gd-1-col-9 
+          modify form1-gd-1,record-to-add(form1-gd-1-record)
+          if kasa-alac-dep-ba = "B"
+             add kasa-alac-dep-tutar to borc
+          else
+             add kasa-alac-dep-tutar to alac
+          end-if
+     end-read
+     end-perform
+     end-start
+     
+     close hesap.
+      close borc-fat delete file borc-fat
+     modify form1-gd-1,
+            mass-update = 0.
+
+     compute bakiye = borc - alac
+     move borc   to etutar
+     modify acc-borc, value = etutar
+     move alac   to etutar
+     modify acc-alac, value = etutar
+     move bakiye to etutar
+     modify acc-bakiye, value = etutar
+     if borc <> alac 
+        display message box 
+                "Borc/Alacak toplami esit degil", new-line 
+                "Mahsuplastirirsaniz mutlaka duzeltin"
+                icon mb_error_icon
+                title "Hata"
+                
+    end-if.  
+    close doviz.
+
+ yaz-boggam.
+     close takas-acenta.
+     delete file takas-acenta.
+     if combo-dovizlimi-value(1:1)  = "D"
+        perform kur-bul thru kur-bul-exit
+     end-if
+     if borc = 0 and alac = 0
+        display message box
+                "Muhasebelestirilecek kayit bulunamadi ..."
+                icon mb_error_icon
+                title "Hata"
+                move 1 to enable-1 
+                move 0 to enable-2
+                display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+                perform dil-ayarla-proc
+*/-----------------------------\*         
+                move 4 to accept-control
+                move 4 to control-id
+                close  borc-dep alac-dep   kasa-borc-dep kasa-alac-dep    takaskar
+                delete file borc-dep alac-dep kasa-borc-dep kasa-alac-dep  takaskar
+                exit paragraph
+      end-if.
+*******>Borc Departmanlari Muhasebelesiyor.........
+
+ 
+     open i-o mahsup islenen hesap kodlar02 doviz kur.
+     open i-o efat2onb
+     if mah-birles = 1 then 
+       open output mahsupm
+       close mahsupm
+       open i-o mahsupm
+     end-if
+     initialize borc-dep-rec alac-dep-rec fis-sira-sakla
+     start borc-dep key not < borc-dep-anah2 invalid
+      continue
+      not invalid
+     initialize fs-borc-dep
+     perform with test after until fs-borc-dep = "10"
+     read borc-dep next no lock end move "10" to fs-borc-dep
+     not at end
+      if " " not = borc-dep-corr
+         move "10" to fs-borc-dep
+         exit perform
+       end-if
+       if borc-dep-tutar  = 0 exit perform cycle end-if
+         initialize mahsup-rec 
+         move tarih               to mahsup-tarih
+         move numara              to mahsup-fis-no
+         add  1                   to fis-sira-sakla
+         move fis-sira-sakla      to mahsup-fis-sira
+         move borc-dep-hesap      to mahsup-hesap-kodu
+         move "A"                 to mahsup-tipi
+         move borc-dep-ba         to mahsup-b-a 
+         move borc-dep-tutar      to mahsup-tutar
+         
+         move borc-dep-aciklama   to mahsup-aciklama 
+         move ref                 to mahsup-referans
+         if ref-var = 1 then 
+            evaluate onkpara-referans-nerden
+            when 1
+            initialize kodlar02-rec
+            move "r"           to kodlar02-tipi
+            move borc-dep-ref to zz
+            move zz           to kodlar02-kodu
+            read kodlar02 no lock invalid 
+                continue 
+            not invalid 
+                move kodlar02-ref to borc-dep-ref
+            end-read              
+            move borc-dep-ref to mahsup-referans
+            when 2
+               continue 
+            end-evaluate 
+         end-if
+         move k-kodu-tasi         to mahsup-staf
+         move borc-dep-hesap           to  hesap-kodu
+         read hesap no lock invalid
+                 continue
+         end-read
+         
+         move HESAP-KDV-ORAN to mahsup-kdv-oran
+         
+         if combo-dovizlimi-value(1:1)  = "D" and 
+            islem-kuru not = 0
+            if mahsup-tutar <> zeroes
+               move mgenel-banka  to mahsup-banka-kodu
+               move mgenel-doviz  to mahsup-doviz-kodu
+               move mgenel-d-e    to mahsup-d-e       
+               move islem-kuru   to mahsup-doviz-kuru
+               compute mahsup-tutar-dv rounded = 
+                        mahsup-tutar / islem-kuru
+            end-if
+         end-if
+
+          perform dov-kont
+
+          if genel-otel-kod = "libert"
+**             perform doviz-kodu-duzenle
+             if hesap-kodu(1:3) = "391" or "136" or "600"
+                perform hesaba-gore-doviz
+             end-if 
+          end-if
+
+         move "O"                 to mahsup-nereden
+          move borc-dep-fatura-no    to mahsup-BELGE-NO 
+           move function numval(mahsup-BELGE-NO) to e-o-fatura
+          move ref to e-ref 
+              perform efatura-gercek-bul
+          if e-m-fatura > spaces then 
+              move e-m-fatura to mahsup-BELGE-NO
+          end-if
+          if mah-birles = 1 then 
+            move mahsup-rec to mahsupm-rec
+            move borc-dep-kredi to mahsupm-filler
+            write mahsupm-rec invalid stop " " end-write
+            else 
+            perform mahsup-deg
+          
+            write mahsup-rec invalid stop " " end-write 
+         end-if 
+     end-read
+     end-perform
+     end-start
+     if ara-bos not = 1
+     if mah-birles not = 1 then 
+      if fis-sira-sakla > 0 then 
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "A"        to islenen-tipi
+             move "O" to ISLENEN-NEREDEN
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write
+             add 1 to numara
+       end-if,  
+       initialize fis-sira-sakla  
+     end-if
+     end-if
+
+************************************ kredi kartlari 108ler
+     initialize borc-dep-rec alac-dep-rec 
+     move "1" to borc-dep-corr
+
+     start borc-dep key not < borc-dep-anah2 invalid
+      continue
+      not invalid
+     initialize fs-borc-dep
+     perform with test after until fs-borc-dep = "10"
+     read borc-dep next no lock end move "10" to fs-borc-dep
+     not at end
+       if "1" not = borc-dep-corr
+         move "10" to fs-borc-dep
+         exit perform
+       end-if
+        if borc-dep-tutar  = 0 exit perform cycle end-if
+         initialize mahsup-rec 
+         move tarih               to mahsup-tarih
+         move numara              to mahsup-fis-no
+         add  1                   to fis-sira-sakla
+         move fis-sira-sakla      to mahsup-fis-sira
+         move borc-dep-hesap      to mahsup-hesap-kodu
+         move "A"                 to mahsup-tipi
+         move borc-dep-ba         to mahsup-b-a 
+         move borc-dep-tutar      to mahsup-tutar
+         move borc-dep-aciklama   to mahsup-aciklama 
+         move ref                 to mahsup-referans 
+         if ref-var = 1 then 
+            evaluate onkpara-referans-nerden
+            when 1
+            move borc-dep-ref to mahsup-referans
+            when 2
+               continue 
+            end-evaluate 
+         end-if
+         move k-kodu-tasi         to mahsup-staf 
+         move borc-dep-fatura-no    to mahsup-BELGE-NO
+          move function numval(mahsup-BELGE-NO) to e-o-fatura
+          move ref to e-ref perform efatura-gercek-bul
+          if e-m-fatura > spaces then 
+              move e-m-fatura to mahsup-BELGE-NO
+          end-if
+         initialize hesap-rec
+         move borc-dep-hesap           to  hesap-kodu
+         read hesap no lock invalid
+                 continue
+         end-read
+         
+         move HESAP-KDV-ORAN to mahsup-kdv-oran
+
+
+         if combo-dovizlimi-value(1:1)  = "D" and 
+            islem-kuru not = 0
+            if mahsup-tutar <> zeroes
+               move mgenel-banka  to mahsup-banka-kodu
+               move mgenel-doviz  to mahsup-doviz-kodu
+               move mgenel-d-e    to mahsup-d-e                                           
+               move islem-kuru   to mahsup-doviz-kuru
+               compute mahsup-tutar-dv rounded = 
+                       mahsup-tutar / islem-kuru
+            end-if
+         end-if
+              perform dov-kont
+          if genel-otel-kod = "libert"
+***             perform doviz-kodu-duzenle
+             if hesap-kodu(1:3) = "391"  or "136" or "600" ||| SUNDIA FETHIYE NUR HANIM TASK NO : 876
+                perform hesaba-gore-doviz
+             end-if 
+          end-if
+         move "O"                 to mahsup-nereden
+          if mah-birles = 1 then 
+            move mahsup-rec to mahsupm-rec
+             move borc-dep-kredi to mahsupm-filler
+            write mahsupm-rec invalid stop " " end-write
+            else   
+            perform mahsup-deg
+            write mahsup-rec invalid stop " " end-write  
+         end-if 
+         
+         
+
+     end-read
+     end-perform
+     end-start.
+     if ara-bos not = 1
+       if mah-birles not = 1 then 
+     if fis-sira-sakla > 0 then 
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "A"        to islenen-tipi
+             move "O" to ISLENEN-NEREDEN
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write
+             add 1 to numara
+       end-if,  
+       initialize fis-sira-sakla   
+     end-if 
+     end-if
+       initialize kasa-borc-dep-rec 
+     start kasa-borc-dep key not < kasa-borc-dep-anah2 invalid
+              continue
+              not invalid
+     initialize fs-kasa-borc-dep
+     perform with test after until fs-kasa-borc-dep = "10"
+     read kasa-borc-dep next no lock end move "10" to fs-kasa-borc-dep
+     not at end
+      if kasa-borc-dep-tutar  = 0 exit perform cycle end-if
+         initialize mahsup-rec 
+         move tarih               to mahsup-tarih
+         move numara              to mahsup-fis-no
+         add  1                   to fis-sira-sakla
+         move fis-sira-sakla      to mahsup-fis-sira
+         move kasa-borc-dep-hesap      to mahsup-hesap-kodu
+         move "B"                 to mahsup-tipi
+         move kasa-borc-dep-ba         to mahsup-b-a 
+         move kasa-borc-dep-tutar      to mahsup-tutar
+         move kasa-borc-dep-aciklama   to mahsup-aciklama 
+         move ref                 to mahsup-referans 
+         if ref-var = 1 then
+            evaluate onkpara-referans-nerden
+            when 1            
+               move kasa-borc-dep-ref to mahsup-referans
+            when 2
+               continue 
+            end-evaluate 
+         end-if
+         move k-kodu-tasi         to mahsup-staf   
+         move kasa-borc-dep-fatura-no    to mahsup-BELGE-NO 
+            move ref to e-ref perform efatura-gercek-bul
+          if e-m-fatura > spaces then 
+              move e-m-fatura to mahsup-BELGE-NO
+          end-if
+         initialize hesap-rec
+         move kasa-borc-dep-hesap           to  hesap-kodu
+         read hesap no lock invalid
+                 continue
+         end-read
+         move HESAP-KDV-ORAN to mahsup-kdv-oran
+
+         if combo-dovizlimi-value(1:1)  = "D" and 
+            islem-kuru not = 0
+            if mahsup-tutar <> zeroes
+               move mgenel-banka  to mahsup-banka-kodu
+               move mgenel-doviz  to mahsup-doviz-kodu
+               move mgenel-d-e    to mahsup-d-e       
+               move islem-kuru   to mahsup-doviz-kuru
+               compute mahsup-tutar-dv rounded = 
+                       mahsup-tutar / islem-kuru
+            end-if
+         end-if
+            perform dov-kont
+          if genel-otel-kod = "libert"
+**             perform doviz-kodu-duzenle
+             if hesap-kodu(1:3) = "391" or "136" or "600"
+                perform hesaba-gore-doviz
+             end-if 
+          end-if
+         move "O"                 to mahsup-nereden
+          if mah-birles = 1 then 
+            move mahsup-rec to mahsupm-rec
+             move KASA-borc-dep-kredi to mahsupm-filler
+            write mahsupm-rec invalid stop " " end-write
+            else  
+            perform mahsup-deg
+            write mahsup-rec invalid stop " " end-write 
+         end-if 
+        
+         
+     end-read
+     end-perform
+     end-start
+
+
+     
+
+     if ara-bos not = 1
+        if fis-sira-sakla > 0 then 
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "O" to ISLENEN-NEREDEN
+             move "B"         to islenen-tipi
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write             
+             add 1 to numara
+         end-if, 
+       initialize  fis-sira-sakla
+       end-if   
+*******>Alacak Departmanlari Muhasebelesiyor.........
+     
+  
+     close borc-dep kasa-borc-dep
+     initialize alac-dep-rec 
+     start alac-dep key not < alac-dep-anah2 invalid
+      continue
+      not invalid
+     initialize fs-alac-dep
+     perform with test after until fs-alac-dep = "10"
+     read alac-dep next no lock end move "10" to fs-alac-dep
+     not at end
+       if alac-dep-corr not = "C" then
+         if alac-dep-tutar-tl = 0 then exit perform cycle end-if 
+         initialize mahsup-rec 
+         move tarih               to mahsup-tarih
+         move numara              to mahsup-fis-no
+         add  1                   to fis-sira-sakla
+         move fis-sira-sakla      to mahsup-fis-sira
+         SET MAHSUP-DOVIZ-KILITLI TO TRUE
+         move alac-dep-hesap      to mahsup-hesap-kodu
+         move "A"                 to mahsup-tipi
+         move alac-dep-ba         to mahsup-b-a 
+         move alac-dep-tutar-tl   to mahsup-tutar
+         move alac-dep-aciklama   to mahsup-aciklama 
+         move ref                 to mahsup-referans 
+         if ref-var = 1 then
+            evaluate onkpara-referans-nerden
+            when 1
+            initialize kodlar02-rec
+            move "r"           to kodlar02-tipi
+            move alac-dep-ref to zz
+            move zz           to kodlar02-kodu
+            read kodlar02 no lock invalid 
+                continue 
+            not invalid 
+                move kodlar02-ref to alac-dep-ref
+            end-read              
+            move alac-dep-ref     to mahsup-referans
+            when 2
+               continue 
+            end-evaluate 
+         end-if
+         move k-kodu-tasi         to mahsup-staf
+         initialize hesap-rec
+         move alac-dep-hesap           to  hesap-kodu
+         read hesap no lock invalid
+                 continue
+         end-read
+         move HESAP-KDV-ORAN to mahsup-kdv-oran
+         if alac-dep-acenno not = spaces then
+               move alac-dep-banka      to mahsup-banka-kodu
+               move alac-dep-doviz      to mahsup-doviz-kodu
+               move mgenel-d-e           to mahsup-d-e       
+               move alac-dep-tutar-dv   to mahsup-tutar-dv
+               move alac-dep-doviz-kuru to mahsup-doviz-kuru
+
+         else
+         if combo-dovizlimi-value(1:1)  = "D" and 
+            islem-kuru not = 0
+            if mahsup-tutar <> zeroes
+               move mgenel-banka  to mahsup-banka-kodu
+               move mgenel-doviz  to mahsup-doviz-kodu
+               move mgenel-d-e    to mahsup-d-e       
+               move islem-kuru   to mahsup-doviz-kuru
+               compute mahsup-tutar-dv rounded = 
+                       mahsup-tutar / islem-kuru
+            end-if
+         end-if
+         if combo-dovizlimi-value(1:1)  = "D" and 
+            alac-dep-banka  not = 0 and
+            alac-dep-doviz  not = 0
+            if mahsup-tutar <> zeroes
+               move alac-dep-banka      to mahsup-banka-kodu
+               move alac-dep-doviz      to mahsup-doviz-kodu
+               move mgenel-d-e           to mahsup-d-e       
+               move alac-dep-tutar-dv   to mahsup-tutar-dv
+               move alac-dep-doviz-kuru to mahsup-doviz-kuru
+            end-if
+         end-if
+         end-if
+ 
+         if alac-dep-ara not = "A" then
+             move alac-dep-fatura-no    to mahsup-BELGE-NO 
+                  move function numval(mahsup-BELGE-NO) to e-o-fatura
+          move ref to e-ref perform efatura-gercek-bul
+          if e-m-fatura > spaces then 
+              move e-m-fatura to mahsup-BELGE-NO
+          end-if
+         end-if 
+               perform dov-kont
+          if genel-otel-kod = "libert"
+***             perform doviz-kodu-duzenle
+             if hesap-kodu(1:3) = "391"  or "136" or "600"
+                perform hesaba-gore-doviz
+             end-if 
+          end-if
+         move "O" to mahsup-nereden
+
+
+
+         if mah-birles = 1 then 
+            move mahsup-rec to mahsupm-rec
+            move alac-dep-kredi to mahsupm-filler
+            write mahsupm-rec invalid stop " " end-write
+              else
+              perform mahsup-deg
+            write mahsup-rec invalid stop " " end-write
+         end-if 
+         
+         end-if
+     end-read
+     end-perform
+     end-start.
+
+************************** alacak correctionlar
+       if ara-bos not = 1
+       if mah-birles not = 1 then 
+     if fis-sira-sakla > 0 then 
+
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "A"         to islenen-tipi
+                move "O" to ISLENEN-NEREDEN
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write
+             add 1 to numara
+             
+       end-if,           
+           initialize  fis-sira-sakla
+    
+     end-if
+     end-if
+    
+     initialize alac-dep-rec 
+     start alac-dep key not < alac-dep-anah invalid
+      continue
+      not invalid
+     initialize fs-alac-dep
+     perform with test after until fs-alac-dep = "10"
+     read alac-dep next no lock end move "10" to fs-alac-dep
+     not at end
+       if alac-dep-corr  = "C" then
+          if   alac-dep-tutar-tl  = 0 then exit perform cycle end-if
+         initialize mahsup-rec 
+         move tarih               to mahsup-tarih
+         move numara              to mahsup-fis-no
+         add  1                   to fis-sira-sakla
+         move fis-sira-sakla      to mahsup-fis-sira
+           SET MAHSUP-DOVIZ-KILITLI TO TRUE
+        
+         move alac-dep-hesap      to mahsup-hesap-kodu
+         move "A"                 to mahsup-tipi
+         move alac-dep-ba         to mahsup-b-a 
+         move alac-dep-tutar-tl   to mahsup-tutar
+         move alac-dep-aciklama   to mahsup-aciklama 
+         move ref                 to mahsup-referans 
+         if ref-var = 1 then 
+            evaluate onkpara-referans-nerden
+            when 1
+               move alac-dep-ref to mahsup-referans
+            when 2
+               continue 
+            end-evaluate 
+         end-if
+         move k-kodu-tasi         to mahsup-staf
+         initialize hesap-rec
+         move alac-dep-hesap           to  hesap-kodu
+         read hesap no lock invalid
+                 continue
+         end-read
+         move HESAP-KDV-ORAN to mahsup-kdv-oran
+         if alac-dep-acenno not = spaces then
+               move alac-dep-banka      to mahsup-banka-kodu
+               move alac-dep-doviz      to mahsup-doviz-kodu
+               move mgenel-d-e          to mahsup-d-e       
+               move alac-dep-tutar-dv   to mahsup-tutar-dv
+               move alac-dep-doviz-kuru to mahsup-doviz-kuru
+         else
+         if combo-dovizlimi-value(1:1)  = "D" and 
+            islem-kuru not = 0
+            if mahsup-tutar <> zeroes
+               move mgenel-banka  to mahsup-banka-kodu
+               move mgenel-doviz  to mahsup-doviz-kodu
+               move mgenel-d-e    to mahsup-d-e       
+               move islem-kuru   to mahsup-doviz-kuru
+               compute mahsup-tutar-dv rounded = 
+                       mahsup-tutar / islem-kuru
+            end-if
+         end-if
+         if combo-dovizlimi-value(1:1)  = "D" and 
+            alac-dep-banka  not = 0 and
+            alac-dep-doviz  not = 0
+            if mahsup-tutar <> zeroes
+               move alac-dep-banka      to mahsup-banka-kodu
+               move alac-dep-doviz      to mahsup-doviz-kodu
+               move mgenel-d-e           to mahsup-d-e       
+               move alac-dep-tutar-dv   to mahsup-tutar-dv
+               move alac-dep-doviz-kuru to mahsup-doviz-kuru
+            end-if
+         end-if
+         end-if
+        move alac-dep-fatura-no    to mahsup-BELGE-NO 
+          move function numval(mahsup-BELGE-NO) to e-o-fatura
+          move ref to e-ref perform efatura-gercek-bul
+          if e-m-fatura > spaces then 
+              move e-m-fatura to mahsup-BELGE-NO
+          end-if
+         move "O" to mahsup-nereden
+                perform dov-kont
+          if genel-otel-kod = "libert"
+***             perform doviz-kodu-duzenle
+             if hesap-kodu(1:3) = "391" or "136" or "600"
+                perform hesaba-gore-doviz
+             end-if 
+          end-if
+           if mah-birles = 1 then 
+            move mahsup-rec to mahsupm-rec
+            move alac-dep-kredi to mahsupm-filler
+            MOVE "A" to mahsupm-filler(2:1)
+            write mahsupm-rec invalid stop " " end-write
+            else
+            perform mahsup-deg
+            write mahsup-rec invalid stop " " end-write
+         end-if 
+         
+         end-if
+     end-read
+     end-perform
+     end-start.
+     if mah-birles not = 1 then 
+        if fis-sira-sakla > 0 then 
+
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "A"         to islenen-tipi
+             move "O" to ISLENEN-NEREDEN
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write
+             add 1 to numara             
+       end-if,           
+    end-if
+
+     
+
+
+     if mah-birles = 1 then 
+          initialize fis-sira-sakla  mahsupm-rec 
+          start mahsupm key >= mahsupm-kredi
+                 invalid continue
+                 not invalid
+            perform until fs-mahsupm = "10"
+                 read mahsupm  next 
+                   end move "10" to fs-mahsupm
+                    not end
+                     if mahsupm-filler(1:1) = "K" then 
+                          move "10" to fs-mahsupm
+                          else
+
+                    move mahsupm-rec to mahsup-rec
+                     move numara              to mahsup-fis-no
+                        add  1                to fis-sira-sakla
+                    move fis-sira-sakla       to mahsup-fis-sira
+                    perform mahsup-deg
+                   write mahsup-rec invalid stop " " end-write
+                   end-if
+                 end-read
+            end-perform
+         end-start
+           if fis-sira-sakla > 0 then 
+
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "A"         to islenen-tipi
+                move "O" to ISLENEN-NEREDEN
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write
+             add 1 to numara             
+         end-if,     
+          initialize fis-sira-sakla  mahsupm-rec 
+         move "K" to mahsupm-filler(1:1)
+          start mahsupm key >= mahsupm-kredi
+                 invalid continue
+                 not invalid
+            perform until fs-mahsupm = "10"
+                 read mahsupm  next 
+                   end move "10" to fs-mahsupm
+                    not end
+                    if mahsupm-filler(2:1) = "A"
+                      move "10" to fs-mahsupm
+                      exit perform cycle
+                    end-if
+                    move mahsupm-rec to mahsup-rec
+                     move numara              to mahsup-fis-no
+                        add  1                   to fis-sira-sakla
+                    move fis-sira-sakla      to mahsup-fis-sira
+                    perform mahsup-deg
+                   write mahsup-rec invalid stop " " end-write
+                 end-read
+            end-perform
+         end-start
+           if fis-sira-sakla > 0 then 
+
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "A"         to islenen-tipi
+                move "O" to ISLENEN-NEREDEN
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write
+             add 1 to numara             
+         end-if,  
+             initialize fis-sira-sakla  mahsupm-rec 
+             
+         move "KA" to mahsupm-filler(1:2)
+          start mahsupm key >= mahsupm-kredi2
+                 invalid continue
+                 not invalid
+            perform until fs-mahsupm = "10"
+                 read mahsupm  next 
+                   end move "10" to fs-mahsupm
+                    not end
+                   
+                    move mahsupm-rec to mahsup-rec
+                     move numara              to mahsup-fis-no
+                        add  1                   to fis-sira-sakla
+                    move fis-sira-sakla      to mahsup-fis-sira
+                    move "OO" to mahsup-nereden
+                    perform mahsup-deg
+                   write mahsup-rec invalid stop " " end-write
+                 end-read
+            end-perform
+         end-start
+           if fis-sira-sakla > 0 then 
+
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "A"         to islenen-tipi
+                move "OO" to ISLENEN-NEREDEN
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write
+             add 1 to numara             
+         end-if,  
+         
+         close mahsupm
+     end-if
+    
+  
+************************   alacak kasalar        
+          initialize  fis-sira-sakla
+     
+     initialize kasa-alac-dep-rec 
+     start kasa-alac-dep key not < kasa-alac-dep-anah invalid
+      continue
+      not invalid
+     initialize fs-kasa-alac-dep
+     perform with test after until fs-kasa-alac-dep = "10"
+     read kasa-alac-dep next no lock end move "10" to fs-kasa-alac-dep
+     not at end
+         if   kasa-alac-dep-tutar = 0 then exit perform cycle end-if
+         initialize mahsup-rec 
+         move tarih               to mahsup-tarih
+         move numara              to mahsup-fis-no
+         add  1                   to fis-sira-sakla
+         move fis-sira-sakla      to mahsup-fis-sira
+
+         move kasa-alac-dep-hesap  to mahsup-hesap-kodu
+         move "C"                  to mahsup-tipi
+         move kasa-alac-dep-ba      to mahsup-b-a 
+         move kasa-alac-dep-tutar   to mahsup-tutar
+         move kasa-alac-dep-aciklama   to mahsup-aciklama 
+         move ref                       to mahsup-referans 
+         if ref-var = 1 then 
+            
+            evaluate onkpara-referans-nerden
+            when 1
+            move kasa-alac-dep-ref to mahsup-referans
+            when 2
+               continue 
+            end-evaluate 
+         end-if
+         move k-kodu-tasi         to mahsup-staf 
+         initialize hesap-rec
+         move kasa-alac-dep-hesap           to  hesap-kodu
+         read hesap no lock invalid
+                 continue
+         end-read
+         move HESAP-KDV-ORAN to mahsup-kdv-oran
+         if combo-dovizlimi-value(1:1)  = "D" and 
+            islem-kuru not = 0
+            if mahsup-tutar <> zeroes
+               move mgenel-banka  to mahsup-banka-kodu
+               move mgenel-doviz  to mahsup-doviz-kodu
+               move mgenel-d-e    to mahsup-d-e       
+               move islem-kuru   to mahsup-doviz-kuru
+               compute mahsup-tutar-dv rounded = 
+                       mahsup-tutar / islem-kuru
+            end-if
+         end-if
+         if combo-dovizlimi-value(1:1)  = "D" and 
+            kasa-alac-dep-banka  not = 0 and
+            kasa-alac-dep-doviz  not = 0
+            if mahsup-tutar <> zeroes
+               move kasa-alac-dep-banka      to mahsup-banka-kodu
+               move alac-dep-doviz      to mahsup-doviz-kodu
+               move mgenel-d-e           to mahsup-d-e       
+               move kasa-alac-dep-tutar-dv   to mahsup-tutar-dv
+               move kasa-alac-dep-doviz-kuru to mahsup-doviz-kuru
+            end-if
+         end-if
+         move kasa-alac-dep-fatura-no    to mahsup-BELGE-NO  
+           move function numval(mahsup-BELGE-NO) to e-o-fatura
+          move ref to e-ref perform efatura-gercek-bul
+          if e-m-fatura > spaces then 
+              move e-m-fatura to mahsup-BELGE-NO
+          end-if
+         move "O" to mahsup-nereden
+            perform dov-kont
+          if genel-otel-kod = "libert"
+***             perform doviz-kodu-duzenle
+             if hesap-kodu(1:3) = "391"  or "136" or "600"
+                perform hesaba-gore-doviz
+             end-if 
+          end-if
+           if mah-birles = 1 then 
+            move mahsup-rec to mahsupm-rec
+             move kASA-ALAC-dep-kredi to mahsupm-filler
+            write mahsupm-rec invalid stop " " end-write
+            else
+            perform mahsup-deg
+            write mahsup-rec invalid stop " " end-write
+         end-if 
+
+
+         
+         
+     end-read
+     end-perform
+     end-start.
+     if ara-bos not = 1
+           if fis-sira-sakla > 0 then 
+
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "C"         to islenen-tipi
+                move "O" to ISLENEN-NEREDEN
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write
+             add 1 to numara             
+       end-if,  
+       else
+       if fis-sira-sakla > 0 then 
+             move numara      to islenen-fis-no
+             move tarih       to islenen-tarih
+             move "A"        to islenen-tipi
+             move "O" to ISLENEN-NEREDEN
+             write islenen-rec invalid 
+                   rewrite islenen-rec end-rewrite
+             end-write
+             add 1 to numara
+       end-if,          
+      end-if
+     open i-o takvim
+     move tarih to takvim-anah
+     read takvim no lock 
+        invalid 
+           display message box "Takvim tanimli degil" 
+        not invalid
+        if takvim-onbmah2 not = 1 
+            move 1 to takvim-onbmah2
+            rewrite takvim-rec invalid write takvim-rec end-rewrite
+           else
+               display message box "Mukerrer Mahsup yaptiniz kontrol ediniz " title "Mukerrer  Kayit"
+        end-if
+     end-read      
+
+     close takvim
+     close efat2onb
+     close hesap doviz  kur
+     close alac-dep mahsup kasa-alac-dep kodlar02 takaskar.
+     delete file alac-dep kasa-alac-dep.
+     delete file borc-dep kasa-borc-dep takaskar.
+
+
+
+     close islenen.
+     display message box 
+             "Gunluk [ ONBURO  ] Faturalar Olusturulmustur Kontrol Ediniz !!!" new-line
+             .
+     modify form1-gd-1,reset-grid =1 .
+     move 1 to enable-1 
+     move 0 to enable-2
+     display form1
+     move 4 to accept-control
+     move 4 to control-id.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ acc-ref-Ex-Other.
+     if key-status =  1
+        initialize link-referans
+        call "/asya/ytl/obj/muha/refara.asy" using link-referans
+             on exception 
+                perform callerr-proc
+        not on exception
+             cancel "/asya/ytl/obj/muha/refara.asy"
+        end-call
+        if link-referans <> spaces
+           move link-referans to ref
+           display acc-ref
+           move 4 to accept-control
+           move 12 to control-id
+        end-if
+     end-if.
+*
+ kur-bul.
+        initialize islem-kuru.
+     if combo-dovizlimi-value(1:1)  = "D"
+        
+               
+        open input kur
+        initialize islem-kuru
+        move tarih         to kur-tarih
+        move mgenel-banka   to kur-banka
+        move mgenel-doviz   to kur-doviz
+        if genel-otel-kod = "libert"
+          perform uzak-kur-degistir
+        end-if
+        read kur no lock invalid 
+         display message box "Gunluk Kur Kaydi Bulunamadi Devam Ederseniz Dovizsiz Mahsup Keser.."
+                              new-line,
+                              "Islem Tarihi...........:" gun "/" ay "/" yil   
+                              new-line,
+                              "Banka-Doviz Kodu.......:" mgenel-banka   "-" mgenel-doviz
+                              title = " [ Kurlar Tanimsiz ] "
+         close kur 
+         exit paragraph
+        end-read
+        move doviz-alis to islem-kuru
+        if mgenel-d-e = "D" and mgenel-a-s = "A" 
+           move doviz-alis    to islem-kuru
+        end-if 
+        if mgenel-d-e = "D" and mgenel-a-s = "S" 
+           move doviz-satis   to islem-kuru
+        end-if 
+        if mgenel-d-e = "E" and mgenel-a-s = "A" 
+           move efektif-alis  to islem-kuru
+        end-if 
+        if mgenel-d-e = "E" and mgenel-a-s = "S" 
+           move efektif-satis to islem-kuru
+        end-if 
+
+        if islem-kuru = 0 
+           display message box "Kur Tutari [0] Olamaz, Islem Yapamazsiniz.."
+                            new-line,
+                            "Islem Tarihi...........:" gun "/" ay "/" yil
+                            new-line,
+                            "Banka-Doviz Kodu.......:" mgenel-banka   "-" mgenel-doviz
+                            title = " [ Kurlar Tanimsiz ] "
+          close kur 
+          exit paragraph
+        end-if
+        close kur
+     end-if.
+ kur-bul-exit.
+    exit.
+
+ xx.
+    
+ 
+ 
+      initialize fatdetay-rec .
+       move tarih to fatdetay-fat-tar.
+   
+    start fatdetay key not < fatdetay-anah invalid continue,
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+        read fatdetay next no lock end move "E" to evet-hayir,
+            not end,
+            
+            if fatdetay-fat-tar > tarih,
+                 continue
+                move "E" to evet-hayir,
+            end-if,
+
+            if fatdetay-fat-tar > tarih,
+                 continue
+                move "E" to evet-hayir,
+            end-if,
+
+            if fatdetay-fat-tar = tarih,
+               
+             
+                if fatdetay-depkod not = "C/L" then 
+
+                  if fatdetay-kdv not = 88 
+                    initialize fatdetay2-rec
+                       move fatdetay-anah to fatdetay2-anah 
+                       move 88 to fatdetay2-kdv 
+                       move fatdetay-romhrk-exthrk to fatdetay2-tip
+                       read fatdetay2 no lock invalid
+                          move fatdetay-rec to fatdetay2-rec
+                           move 88 to fatdetay2-kdv 
+                          move fatdetay-romhrk-exthrk to fatdetay2-tip    
+                        not invalid
+                          add  fatdetay-fatura-matrah      to    fatdetay2-fatura-matrah      
+                          add  fatdetay-fatura-kdv         to    fatdetay2-fatura-kdv         
+                          add  fatdetay-fatura-toplam      to    fatdetay2-fatura-toplam      
+                          add  fatdetay-fatura-toplamdv    to    fatdetay2-fatura-toplamdv    
+                          add fatdetay-fatura-matrah18     to    fatdetay2-fatura-matrah18    
+                          add  fatdetay-fatura-kdv18       to    fatdetay2-fatura-kdv18
+                       end-read
+                          write fatdetay2-rec invalid rewrite fatdetay2-rec end-write
+                          delete fatdetay invalid continue end-delete
+              end-if
+            end-if
+            end-if
+          end-read
+          end-perform
+       end-start
+                     
+                .
+ fatdetay-kont.
+              start fatdetay key not < fatdetay-anah invalid continue,
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+        read fatdetay next no lock end move "E" to evet-hayir,
+            not end,
+             
+           
+
+**************** **********************
+*            initialize fatura-rec
+*            move function numval(fatdetay-fat-no)  to fatura-no 
+*            
+*            read fatura no lock invalid 
+*               continue 
+*               not invalid 
+*               move FATURA-TARIHI to fatdetay-fat-tar
+*            end-read
+           
+*******************
+            if fatdetay-fat-tar > tarih,
+                 continue
+                move "E" to evet-hayir,
+            end-if,
+
+            if fatdetay-fat-tar = tarih,
+               
+                initialize depkod-rec depkod2-rec,
+                move fatdetay-depkod to depkod-kodu depkod2-kodu,
+                 if fatdetay-depkod = "C/L" then 
+                   
+  
+                    if function numval (fatdetay-islem) >  0 and < 10 
+                    if fatdetay-kdv not = 99 
+                       initialize fatdetay2-rec
+                       move fatdetay-anah to fatdetay2-anah 
+                       move 99 to fatdetay2-kdv 
+                       move fatdetay-romhrk-exthrk to fatdetay2-tip
+                       read fatdetay2 no lock invalid
+                          move fatdetay-rec to fatdetay2-rec
+                           move 99 to fatdetay2-kdv 
+                          move fatdetay-romhrk-exthrk to fatdetay2-tip    
+                        not invalid
+                          add  fatdetay-fatura-matrah      to    fatdetay2-fatura-matrah      
+                          add  fatdetay-fatura-kdv         to    fatdetay2-fatura-kdv         
+                          add  fatdetay-fatura-toplam      to    fatdetay2-fatura-toplam      
+                          add  fatdetay-fatura-toplamdv    to    fatdetay2-fatura-toplamdv    
+                          add  fatdetay-fatura-matrah18    to    fatdetay2-fatura-matrah18    
+                          add  fatdetay-fatura-kdv18       to    fatdetay2-fatura-kdv18
+                       end-read
+                          write fatdetay2-rec invalid rewrite fatdetay2-rec end-write
+                          delete fatdetay invalid continue end-delete
+                     end-if
+                        end-if
+                  else
+ 
+                   if fatdetay-romhrk-exthrk = "R" then
+                        move function numval(fatdetay-islem) to romhrk-islem
+                        move function numval(fatdetay-folio) to romhrk-folio  konuk-folio
+                         if ref-var = 1 then 
+                            evaluate onkpara-referans-nerden
+                            when 1
+
+                            read konuk no lock invalid 
+                               stop " "
+                            end-read
+                              move xkonum-ref(konuk-fiyat-konumu) to sat-ref
+                                         initialize kodlar02-rec
+                                         move "r"           to kodlar02-tipi
+                                         move xkonum-ref(konuk-oda-konumu) to zz
+                                         move zz                           to kodlar02-kodu
+                                         read kodlar02 no lock invalid 
+                                             continue 
+                                         not invalid 
+                                             if kodlar02-ref not = ref
+                                                exit perform cycle 
+                                             end-if 
+                                         end-read 
+                            when 2
+                               continue 
+                            end-evaluate 
+
+                        end-if
+                        read romhrk no lock 
+                            invalid exit perform cycle
+                              not invalid
+                              move romhrk-corr-depkod to  depkod2-kodu
+                           if function numval(fatdetay-fat-no) 
+                                    not = romhrk-FATURA-NO
+                            
+                           exit perform cycle
+                         end-if
+                      end-read
+                  else
+                       move function numval(fatdetay-islem) to exthrk-islem
+                           move function numval(fatdetay-folio) to exthrk-folio    konuk-folio
+                            if ref-var = 1 then 
+                            evaluate onkpara-referans-nerden
+                            when 1 | oda numarasý referansý
+                                read konuk no lock invalid 
+                                   stop " "
+                                end-read
+                                move xkonum-ref(konuk-fiyat-konumu) to sat-ref
+                                initialize kodlar02-rec
+                                move "r"           to kodlar02-tipi
+                                move xkonum-ref(konuk-oda-konumu) to zz
+                                move zz                           to kodlar02-kodu
+                                read kodlar02 no lock invalid 
+                                    continue 
+                                not invalid
+        
+                                    if kodlar02-ref not = ref
+                                       exit perform cycle 
+                                    end-if 
+                                end-read 
+                            when 2
+                               continue 
+                            end-evaluate 
+                        
+                                         
+                       
+*                        if xkonum-ref(konuk-oda-konumu) not = ref then 
+*                             exit perform cycle
+*                        end-if
+
+                        end-if
+
+                        read exthrk no lock 
+                          invalid exit perform cycle
+                          not invalid 
+                          move exthrk-corr-depkod to  depkod2-kodu
+                           if function numval(fatdetay-fat-no) not = exthrk-FATURA-NO
+                                exit perform cycle
+                          end-if
+                        end-read
+
+
+                end-if
+                read depkod no lock invalid continue,
+                    not invalid,
+                      if  depkod-TURU not = 2 then 
+                            move depkod-kodu to depkod2-kodu
+                            else
+                            move depkod2-kodu to depkod-kodu
+                            read depkod no lock invalid
+                              continue
+
+                            end-read
+                           move 2 to depkod-turu
+                      end-if
+                      read depkod2 no lock invalid continue
+                        not invalid
+                        perform depkod2-tr
+*                          if depkod2-matrah-hesap(1:3) not = "100"
+                                perform takaslara-yaz
+*                               else
+*                             perform kasa-takaslara-yaz
+*                          end-if
+                      end-read
+                end-read,
+              end-if
+            end-if,
+        end-read,
+        end-perform,
+    end-start.
+
+
+*
+ depkod2-tr.
+      if resmiye-kes = 1 
+      if depkod-matrah-hesap not = spaces and  depkod2-matrah-hesap = spaces
+         move  depkod-matrah-hesap to  depkod2-matrah-hesap
+      end-if
+      if depkod-kdv-hesap not = spaces and  depkod2-kdv-hesap = spaces
+         move  depkod-kdv-hesap to  depkod2-kdv-hesap
+      end-if
+      end-if
+        .
+
+
+*
+ fatdetay-oku.
+      open input  depkod2 depkod kodlar02 romhrk exthrk fatura konuk yromhrk hrk2 firma musteri.
+       open i-o efat2onb
+      open i-o fatdetay2 fatdetay 
+         
+        perform xx
+    initialize fatdetay-rec .
+    move tarih to fatdetay-fat-tar.
+   
+        start fatdetay key not < fatdetay-anah invalid continue,
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+        read fatdetay next no lock end move "E" to evet-hayir,
+            not end,
+
+**************** **********************
+*            initialize fatura-rec
+*            move function numval(fatdetay-fat-no)  to fatura-no 
+*            
+*            read fatura no lock invalid 
+*               continue 
+*               not invalid 
+*               move FATURA-TARIHI to fatdetay-fat-tar
+*            end-read
+           
+*******************
+            if fatdetay-fat-tar > tarih,
+                 continue
+                move "E" to evet-hayir,
+            end-if,
+            
+            if fatdetay-fat-tar = tarih,
+                perform fatdetay-kontrol
+                if kont-hat = 1                       
+                        exit perform cycle                        
+                      end-if
+                initialize depkod-rec depkod2-rec,
+                move fatdetay-depkod to depkod-kodu depkod2-kodu,
+                 if fatdetay-depkod = "C/L" then 
+                    if function numval (fatdetay-islem) >  0 and < 10 
+                    if fatdetay-kdv not = 99 
+                       initialize fatdetay2-rec
+                       move fatdetay-anah to fatdetay2-anah 
+                       move 99 to fatdetay2-kdv 
+                       move fatdetay-romhrk-exthrk to fatdetay2-tip
+                       read fatdetay2 no lock invalid
+                          move fatdetay-rec to fatdetay2-rec
+                           move 99 to fatdetay2-kdv 
+                          move fatdetay-romhrk-exthrk to fatdetay2-tip    
+                        not invalid
+                          add  fatdetay-fatura-matrah      to    fatdetay2-fatura-matrah      
+                          add  fatdetay-fatura-kdv         to    fatdetay2-fatura-kdv         
+                          add  fatdetay-fatura-toplam      to    fatdetay2-fatura-toplam      
+                          add  fatdetay-fatura-toplamdv    to    fatdetay2-fatura-toplamdv    
+                          add  fatdetay-fatura-matrah18    to    fatdetay2-fatura-matrah18    
+                          add  fatdetay-fatura-kdv18       to    fatdetay2-fatura-kdv18
+                       end-read
+                          write fatdetay2-rec invalid rewrite fatdetay2-rec end-write
+                          delete fatdetay invalid continue end-delete
+                     end-if
+                        end-if
+                  else
+*                   if function numval(fatdetay-fat-no) = 309629 and debug = 1 then 
+*                      stop" " 
+*                   end-if
+*                        if function numval(fatdetay-folio)  = 41802 then stop "C/L degil " end-if 
+                if fatdetay-romhrk-exthrk = "R" 
+                             continue
+                          else
+                               move exthrk-corr-depkod    to  romhrk-corr-depkod  
+                          end-if
+                      move fatdetay-depkod to depkod-kodu 
+                        read depkod  no lock invalid continue
+                          not invalid 
+                            if depkod-turu = 2 and romhrk-corr-depkod not = spaces and   romhrk-corr-depkod not = zeroes
+                                   move romhrk-corr-depkod to depkod-anah
+                                       read depkod no lock invalid
+                                           continue
+                                    end-read 
+                                  end-if
+                          end-read
+                            move depkod-kdv        to  fatdetay-kdv-orani                  
+                          if fatdetay-romhrk-exthrk = "R" 
+                          move romhrk-tl-tutar    to  fatdetay-fatura-toplam 
+                          else
+                               move exthrk-tl-tutar    to  fatdetay-fatura-toplam  
+                          end-if
+                          compute fatdetay-fatura-matrah rounded = fatdetay-fatura-toplam / (1+(depkod-kdv / 100))
+                          compute fatdetay-fatura-kdv = fatdetay-fatura-toplam - fatdetay-fatura-matrah
+                           
+                     move fatdetay-depkod to depkod-kodu depkod2-kodu,
+                   if fatdetay-romhrk-exthrk = "R" then
+                        move function numval(fatdetay-islem) to romhrk-islem
+                        move function numval(fatdetay-folio) to romhrk-folio konuk-folio
+
+                         if ref-var = 1 then 
+                            evaluate onkpara-referans-nerden
+                            when 1 | oda numarasý referansý
+                                    read konuk no lock invalid 
+                                       stop " "
+                                    end-read
+                                      move xkonum-ref(konuk-fiyat-konumu) to sat-ref
+                                                 initialize kodlar02-rec
+                                                 move "r"           to kodlar02-tipi
+                                                 move xkonum-ref(konuk-oda-konumu) to zz
+                                                 move zz                           to kodlar02-kodu
+                                                 read kodlar02 no lock invalid 
+                                                     continue 
+                                                 not invalid 
+                                                     if kodlar02-ref not = ref
+                                                        exit perform cycle 
+                                                     end-if 
+                                                 end-read 
+                             when 2 | oda numarasý referansý
+                                  continue 
+                             end-evaluate 
+                        end-if
+
+                        read romhrk no lock 
+                            invalid exit perform cycle
+                              not invalid
+                              move romhrk-corr-depkod to  depkod2-kodu
+                           if function numval(fatdetay-fat-no) 
+                                    not = romhrk-FATURA-NO
+                            
+                           exit perform cycle
+                         end-if
+                      end-read
+                  else
+                      
+                       move function numval(fatdetay-islem) to exthrk-islem
+                           move function numval(fatdetay-folio) to exthrk-folio    konuk-folio
+                            if ref-var = 1 then 
+                            evaluate onkpara-referans-nerden
+                            when 1 | oda numarasý referansý
+
+                                read konuk no lock invalid 
+                                   stop " "
+                                end-read
+                                move xkonum-ref(konuk-fiyat-konumu) to sat-ref
+                                initialize kodlar02-rec
+                                move "r"           to kodlar02-tipi
+                                move xkonum-ref(konuk-oda-konumu) to zz
+                                move zz                           to kodlar02-kodu
+                                read kodlar02 no lock invalid 
+                                    continue 
+                                not invalid
+        
+                                    if kodlar02-ref not = ref
+                                       exit perform cycle 
+                                    end-if 
+                                end-read 
+                            when 2
+                               continue 
+                            end-evaluate 
+*                        if xkonum-ref(konuk-oda-konumu) not = ref then 
+*                             exit perform cycle
+*                        end-if
+
+                        end-if
+
+                        read exthrk no lock 
+                          invalid exit perform cycle
+                          not invalid 
+                          move exthrk-corr-depkod to  depkod2-kodu
+                           if function numval(fatdetay-fat-no) not = exthrk-FATURA-NO
+                            exit perform cycle
+                          end-if
+                        end-read
+
+
+                end-if
+                read depkod no lock invalid continue,
+                    not invalid,
+                      if  depkod-TURU not = 2 then 
+                            move depkod-kodu to depkod2-kodu
+                            else
+                            move depkod2-kodu to depkod-kodu
+                            read depkod no lock invalid
+                              continue
+
+                            end-read
+                           move 2 to depkod-turu
+                      end-if
+                      read depkod2 no lock invalid continue
+
+                        not invalid
+                         perform depkod2-tr
+*                          if depkod2-matrah-hesap(1:3) not = "100"
+                                perform takaslara-yaz
+*                               else
+*                             perform kasa-takaslara-yaz
+*                          end-if
+                      end-read
+                end-read,
+              end-if
+            end-if,
+        end-read,
+        end-perform,
+    end-start.
+    open input acenta   
+    perform folio-karsilik-bul2
+    close acenta    
+    perform kredi-bul
+     initialize    takaskar-rec     
+        start takaskar key > takaskar-anah invalid
+          continue
+          not invalid 
+          perform until fs-takaskar = "10"
+               read takaskar next no lock 
+                    end move "10" to fs-takaskar
+                    not end
+                     if takaskar-tutar not = 0 then 
+                         display message box takaskar-folio " foliosunda " takaskar-ref "  pencerinden kaynaklanan" new-line
+                                              takaskar-fatura " nolu fatura mahsubunda problem var "
+                         if k-kodu-tasi = "X   " or "ASYA" then stop " " end-if
+
+                     end-if
+                end-read
+          end-perform
+        end-start
+    close fatdetay depkod depkod2 romhrk kodlar02 exthrk fatura konuk fatdetay2 yromhrk hrk2 firma musteri.
+     close  efat2onb .
+* 
+ Takaslara-Yaz.
+*         if function numval(fatdetay-folio) = 41802 then stop "TAKAS " end-if
+           evaluate onkpara-referans-nerden
+           when 1 
+           if ref-var = 1
+              move xkonum-ref(konuk-fiyat-konumu) to sat-ref
+           end-if
+           when 2
+              continue 
+           end-evaluate 
+
+              evaluate true
+                    when ( depkod-ba = "B" and depkod-turu not = 3 ) or ( depkod-ba = "A"  and depkod-TURU = 2 )
+                         initialize borc-dep-rec,
+                         if depkod-toplam-hesap not = spaces
+                            and  depkod2-toplam-hesap not = spaces
+                            move depkod-toplam-hesap   to borc-dep-hesap
+                            if depkod-matrah-ba = "A"
+                               move "A"   to borc-dep-ba
+                            else
+                               move "B"   to borc-dep-ba
+                            end-if
+                            
+                            move depkod-toplam-hesap  to borc-dep-hesap
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+                                  move ref to borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                            end-if
+                            read borc-dep no lock invalid continue,
+                            end-read,
+                            if  depkod-TURU= 2                                
+                                  compute borc-dep-tutar rounded = 
+                                          borc-dep-tutar - fatdetay-fatura-toplam
+                               else
+                                  compute borc-dep-tutar rounded = 
+                                          borc-dep-tutar + fatdetay-fatura-toplam
+                                  move "Gunluk Gelirler Geregi" to borc-dep-aciklama
+                             end-if
+                               write borc-dep-rec invalid rewrite borc-dep-rec,
+                               end-write,
+                         
+                             initialize borc-dep-rec,
+
+                            move depkod-toplam-hesap   to borc-dep-hesap
+                            if depkod-matrah-ba = "B"
+                               move "A"   to borc-dep-ba
+                            else
+                               move "B"   to borc-dep-ba
+                            end-if
+                            
+                            move depkod2-toplam-hesap   to borc-dep-hesap
+                            move function numval(fatdetay-fat-no)        to borc-dep-fatura-no
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1 | oda numarasý referansý
+                                 move ref to borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate
+ 
+                              if depkod-ref > 0 and < max-ref then
+                                 move depkod-ref to borc-dep-ref
+                              end-if  
+                            end-if
+                            read borc-dep no lock invalid continue,
+                            end-read,
+                            if  depkod-TURU= 2
+                                  compute borc-dep-tutar rounded = 
+                                          borc-dep-tutar - fatdetay-fatura-toplam
+                               else
+                                 compute borc-dep-tutar rounded = 
+                                         borc-dep-tutar + fatdetay-fatura-toplam
+                                 move "Gunluk Gelirler Geregi" to borc-dep-aciklama
+                            end-if
+                            write borc-dep-rec invalid rewrite borc-dep-rec,
+                            end-write,
+                         end-if
+                           if (depkod-matrah-hesap not = spaces or ara-bos = 1)
+                            and  depkod2-matrah-hesap not = spaces
+                             initialize borc-dep-rec,
+                            move depkod-matrah-hesap   to borc-dep-hesap
+                                    if depkod-matrah-ba = "B"
+                                          move "A"   to borc-dep-ba
+                                      else
+                                          move "B"   to borc-dep-ba
+                                    end-if
+                            
+                            
+                            move depkod-matrah-hesap  to borc-dep-hesap
+                             if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1 
+                                move ref to borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                            end-if
+                            read borc-dep no lock invalid continue,
+                            end-read,
+                                if  depkod-TURU= 2
+                                  compute borc-dep-tutar rounded = 
+                                          borc-dep-tutar - fatdetay-fatura-matrah
+                               else
+
+
+                                 compute borc-dep-tutar rounded =
+                                         borc-dep-tutar + fatdetay-fatura-matrah
+                                 move "Gunluk Gelirler Geregi" to borc-dep-aciklama
+                             end-if
+                                 if ara-bos not = 1 
+                                    write borc-dep-rec 
+                                      invalid 
+                                         rewrite borc-dep-rec end-rewrite,
+                                    end-write,
+                                end-if
+                             initialize borc-dep-rec,
+                            move depkod2-matrah-hesap   to borc-dep-hesap
+                            if depkod-matrah-ba = "A"
+                               move "A"   to borc-dep-ba
+                            else
+                               move "B"   to borc-dep-ba
+                            end-if
+                            
+                            
+                            move depkod2-matrah-hesap      to borc-dep-hesap
+                            move  function numval(fatdetay-fat-no)    
+                                          to borc-dep-fatura-no
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1 | oda numarasý referansý
+                                  move ref to borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                               if depkod-ref > 0 and < max-ref then
+                                 move depkod-ref to borc-dep-ref
+                               end-if  
+                            end-if
+                            read borc-dep no lock invalid continue,
+                            end-read,
+                            if  depkod-TURU= 2
+                                  compute borc-dep-tutar rounded = 
+                                          borc-dep-tutar - fatdetay-fatura-matrah
+                               else
+                                 compute borc-dep-tutar rounded = borc-dep-tutar + 
+                                        fatdetay-fatura-matrah
+
+                                 move function numval(fatdetay-fat-no)  to z-8
+                                 
+                                 move z-8 to borc-dep-aciklama   
+ 
+                                  move function numval(fatdetay-fat-no) to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to borc-dep-aciklama(1:20)
+                                          end-if
+
+
+                               
+                                 move "Ft geregi"      to borc-dep-aciklama (22:)
+                             end-if
+                            write borc-dep-rec invalid rewrite borc-dep-rec,
+                            end-write,
+                         end-if
+                         if (depkod-kdv-hesap not = spaces or ara-bos = 1)
+                            and  depkod2-kdv-hesap not = spaces
+                             initialize borc-dep-rec,
+                            move depkod-kdv-hesap   to borc-dep-hesap
+                            if depkod-matrah-ba = "B"
+                               move "A"   to borc-dep-ba
+                            else
+                               move "B"   to borc-dep-ba
+                            end-if
+                            
+                            
+                            move depkod-kdv-hesap  to borc-dep-hesap
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1 | oda numarasý referansý
+                                   move ref to borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate  
+                            end-if
+                            read borc-dep no lock invalid continue,
+                            end-read,
+                            if  depkod-TURU= 2
+                                  compute borc-dep-tutar rounded = 
+                                 borc-dep-tutar - fatdetay-fatura-kdv
+                               else
+                                 compute borc-dep-tutar rounded = 
+                                 borc-dep-tutar + fatdetay-fatura-kdv
+                                 move "Gunluk Gelirler Geregi" to borc-dep-aciklama
+                            end-if
+                                 if ara-bos not = 1 
+                            write borc-dep-rec invalid rewrite borc-dep-rec,
+                            end-write,
+                            end-if
+                              initialize borc-dep-rec,
+                            move depkod2-kdv-hesap   to borc-dep-hesap
+                            if depkod-matrah-ba = "A"
+                                 move "A"   to borc-dep-ba
+                              else
+                                 move "B"   to borc-dep-ba
+                            end-if
+                            
+                           
+                            move depkod2-kdv-hesap   to borc-dep-hesap
+                            move  function numval(fatdetay-fat-no)        to borc-dep-fatura-no
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1 | oda numarasý referansý
+                                move ref to borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                                if depkod-ref > 0 and < max-ref then
+                                    move depkod-ref to borc-dep-ref
+                                end-if  
+                            end-if
+                            read borc-dep no lock invalid continue,
+                            end-read,
+                               if  depkod-TURU= 2
+                                  compute borc-dep-tutar rounded = 
+                                 borc-dep-tutar - fatdetay-fatura-kdv
+                               else
+                                 compute borc-dep-tutar rounded = 
+                                 borc-dep-tutar + fatdetay-fatura-kdv
+                                 move function numval(fatdetay-fat-no) to z-8
+                                 
+                                 move z-8 to borc-dep-aciklama
+                                  move function numval(fatdetay-fat-no) to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to borc-dep-aciklama(1:20)
+                                          end-if
+                                 move "Ft geregi" to borc-dep-aciklama (22:)
+                                 end-if
+                            write borc-dep-rec invalid rewrite borc-dep-rec,
+                            end-write,
+                         end-if
+                          if  depkod-TURU= 2
+                             move -1 to carpan 
+                             else
+                             move 1 to carpan
+                          end-if
+*                         perform karsilik-bul
+                         perform karsilik-bul2       
+
+
+                    end-evaluate,
+          
+    .   
+*
+************************************************************ *
+*
+ karsilik-bul2.
+             initialize takaskar-rec
+               move function numval(fatdetay-fat-no) to takaskar-fatura 
+           if fatdetay-romhrk-exthrk = "R"
+               move romhrk-folio to takaskar-folio
+               move romhrk-ref   to takaskar-ref
+             
+                
+             else
+               move exthrk-folio to takaskar-folio
+               move exthrk-ref   to takaskar-ref
+          end-if
+*           if takaskar-folio = 41802 then stop " " end-if
+          read takaskar no lock invalid
+              continue
+          end-read
+*          if takaskar-folio = 138869 and (k-kodu-tasi = "ASYA" or "X   ")
+*          stop " "
+*          end-if
+****            03 fatdetay-fat-no            pic x(10).
+****       03 fatdetay-kdv               pic 99v99.
+***       03 fatdetay-tip               pic x.
+****       03 fatdetay-depkod            pic xxx.
+****       03 fatdetay-folio             pic x(8).       
+****       03 fatdetay-islem             pic x(8). 
+
+
+
+
+          if fatdetay-romhrk-exthrk = "R"
+             
+              compute  takaskar-tutar =  takaskar-tutar + (romhrk-tl-tutar * carpan )
+             else
+              
+                compute  takaskar-tutar =  takaskar-tutar + (exthrk-tl-tutar * carpan )
+            
+          end-if
+           write takaskar-rec invalid rewrite takaskar-rec end-write.
+
+ 
+
+           .
+
+
+
+*
+ folio-karsilik-bul2.
+        initialize    takaskar-rec     
+        start takaskar key > takaskar-anah invalid
+          continue
+          not invalid 
+          perform until fs-takaskar = "10"
+               read takaskar next no lock 
+                    end move "10" to fs-takaskar
+                    not end
+*                      if takaskar-folio = 2258019 and (k-kodu-tasi = "ASYA" or "X   ") then 
+*                         stop " "
+*                       end-if
+                           initialize    romhrk-rec exthrk-rec
+                             
+                             move takaskar-folio to romhrk-folio konuk-folio
+                             read konuk no lock invalid stop " " 
+                             end-read
+*                             if konuk-folio = 41802 then stop "GIRMEZ " end-if
+                             start romhrk key > romhrk-anah invalid continue
+                               not invalid
+                                perform until fs-romhrk = "10" 
+                                       read romhrk next no lock 
+                                       end move  "10" to fs-romhrk
+                                       not end
+                                        if  takaskar-folio not =  romhrk-folio
+                                            move "10" to fs-romhrk
+                                            else
+                                            if romhrk-ref  = takaskar-ref 
+                                            and romhrk-fatura-no =
+                                             takaskar-fatura
+                                              move romhrk-rec to hrkgir-rec
+                                              perform fol-kar2
+                                               
+                                            end-if
+                                            end-if
+                                       end-read
+
+                                end-perform
+                             end-start
+                     
+                             move takaskar-folio to exthrk-folio
+                             start exthrk key > exthrk-anah invalid continue
+                               not invalid
+                                perform until fs-exthrk = "10" 
+                                       read exthrk next no lock 
+                                       end move  "10" to fs-exthrk
+                                       not end
+                                          if  takaskar-folio not =  exthrk-folio
+                                            move "10" to fs-exthrk
+                                            else
+                                            if exthrk-ref  = takaskar-ref 
+                                              and exthrk-fatura-no =
+                                             takaskar-fatura
+                                              move exthrk-rec to hrkgir-rec
+                                              perform fol-kar2
+                                               
+                                            end-if
+                                            end-if
+                                       end-read
+                                end-perform
+                             end-start
+
+
+                    
+
+               end-read
+          end-perform
+         end-start
+           .
+*
+ fol-kar2.
+           if hrkgir-corr-depkod not = spaces and hrkgir-corr-depkod not = zeroes
+                      move -1 to carpan 
+                       move hrkgir-corr-depkod to depkod-anah
+                  else
+                      move 1 to carpan 
+                      move hrkgir-depkod to depkod-anah
+             end-if
+                move depkod-anah to depkod2-anah
+               read depkod no lock invalid exit paragraph,
+                    not invalid,
+                      read depkod2 no lock invalid exit paragraph
+                        not invalid
+                         perform depkod2-tr
+                        continue
+                end-read          
+             if DEPKOD-FATURA-TAKIP = "E" then
+                  exit paragraph
+              end-if
+
+              if depkod-ba = "B" then 
+                 compute carpan = carpan * -1
+              end-if
+            perform hareket-isle2
+
+            
+            compute takaskar-tutar = takaskar-tutar - ( hrkgir-tl-tutar * carpan )
+            rewrite takaskar-rec invalid stop " " end-rewrite
+        .
+*
+ folfat-cari-bul.
+*            exit paragraph
+******************************
+  
+            initialize bulunan-cari acenta-rec firma-rec 
+            move konuk-acenta to acenta-kodu  
+            move konuk-firma  to firma-kodu
+            read firma no lock invalid
+                      continue
+            not invalid
+                    if firma-muhno2 not = Spaces 
+                      move  firma-muhno2 to bulunan-cari
+                    end-if
+            end-read
+
+
+               if bulunan-cari = spaces
+                   read acenta no lock invalid
+                      continue
+                      not invalid
+                    if acenta-muhno2 not = Spaces 
+                      move  acenta-muhno2 to bulunan-cari
+                    end-if
+                  end-read
+               end-if
+                
+*     if bulunan-cari not = spaces                 
+*         if  depkod2-matrah-hesap = spaces
+*               move  bulunan-cari to  depkod2-matrah-hesap depkod-matrah-hesap  
+*         end-if
+*     end-if
+     if bulunan-cari not = spaces                 
+        if  depkod2-matrah-hesap not > " 12"
+            move  bulunan-cari to  depkod2-matrah-hesap
+          
+
+            else 
+
+          move  bulunan-cari to  depkod-matrah-hesap
+
+       end-if
+     .
+*
+ hareket-isle2.   
+               
+*              if konuk-folio = 41802 then stop " " end-if
+                  if depkod-ba = "A" and depkod-turu = 4 then 
+                      perform folfat-cari-bul                       
+                  end-if
+
+                          initialize borc-dep-rec,
+                          if  depkod2-matrah-hesap(1:3)  = "108"
+                                  move "1" to kk
+                                  else  move " " to kk
+                                end-if
+                         if depkod-toplam-hesap not = spaces
+                            and  depkod2-toplam-hesap not = spaces
+                         
+
+                             initialize borc-dep-rec,
+                             if  depkod2-matrah-hesap(1:3) not = "100"
+                                if  depkod2-matrah-hesap(1:3)  = "108"
+                                  move "1" to kk
+                                  else  move " " to kk
+                                end-if
+                                 move kk to  borc-dep-corr
+                                move depkod-toplam-hesap   to borc-dep-hesap
+                            if depkod-matrah-ba = "A"
+                               move "A"   to borc-dep-ba
+                            else
+                               move "B"   to borc-dep-ba
+                            end-if
+                            move depkod-toplam-hesap  to borc-dep-hesap
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1 | oda numarasý referansý
+                                   move ref to borc-dep-ref
+                               when 2
+                                    continue 
+                               end-evaluate 
+                            end-if
+                            read borc-dep no lock invalid continue,
+                            end-read,
+                                 compute borc-dep-tutar rounded = 
+                                 borc-dep-tutar + (hrkgir-tl-tutar * carpan)
+
+                                 move "Gunluk Tahsilati Geregi" to borc-dep-aciklama
+                            write borc-dep-rec invalid rewrite borc-dep-rec,
+                            end-write,
+
+                                initialize borc-dep-rec,
+                                  move kk to  borc-dep-corr
+                            if depkod-matrah-ba = "B"
+                               move "A"   to borc-dep-ba
+                            else
+                               move "B"   to borc-dep-ba
+                            end-if
+                            move depkod2-toplam-hesap   to borc-dep-hesap
+                            move  hrkgir-FATURA-NO       to borc-dep-fatura-no
+
+
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+                                  move ref to borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                               if depkod-ref > 0 and < max-ref
+                                    move depkod-ref to borc-dep-ref
+                                end-if
+                            end-if
+
+
+
+                            read borc-dep no lock invalid continue,
+                            end-read,
+                                 compute borc-dep-tutar rounded = 
+                                 borc-dep-tutar + (hrkgir-tl-tutar * carpan)
+                                 initialize borc-dep-aciklama
+                                 move hrkgir-FATURA-NO       to borc-dep-aciklama(1:20)
+                                  
+                                  move hrkgir-FATURA-NO to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to borc-dep-aciklama(1:20)
+                                          end-if
+                                 move "ft gr tahs-"   to borc-dep-aciklama(22:)
+                                 initialize ad-soyad
+                                 string konuk-adi delimited by "  "
+                                       " " delimited by size
+                                        konuk-soyadi delimited by   "  "
+                                       into ad-soyad
+                                       move ad-soyad to borc-dep-aciklama(45:)
+                            write borc-dep-rec invalid rewrite borc-dep-rec,
+                            end-write,
+                            else 
+                              
+                              if depkod-matrah-ba = "B"
+                                initialize kasa-alac-dep-rec,
+                               move depkod-toplam-hesap   to KASA-alac-dep-hesap
+                            if depkod-matrah-ba = "A"
+                               move "A"   to KASA-alac-dep-ba
+                            else
+                               move "B"   to KASA-alac-dep-ba
+                            end-if
+                            move depkod-toplam-hesap  to KASA-alac-dep-hesap
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1 | oda numarasý referansý
+                                  move ref to kasa-alac-dep-ref
+
+                               when 2
+                                  continue 
+                               end-evaluate 
+                            end-if
+                            read KASA-alac-dep no lock invalid continue,
+                            end-read,
+                                 compute KASA-alac-dep-tutar rounded = 
+                                 KASA-alac-dep-tutar +(hrkgir-tl-tutar * carpan)
+                                 move "Gunluk iadeler Geregi" to KASA-alac-dep-aciklama
+                            write KASA-borc-dep-rec invalid rewrite KASA-alac-dep-rec,
+                            end-write,
+                                    initialize kasa-alac-dep-rec,
+                            if depkod-matrah-ba = "B"
+                               move "A"   to kasa-alac-dep-ba
+                            else
+                               move "B"   to kasa-alac-dep-ba
+                            end-if
+                            move depkod2-toplam-hesap   to kasa-alac-dep-hesap
+                            move  hrkgir-fatura-no        to kasa-alac-dep-fatura-no
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+                               move ref to kasa-alac-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                               if depkod-ref > 0 and < max-ref
+                                    move depkod-ref to kasa-alac-dep-ref
+                                end-if
+                            end-if
+                            
+                            
+                            read kasa-alac-dep no lock invalid continue,
+                            end-read,
+                                 compute kasa-alac-dep-tutar rounded = 
+                                 kasa-alac-dep-tutar + (hrkgir-tl-tutar * carpan)
+                                 move  hrkgir-fatura-no        to kasa-alac-dep-aciklama(1:)
+                                  move hrkgir-FATURA-NO to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to borc-dep-aciklama(1:20)
+                                          end-if
+                                 move "ft gr. iade-" to kasa-alac-dep-aciklama(22:)
+
+*                                 string konuk-adi delimited by "  "
+*                                       " " delimited by size
+*                                       konuk-soyadi delimited by   "  "
+*                                       into ad-soyad
+*                                       move ad-soyad to kasa-alac-dep-aciklama(22:)
+                            write kasa-alac-dep-rec invalid rewrite kasa-alac-dep-rec,
+                            end-write,
+
+                      else
+                               initialize kasa-borc-dep-rec,
+                               move depkod-toplam-hesap   to KASA-borc-dep-hesap
+                            if depkod-matrah-ba = "A"
+                               move "A"   to KASA-borc-dep-ba
+                            else
+                               move "B"   to KASA-borc-dep-ba
+                            end-if
+                            move depkod-toplam-hesap  to KASA-borc-dep-hesap
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+
+                               move ref to kasa-borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                            end-if
+                            
+                            read KASA-borc-dep no lock invalid continue,
+                            end-read,
+                                 compute KASA-borc-dep-tutar rounded = 
+                                 KASA-borc-dep-tutar + (hrkgir-tl-tutar * carpan)
+                                 move "Gunluk Tahsilatlar Geregi" to KASA-borc-dep-aciklama
+                            write KASA-borc-dep-rec invalid rewrite KASA-borc-dep-rec,
+                            end-write,
+                                    initialize kasa-borc-dep-rec,
+                            if depkod-matrah-ba = "B"
+                               move "A"   to kasa-borc-dep-ba
+                            else
+                               move "B"   to kasa-borc-dep-ba
+                            end-if
+                            move depkod2-toplam-hesap   to kasa-borc-dep-hesap
+                            move  hrkgir-fatura-no        to kasa-borc-dep-fatura-no
+                            
+                            if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+
+                               move ref to kasa-borc-dep-ref
+                               when 2 
+                                  continue 
+                               end-evaluate 
+                               if depkod-ref > 0 and < max-ref
+                                    move depkod-ref to kasa-borc-dep-ref
+                                end-if
+                            end-if
+
+                            read kasa-borc-dep no lock invalid continue,
+                            end-read,
+                                 compute kasa-borc-dep-tutar rounded = 
+                                 kasa-borc-dep-tutar + (hrkgir-tl-tutar * carpan)
+                                 initialize kasa-borc-dep-aciklama
+                                 move  hrkgir-fatura-no        to kasa-borc-dep-aciklama(1:)
+                                    move hrkgir-FATURA-NO to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to borc-dep-aciklama(1:20)
+                                          end-if
+                                 move "ft gr tahs-" to kasa-borc-dep-aciklama(22:)
+                                  initialize ad-soyad
+                                 string konuk-adi delimited by "  " 
+                                        " " delimited by size
+                                        konuk-soyadi delimited by "  "
+                                        into ad-soyad
+                                       move ad-soyad to kasa-borc-dep-aciklama(31:)
+                            write kasa-borc-dep-rec invalid rewrite kasa-borc-dep-rec,
+                            end-write,
+                             end-if
+                         end-if
+                         
+                         end-if
+
+
+
+                         initialize borc-dep-rec,
+                         if depkod-matrah-hesap not = spaces
+                            and  depkod2-matrah-hesap not = spaces
+                             if  depkod2-matrah-hesap(1:3) not = "100"
+                              
+                              initialize borc-dep-rec,
+                              move kk to borc-dep-corr
+                              move depkod-matrah-hesap   to borc-dep-hesap
+                              if depkod-matrah-ba = "B"
+                                   move "A"   to borc-dep-ba
+                               else
+                                  move "B"   to borc-dep-ba
+                              end-if
+                              move depkod-matrah-hesap  to borc-dep-hesap
+                              if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+
+                               move ref to borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                              end-if
+                              read borc-dep no lock invalid continue,
+                               end-read,
+                                 compute borc-dep-tutar rounded = 
+                                 borc-dep-tutar + (hrkgir-tl-tutar * carpan)
+                                 move "Gunluk Tahsilatlar Geregi" to borc-dep-aciklama
+                               write borc-dep-rec invalid rewrite borc-dep-rec,
+                               end-write,
+
+                                initialize borc-dep-rec,
+                                 move kk to borc-dep-corr
+                                if depkod-matrah-ba = "A"
+                                  move "A"   to borc-dep-ba
+                                else
+                                  move "B"   to borc-dep-ba
+                                end-if
+                                move depkod2-matrah-hesap   to borc-dep-hesap
+                                move hrkgir-fatura-no        to borc-dep-fatura-no
+                              if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+
+                               move ref to borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                               if depkod-ref > 0 and < max-ref
+                                    move depkod-ref to borc-dep-ref
+                                end-if
+                               end-if
+
+
+                                read borc-dep no lock invalid continue,
+                                end-read,
+                                 compute borc-dep-tutar rounded = 
+                                 borc-dep-tutar + (hrkgir-tl-tutar * carpan)
+                                 initialize borc-dep-aciklama ad-soyad
+                                 move hrkgir-fatura-no        to borc-dep-aciklama(1:)
+                                   move hrkgir-FATURA-NO to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to borc-dep-aciklama(1:20)
+                                          end-if
+                                 move "ft gr tahs-" to borc-dep-aciklama(22:)
+                                 string konuk-adi delimited by "  " 
+                                        " " delimited by size
+                                         konuk-soyadi delimited by "  "
+                                        into ad-soyad
+                                       move ad-soyad to borc-dep-aciklama(41:)
+                                write borc-dep-rec invalid rewrite borc-dep-rec,
+                                  end-write,
+                            else 
+                                  initialize KASA-borc-dep-rec,
+                              move depkod-matrah-hesap   to KASA-borc-dep-hesap
+                              if depkod-matrah-ba = "B"
+                                   move "A"   to KASA-borc-dep-ba
+                               else
+                                  move "B"   to KASA-borc-dep-ba
+                              end-if
+                              move depkod-matrah-hesap  to KASA-borc-dep-hesap
+                              
+                              if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+                               move ref to KASA-borc-dep-ref
+                               when 2
+                                 continue 
+                               end-evaluate 
+                              end-if
+                              
+                              read KASA-borc-dep no lock invalid continue,
+                               end-read,
+                                 compute KASA-borc-dep-tutar rounded = 
+                                 KASA-borc-dep-tutar + (hrkgir-tl-tutar * carpan)
+                                 move "Gunluk Tahsilatlar Geregi" to KASA-borc-dep-aciklama
+                               write KASA-borc-dep-rec invalid rewrite KASA-borc-dep-rec,
+                               end-write,
+                               
+                               initialize kasa-borc-dep-rec,
+                                 if depkod-matrah-ba = "A"
+                                     move "A"   to kasa-borc-dep-ba
+                                    else
+                                       move "B"   to kasa-borc-dep-ba
+                                  end-if
+                             
+                                 move depkod2-matrah-hesap   to KASA-borc-dep-hesap
+                                 move  hrkgir-fatura-no        to kasa-borc-dep-fatura-no
+                              if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+                               move ref to KASA-borc-dep-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+                               if depkod-ref > 0 and < max-ref
+                                    move depkod-ref to KASA-borc-dep-ref
+                                end-if
+                               end-if
+
+
+
+                                 read kasa-borc-dep no lock invalid continue,
+                                 end-read,
+                                 initialize   kasa-borc-dep-aciklama  ad-soyad
+                                 compute kasa-borc-dep-tutar rounded = 
+                                 kasa-borc-dep-tutar + (hrkgir-tl-tutar * carpan)
+                                 move hrkgir-fatura-no        to kasa-borc-dep-aciklama(1:)
+                                   move hrkgir-FATURA-NO to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to borc-dep-aciklama(1:20)
+                                          end-if
+                                  move "ft gr tahs-" to kasa-borc-dep-aciklama(22:)
+                                 string konuk-adi delimited by "  " 
+                                        " " delimited by size
+                                        konuk-soyadi delimited by "  "
+                                        into ad-soyad
+                                       move ad-soyad to kasa-borc-dep-aciklama(31:)
+                                 write kasa-borc-dep-rec invalid rewrite kasa-borc-dep-rec,
+                              end-write,
+
+                         end-if
+                         
+                         end-if
+        
+        .
+
+
+
+
+
+
+
+kacgun-bul.
+       open input takvim 
+       initialize takvim-rec takas-acenta-gun
+        
+        move konuk-gel-tar to takvim-anah
+        start takvim key > takvim-anah 
+            invalid
+            not invalid   
+             perform until fs-takvim =  "10"  
+               read takvim next no lock
+                  end move "10" to fs-takvim
+                  not end
+                  if takvim-anah < konuk-git-tar then
+                      add 1 to takas-acenta-gun
+                    else
+                       add 1 to takas-acenta-gun
+                       move "10" to fs-takvim
+                  end-if
+               end-read
+             end-perform
+         end-start
+         close takvim.
+
+*
+ takas-acenta-dovizleri-bul.
+        
+         open input acenfat
+           initialize acenfat-rec  ramco
+           move tarih to acenfat-tarih
+        
+             start acenfat key > acenfat-anah
+                invalid continue
+                not invalid
+                  perform until fs-acenfat = "10"
+                    read acenfat next
+                       end move "10" to fs-acenfat
+                       not end
+                       if tarih not =  acenfat-tarih                          
+                          move "10" to fs-acenfat
+                       else
+                           
+                          if acenfat-fat-no = fatdetay-fat-no and
+                             acenfat-folio = konuk-folio
+
+                           
+                           if acenfat-per-geceleme    > 0
+                             compute tl-gunluk rounded =   
+                             (ACENFAT-tl-TUTAR / acenfat-per-geceleme )
+                             compute dv-gunluk rounded =   
+                             tl-gunluk / (konuk-kur-degeri)
+                             compute ramco rounded =  
+                             ramco + ( dv-gunluk  * acenfat-per-geceleme )
+                             else
+
+                                 compute ramco rounded =  
+                                 ramco + acenfat-ger-dv-tutar |( ACENFAT-tl-TUTAR  / konuk-kur-degeri )
+                             
+                           end-if
+                          end-if 
+                        end-if
+                    end-read
+
+                  end-perform
+             end-start
+         close acenfat
+         
+        
+          .
+
+ kredi-karsilik.       
+       initialize borc-dep-rec,
+       if ( depkod-matrah-hesap not = spaces   or ara-bos = 1 )
+           and  depkod2-matrah-hesap not = spaces
+             if ara-bos not = 1 then
+              initialize borc-dep-rec,
+              move depkod-matrah-hesap   to borc-dep-hesap
+              if depkod-matrah-ba = "B"
+                    move "A"   to borc-dep-ba
+                  else
+                       move "B"   to borc-dep-ba
+              end-if
+          
+              move depkod-matrah-hesap  to borc-dep-hesap
+                 if ref-var = 1
+                     evaluate onkpara-referans-nerden
+                     when 1
+                     move ref to borc-dep-ref
+                     when 2
+                        continue 
+                     end-evaluate 
+                 end-if
+                  move "K" to borc-dep-kredi
+                 read borc-dep no lock invalid continue,
+                  end-read,
+                       compute borc-dep-tutar rounded = borc-dep-tutar + 
+                       (fatdetay-fatura-matrah * carpan )
+                       move "Acenta faturalari Geregi" to borc-dep-aciklama
+                      
+                  write borc-dep-rec invalid rewrite borc-dep-rec,
+                  end-write,
+              end-if
+                   initialize borc-dep-rec,
+                  move depkod2-matrah-hesap   to borc-dep-hesap
+                  if depkod-matrah-ba = "A"
+                     move "A"   to borc-dep-ba
+                  else
+                     move "B"   to borc-dep-ba
+                  end-if
+                  move depkod2-matrah-hesap   to borc-dep-hesap
+                  move  function numval(fatdetay-fat-no)         to borc-dep-fatura-no
+                   if ref-var = 1
+                     evaluate onkpara-referans-nerden
+                     when 1
+                     move ref to borc-dep-ref
+                     when 2
+                        continue 
+                     end-evaluate 
+                   end-if
+                         move "K" to borc-dep-kredi
+                         move "A"    to  borc-dep-fat-tip
+                         move "M"    to  borc-dep-mat-tipi
+                  read borc-dep no lock 
+                        invalid continue,
+                  end-read,
+                         move "A"    to  borc-dep-fat-tip
+                         move "M"    to  borc-dep-mat-tipi
+                         move depkod-kdv to  borc-dep-kdv   
+                       compute borc-dep-tutar rounded = borc-dep-tutar + 
+                       (fatdetay-fatura-matrah * carpan )
+                       move function numval(fatdetay-fat-no)   to  z-8
+                                 
+                                 move z-8 to borc-dep-aciklama 
+                        move function numval(fatdetay-fat-no) to e-o-fatura
+                             move ref to e-ref perform efatura-gercek-bul
+                             if e-m-fatura > spaces then 
+                                 move e-m-fatura to borc-dep-aciklama(1:20)
+                             end-if
+                       move "Ft geregi" to borc-dep-aciklama (22:)
+                   |if  function numval (fatdetay-fat-no) =  402221  and  function numval (fatdetay-folio) = 287912
+                  |     stop fatdetay-fatura-matrah
+                  | end-if    
+                  write borc-dep-rec invalid rewrite borc-dep-rec,
+                  end-write,
+               end-if
+                 if ( depkod-kdv-hesap not = spaces or ara-bos = 1 )
+                    and  depkod2-kdv-hesap not = spaces
+                     if ara-bos not = 1 then
+                     initialize borc-dep-rec,
+                    move depkod-kdv-hesap   to borc-dep-hesap
+                    if depkod-matrah-ba = "B"
+                       move "A"   to borc-dep-ba
+                    else
+                       move "B"   to borc-dep-ba
+                    end-if
+                    move depkod-kdv-hesap  to borc-dep-hesap
+                    if ref-var = 1
+                       evaluate onkpara-referans-nerden
+                       when 1
+                          move ref to borc-dep-ref
+                       when 2
+                          continue 
+                       end-evaluate 
+                   end-if
+                     move "K" to borc-dep-kredi
+                    read borc-dep no lock invalid continue,
+                    end-read,
+                         compute borc-dep-tutar rounded = 
+                         borc-dep-tutar + (fatdetay-fatura-kdv * carpan )
+                         move "Gunluk Gelirler Geregi" to borc-dep-aciklama
+                    write borc-dep-rec invalid rewrite borc-dep-rec,
+                    end-write,
+                    end-if
+                      initialize borc-dep-rec,
+                    move depkod2-kdv-hesap   to borc-dep-hesap
+                    if depkod-matrah-ba = "A"
+                       move "A"   to borc-dep-ba
+                    else
+                       move "B"   to borc-dep-ba
+                    end-if
+                    move depkod2-kdv-hesap   to borc-dep-hesap
+                    move  function numval(fatdetay-fat-no)        to borc-dep-fatura-no
+                     if ref-var = 1
+                        evaluate onkpara-referans-nerden
+                        when 1
+                           move ref to borc-dep-ref
+                        when 2
+                           continue 
+                        end-evaluate 
+                     end-if
+                       move "K" to borc-dep-kredi
+                           move "A"    to  borc-dep-fat-tip
+                           move "K"    to  borc-dep-mat-tipi
+                    read borc-dep no lock invalid continue,
+                    end-read,
+                         move "A"    to  borc-dep-fat-tip
+                         move "K"    to  borc-dep-mat-tipi
+                           move depkod-kdv to  borc-dep-kdv   
+                         compute borc-dep-tutar rounded = 
+                         borc-dep-tutar + (fatdetay-fatura-kdv * carpan )
+                         move function numval(fatdetay-fat-no)   to  z-8
+                                 
+                                 move z-8 to borc-dep-aciklama 
+                          move function numval(fatdetay-fat-no) to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to borc-dep-aciklama(1:20)
+                                          end-if
+                         move "Ft geregi" to borc-dep-aciklama (22:)
+*                     if  function numval (fatdetay-fat-no) =  402221  and  function numval (fatdetay-folio) = 287934
+*                       stop " "
+*                      end-if       
+                    write borc-dep-rec invalid rewrite borc-dep-rec,
+                    end-write,
+                 end-if  .
+*
+ pencere-bul.
+      
+       move fatdetay-rec to fatdetay2-rec    
+      
+     
+      initialize pen-hata
+      initialize exthrk-rec romhrk-rec
+       if fatdetay-romhrk-exthrk = "E" then
+                     initialize exthrk-rec 
+                     if fatdetay-ger-fol = 0 
+                        move function numval(fatdetay-folio)       to fatdetay-ger-fol
+                     end-if 
+                      move fatdetay-ger-fol    to exthrk-folio
+                      start exthrk key > exthrk-anah invalid continue
+                          not invalid
+                          perform until fs-exthrk = "10" 
+                            read exthrk next no lock end move "10" to fs-exthrk
+                               not end
+                                  if exthrk-folio not = fatdetay-ger-fol
+                                        move "10" to fs-exthrk
+                                      else
+                                        move exthrk-anah to hrk2-anah yromhrk-anah
+                                      read hrk2  no lock invalid stop " "
+                                      end-read
+
+                                      if  hrk2-kaynak-folio not = function numval ( fatdetay-folio )
+                                           exit perform cycle
+                                       end-if
+                                        if fatdetay-kdv not = 99 or function numval (fatdetay-islem)  not =   extHRK-ref
+                                          or not (function numval (fatdetay-islem) > 0 and < 10)
+                                          exit perform cycle
+                                       end-if   
+                                        if extHRK-FATURA-NO  =  function numval (fatdetay-fat-no)
+                                             if exthrk-corr-depkod not = spaces and exthrk-corr-depkod not = zeroes
+                                                   move -1 to carpan 
+                                                    move exthrk-corr-depkod to depkod-anah
+                                               else
+                                                   move 1 to carpan 
+                                                   move exthrk-depkod to depkod-anah
+                                              end-if
+                                       
+                                            read depkod  no lock invalid
+                                              stop " "
+                                            end-read
+                                            move depkod-anah to depkod2-anah
+                                            read depkod2 no lock invalid continue end-read
+                                             perform depkod2-tr
+                                              move exthrk-tl-tutar to fatdetay-fatura-toplam   
+                                               COMPUTE fatdetay-fatura-matrah ROUNDED = 
+                                                       fatdetay-fatura-toplam
+                                                       / ((100+ DEPKOD-KDV) / 100 )
+                                               COMPUTE fatdetay-fatura-kdv  =  
+                                               fatdetay-fatura-toplam - 
+                                               fatdetay-fatura-matrah
+                                                
+
+
+                                                PERFORM kredi-karsilik
+
+
+                                        end-if
+                                  end-if
+                            end-read
+                          end-perform
+                      end-start
+
+
+        
+          else
+          
+                     initialize romhrk-rec 
+                     if fatdetay-ger-fol = 0 
+                        move function numval(fatdetay-folio) to fatdetay-ger-fol
+                     end-if 
+                      move fatdetay-ger-fol    to romhrk-folio
+                      start romhrk key > romhrk-anah invalid continue
+                          not invalid
+                          perform until fs-romhrk = "10" 
+                            read romhrk next no lock end move "10" to fs-romhrk
+                               not end
+                                  if romhrk-folio not = fatdetay-ger-fol
+                                        move "10" to fs-romhrk
+                                      else
+                                       
+                                      move romhrk-anah to hrk2-anah yromhrk-anah
+                                      read hrk2  no lock invalid stop " "
+                                      end-read
+
+                                      if  hrk2-kaynak-folio not = function numval ( fatdetay-folio )
+                                           exit perform cycle
+                                       end-if
+                                      if fatdetay-kdv not = 99 or function numval (fatdetay-islem)  not =   romHRK-ref
+                                           or  not (function numval (fatdetay-islem) > 0 and < 10)
+                                          exit perform cycle
+                                       end-if
+                                           if romHRK-FATURA-NO  =  function numval (fatdetay-fat-no)
+                                        
+                                                  if romhrk-corr-depkod not = spaces and romhrk-corr-depkod not = zeroes
+                                                           move -1 to carpan 
+                                                            move romhrk-corr-depkod to depkod-anah
+                                                 else
+                                                           move 1 to carpan 
+                                                           move romhrk-depkod to depkod-anah
+                                                end-if
+                                       
+                                           read depkod  no lock invalid
+                                            stop " "
+                                          end-read
+                                           
+                                          move depkod-anah to depkod2-anah
+                                          read depkod2 no lock invalid continue end-read
+                                           perform depkod2-tr
+                                           move romhrk-tl-tutar to fatdetay-fatura-toplam 
+                                          COMPUTE  fatdetay-fatura-matrah ROUNDED =   fatdetay-fatura-toplam
+                                              / ((100+ DEPKOD-KDV) / 100 )
+                                         COMPUTE   fatdetay-fatura-kdv  =  fatdetay-fatura-toplam - fatdetay-fatura-matrah
+                                               
+                                
+                                         PERFORM kredi-karsilik
+         
+
+
+
+
+                                            end-if
+                                       
+                                  end-if
+                            end-read
+                          end-perform
+                      end-start
+         
+       end-if
+             
+                 initialize yromhrk-rec 
+                      move function numval(fatdetay-folio)    to yromhrk-folio
+                      start yromhrk key > yromhrk-anah invalid continue
+                          not invalid
+                          perform until fs-yromhrk = "10" 
+                            read yromhrk next no lock end move "10" to fs-yromhrk
+                               not end
+                                  if yromhrk-folio not = function numval(fatdetay-folio)
+                                        move "10" to fs-yromhrk
+                                      else
+                                      if fatdetay-kdv not = 99 
+                                           and (function numval (fatdetay-islem) > 0 and < 10)
+                                          exit perform cycle
+                                       end-if
+                                       
+                                       if  yROMHRK-ISLEM-TIPI not = "D" then 
+                                             exit perform cycle
+                                        end-if
+                                        move yromhrk-anah to romhrk-anah
+                                       move yromhrk-kaynak-folio to romhrk-folio
+                                       read romhrk no lock 
+                                           invalid 
+                                               exit perform cycle
+                                       end-read
+                                           if romHRK-FATURA-NO  =  function numval (fatdetay-fat-no)
+                                        
+                                                  if yromhrk-corr-depkod not = spaces and yromhrk-corr-depkod not = zeroes
+                                                           move -1 to carpan 
+                                                            move yromhrk-corr-depkod to depkod-anah
+                                                 else
+                                                           move 1 to carpan 
+                                                           move yromhrk-depkod to depkod-anah
+                                                end-if
+                                       
+                                           read depkod  no lock invalid
+                                            stop " "
+                                          end-read
+                                          move depkod-anah to depkod2-anah
+                                          read depkod2 no lock invalid continue end-read
+                                           perform depkod2-tr
+                                           move yromhrk-tl-tutar to fatdetay-fatura-toplam
+                                          COMPUTE  fatdetay-fatura-matrah ROUNDED =   fatdetay-fatura-toplam
+                                              / ((100+ DEPKOD-KDV) / 100 )
+                                         COMPUTE   fatdetay-fatura-kdv  =  fatdetay-fatura-toplam - fatdetay-fatura-matrah
+                                               
+                                
+                                
+                                         PERFORM kredi-karsilik
+         
+
+
+
+
+                                            end-if
+                                       
+                                  end-if
+                            end-read
+                          end-perform
+                      end-start
+             
+        
+
+
+            .
+*
+ kdv-duzelt.         
+          initialize borc-dep-rec 
+          move "A" to borc-dep-fat-tip
+          start borc-dep key > borc-dep-duz-anah
+             invalid continue
+             not invalid
+             perform until fs-borc-dep = "10" 
+                  read borc-dep next no lock 
+                    end move  "10"  to fs-borc-dep
+                    not  end
+                     
+                      if borc-dep-fat-tip = "A" then
+                        if function numval(borc-dep-fatura-no) > 0 then 
+                             initialize borc-fat-rec
+                            
+                           move   borc-dep-fatura-no to  borc-fat-fatura-no
+                           move   borc-dep-kdv       to  borc-fat-kdvoran
+                          read borc-fat no lock invalid continue
+                           end-read
+                           evaluate borc-dep-mat-tipi 
+                              when "M"
+                                  add 1 to borc-fat-matrah-adet
+                                   if borc-fat-matrah-adet < 40 
+                                     move  borc-dep-tutar   to  borc-fat-matrah(borc-fat-matrah-adet) 
+                                   end-if 
+                                    add   borc-dep-tutar  to   borc-fat-matrahtop 
+                                    if  borc-dep-tutar > borc-fat-matrah-max   then 
+                                        move  borc-dep-tutar to  borc-fat-matrah-max
+                                         move borc-dep-anah to borc-fat-matrah-anah 
+                                    end-if
+                              when "K" 
+                                  add 1 to borc-fat-kdv-adet
+                                   if borc-fat-kdv-adet < 40 
+                                     move  borc-dep-tutar   to  borc-fat-kdv(borc-fat-kdv-adet) 
+                                   end-if 
+                                    add   borc-dep-tutar  to   borc-fat-kdvtop  
+                                      if  borc-dep-tutar > borc-fat-kdv-max   then 
+                                        move  borc-dep-tutar to  borc-fat-kdv-max
+                                         move borc-dep-anah  to borc-fat-kdv-anah 
+                                    end-if
+
+                              when other 
+                                 stop " "
+                            end-evaluate
+                        
+                          write borc-fat-rec invalid rewrite borc-fat-rec end-write
+                      end-if
+                      else
+                          move  "10"  to fs-borc-dep
+                     end-if
+                end-read 
+             end-perform 
+          end-start
+          initialize acenfat-rec
+          move tarih     to acenfat-tarih
+          start acenfat key > acenfat-anah  invalid continue
+               not invalid 
+                 perform until fs-acenfat = "10"
+                    read acenfat next  no lock end move "10" to fs-acenfat
+                                not end 
+                         if acenfat-tarih > tarih 
+                            move "10" to fs-acenfat
+                            else
+                            if acenfat-fat-no > 0 then 
+                               move  acenfat-fat-no  to  borc-fat-fatura-no
+                               move acenfat-kdv      to  borc-fat-kdvoran
+                               read borc-fat no lock invalid continue
+                                  not invalid 
+                                    add acenfat-kdv8  acenfat-kdv18 to borc-fat-kdv-dogru
+                                    add ACENFAT-MATRAH8  ACENFAT-MATRAH18 to   borc-fat-matrah-dogru
+                                    rewrite borc-fat-rec invalid continue end-rewrite
+                               end-read
+                           end-if
+                        end-if
+                     end-read
+                 end-perform
+           end-start
+               
+ 
+         open i-o alsat
+          initialize borc-fat-rec
+          start borc-fat key > borc-fat-anah
+             invalid continue
+             not invalid 
+              perform until fs-borc-fat = "10" 
+                read borc-fat next no lock end move "10" to fs-borc-fat
+                    not end 
+                        
+
+                        compute matrah-olmasigereken rounded = 
+                               ( borc-fat-matrahtop +  borc-fat-kdvtop ) /
+                                 ( ( 100 + borc-fat-kdvoran ) / 100 )
+
+      
+                   
+                        perform alsattan-oku
+
+   
+                        compute   kdv-olmasigereken =  
+                        ( borc-fat-matrahtop +  borc-fat-kdvtop ) 
+                        - matrah-olmasigereken
+
+                        compute kdv-fark  =   kdv-olmasigereken - borc-fat-kdvtop
+
+       
+***                        perform alsattan-oku
+                        initialize borc-dep-rec
+                        move borc-fat-kdv-anah to borc-dep-anah 
+                        read borc-dep no lock invalid
+                              continue 
+                           not invalid
+                           if kdv-fark < 5 and kdv-fark > -5
+                              add  kdv-fark to borc-dep-tutar
+                              rewrite borc-dep-rec invalid stop " " end-rewrite
+                           end-if
+                        end-read
+                        initialize borc-dep-rec
+                        move borc-fat-matrah-anah to borc-dep-anah 
+                        read borc-dep no lock invalid
+                              continue
+                           not invalid
+                            if kdv-fark < 5 and kdv-fark > -5
+                              subtract  kdv-fark from borc-dep-tutar
+                              rewrite borc-dep-rec invalid stop " " end-rewrite
+                              end-if
+                        end-read
+                       
+                 end-read
+               end-perform
+          end-start
+          close alsat
+            .
+*
+ alsattan-oku.
+        
+
+              initialize yedek-matrah-olmasigereken
+              move matrah-olmasigereken to yedek-matrah-olmasigereken  
+              initialize alsat-rec  matrah-olmasigereken alsat-fatura-buldum
+
+                   move function numval(borc-fat-fatura-no)     to   s-6
+                   move s-6          to alsat-belge-no
+                   move "S"          to alsat-tipi                       
+                   move tarih        to alsat-tarih
+                  
+
+             start alsat key >=  BELGE-NO-ANAHTAR invalid continue
+               not invalid
+                 perform until fs-alsat = "10"
+                   read alsat next no lock end move "10" to fs-alsat
+                     not end
+                       if "S"          =  alsat-tipi and
+                          tarih        = alsat-tarih and
+
+                      function numval(borc-fat-fatura-no)  =
+                      function numval(alsat-belge-no)
+
+                                 if  alsat-kaynak-kutuphane  not =
+                                 isyeri-adres-tasi 
+                                  exit perform cycle 
+                                end-if
+                                 if  alsat-kaynak  not =  "O" 
+                                 exit perform cycle
+                                end-if
+
+                           
+                            if borc-fat-kdvoran  = alsat-kdv-orani 
+                               add alsat-matrah to matrah-olmasigereken
+                                move 1 to alsat-fatura-buldum
+                            end-if
+                         else
+                         move "10" to fs-alsat
+                      end-if
+                   end-read
+                end-perform
+            end-start
+
+            if alsat-fatura-buldum = 0
+                  move yedek-matrah-olmasigereken to matrah-olmasigereken
+            end-if.
+
+*
+ fatdetay-kontrol.
+
+     
+          
+                   |///  move function numval(fatdetay-folio) to konuk-folio  |||// onceki hali  16.11.2015  salih.y
+                   move fatdetay-ger-fol to konuk-folio ||//konulduuu 
+  
+                        read konuk no lock invalid
+                            continue
+                          not invalid
+                          move konuk-fol-kodu to  fatdetay-romhrk-exthrk
+                        end-read
+          
+                 initialize romhrk-rec exthrk-rec  fatura-rec kont-hat
+                 if fatdetay-depkod = "C/L"
+
+                      if fatdetay-ger-fol = 0 
+                           move fatdetay-folio to fatdetay-ger-fol
+                     end-if
+
+                  move fatdetay-ger-fol to konuk-folio 
+                        read konuk no lock invalid
+                            continue
+                          not invalid
+                          move konuk-fol-kodu to  fatdetay-romhrk-exthrk
+                        end-read
+                   if fatdetay-ger-fol = 0 
+                           move fatdetay-folio to fatdetay-ger-fol
+                   end-if
+
+                   move function numval(fatdetay-fat-no)    to zz
+                   move fatdetay-ger-fol to romhrk-folio  ydk-ger-folio
+                   if fatdetay-romhrk-exthrk = "R"
+             start romhrk key >= ROMHRK-ANAH
+                                invalid
+                                   move 1 to kont-hat
+                                not invalid
+                              perform until fs-romhrk = "10" 
+                                read romhrk  next no lock 
+                                    end
+                                      move "10" to fs-romhrk
+                                not end 
+
+                                  |///************07.12.2015 kaya artesmi casiona faturalarý için 
+                                if ydk-ger-folio <> romhrk-folio
+                                        move "10" to fs-romhrk
+                                        exit perform 
+                                end-if
+                                ||///***********
+                                initialize depkod-rec
+                                move romhrk-depkod to depkod-kodu 
+                                read depkod no lock invalid
+                                        continue
+                                end-read
+
+                                if fatdetay-ger-fol not =  romhrk-folio
+                                      move 1 to kont-hat
+                                      move "10" to fs-romhrk
+                                      exit perform 
+                                else 
+                                     if romhrk-ref = function numval(fatdetay-islem)
+                                              if onkpara-city-ledger not =  romhrk-depkod  
+                                                   if romhrk-ba = "A" and depkod-turu <> 2
+                                                             move 1 to kont-hat
+                                                             exit perform
+                                                   end-if
+                                              else
+                                                   if romhrk-fatura-no > 0   
+                                                        move 1 to kont-hat
+                                                        exit perform
+                                                   end-if
+                                              end-if
+                                      end-if
+                              END-if
+                             end-read
+                             end-perform 
+                            end-start
+                         else
+                                    move romhrk-rec to exthrk-rec
+                                   start exthrk key >= exthrk-ANAH  invalid
+                                            move 1 to kont-hat
+                                              
+                                    not invalid
+                                   perform until fs-exthrk = "10" 
+                                   read exthrk  next no lock 
+                                       end
+                                         move "10" to fs-exthrk
+                                   not end 
+                                    
+                                  |///************07.12.2015 kaya artesmi casiona faturalarý için 
+                                if ydk-ger-folio <> exthrk-folio
+                                        move "10" to fs-exthrk
+                                        exit perform 
+                                end-if
+                                ||///***********
+
+                                 initialize depkod-rec
+                                move exthrk-depkod to depkod-kodu 
+                                read depkod no lock invalid
+                                        continue
+                                end-read
+
+                                if fatdetay-ger-fol not = exthrk-folio
+                                      move 1 to kont-hat
+                                      move "10" to fs-exthrk
+                                      exit perform 
+                                else 
+                                     if exthrk-ref = function numval(fatdetay-islem)
+                                              if onkpara-city-ledger not =  exthrk-depkod  
+                                                     if exthrk-ba = "A" and depkod-turu <> 2
+                                                              move 1 to kont-hat
+                                                              exit perform
+                                                     end-if
+                                               else
+                                                     if exthrk-fatura-no > 0   
+                                                          move 1 to kont-hat
+                                                          exit perform
+                                                     end-if
+                                               end-if
+                                        end-if
+                                   END-if 
+                              end-read
+                             end-perform 
+                            end-start
+                         end-if
+                       move  function numval (fatdetay-fat-no) to fatura-no
+                 read fatura no lock invalid 
+                    move 1 to kont-hat
+                   
+                   not invalid 
+                    if  FATURA-TARIHI not =  fatdetay-fat-tar 
+                        move 1 to kont-hat
+                         
+                    end-if
+                       if fatura-durumu not = "D" then 
+                             move 1 to kont-hat
+                            
+                    end-if
+                  end-read
+                       exit paragraph
+                 end-if
+
+                 
+
+                 move function numval(fatdetay-folio) to romhrk-folio
+                 move function numval(fatdetay-islem) to romhrk-islem 
+                if  function numval(fatdetay-islem)  < 10 then 
+                    exit paragraph
+                end-if
+                  move function numval(fatdetay-folio) to konuk-folio
+                   read konuk no lock invalid continue
+                   end-read
+                   move konuk-fol-kodu to  fatdetay-romhrk-exthrk
+                 if fatdetay-romhrk-exthrk = "R"
+                     read romhrk  no lock invalid
+                          move 1 to kont-hat
+                        
+                       not invalid 
+                       if romhrk-fatura-no not = function numval (fatdetay-fat-no)
+                            move 1 to kont-hat
+                            else
+                            initialize depkod-rec
+                            move romhrk-depkod to depkod-anah
+                              read depkod no lock invalid continue end-read
+                            if depkod-turu = 2 then 
+                              move romhrk-corr-depkod to depkod-anah
+                                 read depkod no lock invalid continue end-read
+
+                           end-if 
+                           move romhrk-tl-tutar to  fatdetay-fatura-toplam
+                            compute  fatdetay-fatura-matrah   rounded =  fatdetay-fatura-toplam / ( 1 + ( depkod-kdv / 100 ) )        
+                            compute fatdetay-fatura-kdv    =    fatdetay-fatura-toplam - fatdetay-fatura-matrah 
+                             move romhrk-depkod to depkod-anah
+                             read depkod no lock invalid continue end-read
+                       end-if
+                     end-read
+                 else
+                   move romhrk-rec to exthrk-rec
+                   read exthrk  no lock invalid 
+                       move 1 to kont-hat
+                      
+                       not invalid 
+                       if exthrk-fatura-no not = function numval (fatdetay-fat-no)
+                           move 1 to kont-hat
+                           else
+                           initialize depkod-rec
+                            move exthrk-depkod to depkod-anah
+                            read depkod no lock invalid continue end-read
+                            if depkod-turu = 2 then 
+                              move romhrk-corr-depkod to depkod-anah
+                                 read depkod no lock invalid continue end-read
+
+                           end-if 
+                            move exthrk-tl-tutar to  fatdetay-fatura-toplam
+                            compute  fatdetay-fatura-matrah   rounded =  fatdetay-fatura-toplam / ( 1 + ( depkod-kdv / 100 ) )        
+                            compute fatdetay-fatura-kdv    =    fatdetay-fatura-toplam - fatdetay-fatura-matrah    
+                             move exthrk-depkod to depkod-anah
+                            read depkod no lock invalid continue end-read
+                          
+                       end-if
+                     end-read
+                 end-if
+                 move  function numval (fatdetay-fat-no) to fatura-no
+                 read fatura no lock invalid 
+                    move 1 to kont-hat
+                   
+                   not invalid 
+                    if  FATURA-TARIHI not =  fatdetay-fat-tar 
+                          move 1 to kont-hat
+                         
+                    end-if
+                       if fatura-durumu not = "D" then 
+                             move 1 to kont-hat
+                            
+                    end-if
+                  end-read
+           .
+ kredi-bul.
+******usendim ilk depkod cityledger a kalkan departmandir dedim  
+      initialize depkod-rec
+      start depkod   key >  depkod-anah
+       invalid continue 
+       not invalid 
+       read depkod  next  no lock
+       end-read
+      end-start
+      move depkod-anah to depkod2-anah
+      read depkod2 no lock invalid continue end-read
+        perform depkod2-tr
+****** hurmalar gala basýlýnca týrmaladý ugras bakalim
+    open i-o  acenta .
+    initialize fatdetay-rec.
+    move tarih        to fatdetay-fat-tar.
+    
+    start fatdetay key not < fatdetay-anah invalid continue,
+        not invalid,
+
+       
+        perform with test after until fs-fatdetay = "10",
+            read fatdetay next no lock end move "10" to fs-fatdetay,
+                not end,
+                
+                if fatdetay-fat-tar > tarih,
+                          move "10" to fs-fatdetay
+                          exit perform 
+                end-if,
+          
+
+               |    if function numval (fatdetay-fat-no) =  402221 and function numval (fatdetay-folio) = 287934  then 
+               |        stop " " 
+               |    end-if
+
+
+
+                if fatdetay-depkod = "C/L" then 
+                     
+                      perform fatdetay-kontrol
+                      if kont-hat = 1 
+                       
+                        exit perform cycle
+                       
+                      end-if
+
+                      
+
+                      move function numval(fatdetay-folio) to konuk-folio
+                      read konuk no lock invalid 
+                           exit perform cycle
+                      end-read
+*                      if konuk-folio = 41802 then stop " " end-if 
+*                      initialize takas-acenta-rec,
+                      
+                         
+                                if ref-var = 1 then 
+                                       evaluate onkpara-referans-nerden
+                                       when 1
+                                   
+                                         move xkonum-ref(konuk-fiyat-konumu) to sat-ref                       
+                                         initialize kodlar02-rec
+                                         move "r"           to kodlar02-tipi
+                                         move xkonum-ref(konuk-oda-konumu) to zz
+                                         move zz                           to kodlar02-kodu
+                                         read kodlar02 no lock invalid 
+                                             continue 
+                                         not invalid 
+                                             if kodlar02-ref not = ref
+                                                exit perform cycle 
+                                             end-if 
+                                         end-read 
+                                        when 2
+                                           continue 
+                                        end-evaluate 
+                                end-if 
+                           initialize kur-rec takas-acenta-rec acenta-rec
+                           move konuk-acenta    to takas-acenta-kodu 
+                           move takas-acenta-kodu   to acenta-kodu
+
+                          read acenta no lock invalid 
+                               continue
+
+                          end-read
+                          
+                           move konuk-banka      to  takas-acenta-banka
+                           if genel-otel-kod = "libert"
+                               perform doviz-kodu-duzenle
+                           end-if                         
+                           move konuk-doviz      to  takas-acenta-doviz
+ 
+************************************   EARLY BOOK            
+                             move konuk-gel-tar to takas-acenta-gel-tar
+                             if konuk-eb = "E" or "1" then 
+                                  move konuk-eb      to takas-acenta-eb
+                               end-if
+*                            move konuk-pazar   to takas-acenta-pazar
+************************************ 
+                                      
+*                           if acenta-detay-mahsup = "E" then
+*                               move konuk-odano to takas-acenta-odano
+*                           end-if
+                            move  function numval(fatdetay-fat-no)  to takas-acenta-fatura-no  
+                             
+                                 
+
+
+
+                           if ref-var = 1
+                               evaluate onkpara-referans-nerden
+                               when 1
+                                  move sat-ref to takas-acenta-ref
+                               when 2
+                                  continue 
+                               end-evaluate 
+
+                           end-if
+                            if konuk-firma > spaces  
+                               move konuk-firma to takas-sirket-kodu
+                           end-if
+                           read takas-acenta no lock invalid continue
+                           end-read
+                           if konuk-fat-no > 0 then  
+                            move konuk-folio to takas-acenta-folno
+
+                           end-if,
+
+             
+                           compute takas-acenta-tl-tutar rounded =  
+                                   takas-acenta-tl-tutar +
+                                   fatdetay-fatura-toplam
+                              if konuk-kur-degeri = 0 then 
+                                   move 1 to konuk-kur-degeri  
+                               end-if
+                               perform kacgun-bul
+                               if   fatdetay-fatura-toplamdv = 0 then  |||// yildiz vardi  16.11.2015  salih.y
+                                
+                                  perform takas-acenta-dovizleri-bul
+                                  move  ramco to fatdetay-fatura-toplamdv
+                               end-if                                   |||// yildiz vardi 16.11.2015  salih.y
+                             compute takas-acenta-dv-tutar rounded =  
+                                   takas-acenta-dv-tutar + fatdetay-fatura-toplamdv   
+                              
+                              move konuk-kur-degeri to takas-acenta-doviz-kuru doviz-alis
+                           
+
+
+
+                           write takas-acenta-rec invalid
+                                 rewrite takas-acenta-rec end-rewrite
+                           end-write,
+                           move 1 to carpan
+*                            if function numval(fatdetay-fat-no) = 5 then stop " "
+*                            end-if
+                              
+
+              |     if function numval (fatdetay-fat-no) =  402221 and function numval (fatdetay-folio) = 287934  then 
+              |         stop " " 
+              |     end-if
+
+             
+                            perform pencere-bul
+
+
+                end-if
+            end-read,
+        end-perform,
+    end-start.
+    open input acenfat
+     perform kdv-duzelt
+     close acenfat
+    move spaces to evet-hayir.
+    initialize takas-acenta-rec.
+
+    start takas-acenta key not < takas-acenta-anah invalid continue,
+        not invalid,
+
+        move spaces to evet-hayir,
+        perform with test after until evet,
+            read takas-acenta next no lock end move "E" to evet-hayir,
+                not end,
+                   initialize alac-dep-rec,
+                          modify lb-1, title = takas-acenta-kodu
+                   move takas-acenta-kodu   to acenta-kodu
+                   read acenta no lock invalid 
+              
+                               display message box 
+                                "Tanimsiz Acenta",
+                                icon mb_error_icon
+                                title "Hata"
+                                move 1 to enable-1 
+                                move 0 to enable-2
+                                display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+                                perform dil-ayarla-proc
+*/-----------------------------\*         
+                                move 4 to accept-control
+                                move 4 to control-id
+                                exit paragraph
+                                close kasa-borc-dep kasa-alac-dep borc-dep alac-dep takas-acenta takaskar
+                                delete file kasa-borc-dep kasa-alac-dep borc-dep alac-dep takas-acenta   takaskar
+                   not invalid
+
+ 
+                        initialize alac-dep-rec
+                         move "A"   to alac-dep-ba
+                        move acenta-muhno       to alac-dep-hesap
+                        move takas-acenta-banka to alac-dep-banka
+                        move takas-acenta-doviz to alac-dep-doviz
+                        move takas-acenta-kodu  to alac-dep-acenno    | Ayni hesap noya iki acenta atilirsa - mami
+                        if acenta-detay-mahsup = "E" then
+                           move takas-acenta-odano to alac-dep-odano
+                        end-if
+                       
+************************************   EARLY BOOK            
+                          move takas-acenta-gel-tar to alac-dep-gel-tar
+                          move takas-acenta-eb      to alac-dep-eb
+                          move takas-acenta-pazar    to alac-dep-pazar
+
+************************************                           
+                        move takas-acenta-folno    to konuk-folio,
+                           read konuk no lock invalid 
+                                move spaces to konuk-adi konuk-soyadi,
+                           end-read
+                        if acenta-muhno2  not = spaces then 
+                           move "A" to alac-dep-ara
+
+                        end-if
+                       
+                        if ref-var = 1 then 
+                            evaluate onkpara-referans-nerden
+                            when 1
+                               move ref to alac-dep-ref
+                            when 2
+                               continue 
+                            end-evaluate 
+                        end-if
+                          move "K" to alac-dep-kredi
+
+
+                        ||12.04.2013 secil haným ýcýn 181ler fat no attýrlýdý
+                         if tahakkuksuz = 1 
+|                             move takas-acenta-fatura-no   to alac-dep-fatura-no
+                     
+                          continue
+                         else
+                          move takas-acenta-fatura-no   to alac-dep-fatura-no
+                      end-if
+                 
+                        read alac-dep no lock invalid
+                          move alac-dep-fatura-no  to alac-dep-aciklama
+                             move function numval(alac-dep-fatura-no) to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to alac-dep-aciklama(1:20)
+                                          end-if
+                           move " Ft"                  to alac-dep-aciklama(22:3) 
+                        end-read
+            
+                        compute alac-dep-tutar-tl rounded =  
+                                alac-dep-tutar-tl + takas-acenta-tl-tutar
+                        compute alac-dep-tutar-dv rounded =  
+                                alac-dep-tutar-dv + takas-acenta-dv-tutar
+                 
+                        
+                        move takas-acenta-gel-tar(7:2) to alac-dep-aciklama(31:2)                        
+                        move "/" to alac-dep-aciklama(33:1)                        
+                        move takas-acenta-gel-tar(5:2) to alac-dep-aciklama(34:2)                        
+                        move "-" to alac-dep-aciklama(36:01)
+                        move gun to alac-dep-aciklama(37:2)
+                        move "/" to alac-dep-aciklama(39:1)
+                        move ay  to alac-dep-aciklama(40:2)
+                        move acenta-adi to alac-dep-aciklama(43:10)
+                        if alac-dep-eb = "E" then 
+                                move "E/B" to alac-dep-aciklama(55:3)       
+                        end-if
+                        if acenta-detay-mahsup = "E" then
+                           initialize alac-dep-aciklama
+                           move gun to alac-dep-aciklama (31:2)
+                           move "/" to alac-dep-aciklama(33:1)
+                           move ay  to alac-dep-aciklama(34:2)
+                           move "Cikislar-" to alac-dep-aciklama(37:)
+                           move acenta-kodu to alac-dep-aciklama(37:4)
+                           move takas-acenta-odano to alac-dep-aciklama(42:4),
+                           move konuk-adi        to alac-dep-aciklama(47:7)
+                           move konuk-soyadi     to alac-dep-aciklama(55:)
+                        end-if 
+                        move  takas-acenta-doviz-kuru to alac-dep-doviz-kuru
+                       
+                        if ara-bos not = 1 then
+                        write alac-dep-rec invalid
+                              rewrite alac-dep-rec end-rewrite  |||99
+                        end-write,
+                        end-if
+             
+                        initialize alac-dep-rec 
+                        move "B"   to alac-dep-ba
+                        move acenta-muhno2       to alac-dep-hesap
+                        if takas-sirket-kodu not = spaces 
+                                   
+                                 initialize firma-rec
+                           
+                                 move takas-sirket-kodu to firma-kodu
+                                 read firma no lock invalid
+                                         continue
+                                 not invalid 
+                                   initialize musteri-rec
+*                                      move firma-profil-anah to m-profil  |firat m-profil bos gorunuyor.. 17/08/2020
+                                      move firma-profil-sirket to musteri-sirket 
+                                      move firma-profil-no     to musteri-no
+                                      move firma-adi to alac-dep-aciklama(23:10)
+                                      if alac-dep-eb = "E" then 
+                                           move "E/B" to alac-dep-aciklama(35:3)       
+                                       end-if
+                                     read musteri no lock invalid continue
+                                        not invalid 
+                                           move musteri-muhasebe-kodu to alac-dep-hesap
+                                      end-read
+                                 end-read
+                       
+                        end-if
+                        move takas-acenta-banka to alac-dep-banka
+                        move takas-acenta-doviz to alac-dep-doviz
+                        move takas-acenta-kodu  to alac-dep-acenno    | Ayni hesap noya iki acenta atilirsa - mami
+
+                        if acenta-detay-mahsup = "E" then
+                           move takas-acenta-odano to alac-dep-odano
+                        end-if
+
+                           move takas-acenta-fatura-no   to alac-dep-fatura-no
+************************************   EARLY BOOK            
+*                        move takas-acenta-gel-tar to alac-dep-gel-tar
+                        move takas-acenta-eb      to alac-dep-eb
+*                        move takas-acenta-pazar   to alac-dep-pazar
+
+************************************                           
+                        move takas-acenta-folno    to konuk-folio,
+                           read konuk no lock invalid 
+                                move spaces to konuk-adi konuk-soyadi,
+                           end-read
+
+                        move takas-acenta-fatura-no   to alac-dep-fatura-ACK
+                        if ref-var = 1 then
+                               evaluate onkpara-referans-nerden
+                               when 1
+                               move xkonum-ref(konuk-fiyat-konumu) to sat-ref                       
+                               move sat-ref to alac-dep-ref                                         
+                               when 2
+                                  continue 
+                               end-evaluate 
+                        end-if
+                         move "K" to alac-dep-kredi 
+                        read alac-dep no lock invalid
+*                        
+                        
+                           move takas-acenta-fatura-no   to alac-dep-aciklama
+                             move function numval(takas-acenta-fatura-no) to e-o-fatura
+                                          move ref to e-ref perform efatura-gercek-bul
+                                          if e-m-fatura > spaces then 
+                                              move e-m-fatura to alac-dep-aciklama(1:20)
+                                          end-if
+                           move " Ft"         to alac-dep-aciklama(22:3) 
+                        
+                          
+                        end-read
+
+                        compute alac-dep-tutar-tl rounded =  
+                                alac-dep-tutar-tl + takas-acenta-tl-tutar
+                        compute alac-dep-tutar-dv rounded =  
+                                alac-dep-tutar-dv + takas-acenta-dv-tutar
+                 
+                        
+                        move takas-acenta-gel-tar(7:2) to alac-dep-aciklama(31:2)                        
+                        move "/" to alac-dep-aciklama(33:1)                        
+                        move takas-acenta-gel-tar(5:2) to alac-dep-aciklama(34:2)                        
+                        move "-" to alac-dep-aciklama(36:01)
+                        move gun to alac-dep-aciklama(37:2)
+                        move "/" to alac-dep-aciklama(39:1)
+                        move ay  to alac-dep-aciklama(40:2)
+                        move acenta-adi to alac-dep-aciklama(43:10)
+                        if alac-dep-eb = "E" then 
+                                move "E/B" to alac-dep-aciklama(55:3)       
+                        end-if
+                        if acenta-detay-mahsup = "E" then
+                        initialize alac-dep-aciklama
+                        move gun to alac-dep-aciklama (31:2)
+                        move "/" to alac-dep-aciklama(33:1)
+                        move ay  to alac-dep-aciklama(34:2)
+*                        move "Cikislar-" to alac-dep-aciklama(17:)
+                        move acenta-kodu to alac-dep-aciklama(37:4)
+                        move takas-acenta-odano to alac-dep-aciklama(42:4),
+                        move konuk-adi        to alac-dep-aciklama(47:7)
+                        move konuk-soyadi     to alac-dep-aciklama(55:)
+                          end-if 
+                        move  takas-acenta-doviz-kuru to alac-dep-doviz-kuru
+                           
+                        write alac-dep-rec invalid
+                              rewrite alac-dep-rec end-rewrite
+                        end-write,
+                        
+                        if ( takas-acenta-eb = "E" or  acenta-coutkuru-kullanma = 1 )   and acenta-av-oran > 0
+                          AND ACENTA-AVANO NOT = SPACES then 
+                             move "K" to alac-dep-kredi 
+                           perform  acenta-avans-yaz
+                        end-if
+                   end-read,
+            end-read,
+        end-perform,
+    end-start.
+    close acenta .
+    
+
+
+*
+ acenta-avans-yaz.
+          
+          if alac-dep-ba = "B"
+              move "A"   to alac-dep-ba
+             else
+              move "B"   to alac-dep-ba
+          end-if
+          move "C" to alac-dep-corr
+          
+             initialize  alac-dep-fatura-no   |*
+          read alac-dep no lock invalid
+              initialize alac-dep-tutar-tl   
+               alac-dep-tutar-dv   
+               alac-dep-doviz-kuru 
+               alac-dep-aciklama   
+            
+         
+          end-read
+            initialize  alac-dep-aciklama
+            move konuk-fat-no to e-o-fatura
+                   move ref to e-ref perform efatura-gercek-bul
+                 if e-m-fatura > spaces then 
+                         continue
+                         else
+                        move konuk-fat-no to e-m-fatura
+                 end-if
+
+           string  
+                "EB Avans Vir."  delimited by size   
+                  e-m-fatura delimited by size
+                  " Ft " delimited by size
+                   acenta-adi delimited by "   "
+               into alac-dep-aciklama
+          if acenta-av-oran > 98 then 
+                  compute alac-dep-tutar-tl rounded =  alac-dep-tutar-tl + 
+                                           takas-acenta-tl-tutar 
+                  compute alac-dep-tutar-dv rounded =  alac-dep-tutar-dv + 
+                                           takas-acenta-dv-tutar 
+
+
+              else
+                  compute alac-dep-tutar-tl rounded =  alac-dep-tutar-tl + 
+                                        ( takas-acenta-tl-tutar * ((acenta-av-oran) / 100))
+                  compute alac-dep-tutar-dv rounded =  alac-dep-tutar-dv + 
+                                        ( takas-acenta-dv-tutar * (( acenta-av-oran) / 100))
+          end-if               
+*********************************   
+
+                      
+*                        move alac-dep-pazar        to alac-dep-aciklama(35:2)
+*                        if alac-dep-pazar not = spaces
+
+*                                move "Knk" to alac-dep-aciklama(38:) 
+*                                else 
+*                                move "Extra Harcamalari" to alac-dep-aciklama(22:)       
+*                        end-if
+***********************************                                 
+        move  takas-acenta-doviz-kuru to alac-dep-doviz-kuru
+          write alac-dep-rec invalid
+               rewrite alac-dep-rec end-rewrite
+         end-write,
+          .
+
+          if alac-dep-ba = "B"
+              move "A"   to alac-dep-ba
+             else
+              move "B"   to alac-dep-ba
+          end-if
+          move acenta-avano       to alac-dep-hesap
+           move "C" to alac-dep-corr
+          read alac-dep no lock invalid
+               initialize alac-dep-tutar-tl   
+               alac-dep-tutar-dv   
+               alac-dep-doviz-kuru 
+               alac-dep-aciklama   
+             
+             
+          end-read
+           initialize  alac-dep-aciklama
+          string  
+                "EB Avans Vir."  delimited by size   
+                  e-m-fatura delimited by size
+                  " Ft " delimited by size
+                   acenta-adi delimited by "   "
+               into alac-dep-aciklama
+                 
+          
+        if  acenta-av-oran > 98
+          compute alac-dep-tutar-tl rounded =  alac-dep-tutar-tl + 
+                                 takas-acenta-tl-tutar 
+          compute alac-dep-tutar-dv rounded =  alac-dep-tutar-dv + 
+                                takas-acenta-dv-tutar 
+
+           else
+
+          compute alac-dep-tutar-tl rounded =  alac-dep-tutar-tl + 
+                                ( takas-acenta-tl-tutar * ((acenta-av-oran) / 100))
+          compute alac-dep-tutar-dv rounded =  alac-dep-tutar-dv + 
+                                ( takas-acenta-dv-tutar * (( acenta-av-oran) / 100))
+       end-if                 
+*********************************                        
+        
+                        
+*                        move alac-dep-pazar        to alac-dep-aciklama(35:2)
+*                        if alac-dep-pazar not = spaces
+*                                move "Knk" to alac-dep-aciklama(38:) 
+*                                else 
+*                                move "Extra Harcamalari" to alac-dep-aciklama(22:)       
+*                        end-if
+***********************************                                 
+        move  takas-acenta-doviz-kuru to alac-dep-doviz-kuru
+          write alac-dep-rec invalid
+               rewrite alac-dep-rec end-rewrite
+         end-write,
+
+    .   
+*
+     .
+*
+ acc-ref-Bef-Procedure.
+    initialize nereden.
+*
+ acuserve-adres-aktar.
+      if resmiye-kes = 1 then  
+         move genel-resmi-muha of genel-rec to CARI-DOSYA-adres         
+                         ISLENEN-DOSYA-adres      
+                         HESAP-DOSYA-adres        
+                         MAHSUP-DOSYA-adres       
+                         genelfis-DOSYA-adres     
+                         REFERANS-DOSYA-adres     
+                         mgenel-DOSYA-adres       
+                         genelfis-DOSYA-adres 
+                         alsat-dosya-adres
+                         efat2onb-dosya-adres
+                         move "muha" to genelfis-DOSYA(16:4)
+
+      else
+       move muhasebe-entegre-sirketi to CARI-DOSYA-adres         
+                         ISLENEN-DOSYA-adres      
+                         HESAP-DOSYA-adres        
+                         MAHSUP-DOSYA-adres       
+                         genelfis-DOSYA-adres     
+                         REFERANS-DOSYA-adres     
+                         mgenel-DOSYA-adres       
+                         genelfis-DOSYA-adres 
+                         alsat-dosya-adres
+                         efat2onb-dosya-adres
+                         move "muha" to genelfis-DOSYA(16:4)
+      end-if         
+
+      move all low-values to  alsat-acuserve-dosya
+                           efat2onb-acuserve-dosya
+                           CARI-ACUSERVE-DOSYA       
+                           ISLENEN-ACUSERVE-DOSYA    
+                           HESAP-ACUSERVE-DOSYA      
+                           MAHSUP-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA   
+                           REFERANS-ACUSERVE-DOSYA   
+                           Mgenel-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA  
+                           ip-no.
+
+
+    inspect genel-muha-uzak-ip 
+            replacing trailing spaces by low-values.
+
+    if genel-muha-uzak-ip <> low-values
+       move all low-values to ip-no
+       string ip-no,
+              "@" delimited by low-values
+              genel-muha-uzak-ip delimited by low-values
+              ":" delimited by low-values
+              into ip-no
+    end-if
+
+    string mgenel-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mgenel-dosya                    delimited by low-values
+           into mgenel-acuserve-dosya.
+    string genelfis-acuserve-dosya,
+           ip-no                        delimited by low-values
+           genelfis-dosya                 delimited by low-values
+           into genelfis-acuserve-dosya.
+
+    
+    string hesap-acuserve-dosya,
+           ip-no                        delimited by low-values
+           hesap-dosya                 delimited by low-values
+           into hesap-acuserve-dosya.
+    string mahsup-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mahsup-dosya                 delimited by low-values
+           into mahsup-acuserve-dosya.
+    string cari-acuserve-dosya,
+           ip-no                        delimited by low-values
+           cari-dosya                 delimited by low-values
+           into cari-acuserve-dosya.
+    string islenen-acuserve-dosya,
+           ip-no                        delimited by low-values
+           islenen-dosya               delimited by low-values
+           into islenen-acuserve-dosya.
+    string referans-acuserve-dosya,
+           ip-no                        delimited by low-values
+           referans-dosya                delimited by low-values
+           into referans-acuserve-dosya.
+     string efat2onb-acuserve-dosya,
+           ip-no                        delimited by low-values
+           efat2onb-dosya                delimited by low-values
+           into efat2onb-acuserve-dosya.
+     string alsat-acuserve-dosya,
+           ip-no                        delimited by low-values
+           alsat-dosya                delimited by low-values
+           into alsat-acuserve-dosya.
+    
+    inspect cari-acuserve-dosya        replacing  all spaces by low-values
+    inspect alsat-acuserve-dosya        replacing  all spaces by low-values
+    inspect efat2onb-acuserve-dosya        replacing  all spaces by low-values
+    inspect islenen-acuserve-dosya     replacing  all spaces by low-values
+    inspect hesap-acuserve-dosya       replacing  all spaces by low-values
+    inspect mahsup-acuserve-dosya      replacing  all spaces by low-values
+    inspect genelfis-acuserve-dosya    replacing  all spaces by low-values
+    inspect referans-acuserve-dosya    replacing  all spaces by low-values
+    inspect mgenel-acuserve-dosya      replacing  all spaces by low-values
+    inspect genelfis-acuserve-dosya    replacing  all spaces by low-values.
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\* 
+
+  
+     .
+*
+ Form1-Cb-1aaa-Ev-Cmd-Clicked.
+         inquire Form1-Cb-1aaa   value in  resmiye-kes
+          if resmiye-kes = 1 then 
+             move 1 to tahakkuksuz
+             display  Form1-Cb-1aa
+          end-if.
+          display acc-resmi.
+        
+
+
+             initialize referans-ip
+             perform acuserve-adres-aktar.
+     
+             open input mgenel.
+             move 1 to mgenel-anahtar.
+             read mgenel no lock invalid
+                  display message box 
+                          "mgenel parametre tanimsiz ..."
+                          icon mb_error_icon
+                          title "Hata"
+                          close mgenel
+                          destroy form1-handle
+                          goback
+             end-read.
+             close mgenel.
+             initialize referans-ip
+    
+       
+
+     if mgenel-referans = "E" 
+        move 1 to vis-1
+          move 1 to ref-var
+     else
+        move 0 to vis-1
+          move 0 to ref-var
+     end-if.
+     move 1 to enable-1
+     move 0 to enable-2.
+     display Form1-La-1aa acc-ref.
+
+
+****
+* *
+* efatura-gercek-bul.
+*      
+*        initialize efat2onb-rec  e-m-fatura
+*        set efat2onb-tipi-onburo to true
+*        move  e-ref      to  efat2onb-referans 
+*        move tarih to  efat2onb-fatura-tarihi
+*        move all "0" to   efat2onb-onburo-fatura-no
+*        move e-o-fatura to efat2onb-onburo-fatura-no2           
+*  
+*             read efat2onb  no lock invalid  continue
+*                not invalid 
+*                if  function numval (efat2onb-muhasebe-fatura-no)  > 0
+*                 
+*                 move  efat2onb-muhasebe-fatura-no to   e-m-fatura
+*                 end-if
+*            end-read.
+*
+* *
+ efatura-gercek-bul.
+     
+        initialize efat2onb-rec  e-m-fatura
+        set efat2onb-tipi-onburo to true
+        move  e-ref      to  efat2onb-referans 
+        initialize kodlar02-rec
+            move "r"           to kodlar02-tipi
+            move e-ref   to zz
+            move zz           to kodlar02-kodu
+            read kodlar02 no lock invalid 
+                continue 
+            not invalid 
+                move kodlar02-ref to efat2onb-referans
+            end-read              
+        |  if k-kodu-tasi = "X   " or "ASYA" then
+
+                move  e-ref      to  efat2onb-referans 
+        |  end-if
+        move tarih to  efat2onb-fatura-tarihi
+        move all "0" to   efat2onb-onburo-fatura-no
+        move e-o-fatura to efat2onb-onburo-fatura-no2           
+          
+             read efat2onb  no lock invalid  
+              |   if k-kodu-tasi = "X   " or "ASYA" then                     
+                       move 1 to  efat2onb-referans 
+                       read efat2onb  no lock invalid  
+                           move 3 to  efat2onb-referans 
+                           read efat2onb  no lock invalid 
+                                   move 2 to  efat2onb-referans 
+                                   read efat2onb  no lock invalid 
+                                      continue                                
+                                   not invalid 
+                                       if  function numval (efat2onb-muhasebe-fatura-no(8:))  > 0 
+                                          move  efat2onb-muhasebe-fatura-no to   e-m-fatura
+                                       end-if   
+                                   end-read
+                                
+                           not invalid 
+                               if  function numval (efat2onb-muhasebe-fatura-no(8:))  > 0 
+                                  move  efat2onb-muhasebe-fatura-no to   e-m-fatura
+                               end-if   
+                           end-read
+                       not invalid 
+                          if function numval (efat2onb-muhasebe-fatura-no(8:))  > 0 
+                             move  efat2onb-muhasebe-fatura-no to   e-m-fatura
+                          end-if   
+                       end-read
+            |     end-if
+                not invalid 
+                  if function numval (efat2onb-muhasebe-fatura-no(8:))  > 0 
+                      move  efat2onb-muhasebe-fatura-no to   e-m-fatura
+                  end-if                 
+            end-read
+                               
+            |////////lara beach icin kaybolmus yeninden konuldu 02.09.2015
+            EVALUATE MGENEL-EFATURA-ENT-TURU
+                    WHEN "P"
+                      
+                      evaluate true 
+                       when isyeri-adres-tasi = "016otell" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0  
+                       when isyeri-adres-tasi = "017otell" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0  
+                       when isyeri-adres-tasi = "018otell" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0  
+                       when isyeri-adres-tasi = "019otell" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0  
+                       when isyeri-adres-tasi = "020otell" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0  
+                                 move e-o-fatura                           to num-e-fat-no
+                                 move num-e-fat-no                         to num-e-fat-no-z
+                                 move num-e-fat-no-z                       to e-m-fatura
+                      when isyeri-adres-tasi = "16otelly" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0
+                      when isyeri-adres-tasi = "17otelly" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0
+                      when isyeri-adres-tasi = "18otelly" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0
+                      when isyeri-adres-tasi = "19otelly" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0
+                      when isyeri-adres-tasi = "20otelly" and function numval (efat2onb-muhasebe-fatura-no(8:))  > 0
+                           move efat2onb-elektronik-fatura-no  to e-m-fatura
+                      end-evaluate 
+      
+            END-EVALUATE.
+*
+ Form1-Aft-Routine.
+       close odalar2
+     .
+*
+ doviz-kodu-duzenle.  
+     open input doviz    
+     initialize doviz-rec                              | firat liberty likya 28/12/2018..
+     move konuk-doviz to doviz-kodu
+     read doviz no lock invalid
+          continue
+     not invalid
+         if d-muh-doviz-kodu > 0
+            move d-muh-doviz-kodu to konuk-doviz
+         end-if
+     end-read
+     close doviz
+        .
+
+*
+ uzak-kur-degistir. 
+     open input doviz
+     initialize doviz-rec
+     start doviz key not < DOVIZ-KODU invalid 
+         continue 
+     not invalid 
+     perform until fs-doviz = "10"
+     read doviz next no lock end move "10" to fs-doviz
+     not at end 
+            if mgenel-doviz = d-muh-doviz-kodu
+                move DOVIZ-KODU  to kur-doviz
+            end-if 
+     end-read 
+     end-perform
+     end-start
+     close doviz
+       .
+
+*
+ uzak-kur-degistir-hesaba-gore. 
+      
+     initialize doviz-rec
+     start doviz key not < DOVIZ-KODU invalid 
+         continue 
+     not invalid 
+     perform until fs-doviz = "10"
+     read doviz next no lock end move "10" to fs-doviz
+     not at end 
+            if HESAP-DOVIZ = d-muh-doviz-kodu
+                move DOVIZ-KODU  to kur-doviz
+            end-if 
+     end-read 
+     end-perform
+     end-start.
+     
+*
+ hesaba-gore-doviz.
+     if combo-dovizlimi-value(1:1)  = "D" and dov-hes-calis = 1
+        if mahsup-tutar <> zeroes
+           initialize hesap-rec
+           move mahsup-hesap-kodu to hesap-kodu
+           read hesap no lock invalid
+               continue 
+           end-read 
+           move HESAP-BANKA   to mahsup-banka-kodu           
+           move HESAP-DOVIZ   to mahsup-doviz-kodu          
+           move HESAP-DOVIZ-EFEKTIF to mahsup-d-e 
+           move hesap-doviz-eh to MAHSUP-DOVIZ-E-H
+
+           initialize kur-rec
+           move mahsup-banka-kodu to kur-banka
+           move mahsup-doviz-kodu to kur-doviz
+           if genel-otel-kod = "libert"
+             perform uzak-kur-degistir-hesaba-gore
+           end-if
+           
+           move tarih              to kur-tarih
+           read kur no lock invalid 
+               continue 
+           not invalid 
+               move doviz-alis to mahsup-doviz-kuru
+           end-read 
+          
+
+           compute mahsup-tutar-dv rounded = 
+                   mahsup-tutar / mahsup-doviz-kuru                      
+        end-if 
+     end-if.
+
+ 

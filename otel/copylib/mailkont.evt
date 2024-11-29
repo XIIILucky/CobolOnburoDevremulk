@@ -1,0 +1,250 @@
+* mailkont.evt
+* mailkont.evt is generated from D:\asya\acugt.ytl\otel\mailkont.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Pb-1-Link.
+*RAMCO**     modify email,@UnlockComponent("30-DAY TRIAL")
+*RAMCO**     modify email,@smtphost(sunucu-adi)
+*RAMCO**                  @smtpUsername(email-adi),
+*RAMCO**@smtpPassword(sifre)
+*RAMCO**                  perform liste-yukle.
+*
+ mail-ayarla.
+*RAMCO**     create ChilkatEmail2 handle in mailman.
+*RAMCO**     modify mailman, 
+*RAMCO**            @addto(mailkime-adi,mailkime-e-mail)
+*RAMCO**            @charset("windows-1254")
+*RAMCO**            @body(mailkime-baslik)
+*RAMCO**            @subject(mailkime-baslik)
+*RAMCO**            @from(email-adi)
+*RAMCO**            @saveeml(mailkime-ekli-dosya)
+*RAMCO**            @fromname(gorunen-adi)
+*RAMCO**            @AddFileAttachment(mailkime-ekli-dosya).
+*RAMCO**     modify email, SendEmail(mailman) returning return-code
+*     if return-code = 0
+*RAMCO**         inquire email, LastErrorText in ramco
+
+*         display message box return-code,x"0a0d",ramco
+*     end-if.
+            .
+
+*     email.Charset = "windows-1254"
+
+*      email.AddTo "Matt", "matt@chilkatsoft.com"
+*     email.Subject = myUnicodeText
+*     email.From = "support@chilkatsoft.com"
+            .
+*
+ liste-yukle.
+      initialize mailkime-rec
+      open i-o mailkime.
+      move "20091231"  to tarih
+      move tarih       to mailkime-tarih
+      start mailkime key not < mailkime-key-2 invalid
+            continue
+      not invalid
+      perform with test after until fs-mailkime = "10"
+      read mailkime next no lock end
+      not at end
+            if mailkime-tarih <> tarih
+               exit perform 
+            end-if
+
+            if mailkime-ulkesi   = spaces or 
+               mailkime-tip      = spaces 
+               exit perform cycle
+            end-if
+           
+            if xtip = spaces
+               move mailkime-tip    to xtip
+               move mailkime-ulkesi to xulke
+            else
+               if xtip  = mailkime-tip or 
+                  xulke = mailkime-ulkesi
+                  move mailkime-tip      to xtip
+                  move mailkime-ulkesi   to xulke
+                  perform mail-parse
+               end-if
+            end-if
+      end-read
+      end-perform
+      end-start
+      close mailkime.
+      display message box "bitti".
+*
+ Form1-Bef-Create.
+*      perform adresleri-tasi
+              .
+*
+ Form1-Pb-2-Link.
+*     perform liste-yukle
+     perform mailoku-islem.
+     modify mailman,@UnlockComponent("30-DAY TRIAL")
+     modify mht,@UnlockComponent("30-DAY TRIAL")
+     modify mht,@usecids(1)
+     move taslak-buffer         to mail-oku-rec
+     perform mail-parse
+     modify mht,
+             @HtmlToEML(mail-oku-rec(1:taslak-buffer-size))
+*            @HtmlToEML('<html><body><p><b>Test Email</b><br><img src="http://www.asyasoft.com/stok/1.jpg"></body></html>')
+     returning mime
+*********************ACTIVEX TARIHINI NISAN 1 YAP O ZAMAN CALISIR************:)           
+     inspect mime replacing trailing spaces by low-values
+     create ChilkatEMail2 handle in email
+     modify email,
+            @SetFromMimeText(mime)
+     
+     modify email,
+            @Subject("Test HTML email")
+            @AddTo(i,"ramazan@ant-bim.com")
+            @From("ayapici@ant-bim.com")
+     returning donus
+     modify mailman,@smtphost("mail.ant-bim.com")
+                    @smtpUsername("ayapici@ant-bim.com")
+                    @smtpPassword("antyap")
+
+     modify mailman, @SendEmail(email)
+     .
+
+
+*
+ mailoku-islem.
+*        string 
+*           "@[DISPLAY]:" delimited by " "
+*            "c:"         delimited by "\ "
+*            "\a.html"    into gidecek-adres
+*        end-string**
+
+*        if is-remote
+*           move "/asya/ytl/liste/a.html" to uzak-adres
+*           call "c$copy" using gidecek-adres,uzak-adres
+*           giving sonuccopy
+*           if sonuccopy = 1
+*              display message box "Dosya Kopyalanamadi"
+*           else
+*              call "c$copy" using uzak-adres,gidecek-adres
+*              move gidecek-adres(12:)   to mail-oku-dosya
+*              
+*              initialize file-info
+*              call "c$fileinfo" using mail-oku-dosya
+*                                     file-info
+*              move file-info-size to taslak-buffer-size
+*              
+*              open input mail-oku
+*              perform with test after until fs-mail-oku = "10"
+*              initialize mail-oku-rec
+*              read mail-oku next no lock end move "10" to fs-mail-oku
+*              not at end 
+*                   move mail-oku-rec        to taslak-buffer
+*                   exit perform
+*              end-read
+*              end-perform
+*              close mail-oku
+*           end-if
+*        else
+*          move "c:\a.html"   to mail-oku-dosya
+*          initialize file-info
+*          call "c$fileinfo" using mail-oku-dosya
+*                                  file-info
+*          move file-info-size to taslak-buffer-size
+        
+        move "c:\a.html"   to mail-oku-dosya
+        initialize file-info
+        call "c$fileinfo" using mail-oku-dosya
+                                file-info
+        move file-info-size to taslak-buffer-size
+
+      open input mail-oku
+      perform with test after until fs-mail-oku = "10"
+      initialize mail-oku-rec
+      read mail-oku next no lock end move "10" to fs-mail-oku
+      not at end 
+           move mail-oku-rec        to taslak-buffer
+           exit perform
+      end-read
+      end-perform
+      close mail-oku.
+*      end-if.
+
+*
+ mail-parse.
+      move "MISAFIR-ADI" to mail-adi-soyadi
+      inspect mail-oku-rec(1:taslak-buffer-size) 
+               replacing all "[ASYAMAILER_NAME_SURNAME]" by 
+      mail-adi-soyadi.
+* [ASYAGIRT]
+* [ASYACIKT]
+*
+ Form1-Pb-3-Link.
+     modify objSmtpMail, 
+                 @SmtpServer("mail.ant-bim.com")
+                 @smtpport(25)
+                 @SmtpUsername("ramazan@ant-bim.com")
+                 @SmtpPassword("03091987")
+                 @smtpssl(0)
+                 @smtpspa(0)
+     move all low-values to str
+     string str,
+     '<html><body><img src="cid:i001"><br>Sayin....<br><br><br><br><br><br><br><br><br><br><img src="cid:i002"></body></html>'
+     delimited by low-values into str
+     create mailmessage handle in @message
+     modify @message,
+                    @MessageSubject("deneme maili")
+                    @messagebody(str)
+
+     modify @message,
+                    @MessageBodyFormat("1" as vt_variant)
+     modify @message,
+                    @messagepriority("3" as vt_variant)
+
+     create mailaddress handle in from1
+     modify from1,
+                 @Address("ramazan@ant-bim.com")
+                 @name("Ramazan")
+     modify @message,
+                   @sender(from1)
+
+     create MailAddress handle in recipient
+     modify recipient,
+                    @address("ramazanaskin@hotmail.com")
+                    @name("Razaman Hotmail")
+     modify @message,
+                   @AddRecipient(recipient)
+
+     create MailAttachment handle in attach1.
+     modify attach1,
+                  @file("d:\alt.jpg")
+                  @inline(1)
+                  @contentid("i002")
+     modify @message,
+                   @AddAttachment(attach1)
+     create MailAttachment handle in attach2.
+     modify attach2,
+                  @file("d:\ust.jpg")
+                  @inline(1)
+                  @contentid("i001")
+     modify @message,
+                   @AddAttachment(attach2)
+                 
+                   
+     modify objsmtpmail,
+                      @send(@message,1,donus)
+     returning ramco
+     display message box ramco,donus
+        .
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     
+     .
+
+ 

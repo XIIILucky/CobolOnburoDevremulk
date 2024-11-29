@@ -1,0 +1,280 @@
+* merata.evt
+* merata.evt is generated from D:\asya\acugt.ytl\otel\merata.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Goto-Cell
+        PERFORM gd-1-Ev-Msg-Goto-Cell
+     WHEN Msg-Goto-Cell-Mouse
+        PERFORM gd-1-Ev-Msg-Goto-Cell-Mouse
+     WHEN Msg-Init-Menu
+        PERFORM gd-1-Ev-Msg-Init-Menu
+     WHEN Other
+        PERFORM gd-1-Ev-Other
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+
+      perform adresleri-tasi
+      PERFORM takasa-yaz
+      |perform grid-yukle
+     .
+* 
+takasa-yaz.
+  
+    open i-o genelfis 
+      move 1 to genelfis-anahtar
+      read genelfis no lock invalid
+              continue
+      not invalid
+              add 1 to ekran-fis-1
+              move ekran-fis-1 to takas-no
+      end-read
+
+    close genelfis
+
+
+    open output takas close takas
+    open i-o takas 
+ 
+    open input acenta merkez 
+    initialize acenta-rec
+    start acenta key not < acenta-anahtar invalid
+            continue
+    not invalid
+    perform until fs-acenta = "10"
+    read acenta next no lock end move "10" to fs-acenta
+    not end
+
+             initialize takas-rec
+             move cmb-tur(1:1)           to takas-tipi
+             move acenta-kodu            to takas-acenta-kodu
+             move acenta-adi             to takas-acenta-adi
+             move ACENTA-merkez-kodu     to takas-merkez-kodu
+ 
+             if ACENTA-merkez-kodu <> spaces 
+                  initialize grid-deger
+                  move cmb-tur(1:1)         to merkez-tipi
+                  move ACENTA-merkez-kodu    to merkez-kodu
+                  read merkez no lock invalid
+                          move "Tanimsiz ..." to takas-merkez-adi
+  
+                  not invalid
+                        move merkez-adi to takas-merkez-adi
+                  end-read
+             end-if
+      
+             write takas-rec invalid
+                     stop " "
+             end-write
+
+    end-read
+    end-perform
+    end-start
+    close acenta merkez takas .
+*
+ grid-yukle.
+        modify Form1-Pb-1 , enabled = false
+        modify gd-1 , reset-grid = 1 , mass-update = 1
+        initialize gd-1-record kayit-sayi
+                 move "Kodu"       to gd-1-col-1
+                 move "Adi"  to gd-1-col-2
+                 move "Merkz Kodu"   to gd-1-col-3
+                 move "Merkz Adi"   to gd-1-col-4
+                 modify gd-1 , record-to-add(gd-1-record)
+
+       
+      if cmb-tur(1:1) = "A" then
+            open input acenta merkez takas
+                initialize takas-rec 
+                start takas key not < takas-anah invalid
+                        continue
+                not invalid
+                perform until fs-takas = "10"
+                read takas next no lock end move "10" to fs-takas
+                not end
+                         if tfiltre <> spaces
+                                move takas-acenta-adi        to kelime
+                                move tfiltre                 to aranan-kelime
+                                move 0 to aranan-i aranan-kelime-boy
+                                inspect aranan-kelime tallying aranan-kelime-boy
+                                        for trailing spaces 
+                                compute aranan-kelime-boy = function length(aranan-kelime) -
+                                                            aranan-kelime-boy
+                        
+                                inspect kelime tallying aranan-i 
+                                        for all aranan-kelime(1:aranan-kelime-boy)
+                                if aranan-i = 0 
+                                   exit perform cycle
+                                end-if
+                           end-if
+                        
+                         initialize gd-1-record
+                         move takas-acenta-kodu     to gd-1-col-1
+                         move takas-acenta-adi      to gd-1-col-2
+                         move takas-merkez-kodu     to gd-1-col-3
+
+                         move takas-merkez-adi to gd-1-col-4
+                         modify gd-1 , record-to-add(gd-1-record)
+
+                         add 1 to kayit-sayi
+
+                end-read
+                end-perform
+                end-start
+            close acenta merkez  takas
+     end-if
+ 
+     if kayit-sayi > 0 
+           modify Form1-Pb-1 , enabled = true
+     end-if
+     
+     modify gd-1 , mass-update = 0.        
+*
+ gd-1-Ev-Other.
+        evaluate event-type
+          when msg-begin-entry     
+             if event-data-1 <> 3 and event-data-1 <> 4
+                 move event-action-fail to event-action
+             end-if
+          when msg-finish-entry
+          
+                       inquire gd-1(y-deger,3) ,  cell-data in mer-kod
+                       inquire gd-1(y-deger,1) ,  cell-data in acen-kod
+                       PERFORM TAKASA-AT
+        end-evaluate
+     .
+*
+ TAKASA-AT.
+
+                       if mer-kod = spaces
+                             exit paragraph
+                       end-if
+                
+                       if acen-kod = spaces
+                             exit paragraph
+                       end-if
+                
+                       open input merkez
+                       open i-o takas
+                       initialize takas-rec
+                       move cmb-tur(1:1)           to takas-tipi
+                       move acen-kod to takas-acenta-kodu
+                       read takas no lock invalid
+                               continue
+                       not invalid
+
+                               move mer-kod to takas-merkez-kodu
+                               initialize grid-deger
+                               move cmb-tur(1:1)         to merkez-tipi
+                               move takas-merkez-kodu    to merkez-kodu
+                               read merkez no lock invalid
+                                         modify gd-1(y-deger,3) cell-data = " " 
+                                         modify gd-1(y-deger,4) cell-data = " "
+                                         display message box "Tanimsiz Kod "
+                                         initialize takas-merkez-kodu  takas-merkez-adi
+                               not invalid
+                                     move merkez-adi to takas-merkez-adi
+                                     modify gd-1(y-deger,4) cell-data = merkez-adi
+                               end-read
+                        
+                               rewrite takas-rec  invalid
+                                       stop " "
+                               end-rewrite
+
+                      end-read
+                      close takas merkez
+
+         .
+
+*
+ Form1-Ex-Other.
+       evaluate key-status
+            when 1
+
+                 initialize  link-merkez-tipi link-merkez-kodu
+                 move cmb-tur(1:1) to link-merkez-tipi
+                 call "/asya/ytl/obj/otel/merara.asy" using link-merkez-tipi link-merkez-kodu 
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/merara.asy"
+                         if link-merkez-kodu = zeroes or 
+                            link-merkez-kodu = spaces
+                                 exit paragraph
+                         end-if
+                         modify gd-1(y-deger,3) cell-data = link-merkez-kodu
+              
+                         move link-merkez-kodu to  mer-kod
+                         inquire gd-1(y-deger,1) ,  cell-data in acen-kod
+                         PERFORM TAKASA-AT
+
+                  end-call
+            when 5
+                call "/asya/ytl/obj/otel/merkod.asy" 
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/merkod.asy"
+                 end-call
+        when 2222
+
+         if cmb-tur(1:1) = "A"
+             open i-o acenta takas
+                initialize takas-rec 
+                start takas key not < takas-anah invalid
+                        continue
+                not invalid
+                perform until fs-takas = "10"
+                read takas next no lock end move "10" to fs-takas
+                not end
+                        
+                         initialize acenta-rec
+                         move takas-acenta-kodu     to acenta-anahtar
+                         read acenta no lock invalid
+                                 continue
+                         not invalid
+                              move takas-merkez-kodu to acenta-merkez-kodu
+
+                              rewrite acenta-rec invalid
+                                      stop " "
+                              end-rewrite
+                         end-read
+ 
+                end-read
+                end-perform
+                end-start
+            close acenta  takas
+         end-if
+
+         display message box "Kayit Islemi Bitti"
+       end-evaluate
+     .
+*
+ Form1-Cm-1-Aft-Procedure.
+
+     .
+*
+ gd-1-Ev-Msg-Goto-Cell.
+         inquire gd-1 ,  x in x-deger , y in y-deger.
+*
+ gd-1-Ev-Msg-Goto-Cell-Mouse.
+
+         inquire gd-1 ,  x in x-deger , y in y-deger
+     .
+*
+ gd-1-Ev-Msg-Init-Menu.
+         inquire gd-1 ,  x in x-deger , y in y-deger
+     .
+
+
+ 

@@ -1,0 +1,644 @@
+* grup.evt
+* grup.evt is generated from C:\Asya\acugt.ytl\otel\grup.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ lb-liste-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM listbox-eventlar
+        WHEN Cmd-Goto
+           PERFORM listbox-eventlar
+        WHEN Ntf-Selchange
+           PERFORM Listbox-Eventlar
+        END-EVALUATE
+     END-IF
+     .
+
+ cb-tipi-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM Ex-Ntf-Selchange-cb-tipi
+        END-EVALUATE
+     ELSE
+        PERFORM Exception-Procedure
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM gd-acenta-Ev-Msg-Bitmap-Dblclick
+     WHEN Msg-Bitmap-Dblclick
+        PERFORM gd-acenta-Ev-Msg-Bitmap-Dblclick
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     open i-o grup acenta depkod isyeri
+     .
+ Form1-Aft-Initdata.
+     perform doldur-liste
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ Bef-Proc-acc-kod.
+     initialize grup-rec
+     perform goster-kayit
+     perform disable-butonlar
+     .
+*
+ Aft-Proc-acc-kod.
+     if rap-kod = spaces
+        perform disable-butonlar
+        move 4 to accept-control
+        inquire acc-kod, id in control-id
+     else 
+        perform enable-butonlar
+     end-if
+     initialize grup-alt
+     perform goster-kayit
+     perform listbox-yer-bul
+     .
+*
+ Aft-Proc-acc-adi.
+     if rap-adi not = spaces
+       perform enable-butonlar
+     else
+       move 4 to accept-control
+       inquire acc-adi id in control-id
+     end-if
+     .
+*
+ exception-procedure.
+     evaluate key-status
+         when 17 
+             move grup-dosya         to link-logview-dosya-adi
+             set link-logview-pointer  to address of grup-rec
+             set link-logview-rec-size to size of grup-rec
+             perform logview-call
+             initialize key-status
+         when 1 perform ara-grup
+         when 2 perform kayit-grup
+         when 3 perform sil-grup
+         when 4 perform rapor-grup
+     end-evaluate.
+*
+ listbox-eventlar.
+     evaluate event-type
+       when cmd-dblclick
+       when ntf-selchange
+       when cmd-goto
+            perform getir-kayit-liste
+       when other
+            perform exception-procedure
+     end-evaluate
+     .
+*
+ listbox-yer-bul.
+     initialize tekrar
+     move all high-value to liste-kod
+     perform varying i
+                from 1
+                  by 1
+               until (liste-kod = rap-kod) or
+                     (liste-kod = spaces)
+       perform oku-list-sira
+     end-perform
+     if liste-kod = tekrar
+        subtract 1 from i
+     end-if
+     if i > zeroes
+        modify lb-liste,
+               selection-index = i
+     end-if
+     .
+*
+ doldur-liste.
+     modify lb-liste,
+            reset-list  = 1
+            mass-update = 1
+     initialize grup-rec
+                fs-grup
+     perform loop-grup
+     modify lb-liste,
+            mass-update     = 0
+            selection-index = 1
+            thumb-position  = 1
+     .
+*
+ loop-grup.
+     perform with test after
+             until fs-grup = "10"
+       perform start-grup
+     end-perform
+     .
+*
+ start-grup.
+     move rap-tipi to grup-tipi
+     start grup key > grup-anah
+       invalid
+         move "10" to fs-grup
+       not invalid
+         perform oku-grup
+         move all high-value to grup-alt
+     end-start
+     .
+*
+ oku-grup.
+     read grup next no lock
+       end
+         move "10" to fs-grup
+       not at end
+         perform filtre-bitir-grup
+     end-read
+     .
+*
+ filtre-bitir-grup.
+     if grup-tipi not = rap-tipi
+        move "10" to fs-grup
+     else
+        perform ata-grup-liste
+        perform yaz-liste
+     end-if
+     .
+*
+ oku-grup-key.
+     move rap-tipi to grup-tipi
+     move rap-kod  to grup-kodu
+     read grup no lock
+       invalid
+         initialize grup-rec
+         perform disable-butonlar
+       not invalid
+         perform enable-butonlar
+     end-read
+     .
+
+*
+ ata-grup-liste.
+     move grup-kodu to liste-kod
+     move grup-adi  to liste-adi
+     .
+*
+ yaz-liste.
+     modify lb-liste,
+       item-to-add(liste-vars)
+     .
+*
+ getir-kayit-liste.
+     perform oku-liste
+     perform goster-kayit
+     .
+*
+ oku-liste.
+     inquire lb-liste,
+       value in liste-vars
+     move liste-kod to rap-kod
+     initialize grup-alt
+     .
+*
+ oku-list-sira.
+     modify lb-liste,
+            query-index = i
+     inquire lb-liste,
+            item-value in liste-vars
+     if liste-kod = tekrar
+        move spaces to liste-kod
+     else
+        move liste-kod to tekrar
+     end-if
+     .
+*
+ goster-kayit.
+     initialize grup-rec
+     perform oku-grup-key
+     move grup-adi to rap-adi
+     display acc-kod
+             acc-adi
+     perform goster-grid
+     .
+*
+ disable-butonlar.
+     modify button-0101,enabled = false
+     modify button-0102,enabled = false
+     .
+*
+ enable-butonlar.
+     modify button-0101,enabled = true
+     modify button-0102,enabled = true
+     .
+*
+ ara-grup.
+     initialize rap-kod
+     call "/asya/ytl/obj/otel/grupara.asy"
+       using rap-tipi, rap-kod
+       on exception
+         perform callerr-proc
+       not on exception
+          cancel "/asya/ytl/obj/otel/grupara.asy" 
+     end-call
+     perform goster-kayit
+     .
+*
+ kayit-grup.
+     perform sil-grup
+     move rap-tipi to grup-tipi
+     move rap-kod  to grup-kodu
+     move rap-adi  to grup-adi
+     move spaces   to grup-alt
+     move k-kodu-tasi  to grup-staf
+     write grup-rec
+       invalid
+         rewrite grup-rec, end-rewrite
+     end-write
+     perform log-operation-grup
+     perform start-grid-kayit
+     perform listbox-yer-bul
+     if liste-kod not = grup-kodu
+        move grup-kodu to liste-kod
+        move grup-adi  to liste-adi
+        modify lb-liste,
+               item-to-add(liste-vars)
+        perform listbox-yer-bul
+     end-if
+     .
+*
+ start-grid-kayit.
+     inquire gd-acenta,
+       LAST-ROW in gd-num-y
+     perform varying gd-y
+                from 2
+                  by 1
+               until gd-y > gd-num-y
+       perform oku-grid-kayit
+       if gd-hidden = 1
+          perform yaz-kayit
+       end-if
+     end-perform
+     .
+*
+ oku-grid-kayit.
+    inquire gd-acenta(gd-y,3)
+      record-data in gd-data
+      hidden-data in gd-hidden
+    .
+*
+ yaz-kayit.
+    move rap-tipi to grup-tipi
+    move rap-kod  to grup-kodu
+    move rap-adi  to grup-adi
+    move gd-kodu  to grup-alt
+    move k-kodu-tasi  to grup-staf
+    write grup-rec
+      invalid
+        rewrite grup-rec, end-rewrite
+    end-write
+    perform log-operation-grup
+    .
+*
+ sil-grup.
+     perform listbox-yer-bul
+     if i > zeroes
+        modify lb-liste,
+               item-to-delete(i)
+     end-if
+     perform sil-start-grup
+     .
+*
+ sil-start-grup.
+     move rap-tipi to grup-tipi
+     move rap-kod  to grup-kodu
+     initialize grup-alt
+     start grup key >= grup-anah
+       invalid
+         continue
+       not invalid
+         initialize fs-grup
+         perform sil-loop-grup
+     end-start
+     perform oku-grup-key
+     .
+*
+ sil-loop-grup.
+     perform with test after
+             until fs-grup = "10"
+       perform sil-oku-grup
+     end-perform
+     .
+*
+ sil-oku-grup.
+     read grup next no lock
+       end
+         move "10" to fs-grup
+       not end
+         perform filtre-grup
+     end-read
+     .
+*
+ filtre-grup.
+     if grup-tipi not = rap-tipi or
+        grup-kodu not = rap-kod
+        move "10" to fs-grup
+     else
+        perform sil-kayit
+     end-if
+     .
+*
+ sil-kayit.
+     delete grup
+       invalid
+         continue
+     end-delete
+     perform log-operation-grup
+     .
+*
+ rapor-grup.
+     .
+*
+ goster-grid.
+     perform init-grid
+     perform yaz-gd-baslik
+     move rap-tipi to grup-tipi
+     evaluate true
+       when grup-acenta
+            perform start-acenta
+       when grup-depart
+            perform start-depart
+       when grup-sirket
+            perform start-sirket
+     end-evaluate
+     perform finish-grid
+     .
+*
+ init-grid.
+     initialize gd-y
+     modify gd-acenta,
+       reset-grid    = 1
+       mass-update   = 1
+     .
+*
+ yaz-gd-baslik.
+     add 1 to gd-y
+     move "Kodu"       to gd-kodu
+     move "Adi"        to gd-adi
+     move "Sec"        to gd-sec
+     modify gd-acenta,
+       record-to-add = gd-data
+     .
+*
+
+ start-sirket.
+     initialize isyeri-rec
+     start isyeri key >= isyeri-no
+       invalid
+         continue
+       not invalid
+         initialize fs-isyeri
+         perform loop-gd-isyeri
+     end-start
+     .
+*
+ loop-gd-isyeri.
+     perform with test after
+             until fs-isyeri = "10"
+       perform oku-isyeri
+     end-perform
+     .
+*
+ oku-isyeri.
+     read isyeri next no lock
+       end
+         move "10" to fs-isyeri
+       not end
+         perform oku-grup-isyeri
+         perform yaz-isyeri-grid
+     end-read
+     .
+*
+ start-acenta.
+     initialize acenta-rec
+     start acenta key >= acenta-anahtar
+       invalid
+         continue
+       not invalid
+         initialize fs-acenta
+         perform loop-gd-acenta
+     end-start
+     .
+*
+ loop-gd-acenta.
+     perform with test after
+             until fs-acenta = "10"
+       perform oku-acenta
+     end-perform
+     .
+*
+ oku-acenta.
+     read acenta next no lock
+       end
+         move "10" to fs-acenta
+       not end
+         perform oku-grup-acenta
+         perform yaz-acenta-grid
+     end-read
+     .
+*
+*
+ oku-grup-isyeri.
+     move rap-tipi    to grup-tipi
+     move rap-kod     to grup-kodu
+     move isyeri-no to grup-alt
+     read grup
+       invalid
+         move 7   to gd-bitmap
+         move 0   to gd-renk
+         move 0   to gd-hidden
+         initialize gd-sec
+       not invalid
+         move 1   to gd-bitmap
+         move 352 to gd-renk
+         move 1   to gd-hidden
+         initialize  gd-sec
+     end-read
+     .
+*
+ yaz-isyeri-grid.
+     add 1 to gd-y
+     move isyeri-no to gd-kodu
+     move isyeri-unvan  to gd-adi
+     modify gd-acenta(gd-y,3)
+       insertion-index = gd-y
+       record-to-add   = gd-data
+       hidden-data     = gd-hidden
+       bitmap          = artieksi-bmp
+       bitmap-number   = gd-bitmap
+       bitmap-width    = 16
+       bitmap-trailing = 1
+       row-color       = gd-renk
+     .
+*
+ oku-grup-acenta.
+     move rap-tipi    to grup-tipi
+     move rap-kod     to grup-kodu
+     move acenta-kodu to grup-alt
+     read grup
+       invalid
+         move 7   to gd-bitmap
+         move 0   to gd-renk
+         move 0   to gd-hidden
+         initialize gd-sec
+       not invalid
+         move 1   to gd-bitmap
+         move 352 to gd-renk
+         move 1   to gd-hidden
+         initialize  gd-sec
+     end-read
+     .
+*
+ yaz-acenta-grid.
+     add 1 to gd-y
+     move acenta-kodu to gd-kodu
+     move acenta-adi  to gd-adi
+     modify gd-acenta(gd-y,3)
+       insertion-index = gd-y
+       record-to-add   = gd-data
+       hidden-data     = gd-hidden
+       bitmap          = artieksi-bmp
+       bitmap-number   = gd-bitmap
+       bitmap-width    = 16
+       bitmap-trailing = 1
+       row-color       = gd-renk
+     .
+*
+ start-depart.
+     initialize depkod-rec
+     start depkod key >= depkod-anah
+       invalid
+         continue
+       not invalid
+         initialize fs-depkod
+         perform loop-gd-depkod
+     end-start
+     .
+*
+ loop-gd-depkod.
+     perform with test after
+             until fs-depkod = "10"
+       perform oku-depkod
+     end-perform
+     .
+*
+ oku-depkod.
+     read depkod next no lock
+       end
+         move "10" to fs-depkod
+       not end
+         perform oku-grup-depkod
+         perform yaz-depkod-grid
+     end-read
+     .
+*
+ oku-grup-depkod.
+     move rap-tipi    to grup-tipi
+     move rap-kod     to grup-kodu
+     move depkod-kodu to grup-alt
+     read grup
+       invalid
+         move 7   to gd-bitmap
+         move 0   to gd-renk
+         move 0   to gd-hidden
+         initialize gd-sec
+       not invalid
+         move 1   to gd-bitmap
+         move 352 to gd-renk
+         move 1   to gd-hidden
+         initialize  gd-sec
+     end-read
+     .
+*
+ yaz-depkod-grid.
+     add 1 to gd-y
+     move depkod-kodu to gd-kodu
+     move depkod-adi  to gd-adi
+     modify gd-acenta(gd-y,3)
+       insertion-index = gd-y
+       record-to-add   = gd-data
+       hidden-data     = gd-hidden
+       bitmap          = artieksi-bmp
+       bitmap-number   = gd-bitmap
+       bitmap-width    = 16
+       bitmap-trailing = 1
+       row-color       = gd-renk
+     .
+*
+ finish-grid.
+     modify gd-acenta
+       mass-update = 0
+     .
+*
+ Form1-Aft-Routine.
+     close grup acenta depkod
+     .
+*
+ gd-acenta-Ev-Msg-Bitmap-Dblclick.
+     inquire gd-acenta,
+       cursor-x in gd-x
+       cursor-y in gd-y
+     inquire gd-acenta(gd-y,3)
+       hidden-data in gd-hidden
+
+     if gd-hidden = 1
+        move 7   to gd-bitmap
+        move 0   to gd-renk
+        move 0   to gd-hidden
+        initialize gd-sec
+     else
+        move 1   to gd-bitmap
+        move 352 to gd-renk
+        move 1   to gd-hidden
+        initialize  gd-sec
+     end-if
+
+     modify gd-acenta(gd-y,3)
+       hidden-data     = gd-hidden
+       bitmap          = artieksi-bmp
+       bitmap-number   = gd-bitmap
+       bitmap-width    = 16
+       bitmap-trailing = 1
+       row-color       = gd-renk
+     set event-action to event-action-fail
+     .
+*
+ gd-acenta-Ev-Msg-Begin-Entry.
+     set event-action to event-action-fail
+     .
+*
+ Ex-Ntf-Selchange-cb-tipi.
+     initialize rap-kod
+                rap-adi
+     display acc-kod
+             acc-adi
+     perform doldur-liste
+     perform goster-kayit
+     perform listbox-yer-bul
+     .
+ 

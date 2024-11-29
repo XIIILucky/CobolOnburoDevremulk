@@ -1,0 +1,107 @@
+* tmpsil.evt
+* tmpsil.evt is generated from D:\asya\acugt.ytl\otel\tmpsil.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+     move isyeri-adres-tasi    to konuk-dosya-adres bin-dosya-adres.
+     perform lisans-kontrol.
+     perform sil-islem.
+
+*
+ sil-islem.
+     move all low-values to sildir
+     string sildir,
+            "/asya/ytl/liste" delimited by low-values
+            into sildir.
+            
+     call "c$list-directory" using 
+                             listdir-open, 
+                             sildir,
+                             "*". 
+    move return-code to sildir-handle.
+    if sildir-handle = 0
+       destroy Form1-Handle
+       goback
+    end-if.
+
+    initialize sildir-filename
+
+    perform with test after until sildir-filename = spaces
+            call "c$list-directory" using 
+                                    listdir-next, 
+                                    sildir-handle, 
+                                    sildir-filename,
+                                    listdir-file-information
+            if sildir-filename <> spaces and 
+               listdir-file-type-regular-file
+               inspect sildir-filename 
+                       replacing trailing spaces by low-values
+                  move all low-values to remove-filename
+                  string remove-filename
+                        "/asya/ytl/liste/" delimited by low-values
+                        sildir-filename    delimited by low-values
+                        into remove-filename
+                  call "CBL_DELETE_FILE" using 
+                        remove-filename
+                  modify lb,
+                         title = remove-filename
+            end-if
+    end-perform.
+
+    call "c$list-directory" using 
+                            listdir-close,
+                            sildir-handle.     
+
+    set exit-pushed to true.
+     
+     .
+*
+ lisans-kontrol.
+    exit paragraph
+    move tarih-tasi   to sis-tar.
+******>    accept sis-tar from century-date.
+    open input lisans.
+    initialize lisans-rec
+    read lisans next no lock end 
+         move all "9" to lisans-rec 
+    not at end
+         inspect lisans-rec replacing all spaces by "9"
+    end-read.
+    close lisans.
+    move lisans-gun     to lic-gun
+    move lisans-ay      to lic-ay 
+    move lisans-yil     to lic-yil
+
+    open input konuk.
+    if fs-konuk <> "00"
+       if sis-tar < lic-tar
+          perform unbroke
+       end-if
+    else
+       close konuk
+       if sis-tar >= lic-tar
+          perform broke
+       end-if
+    end-if.
+
+*
+ unbroke.
+    open i-o bin
+    read bin next no lock end-read.
+    move x"101214"   to bin-rec
+    rewrite bin-rec.
+    close bin.
+*
+ broke.
+    open i-o bin
+    read bin next no lock end-read.
+    move x"010203"   to bin-rec
+    rewrite bin-rec.
+    close bin.
+
+ 

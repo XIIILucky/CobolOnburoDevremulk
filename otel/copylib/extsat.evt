@@ -1,0 +1,453 @@
+* extsat.evt
+* extsat.evt is generated from D:\asya\acugt.ytl\otel\extsat.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    call "c$narg" using link-var.
+    open i-o odalar2 .
+     .
+*
+ acc-01-Aft-Procedure.
+     if  linkten-geldi = 1
+          
+         move fol-kod to  folara-no-cagir 
+         else
+      modify button-sil enabled = false
+    initialize folara-cagir fol-kod
+    move "I"     to folara-cagri-tipi
+    move oda-num to o-uzun 
+    perform oda-kisalt
+    move o-kisa to folara-odano
+   
+     call "/asya/ytl/obj/otel/folara.asy" using folara-cagir
+          on exception perform callerr-proc
+      not on exception       
+          cancel "/asya/ytl/obj/otel/folara.asy" 
+     end-call
+     end-if
+    move folara-no-cagir to fol-kod.
+    open input konuk.
+    initialize konuk-rec.
+    move "I" to konuk-durumu.
+    move fol-kod to konuk-folio.
+    read konuk no lock invalid 
+        display message box "Tanimsiz Folio Numarasi..."
+        move 4 to accept-control
+        move 1001 to control-id
+        move all "*" to konuk-adi konuk-soyadi
+    end-read
+    modify acc-011, VALUE konuk-folio.
+    modify acc-02,  VALUE konuk-adi.
+    modify acc-03,  VALUE konuk-soyadi.
+    move konuk-gel-tar to ilk-tarih.
+    if tarih-tasi >  konuk-gel-tar 
+        move  tarih-tasi  to ilk-tarih
+    end-if
+    move konuk-git-tar to son-tarih
+    display acc-01a acc-02a acc-03a acc-06 acc-07 acc-08 acc-09 
+            acc-10 acc-11 com-01.
+    close konuk.
+*
+ Aft-Procedure.
+    initialize depkod-rec.
+    open input depkod.
+    move dep-kod to depkod-kodu
+    read depkod no lock invalid 
+         move 4 to accept-control
+         move 3 to control-id
+         close depkod
+         exit paragraph
+              not invalid continue
+          end-read.
+    modify lb-depadi-e, title = depkod-adi of depkod
+    modify button-depara enabled = false.
+    close depkod.
+
+    open i-o extpost.
+    initialize extpost-rec kay-dur.
+    move fol-kod to extpost-folio.
+    move dep-kod to extpost-dep postkod-eski-dep.
+    read extpost no lock invalid
+         initialize extpost-rec,
+         move "W"              to kay-dur
+         move fol-kod          to extpost-folio,
+         move dep-kod          to extpost-dep postkod-eski-dep,
+         move konuk-gel-tar    to extpost-ilk-tar,
+         move konuk-git-tar    to extpost-son-tar,
+         move calisma-tarihi   to extpost-sat-tar,
+         move k-kodu-tasi      to extpost-staf, 
+      not invalid 
+         move "R"              to kay-dur
+         move extpost-p-k      to pes-kre
+         move extpost-ilk-tar  to ilk-tarih
+         move extpost-son-tar  to son-tarih
+         move extpost-sat-tar  to sat-tarih
+         move extpost-postkodu to post-kod 
+         move extpost-belge    to belge-no
+              postkod-eski-no postkod-yeni-no
+         move extpost-dep      to postkod-eski-dep postkod-yeni-dep
+         move extpost-tl-tutar to post-tl
+         move extpost-dv-tutar to post-dv
+         modify button-sil enabled = true
+
+    end-read.
+    display acc-01a acc-02a acc-03a acc-06 acc-07 acc-08 acc-09 
+            acc-10 acc-11 com-01 accept-tltutar accept-dvtutar accept-satno accept-dvtutara.
+    move "X" to kay-knt.
+    perform accept-satno-Aft-Procedure.
+    move spaces to kay-knt
+    close extpost.
+     .
+*
+ accept-depkodu-Bef-Procedure.
+    modify button-depara enabled = true.
+    modify button-sil enabled = false.
+     .
+*
+ Form1-Aft-Initdata.
+    if link-var > 0
+        move "K" to pes-kre
+        move  l-oda to o-kisa 
+            perform oda-uzat
+            move o-uzun to oda-num
+        move l-folio   to fol-kod
+        move l-dep    to dep-kod
+        move l-oda     to post-kod
+         move tarih-tasi to  sat-tarih
+        display acc-01  acc-011 accept-depkodu  accept-satno
+        move 1 to linkten-geldi
+        display acc-01a acc-02a acc-03a acc-06 acc-07 acc-08 acc-09 
+            acc-10 acc-11 com-01
+        perform acc-01-Aft-Procedure
+        perform Aft-Procedure
+        perform accept-satno-Aft-Procedure
+        
+        if l-bos (1:3) = "Sil"
+          if kay-dur = "R"
+          move 3 to key-status
+           perform  Form1-Ex-Other
+            display message Box "Extra Posting Iptal edildi Yeniden CIN aldiginizda tanimlamayi unutmayin!" title "Uyari" 
+
+          end-if
+          set exit-pushed to true
+        else
+         move 0 to linkten-geldi
+         move 4 to accept-control 
+        move 13 to control-id
+        end-if
+     else
+         move 0 to linkten-geldi
+          move tarih-tasi to ilk-tarih son-tarih sat-tarih
+           move "K" to pes-kre
+     end-if
+
+   
+   
+    display acc-01a acc-02a acc-03a acc-06 acc-07 acc-08 acc-09 
+            acc-10 acc-11 com-01.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 17 
+          move extpost-dosya         to link-logview-dosya-adi
+          set link-logview-pointer  to address of extpost-rec
+          set link-logview-rec-size to size of extpost-rec
+          perform logview-call
+          initialize key-status
+
+      when 2
+        open input takvim
+        move ilk-tarih  to takvim-anah
+        read takvim no lock invalid
+             initialize mesaj-link
+             move 13 to mesaj-no perform mesaj-ver
+             move 4 to accept-control move 8 to control-id
+             close takvim exit paragraph 
+        end-read
+        move son-tarih  to takvim-anah
+        read takvim no lock invalid
+             initialize mesaj-link
+             move 13 to mesaj-no perform mesaj-ver
+             move 4 to accept-control move 17 to control-id
+             close takvim exit paragraph 
+        end-read
+        move sat-tarih  to takvim-anah
+        read takvim no lock invalid
+             initialize mesaj-link
+             move 13 to mesaj-no perform mesaj-ver
+             move 4 to accept-control move 22 to control-id
+             close takvim exit paragraph 
+        end-read
+        close takvim
+
+        if sat-tarih < konuk-gel-tar or sat-tarih > konuk-git-tar 
+          display message box "Musteri Gelis & Gidis Tarihlerini kontrol ediniz..."
+          move 4 to accept-control
+          move 24 to control-id
+          exit paragraph
+        end-if
+        if oda-num = spaces 
+          display message box "Oda numarasi bos gecilemez..."
+          move 4 to accept-control
+          move 1001 to control-id
+          exit paragraph
+        end-if
+        if dep-kod = spaces 
+          display message box "Departman kodu bos gecizlemez..." 
+          move 4 to accept-control
+          move 3 to control-id
+          exit paragraph
+        end-if
+        if post-kod = spaces 
+          display message box "Satis kodu bos gecilemez..."
+          move 4 to accept-control
+          move 1002 to control-id
+          exit paragraph
+        end-if
+        open i-o extpost postkod
+        initialize extpost-rec
+        initialize postkod-eski postkod-yeni
+        move fol-kod      to extpost-folio
+        move dep-kod      to extpost-dep     
+        read extpost no lock invalid
+           move "I"  to extpost-durumu,
+        end-read
+        move pes-kre      to extpost-p-k      
+        move ilk-tarih    to extpost-ilk-tar  
+        move son-tarih    to extpost-son-tar  
+        move sat-tarih    to extpost-sat-tar  
+        move post-kod     to extpost-postkodu postkod-yeni-no
+        move dep-kod      to postkod-yeni-dep
+        move post-tl      to extpost-tl-tutar 
+        move post-dv      to extpost-dv-tutar
+        move belge-no     to extpost-belge
+        move k-kodu-tasi  to extpost-staf
+***********
+        perform kaydet thru kaydet-exit
+***********
+        close extpost postkod
+        
+
+        initialize extpost-rec
+        initialize oda-num dep-kod fol-kod post-kod post-tl post-dv
+        move tarih-tasi to ilk-tarih son-tarih sat-tarih
+        move "K" to pes-kre
+        modify acc-011, title = spaces
+        modify acc-02,  title = spaces
+        modify acc-03,  title = spaces
+        modify accept-postadi,  title = spaces
+        display acc-01a acc-02a acc-03a acc-06 acc-07 acc-08 acc-09 acc-10 acc-11 com-01 accept-satno accept-tltutar accept-dvtutar accept-dvtutara
+                acc-011, acc-02 acc-03 accept-postadi
+        
+        if link-var > 0 then 
+          set exit-pushed to true
+          else
+           move 4    to accept-control
+           move 1001 to control-id
+        end-if
+      when 3
+***********
+        open i-o extpost  postkod
+        perform sil    thru sil-exit
+        close    extpost  postkod
+***********
+        initialize extpost-rec
+        initialize oda-num dep-kod fol-kod post-kod post-tl post-dv
+        move tarih-tasi to ilk-tarih son-tarih sat-tarih
+        move "K" to pes-kre
+        modify acc-011, title = spaces
+        modify acc-02,  title = spaces
+        modify acc-03,  title = spaces
+        modify accept-postadi,  title = spaces
+        display acc-01a acc-02a acc-03a acc-06 acc-07 acc-08 acc-09 acc-10 acc-11 com-01 accept-satno accept-tltutar accept-dvtutar accept-dvtutara
+                acc-011, acc-02 acc-03 accept-postadi
+        
+        if link-var > 0 then 
+          set exit-pushed to true
+          else
+           move 4    to accept-control
+           move 1001 to control-id
+        end-if
+    end-evaluate.
+     .
+*
+ accept-satno-Aft-Procedure.
+    open input postkod.
+    initialize postkod-rec.
+    move dep-kod  to postkod-kodu.
+    move post-kod to postkod-no.
+    read postkod no lock invalid 
+      if kay-knt not = "X"
+        display message box "Tanimsiz satis kodu..."
+        move 4 to accept-control
+        move 1002 to control-id
+      end-if
+    end-read.
+    move postkod-adi to post-adi.
+    modify accept-postadi, VALUE post-adi.
+    close postkod.
+
+    if postkod-dolu-bos = "E" and kay-dur = "W"
+       display message box "Sectiginiz Posting Kodu Baska Bir Folioya Satilmis Kontrol Ediniz..."
+      move 4 to accept-control
+      move 1002 to control-id
+    end-if.
+    if kay-dur = "W"
+       move postkod-tl-tutar to post-tl,
+       move postkod-dv-tutar to post-dv,
+       display accept-tltutar accept-dvtutar
+    end-if.
+******    move  postkod-anah to postkod-yeni.
+
+     .
+*
+ accept-satno-Bef-Procedure.
+    move spaces to kay-knt.
+     .
+ kaydet.
+    move extpost-dep      to postkod-kodu.
+    move extpost-postkodu to postkod-no.  
+    read postkod no lock invalid 
+         initialize mesaj-degiskenler
+         move " [ Yanlis Kod   ] " to mmesaj-title
+         move "Posting Kodu Tanimsiz             " to mmesaj-1
+         move "Satis Gecersizdir......!!!!!!!    " to mmesaj-2
+         move 1           to mmesaj-type
+         move 1           to mmesaj-icon
+         move 1           to mmesaj-default
+         perform mmesaj-ver
+         go kaydet-exit
+         not invalid continue
+    end-read
+    if extpost-p-k not = "P" and extpost-p-k not = "K"
+       initialize mesaj-degiskenler
+       move " [ P-K Yanlis   ] " to mmesaj-title
+       move "Pesin Kredi Kodu Yanlis           " to mmesaj-1,
+       move "P veya K Seciniz.. Satis Gecersiz " to mmesaj-2,
+       move 1           to mmesaj-type
+       move 1           to mmesaj-icon
+       move 1           to mmesaj-default
+       perform mmesaj-ver
+       go kaydet-exit
+    end-if
+
+
+    if postkod-dolu-bos = "E" and kay-dur = "W"
+       initialize mesaj-degiskenler
+       move " [ Satilmis Kod ] " to mmesaj-title
+       move "Sectiginiz Posting Kodu Baska Bir " to mmesaj-1,
+       move "Folioya Satilmis Kontrol Ediniz..." to mmesaj-2,
+       move 1           to mmesaj-type
+       move 1           to mmesaj-icon
+       move 1           to mmesaj-default
+       perform mmesaj-ver
+       go kaydet-exit
+    end-if 
+
+    initialize mesaj-degiskenler
+    move "Girilen Bilgiler Kaydedilsin Mi ?"  to mmesaj-1
+    move " [ Kaydet Basla ] " to mmesaj-title
+    move 2           to mmesaj-type
+    move 1           to mmesaj-icon
+    move 1           to mmesaj-default
+    perform mmesaj-ver
+    if donus-kodu = 2
+       exit paragraph
+    end-if
+
+
+    move k-kodu-tasi  to extpost-staf.
+****    display message box postkod-eski "---" postkod-yeni
+    if kay-dur = "W"
+       move "I"  to extpost-durumu
+       perform postkod-yaz thru postkod-yaz-exit
+       write extpost-rec invalid 
+             rewrite extpost-rec,
+             end-rewrite continue
+       end-write .
+       perform log-operation-extpost.
+    if kay-dur = "R"
+       move k-kodu-tasi  to extpost-staf  
+*       IF POSTKOD-ESKI NOT = POSTKOD-YENI
+*                    PERFORM POSTKOD-DUZ THRU POSTKOD-DUZ-EXIT
+                     perform postkod-yaz thru postkod-yaz-exit
+*                  END-IF, 
+             rewrite extpost-rec invalid 
+                     write extpost-rec,
+                     end-write,
+             end-rewrite
+             perform log-operation-extpost
+    end-if.
+ kaydet-exit.
+    exit.
+ postkod-yaz.
+        move extpost-dep      to postkod-kodu.
+        move extpost-postkodu to postkod-no.  
+        read postkod no lock invalid 
+             go kaydet-exit.
+        move "E"   to postkod-dolu-bos.
+        rewrite postkod-rec invalid continue.  
+        perform log-operation-extpost.
+ postkod-yaz-exit.
+      exit.
+ postkod-sil.
+        move extpost-dep      to postkod-kodu.
+        move extpost-postkodu to postkod-no.  
+        read postkod no lock invalid go sil-exit.
+        move " "   to postkod-dolu-bos.
+        rewrite postkod-rec invalid continue.  
+        perform log-operation-extpost.
+ postkod-sil-exit.
+      exit.
+* POSTKOD-DUZ.
+*        MOVE POSTKOD-ESKI-DEP TO POSTKOD-KODU.
+*        MOVE POSTKOD-ESKI-NO  TO POSTKOD-NO.  
+*        READ POSTKOD NO LOCK INVALID GO KAYDET-EXIT.
+*        MOVE " "   TO POSTKOD-DOLU-BOS.
+*        REWRITE POSTKOD-REC INVALID CONTINUE.  
+* POSTKOD-DUZ-EXIT.
+ sil.
+    if l-bos (1:3) not = "Sil"
+    initialize mesaj-degiskenler
+    move "Kayit Silinsin  Mi ?"  to mmesaj-1
+    move " [ Sil Sor ] " to mmesaj-title
+    move 2           to mmesaj-type
+    move 1           to mmesaj-icon
+    move 2           to mmesaj-default
+    perform mmesaj-ver
+    if donus-kodu = 2
+       exit paragraph
+    end-if
+    end-if
+    perform postkod-sil   thru postkod-sil-exit.
+    delete extpost invalid continue. 
+ sil-exit.
+    exit.
+*
+ mmesaj-ver.
+      inspect mmesaj-1 replacing trailing spaces by low-values
+      inspect mmesaj-2 replacing trailing spaces by low-values
+      inspect mmesaj-3 replacing trailing spaces by low-values
+      display message box mmesaj-1, new-line, mmesaj-2, new-line, mmesaj-3
+              title   = mmesaj-title
+              type    = mmesaj-type
+              icon    = mmesaj-icon
+              default = mmesaj-default
+              returning donus-kodu.
+*
+ Form1-Aft-Routine.
+     close odalar2.
+     .
+ 

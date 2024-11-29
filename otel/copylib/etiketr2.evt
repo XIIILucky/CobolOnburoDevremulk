@@ -1,0 +1,436 @@
+* etiketr2.evt
+* etiketr2.evt is generated from D:\asya\acugt.ytl\otel\etiketr2.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ acc-01-Exception-Proc.
+     PERFORM acenta-cagir
+     .
+
+ acc-02-Exception-Proc.
+     PERFORM ulke-cagir
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+*    SET ENVIRONMENT "TRANSLATE_TO_ANSI" TO "YES". 
+    
+
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+    initialize rapor-adres rapor-meslek
+       rapor-adres9 rapor-meslek9     .
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 2 
+        open input konuk ozluk 
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     
+*/ BASLIKLAR
+*     initialize dokumer-rec detay
+*          move "H" to dokumer-genel-baslik-yaz
+*          set dokumer-yazici-format to true
+*     write dokumer-rec from detay
+
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "M" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici    
+     move "LLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"         to det-dokumer-20(1:2)
+     move ". "                           to det-1
+     move "   "                       to det-2
+     move "    "                     to det-3
+     move " "                     to det-4
+     move "|" to fil-1 fil-2 fil-3 fil-4 
+     write dokumer-rec from detay
+
+*     initialize dokumer-rec detay
+*     move "D2"           to det-dokumer-20(1:2)
+*     move "-"            to det-dokumer-20(5:1)
+*     move all "-" to det-1 det-2 det-3 det-4 
+*     write dokumer-rec from detay
+*********************************
+                         perform fihrist-bak             
+              move toplam-basilan to z6
+              display message box z6 " adet etiket basilacak"
+              close konuk ozluk 
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+             close dokumer
+              delete file dokumer 
+     SET ENVIRONMENT "TRANSLATE_TO_ANSI" TO "NO"
+    set exit-pushed  to true
+    end-evaluate.
+     .
+
+*
+ fihrist-bak.
+     initialize rapor-adres9 rapor-meslek9  f-adres9
+      move rapor-adres  to rapor-adres9
+      move rapor-meslek to rapor-meslek9
+      initialize konuk-rec
+      start konuk key > konuk-anah 
+        invalid continue
+        not invalid 
+           perform until fs-konuk = "10"
+             read konuk next no lock 
+               end move "10" to fs-konuk
+               not end
+                 move konuk-folio to ozluk-folio
+                 read ozluk no lock invalid initialize ozluk-rec
+                 end-read   
+                 move ozluk-adres-filtre to f-adres9
+                 move f-adres9 to f-adres
+                 move ozluk-meslek-filtre to f-meslek
+                 
+                 if (rapor-adres9 = f-adres) 
+                      or (rapor-adres9 = spaces)  
+                      or (rapor-adres9 = zeroes ) and
+                    ( rapor-meslek9 = f-meslek or 
+                      rapor-meslek9 = spaces or 
+                      rapor-meslek9 = zeroes )  and
+                    ( acn-acenta(1:4) = konuk-acenta or 
+                      acn-acenta = spaces or 
+                      acn-acenta = zeroes )  and
+                    ( acn-ulke(1:3) = konuk-ulke or 
+                      acn-ulke = spaces or 
+                      acn-ulke = zeroes ) 
+                      then
+                    
+                     if bos-cikma= 1 and 
+                     ( ozluk-adres1 = spaces or ozluk-il = spaces )
+                     then
+                        continue
+                      else
+                      add 1 to toplam-basilan
+                      perform  fihrist-bulundu
+                     end-if
+                   end-if
+             end-read
+           end-perform
+           if TEK 
+             perform detay-ata
+            end-if
+      end-start .
+     .
+*          
+ fihrist-bulundu.
+      if tek then 
+          set cift to true
+            else
+           set tek to true
+           end-if.
+*     move "SAYIN :" to adres-1(tek-cift)
+
+
+
+     move all high-values to adres-2(tek-cift)
+     move 5 to sayac
+     move 0 to  uzunluk
+     INSPECT konuk-adi TALLYING uzunluk FOR TRAILING " ".  
+     subtract uzunluk from 20 giving uzunluk
+     if uzunluk > 0 then 
+     move konuk-adi(1: uzunluk) to adres-2(tek-cift)(sayac:uzunluk)
+     add 1 uzunluk to sayac
+     end-if
+     move 0 to  uzunluk
+      INSPECT konuk-soyadi TALLYING uzunluk FOR TRAILING " ".  
+     subtract uzunluk from 20 giving uzunluk
+     if uzunluk > 0 then 
+      move konuk-soyadi(1:uzunluk) to adres-2(tek-cift)(sayac:)
+     add 1 uzunluk to sayac
+     end-if
+        
+     move all high-values to adres-3(tek-cift)
+     move 5 to sayac
+     move 0 to  uzunluk
+*     INSPECT fihrist-unvani TALLYING uzunluk FOR TRAILING " ".  
+     subtract uzunluk from 20 giving uzunluk
+     if uzunluk > 0 then 
+*     move fihrist-unvani(1: uzunluk) to adres-3(tek-cift)(sayac:uzunluk)
+     add 1 uzunluk to sayac
+     end-if
+        
+     move all high-values to adres-4(tek-cift)
+     move 5 to sayac
+     move 0 to  uzunluk
+     INSPECT ozluk-adres1 TALLYING uzunluk FOR TRAILING " ".  
+     subtract uzunluk from 20 giving uzunluk
+     if uzunluk > 0 then 
+     move ozluk-adres1(1: uzunluk) to adres-4(tek-cift)(sayac:uzunluk)
+     add 1 uzunluk to sayac
+     end-if
+        
+     move all high-values to adres-5(tek-cift)
+     move 5 to sayac
+     move 0 to  uzunluk
+     INSPECT ozluk-adres2 TALLYING uzunluk FOR TRAILING " ".  
+     subtract uzunluk from 20 giving uzunluk
+     if uzunluk > 0 then 
+     move ozluk-adres2(1: uzunluk) to adres-5(tek-cift)(sayac:uzunluk)
+     add 1 uzunluk to sayac
+     end-if
+        
+   
+     move all high-values to adres-6(tek-cift)
+     move 5 to sayac
+     move 0 to  uzunluk
+*     INSPECT fihrist-adres-3 TALLYING uzunluk FOR TRAILING " ".  
+     subtract uzunluk from 20 giving uzunluk
+     if uzunluk > 0 then 
+*     move fihrist-adres-3(1: uzunluk) to adres-6(tek-cift)(sayac:uzunluk)
+     add 2 uzunluk to sayac
+     if ozluk-posta-kodu not = zeroes
+     move ozluk-posta-kodu to adres-6(tek-cift)(sayac:)
+     end-if
+     END-IF.
+     
+     move all high-values to adres-7(tek-cift)
+     move 1 to sayac
+     move 0 to  uzunluk
+     INSPECT ozluk-ilce TALLYING uzunluk FOR TRAILING " ".  
+     subtract uzunluk from 10 giving uzunluk
+     if uzunluk > 0 then 
+        move ozluk-ilce(1:uzunluk) to adres-7(tek-cift)(sayac:uzunluk)
+        move "/" to adres-7(tek-cift)(sayac + uzunluk:1)
+        add 1 uzunluk to sayac
+     end-if 
+      move 0 to  uzunluk
+     INSPECT ozluk-il TALLYING uzunluk FOR TRAILING " ".  
+     subtract uzunluk from 10 giving uzunluk
+     if uzunluk > 0 then 
+        move ozluk-il(1:uzunluk) to adres-7(tek-cift)(sayac :uzunluk)
+        add  uzunluk to sayac
+     end-if 
+     move 0 to  uzunluk
+     INSPECT ozluk-ulke TALLYING uzunluk FOR TRAILING " ".  
+     subtract uzunluk from 10 giving uzunluk
+     if uzunluk > 0 then 
+        move "/" to adres-7(tek-cift)(sayac:1)
+        move ozluk-ulke(1:uzunluk) to adres-7(tek-cift)(sayac + 1 :)
+        add 1 uzunluk to sayac
+     end-if 
+
+      IF SAYAC < 50
+         compute sayac = 50 - sayac
+         ELSE
+          MOVE 1 TO SAYAC
+       END-IF
+      if sayac > 1 then
+         INITIALIZE YEDEK-7
+         MOVE ADRES-7(TEK-CIFT) TO YEDEK-7
+         move YEDEK-7 to adres-7(tek-cift)(sayac:)
+         MOVE high-values TO ADRES-7(TEK-CIFT)(1: SAYAC - 1 )
+      end-if
+      if cift 
+        perform detay-ata
+        INITIALIZE ADRES-DETAY
+        end-if.
+       
+        
+        
+        
+        .
+*
+ detay-ata.
+        
+         if bosluk-VAR then 
+          set bosluk-YOK to true
+            else
+           set bosluk-VAR to true
+         end-if.
+
+         add 1 to et-satir
+         if  ET-SATIR > 1 then 
+         initialize dokumer-rec detay
+         move "."    to det-1
+         write dokumer-rec from detay
+         write dokumer-rec from detay
+         end-if
+
+         initialize dokumer-rec detay 
+         move "."    to det-1
+         move adres-1(1) to det-2
+         move adres-1(2) to det-4
+         inspect detay replacing all high-values by spaces
+*         if et-satir >1 then 
+         inspect detay converting "çòüûß¶ÅöîôáÄ" to "iIsSgGuUoOcC"
+         write dokumer-rec from detay
+*         end-if
+         initialize dokumer-rec detay 
+         move "."    to det-1
+         move adres-2(1) to det-2
+         move adres-2(2) to det-4
+         inspect detay replacing all high-values by spaces
+         inspect detay converting "çòüûß¶ÅöîôáÄ" to "iIsSgGuUoOcC"
+         write dokumer-rec from detay
+         initialize dokumer-rec detay 
+         move "."    to det-1
+         move adres-3(1) to det-2
+         move adres-3(2) to det-4
+         inspect detay replacing all high-values by spaces
+         inspect detay converting "çòüûß¶ÅöîôáÄ" to "iIsSgGuUoOcC"
+         write dokumer-rec from detay
+         initialize dokumer-rec detay 
+         move "."    to det-1
+         move adres-4(1) to det-2
+         move adres-4(2) to det-4
+         inspect detay replacing all high-values by spaces
+         inspect detay converting "çòüûß¶ÅöîôáÄ" to "iIsSgGuUoOcC"
+         write dokumer-rec from detay
+         
+         initialize dokumer-rec detay 
+         move "."    to det-1
+         move adres-5(1) to det-2
+         move adres-5(2) to det-4
+         inspect detay replacing all high-values by spaces
+         inspect detay converting "çòüûß¶ÅöîôáÄ" to "iIsSgGuUoOcC"
+         write dokumer-rec from detay
+         initialize dokumer-rec detay 
+         move "."    to det-1
+         move adres-6(1) to det-2
+         move adres-6(2) to det-4
+         inspect detay replacing all high-values by spaces
+         inspect detay converting "çòüûß¶ÅöîôáÄ" to "iIsSgGuUoOcC"
+         write dokumer-rec from detay
+         initialize dokumer-rec detay 
+         move "."    to det-1
+         move adres-7(1) to det-2
+         if et-satir > 7 then 
+           move 0 to et-satir
+           initialize tek-cift
+             move "P" to det-dokumer-20(5:1)
+             
+           end-if
+         move adres-7(2) to det-4
+         inspect detay replacing all high-values by spaces
+         inspect detay converting "çòüûß¶ÅöîôáÄ" to "iIsSgGuUoOcC"
+         write dokumer-rec from detay
+         .
+
+         
+         
+         
+         
+         .
+*
+ acc-acenta-Aft-Procedure.
+    if acn-acenta = spaces
+          modify lb-acenta-adi,title = "Tum acentalar ..."
+ 
+      else
+         open input acenta
+    
+            move acn-acenta   to acenta-kodu
+            read acenta no lock invalid
+                 move "Tanimsiz acenta ..." to acenta-adi
+             end-read
+             modify lb-acenta-adi,title = acenta-adi
+    
+          close  acenta
+       end-if
+     .
+ 
+*
+ acc-ulke-Aft-Procedure.
+     if acn-ulke = spaces
+          modify lb-ulke-adi,title = "Tum Ulkeler..."
+ 
+      else
+         open input ulke
+    
+            move acn-ulke   to ulke-anah1
+            read ulke no lock invalid
+                 move "Tanimsiz Ulke ..." to acenta-adi
+             end-read
+             modify lb-ulke-adi,title = ulke-adi
+    
+          close ulke
+          end-if
+     .
+*
+ acenta-cagir.
+       if key-status = 1 then    
+         initialize acenta-tasi
+             call "/asya/ytl/obj/otel/acenara.asy" 
+                  using acenta-tasi
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     if acenta-tasi <> spaces
+                        move acenta-tasi to acn-acenta
+                        display acc-01
+                     end-if
+             end-call
+             move 4 to accept-control
+             move 12 to control-id
+     .
+*
+ ulke-cagir.
+       if key-status = 1 then    
+         initialize ulke-tasi
+             call "/asya/ytl/obj/otel/ulkeara.asy" 
+                  using ulke-tasi
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     if ulke-tasi <> spaces
+                        move ulke-tasi to acn-ulke       
+                        display acc-02
+                    end-if
+             end-call
+             move 4 to accept-control
+             move 15 to control-id
+     .
+ 

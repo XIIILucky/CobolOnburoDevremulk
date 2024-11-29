@@ -1,0 +1,333 @@
+* balkart2.Evt
+* balkart2.Evt is generated from C:\Asya\acugt.ytl\otel\balkart2.Psf
+* This is a generated file. DO NOT modify this file directly.
+*{Bench}evt
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+*{Bench}end
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+     .
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to rapor-tarih rapor-tarih2.
+    move 1 to gun
+    move 0 to kdv-eh.
+    display acc-01 acc-02 acc-03.
+    move 4 to accept-control
+    move 4 to control-id.
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 2
+              open input depkod
+        perform takas-aktar thru takas-aktar-exit
+
+              initialize takas-rec
+              start takas key not < takas-satir invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close takas depkod
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "ONKASA BALANS KARTI"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "ONKASA BALANS KARTI"   to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move gun            to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ay             to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move yil            to det-filler(57:04)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "  B O R C          "   to det-filler(20:)
+     move " A L A C A K       "   to det-filler(75:)
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LRRRRLRRRRRRR" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"                             to det-dokumer-20(1:2)     
+     move "Departman"                      to det-1
+     move "TL. Tutar"                      to det-2
+     move "TL. KDV  "                      to det-21
+     move "TL.Matrah"                      to det-22
+     move "DV. Tutar"                      to det-3
+     move "Departman"                      to det-4
+     move "TL. Tutar"                      to det-5
+     move "DV. Tutar"                      to det-6
+     move "|" to fil-1 fil-2 fil-21 fil-22 fil-3 fil-4 fil-5 fil-6
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-21 det-22 det-3 det-4 det-5 det-6
+     move "+" to fil-1 fil-2 fil-21 fil-22  fil-3 fil-4 fil-5 fil-6
+     write dokumer-rec from detay
+*********************************
+              initialize fs-takas
+              perform with test after until fs-takas = "10"
+                    read takas next no lock end move "10" to fs-takas
+                      not at end
+
+                      initialize dokumer-rec detay
+                      perform liste-detay-ata
+                      write dokumer-rec from detay
+
+                    end-read
+              end-perform
+              perform liste-toplam
+ 
+              close dokumer takas depkod
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer takas
+    end-evaluate.
+     .
+ takas-aktar.
+    perform takas-dosya-ac.
+    initialize takas-rec toplam.
+    open input onkasa.
+    initialize onkasa-rec borc-satir alac-satir.
+    move rapor-tarih to onkasa-tarih.
+
+    start onkasa key not < onkasa-anah invalid continue,
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+        read onkasa next no lock end move "E" to evet-hayir,
+            not end,
+
+            if onkasa-tarih > rapor-tarih,
+                      move "E" to evet-hayir,
+            end-if,
+
+*            perform kdv-ayir thru kdv-ayir-exit,
+
+            if onkasa-tarih = rapor-tarih,
+                initialize depkod-rec,
+                move onkasa-dep to depkod-kodu,
+                read depkod no lock invalid continue,
+                    not invalid,
+
+                    evaluate true
+                    when depkod-ba = "B" add 1 to borc-satir,
+                         initialize takas-rec,
+                         move borc-satir       to takas-satir,
+                         read takas no lock invalid continue,end-read,
+                         move onkasa-dep       to takas-borc-dep,
+                         move onkasa-tutar-tl  to takas-borc-tl-tutar,
+                         compute takas-borc-tl-matrah rounded =
+                                       onkasa-tutar-tl / 1.18
+                         compute takas-borc-tl-kdv = takas-borc-tl-tutar -
+                                       takas-borc-tl-matrah
+                         move onkasa-tutar-dv  to takas-borc-dv-tutar,
+                         write takas-rec invalid rewrite takas-rec,end-write,
+                         compute b-tl-tutar = b-tl-tutar + onkasa-tutar-tl,
+                         compute b-tl-matrah = b-tl-matrah + takas-borc-tl-matrah,
+                         compute b-tl-kdv = b-tl-kdv + takas-borc-tl-kdv,                         
+                         compute b-dv-tutar = b-dv-tutar + onkasa-tutar-dv,
+
+                    when depkod-ba = "A" add 1 to alac-satir,
+                         initialize takas-rec,
+                         move alac-satir       to takas-satir,
+                         read takas no lock invalid continue,end-read,
+                         move onkasa-dep       to takas-alac-dep,
+                         move onkasa-tutar-tl  to takas-alac-tl-tutar,
+                         move onkasa-tutar-dv  to takas-alac-dv-tutar,
+                         write takas-rec invalid rewrite takas-rec,end-write,
+                         compute a-tl-tutar = a-tl-tutar + onkasa-tutar-tl,
+                         compute a-dv-tutar = a-dv-tutar + onkasa-tutar-dv,
+
+                    end-evaluate,
+                end-read,
+            end-if,
+        end-read,
+        end-perform,
+    end-start.
+    close onkasa.
+ takas-aktar-exit.
+    exit.
+
+ takas-dosya-ac.
+    open i-o genelfis.
+    move 1 to genelfis-anahtar.
+    read genelfis no lock invalid move 1 to ekran-fis-1.
+     
+    add 1 to ekran-fis-1.
+    move ekran-fis-1 to takas-no.
+    rewrite genelfis-rec invalid write genelfis-rec.
+    close genelfis.
+    open output takas close takas open i-o takas with mass-update.
+ liste-detay-ata.
+    initialize dokumer-rec detay.
+    move "|" to fil-1 fil-2  fil-21 fil-22 fil-3 fil-4 fil-5 fil-6
+    move takas-borc-dep        to det-1 depkod-kodu.
+    read depkod no lock invalid move spaces to depkod-adi.
+    move depkod-adi            to det-1(05:).
+    move takas-borc-tl-tutar   to z-1    
+    move z-1                   to det-2.
+    move takas-borc-tl-kdv     to z-1    
+    move z-1                   to det-21.
+    move takas-borc-tl-matrah  to z-1    
+    move z-1                   to det-22.
+    move takas-borc-dv-tutar   to z-2         
+    move z-2                   to det-3.
+    move takas-alac-dep        to det-4 depkod-kodu.
+    read depkod no lock invalid move spaces to depkod-adi.
+    move depkod-adi            to det-4(05:).
+    move takas-alac-tl-tutar   to z-1            
+    move z-1                   to det-5.
+    move takas-alac-dv-tutar   to z-2        
+    move z-2                   to det-6.
+ liste-toplam.
+    initialize dokumer-rec detay
+    move "-"            to det-dokumer-20(5:1)
+    move all "-"  to det-1 det-2  det-21 det-22 det-3 det-4 det-5 det-6 
+    move "+" to fil-1 fil-2  fil-21 fil-22 fil-3 fil-4 fil-5 fil-6
+    write dokumer-rec from detay
+    initialize dokumer-rec detay
+    move "A"          to det-dokumer-20(3:1)
+    move 481          to det-renk1
+    move "1"          to det-dokumer-20(10:1)
+    move "|" to fil-1 fil-2  fil-21 fil-22 fil-3 fil-4 fil-5 fil-6
+    move "Toplam  (+) :"       to det-1.
+    move b-tl-tutar            to z-1.
+    move z-1                   to det-2.
+    move b-tl-kdv              to z-1.
+    move z-1                   to det-21.
+    move b-tl-matrah           to z-1.
+    move z-1                   to det-22.
+
+    move b-dv-tutar            to z-2      
+    move z-2                   to det-3.
+    move "Toplam  (-) :"       to det-4.
+    move a-tl-tutar            to z-1         
+    move z-1                   to det-5.
+    move a-dv-tutar            to z-2         
+    move z-2                   to det-6.
+    write dokumer-rec from detay.
+
+    initialize dokumer-rec detay
+    move "A"          to det-dokumer-20(3:1)
+    move 481          to det-renk1
+    move "1"          to det-dokumer-20(10:1)
+    move "|" to fil-1 fil-2  fil-21 fil-22 fil-3 fil-4 fil-5 fil-6
+    compute bugun-tl = b-tl-tutar - a-tl-tutar.
+    compute bugun-dv = b-dv-tutar - a-dv-tutar.
+    move "Bugun Toplam:"       to det-1.
+    move bugun-tl              to z-1          
+    move z-1                   to det-2.
+    move bugun-dv              to z-2        
+    move z-2                   to det-3.
+    write dokumer-rec from detay.
+
+    initialize dokumer-rec detay
+    move "A"          to det-dokumer-20(3:1)
+    move 481          to det-renk1
+    move "1"          to det-dokumer-20(10:1)
+    move "|" to fil-1 fil-2  fil-21 fil-22 fil-3 fil-4 fil-5 fil-6
+    move rapor-tarih to onkasa-tarih.
+    move "888"       to onkasa-dep.
+    open input onkasa.
+    read onkasa no lock invalid initialize onkasa-tutar-tl onkasa-tutar-dv.
+    close onkasa.
+*    perform kdv-ayir thru kdv-ayir-exit,
+    move onkasa-tutar-tl to z-1           
+    move z-1             to dunden-tl.
+    move onkasa-tutar-dv to z-2            
+    move z-2             to dunden-dv.
+    move "Dunden Devir:"       to det-1.
+    move dunden-tl             to z-1       
+    move z-1                   to det-2.
+    move dunden-dv             to z-2.
+    move z-2                   to det-3.
+    write dokumer-rec from detay.
+
+    initialize dokumer-rec detay
+    move "A"          to det-dokumer-20(3:1)
+    move 481          to det-renk1
+    move "1"          to det-dokumer-20(10:1)
+    move "|" to fil-1 fil-2  fil-21 fil-22 fil-3 fil-4 fil-5 fil-6
+    compute yarin-tl = dunden-tl + bugun-tl.
+    compute yarin-dv = dunden-dv + bugun-dv.
+    move "Yarina devir:"       to det-1.
+    move yarin-tl              to z-1        
+    move z-1                   to det-2.
+    move yarin-dv              to z-2.
+    move z-2                   to det-3.
+    write dokumer-rec from detay
+    initialize dokumer-rec detay
+    move "-"            to det-dokumer-20(5:1)
+    move all "-"  to det-1 det-2  det-21 det-22 det-3 det-4 det-5 det-6 
+    move "+" to fil-1 fil-2  fil-21 fil-22 fil-3 fil-4 fil-5 fil-6
+    write dokumer-rec from detay.
+* kdv-ayir.
+*    if kdv-eh = 1
+*     compute onkasa-tutar-tl = (onkasa-tutar-tl * 100 / (100 + cinpara-mus-kdv))
+*     compute onkasa-tutar-dv = (onkasa-tutar-dv * 100 / (100 + cinpara-mus-kdv))
+*    end-if.
+* kdv-ayir-exit.
+*    exit.

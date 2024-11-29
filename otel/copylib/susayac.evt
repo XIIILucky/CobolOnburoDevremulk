@@ -1,0 +1,190 @@
+* susayac.evt
+* susayac.evt is generated from C:\asya\acugt.ets\deli gadirin tüketim takip\17032010otel\susayac.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+*     move "timo2008" to isyeri-adres-tasi.
+     perform adresleri-tasi.
+     .
+*
+ Form1-Bef-Initdata.
+     perform baslik-yukle
+     accept tarih-tasi from century-date
+     move tarih-tasi          to takip-tarih
+     move takip-tarih         to su-scr-tarih
+     display sscr-yil sscr-ay sscr-gun
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+         when 2
+         perform su-kaydet
+     when 111
+         perform takvim-yukle
+         perform su-formu-yukle
+         perform grid-yukle
+     when 3
+         perform kayit-sil
+     end-evaluate.
+
+*
+ su-kaydet.
+    if su-scr-sd = zeroes
+         display message box "Bos Kayit Girilemez....!!!"     
+    exit paragraph
+    end-if
+    open i-o takip
+    initialize takip-rec
+    set takip-su-sayac        to true
+    move su-scr-tarih         to takip-tarih
+    read takip no lock invalid
+         continue
+    end-read
+         move su-scr-sd       to takip-su-sd
+         move su-scr-gt       to takip-su-gt
+         move su-scr-sdd      to takip-su-gad
+    write takip-rec invalid
+    rewrite takip-rec end-rewrite
+    end-write
+    initialize su-scr-gt su-scr-sd
+    display sscr-sd sscr-gt
+    move 4 to accept-control
+    move 1 to control-id
+    close takip.
+
+*
+ su-formu-yukle.
+    
+    open i-o takip
+    initialize takip-rec
+    move su-scr-tarih        to takip-tarih
+    set takip-su-sayac       to true
+    read takip no lock invalid
+         continue
+         initialize su-scr-sd su-scr-gt
+    not invalid
+         move takip-su-sd    to su-scr-sd
+         move takip-su-gt    to su-scr-gt
+    end-read
+    display sscr-sd sscr-gt
+    close takip.
+
+*
+ baslik-yukle.
+    move "Tarih"        to gd-1-col-1
+    move "Say.Deg"      to gd-1-col-2
+    modify gd-su, RECORD-TO-ADD(gd-rec-su).
+
+*
+ grid-yukle.
+     modify gd-su, reset-grid = 1
+            mass-update = 0
+     perform baslik-yukle
+     open input takip
+     initialize takip-rec gd-rec-su takip-su-gt scr-su-ttuk
+     set takip-su-sayac       to true
+     move su-scr-tarih        to takip-tarih
+     start takip key not > takip-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-takip = "10"
+     read takip backward no lock end
+     not at end
+            if takip-tipi <> "S "
+               exit perform
+            end-if
+           if takip-ay <> su-scr-ay
+              exit perform cycle
+           end-if
+           move takip-gun               to gd-1-col-1(1:2)
+           move "/"                     to gd-1-col-1(3:1)
+           move takip-ay                to gd-1-col-1(4:2)
+           move "/"                     to gd-1-col-1(6:1)
+           move takip-yil               to gd-1-col-1(7:4)
+*          move takip-su-gt             to ydk-takip-su-gt
+           move takip-su-sd             to ydk-takip-su-sd
+           move ydk-takip-su-sd         to gd-1-col-2
+*          move scr-su-ttuk             to ydk-scr-su-ttuk
+*          move ydk-scr-su-ttuk         to gd-1-col-2
+           compute su-scr-gt = su-scr-sd - su-scr-sdd
+           compute scr-su-ttuk = scr-su-ttuk + su-scr-gt
+     modify gd-su, RECORD-TO-ADD(gd-rec-su)
+     end-read
+     end-perform
+     end-start
+     close takip
+     display sscr-gt sscr-ttuk
+     modify gd-su, reset-grid = 0
+                   mass-update = 1.
+
+*
+ takvim-yukle.
+      open input takvim takip
+      initialize takvim-rec takip-rec
+      initialize yedek-takvim-anah 
+      move su-scr-tarih to takvim-anah
+      start takvim key not > takvim-anah invalid
+            continue
+      not invalid
+      perform with test after until fs-takvim = "10"
+      read takvim backward no lock end move "10" to fs-takvim 
+      not at end
+
+          if yedek-takvim-anah = spaces or 
+             yedek-takvim-anah = zeroes
+             move takvim-anah to yedek-takvim-anah             
+          end-if
+          if takvim-anah <> yedek-takvim-anah
+             move takvim-anah   to yedek-anahtar
+             perform dun-goster
+             exit perform
+          end-if            
+      end-read
+      end-perform
+      end-start
+      close takvim takip.
+
+*      
+ dun-goster.
+      move yedek-anahtar          to takip-tarih
+      set takip-su-sayac          to true
+      read takip no lock invalid
+           initialize takip-su-sd
+      not invalid 
+           move takip-su-sd       to su-scr-sdd
+      end-read
+      display sscr-sdd.
+
+*
+ kayit-sil.
+      open i-o takip
+      initialize takip-rec
+      set takip-su-sayac to true
+      move su-scr-tarih  to takip-tarih
+       read takip no lock invalid
+             continue
+       end-read
+       delete takip invalid 
+             continue
+       end-delete
+       initialize su-scr-gt scr-su-ttuk su-scr-sd
+       close takip
+             display message box "Kayit Silindi...!!"
+             title "Bilginize.."
+             icon MB-WARNING-ICON
+        display sscr-gt sscr-ttuk sscr-sd sscr-sdd.
+           
+
+ 

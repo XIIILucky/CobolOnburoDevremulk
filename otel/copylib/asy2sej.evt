@@ -1,0 +1,4059 @@
+* asy2sej.evt
+* asy2sej.evt is generated from C:\Asya_Yedek\liste\YEDEK_OTEL30.11.201762\otel\asy2sej.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Acu-Screen1-Ta-1-Cmd-Tabchanged.
+     EVALUATE Event-Type
+     WHEN Cmd-Tabchanged
+        MOVE Event-Data-1 TO Screen1-Ta-1-Value
+        MOVE 0 TO Screen1-Pg-1-Visible, Screen1-Pg-2-Visible,
+            Screen1-Pg-3-Visible
+        EVALUATE Event-Data-1
+        WHEN 1
+           MOVE 1 TO Screen1-Pg-1-Visible
+        WHEN 2
+           MOVE 1 TO Screen1-Pg-2-Visible
+        WHEN 3
+           MOVE 1 TO Screen1-Pg-3-Visible
+        END-EVALUATE
+*       Before-Tabchg-Display
+        DISPLAY Screen1
+        PERFORM Screen1-Ta-1-Aft-Tabchg-Display
+     END-EVALUATE
+     .
+
+ Screen1-Exception-Proc.
+     PERFORM Screen1-Ex-Other
+     .
+
+ scr-cb-sej-kod-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM scr-cb-sej-kod-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Screen1-Gd-1-Event-Proc.
+     PERFORM Screen1-Gd-1-Ev-Other
+     .
+
+ Screen1-Gd-2-Event-Proc.
+     .
+
+ Screen2-Event-Proc.
+     .
+
+ cb-not-kon-sebep-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-not-kon-sebep-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Screen4-Event-Proc.
+     .
+
+ Screen4-Exception-Proc.
+     PERFORM Screen4-Ex-Other
+     .
+
+ Screen5-Event-Proc.
+     .
+
+ Screen5-Exception-Proc.
+     PERFORM Screen5-Ex-Other
+     .
+
+ Screen5-Gd-1-Event-Proc.
+     PERFORM Screen5-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Screen1-Bef-Create.
+    perform adresleri-tasi
+    open input genel
+    initialize genel-rec
+    move 1            to genel-anahtar
+    read genel no lock invalid 
+        continue 
+    end-read 
+    close genel
+              
+    move tarih-tasi   to ilk-tar  filtre-sat-bas-tar filtre-sat-bit-tar 
+                         filtre-cin-bas-tar filtre-cin-bit-tar filtre-konf-bas-tar
+                         filtre-konf-bit-tar
+    move ilk-tar      to gercek-tarih
+    compute s3  = function integer-of-date(gercek-tarih) - 1
+    compute s4  = function date-of-integer(s3) 
+    move s4           to ilk-tar
+
+    move 31           to son-gun
+    move 12           to son-ay
+    move yil-tasi     to son-yil
+    compute son-yil = son-yil + 1.
+
+*    compute s1  = function integer-of-date(gercek-tarih) + 365
+*    compute s2  = function date-of-integer(s1)
+*    move s2           to son-tar.
+
+*
+ Screen1-Aft-Initdata.
+    open i-o sejkkod
+    initialize sejkkod-rec
+    start sejkkod key not < sejkkod-anah invalid
+         continue 
+    not invalid 
+    perform with test after until fs-sejkkod = "10"
+    read sejkkod next no lock end move "10" to fs-sejkkod 
+    not at end             
+            modify scr-cb-sej-kod, item-to-add(sejkkod-kodu)
+    end-read 
+    end-perform
+    end-start
+    close sejkkod
+
+    modify scr-cb-sej-kod, value = sejkkod-kodu 
+    move sejkkod-kodu  to yedek-cb-sej-kod
+    perform sifre-oku.
+*
+ Screen1-Ex-Other.
+    evaluate key-status
+    when 3
+       display message box "Secili Rezervasyonlar Gonderilecektir." new-line
+                           "Eminmisiniz?"
+                       title "Uyari"
+                       icon 1
+                       type 2
+                       default 2
+                       returning return-code 
+       if return-code = 2
+          exit paragraph 
+       end-if 
+              initialize url
+              if test-bag = 1
+                 move "http://admin.stage.hotel2sejour.com"   to url
+              else
+                 move "https://admin.hotel2sejour.com"        to url
+              end-if
+              inspect url replacing trailing spaces by low-values 
+
+       perform xml-net-init-basla 
+       perform xml-login-basla |cookie aliniyor
+       perform xml-konfirme-gonder
+       perform xml-net-init-bitti
+       
+       perform liste-cek|liste tekrar yukleniyor
+ 
+    when 18
+       inquire Screen1-Gd-2,cursor-y in sayac
+       inquire Screen1-Gd-2(sayac,14),
+               cell-data in ydk-rez
+       perform rez-cagir
+    when 5001
+       initialize son-satir
+       inquire Screen1-Gd-1,last-row in son-satir 
+            
+       initialize k i  
+       perform varying i 
+               from 1
+               by 1
+               until i > son-satir                        
+                 if i = son-satir
+                    exit perform 
+                 end-if 
+                 compute k = i + 1
+                 initialize hata-varmi
+                 inquire Screen1-Gd-1(k,19),hidden-data hata-varmi 
+                 if hata-varmi not = 1
+                    inquire Screen1-Gd-1(k ,16),
+                            hidden-data in secim-durumu
+                 
+                    modify Screen1-Gd-1(k,16),
+                           hidden-data = "K"
+                           cell-data = "Konfirme"
+                           cell-color = 000
+
+                    modify Screen1-Gd-1(k,18),                           
+                           cell-data = spaces
+                           hidden-data = spaces  
+                 end-if 
+       end-perform
+    when 5002
+       initialize son-satir
+       inquire Screen1-Gd-1,last-row in son-satir 
+            
+       initialize k i  
+       perform varying i 
+               from 1
+               by 1
+               until i > son-satir
+                 if i = son-satir
+                    exit perform 
+                 end-if 
+                    compute k = i + 1
+                    inquire Screen1-Gd-1(k ,16),
+                            hidden-data in secim-durumu
+                 
+                    modify Screen1-Gd-1(k,16),
+                           hidden-data = "B"
+                           cell-data = spaces
+                           cell-color = 000
+
+                    modify Screen1-Gd-1(k,18),                           
+                           cell-data = spaces
+                           hidden-data = spaces                  
+        end-perform 
+    when 5010
+     call "/asya/ytl/obj/otel/sejkar.asy"  
+          on exception 
+             perform callerr-proc
+          not on exception
+             cancel "/asya/ytl/obj/otel/sejkar.asy"
+     end-call 
+    when 5011
+       perform Acu-Screen5-Routine
+    when 3003
+       perform konfirme-edilen-rez-grid-baslik-yukle
+       perform konfirme-edilen-rez-grid-yukle         
+    end-evaluate.
+*
+ kontrol-listesi-cek-basla.
+       perform xml-net-init-basla 
+       perform xml-login-basla |cookie aliniyor
+       perform kontrol-listesi-cek
+       perform xml-net-init-bitti.
+*
+ kontrol-listesi-cek.
+     move ilk-gun     to egun
+     move ilk-ay      to eay
+     move ilk-yil     to eyil
+     move etar             to konfirme-cin-bas
+
+     move son-gun     to egun
+     move son-ay      to eay
+     move son-yil     to eyil
+     move etar        to konfirme-cin-bit
+
+***********************tarihli request*************************************************************
+     move all low-values to konfirme-link
+*******************kopya**************************     
+     inspect url-sorgu replacing trailing spaces by low-values
+     move all low-values to url-sorgu
+
+     string url-sorgu
+             url delimited by low-values
+             "/api/Pax/getReservationList?checkInStart="
+     into url-sorgu
+*******************kopya**************************     
+     string konfirme-link,
+            url-sorgu delimited by low-values
+            konfirme-cin-bas delimited by low-values
+            "&" delimited by low-values
+            "checkInend=" delimited by low-values
+            konfirme-cin-bit delimited by low-values
+            "&status=E" delimited by low-values
+            "&format=xml" delimited by low-values
+            into konfirme-link
+     
+            inspect konfirme-link replacing all low-values by spaces 
+***************************tarihli request*********************************************************            
+ 
+            perform konfirmasyon-hata-donus
+             
+            if checkreservationfile_kodu(1) not = spaces |yüksek yogunluk olursa burasý kullanýlýyor. |sejour sisteminden dolayý bu þekilde.
+*/*/yoðunluk sejour tarafýndan belirleniyor örneðin 1000 rezervasyon                                                                       
+               if checkreservationuploadfile_kodu(1) not = spaces                                                          
+                  perform konfirmasyon-aliniyor-txt                  
+               end-if                        
+            else
+               move all low-values to konfirme-link
+*******************kopya**************************     
+     inspect url-sorgu replacing trailing spaces by low-values
+     move all low-values to url-sorgu
+
+     string url-sorgu
+             url delimited by low-values
+             "/api/Pax/getReservationList?checkInStart="
+     into url-sorgu
+*******************kopya**************************               
+               string konfirme-link,
+                      url-sorgu delimited by low-values
+                      konfirme-cin-bas delimited by low-values
+                      "&" delimited by low-values
+                      "checkInend=" delimited by low-values
+                      konfirme-cin-bit delimited by low-values
+                      "&status=E" delimited by low-values
+                      "&format=xml" delimited by low-values
+                      into konfirme-link
+            
+               inspect konfirme-link replacing all low-values by spaces
+               perform konfirmasyon-aliniyor                       
+            end-if.            
+*
+ liste-cek.
+       modify Screen1-Pb-1,enabled = false
+       modify Screen1-Pb-1,title  = "Islem Yapiliyor.."
+
+       open input takvim
+
+       initialize takvim-rec 
+       move ilk-tar         to takvim-anah
+       read takvim no lock invalid 
+            display message box "Baslangic Tarihi Hatali..." new-line
+                                "Lutfen Kontrol Ediniz."
+                            title "Uyari"
+                            icon 1
+             close takvim
+             exit paragraph 
+       end-read 
+
+       initialize takvim-rec 
+       move son-tar         to takvim-anah
+       read takvim no lock invalid 
+            display message box "Bitis Tarihi Hatali..." new-line
+                                "Lutfen Kontrol Ediniz."
+                            title "Uyari"
+                            icon 1
+             close takvim
+             exit paragraph 
+       end-read 
+
+       close takvim
+
+              initialize url
+              if test-bag = 1
+                 move "http://admin.stage.hotel2sejour.com"   to url
+              else
+                 move "https://admin.hotel2sejour.com"   to url
+              end-if
+              inspect url replacing trailing spaces by low-values 
+
+       
+*/*/*konfirme edilecek rezler aliniyor
+       perform xml-net-init-basla
+       modify Screen5-St-1-Handle,panel-index  = 1
+                                  panel-text = "Sisteme Giris Yapiliyor.."
+       perform xml-login-basla |cookie aliniyor         
+       perform xml-konfirme-cek-grid-baslik-doldur       
+       open input  konum acenta kodlar02 aksiyhrk takvim grup cast rez ulke odalar
+       open i-o sejkar
+       modify Screen5-St-1-Handle,panel-index  = 1
+                                  panel-text = "Liste Guncelleniyor..Lutfen Bekleyiniz..."
+          perform xml-konfirme-cek
+
+       close sejkar konum acenta kodlar02 aksiyhrk takvim grup cast rez ulke odalar
+       modify Screen5-St-1-Handle,panel-index  = 1
+                                  panel-text = "Tanimlama Kodlari Aliniyor.."
+
+       perform not-konfirme-kodlari-aliniyor  |not konfirme sebepleri aliniyor.
+       modify Screen5-St-1-Handle,panel-index  = 1
+                                  panel-text = "islem tamamlandi" 
+       perform xml-net-init-bitti
+      
+       modify Screen1-Pb-1,enabled = true 
+       modify Screen1-Pb-1,title  = "Basla".
+*
+ scr-cb-sej-kod-Ex-Ntf-Selchange.
+    move cb-sej-kod         to yedek-cb-sej-kod
+    perform sifre-oku.
+*
+ sifre-oku.
+    open input sejkkod
+    initialize sejkkod-rec yedek-sejkkod-paximum-id yedek-sejkkod-sifre
+    move yedek-cb-sej-kod  to sejkkod-kodu
+    read sejkkod no lock invalid  
+        display message box "Sejour Kullanici Kodu Hatali.."
+                        title "Uyari"
+                        icon 1
+             close sejkkod
+             exit paragraph 
+    end-read 
+         move sejkkod-sifre      to yedek-sejkkod-sifre
+         move sejkkod-paximum-id to yedek-sejkkod-paximum-id
+         if onkpara-referans-var = 1
+            move sejkkod-ref   to secili-ref
+         end-if 
+    close sejkkod.
+
+*
+ xml-konfirme-cek.
+    open i-o genelfis
+    move 1 to genelfis-anahtar
+    read genelfis no lock invalid
+         accept print-no from time
+    not invalid
+         add 1 to print-no
+         rewrite genelfis-rec end-rewrite
+    end-read
+    close genelfis
+    move print-no to takasp-dno
+    move k-kodu-tasi to takasp-k
+    open output takasp close takasp open i-o takasp 
+     move 1  to temp-sayi
+     open i-o takas-acen beklerez musteri  
+         
+     initialize takas-acen-rec 
+     start takas-acen key not < takas-acen-anah invalid 
+         continue 
+     not invalid
+     perform with test after until fs-takas-acen = "10"
+     read takas-acen next no lock end move "10" to fs-takas-acen
+     not at end                 
+        
+            move ilk-gun     to egun
+            move ilk-ay      to eay
+            move ilk-yil     to eyil
+            move etar        to konfirme-cin-bas
+
+            move son-gun     to egun
+            move son-ay      to eay
+            move son-yil     to eyil
+            move etar        to konfirme-cin-bit
+
+***********************tarihli request*************************************************************
+            move all low-values to konfirme-link
+            inspect takas-acen-kodu replacing all spaces by low-values
+
+*******************kopya**************************     
+             inspect url-sorgu replacing trailing spaces by low-values
+             move all low-values to url-sorgu
+        
+             string url-sorgu
+                     url delimited by low-values
+                     "/api/pax/getreservationlist?checkInStart="
+             into url-sorgu
+*******************kopya************************** 
+            string konfirme-link,
+                   url-sorgu delimited by low-values
+                   konfirme-cin-bas delimited by low-values
+                   "&" delimited by low-values
+                   "checkInEnd=" delimited by low-values
+                   konfirme-cin-bit delimited by low-values
+                   "&agencyId=" delimited by low-values
+                   takas-acen-kodu delimited by low-values
+                   "&format=xml" delimited by low-values
+                   into konfirme-link
+
+            inspect konfirme-link replacing all low-values by spaces
+***************************tarihli request*********************************************************            
+ 
+            perform konfirmasyon-hata-donus
+             
+            if checkreservationfile_kodu(1) not = spaces |yüksek yogunluk olursa burasý kullanýlýyor. |sejour sisteminden dolayý bu þekilde.
+*/*/yoðunluk sejour tarafýndan belirleniyor örneðin 1000 rezervasyon                                                                       
+               if checkreservationuploadfile_kodu(1) not = spaces                                                          
+                  perform konfirmasyon-aliniyor-txt                  
+               end-if                        
+            else
+               move all low-values to konfirme-link
+               inspect takas-acen-kodu replacing all spaces by low-values
+*******************kopya**************************     
+               inspect url-sorgu replacing trailing spaces by low-values
+               move all low-values to url-sorgu
+        
+               string url-sorgu
+                       url delimited by low-values
+                       "/api/pax/getreservationlist?checkInStart="
+               into url-sorgu
+*******************kopya**************************
+               string konfirme-link,
+                      url-sorgu delimited by low-values
+                      konfirme-cin-bas delimited by low-values
+                      "&" delimited by low-values
+                      "checkInEnd=" delimited by low-values
+                      konfirme-cin-bit delimited by low-values
+                      "&agencyId=" delimited by low-values
+                      takas-acen-kodu delimited by low-values
+                      "&format=xml" delimited by low-values
+                      into konfirme-link
+        
+                      inspect konfirme-link replacing all low-values by spaces
+                      perform konfirmasyon-aliniyor                       
+            end-if
+            move 0          to konfirme-listesinden-geldi
+            perform xml-konfirme-cek-grid-doldur
+     end-read 
+     end-perform
+     end-start
+
+     perform kontrol-listesi-cek |hotel2sejour panelinden verilen konfirmeler ve ayný zamanda bizim konfirme verdiklerimiz
+        
+     initialize t 
+     perform varying t
+                from 1
+                by 1
+                until t > max-kayitresp
+                   if confirme-KeyField(t) not = spaces 
+                      initialize beklerez-rec konfirme-listesinden-geldi                     
+                      move 1         to konfirme-listesinden-geldi                                       
+                      perform beklerez-kaydet
+                   else
+                      exit perform 
+                   end-if 
+     end-perform
+   
+     close takas-acen beklerez musteri takasp  
+     
+     delete file takasp
+
+     modify Screen1-Gd-1,mass-update = 0   
+     display acc-toplam acc-yeni-rez 
+             acc-deg-rez acc-ipt-rez.
+
+*
+ xml-konfirme-cek-grid-baslik-doldur.
+     modify Screen1-Gd-1,mass-update = 1
+                       reset-grid = 1
+     initialize Screen1-Gd-1-record toplamlar
+     move "Sejour Islem No"      to gd-1-col-1
+     move "Adi"                  to gd-1-col-2
+     move "Soyadi"               to gd-1-col-3
+     move "C/in Tarihi"          to gd-1-col-4
+     move "C/Out Tarihi"         to gd-1-col-5
+     move "Voucher"              to gd-1-col-6
+     move "Pan"                  to gd-1-col-7
+     move "P"                    to gd-1-col-8
+     move "C"                    to gd-1-col-9
+     move "Satis Tarihi"         to gd-1-col-10
+     move "Durum"                to gd-1-col-11
+     move "Pms Durum"            to gd-1-col-12
+     move "Acenta Adi"           to gd-1-col-13
+     move "O.Say"                to gd-1-col-14
+     move "O.Tipi"               to gd-1-col-15
+     move "SECIM"                to gd-1-col-16
+     move "Asya Isl. No"         to gd-1-col-17
+     move "Not Konfirme Sebebi"  to gd-1-col-18
+     move "Hata Kodu"            to gd-1-col-19
+     move "Tur Operatoru"        to gd-1-col-20
+     move "Milliyet"             to gd-1-col-21
+     move "Gece"                 to gd-1-col-22
+     move "Doluluk"              to gd-1-col-23
+     move "Konfirme Notu"        to gd-1-col-24
+     move "Acenta Notu"          to gd-1-col-25
+     move "Balayi"               to gd-1-col-26
+     move "Uyarilar"             to gd-1-col-27
+     move "D.Tarihi"             to gd-1-col-28
+     modify Screen1-Gd-1,
+            record-to-add(Screen1-Gd-1-record)
+     move 1   to grid-sayi.
+*
+ xml-konfirme-cek-grid-doldur.              
+     initialize t
+     perform varying t
+                from 1
+                by 1
+                until t > max-kayitresp            
+                   if confirme-KeyField(t) not = spaces
+                      perform grid-ekle
+                   else
+                      exit perform 
+                   end-if 
+     end-perform.           
+*
+ grid-ekle.
+    initialize Screen1-Gd-1-record beklerez-rec hata-var-mi
+    move confirme-KeyField(t)     to gd-1-col-1 
+    move confirme-CheckIn(t)      to gd-1-col-4 
+    move confirme-CheckOut(t)     to gd-1-col-5
+    move confirme-VoucherNo(t)    to gd-1-col-6 
+    move confirme-AccomId(t)      to gd-1-col-7 
+    move confirme-Adults(t)       to gd-1-col-8 
+    move confirme-Childs(t)       to gd-1-col-9 
+
+    move confirme-sellDate(t)     to gd-1-col-10
+*    if confirme-sellDate(t)(1:4) < 1900
+*       move "Satis Tarihi Hatali" to gd-1-col-19
+*       move 1                     to hata-var-mi
+*    end-if 
+
+    evaluate confirme-ConfirmationStatus(t)(1:1)
+    when "W"
+       move "Beklemede"           to gd-1-col-11
+    when "S"
+       move "Gonderildi"          to gd-1-col-11
+    when "G"
+       move "Gonderilmedi"        to gd-1-col-11
+     when other 
+       move 1                     to hata-var-mi
+       move "HATA"                to gd-1-col-11
+    end-evaluate 
+    
+    evaluate confirme-PmsStatus(t)(1:1)
+    when "0"
+       move "YENI REZ"            to gd-1-col-12
+       add 1                      to yeni-rez
+    when "2"
+       move "DEGISIKLIK"          to gd-1-col-12
+       add 1                      to deg-rez
+    when "3"
+       move "IPTAL"               to gd-1-col-12
+       add 1                      to ipt-rez
+    when other 
+       move 1                     to hata-var-mi
+       move "HATA"                to gd-1-col-12     
+    end-evaluate
+
+    add 1                         to toplam-rez
+    move confirme-AgencyName(t)   to gd-1-col-13
+    move confirme-RoomCount(t)    to gd-1-col-14
+     
+    move confirme-RoomTypeId(t)   to gd-1-col-15 
+
+    initialize p  cinsler cins-hata-yok
+    perform varying p
+              from 1
+              by 1
+              until p > 7
+                if confirme-CustomerPms-Name(t,p) = spaces
+                     exit perform
+                end-if 
+
+*                call "c$toupper" using confirme-CustomerPms-Name(t,p)
+                inspect confirme-CustomerPms-Name(t,1) converting ",?+- " to "     "
+
+                initialize ucuncu-isim temp-isim
+                unstring confirme-CustomerPms-Name(t,1) 
+                delimited by space  
+                into gd-1-col-3 gd-1-col-2 ucuncu-isim
+
+                if ucuncu-isim not = spaces
+                   initialize temp-isim
+                   string gd-1-col-2 delimited by "      "
+                          " " delimited by size
+                          gd-1-col-3 delimited by "      "                        
+                   into temp-isim
+                   move temp-isim   to gd-1-col-2
+                   move ucuncu-isim to gd-1-col-3
+                end-if 
+
+                inspect gd-1-col-2 converting ",?+- " to "     "
+                inspect gd-1-col-3 converting ",?+- " to "     "
+
+                call "c$justify" using gd-1-col-3 "L"
+                call "c$justify" using gd-1-col-2 "L"
+                                          
+                if genel-sejour-bay-kabul-etme = 1   
+                   evaluate confirme-CustomerPms-Title(t,p)(1:3)
+                   when "Mr "  
+                      add 1 to erkek 
+                   when "Mrs" 
+                      add 1 to kadin                      
+                   when "Chd"
+                      add 1 to cocuk
+                   when other   
+                      add 1 to beb 
+                   end-evaluate 
+                end-if 
+    end-perform 
+    if genel-sejour-bay-kabul-etme = 1
+       if kadin > 0 or cocuk > 0 or beb > 0
+          move 0 to cins-hata-yok
+       end-if 
+         
+       if erkek > 0 and cocuk = 0 and beb = 0 and kadin = 0
+          move 1 to cins-hata-yok
+       end-if 
+    end-if
+                   
+    move spaces                to gd-1-col-16
+
+    perform beklerez-kaydet
+
+          
+          initialize hata-ulke
+          if beklerez-milliyet(1) not = spaces
+             initialize sejkar-rec 
+             move "U"                               to sejkar-tip
+             move beklerez-acenta-kodu              to sejkar-acenta
+             move beklerez-milliyet(1)              to sejkar-kodu
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+             read sejkar no lock invalid 
+                  move "Sejour Ulke Kodu Yok"       to gd-1-col-21 
+                  move 1                            to hata-ulke
+             not invalid 
+                if sejkar-asya-kodu not = spaces
+                   initialize ulke-rec
+                   move sejkar-asya-kodu            to ulke-anah
+                   read ulke no lock invalid 
+                        move "Asya Ulke Kodu Yok"   to gd-1-col-21 
+                        move 1                      to hata-ulke
+                   not invalid 
+                       move ulke-adi                to gd-1-col-21
+                   end-read
+                else 
+                   move "Asya Karsilik Kodu Yok"    to gd-1-col-21
+                   move 1                           to hata-ulke 
+                end-if 
+             end-read 
+             if hata-ulke = 1
+                  move "Ulke Karsilik Kodu Tanimsiz.."  to gd-1-col-19                       
+             end-if 
+          end-if 
+
+          perform konum-kontrol
+          
+          if hata-konum = 1
+             move "Konum Karsilik Kodu Tanimsiz.."  to gd-1-col-19          
+          end-if 
+          
+          perform acenta-kontrol
+          
+          if hata-acenta = 1
+             move "Acenta Karsilik Kodu Tanimsiz.."  to gd-1-col-19          
+          end-if 
+          
+          perform pansiyon-kontrol
+          
+          if hata-pansiyon = 1
+             move "Pansiyon Karsilik Kodu Tanimsiz.."  to gd-1-col-19          
+          end-if
+
+          initialize stopsale-var-yok
+          move beklerez-gir-gun        to xrez-gir-gun
+          move beklerez-gir-ay         to xrez-gir-ay
+          move beklerez-gir-yil        to xrez-gir-yil
+
+          move beklerez-cik-gun        to xrez-cik-gun
+          move beklerez-cik-ay         to xrez-cik-ay
+          move beklerez-cik-yil        to xrez-cik-yil
+
+          move acenta-kodu             to xrez-acenta
+          if konum-anahtar > 0
+             move konum-anahtar           to xrez-fiyat-konumu xrez-oda-konumu
+             if xrez-fiyat-konumu not = spaces
+               perform stopsale-kontrol
+               if stopsale-var-yok = "V"
+                  move "STOP VAR"          to gd-1-col-19    
+               end-if 
+            end-if 
+*          perform otel-doluluk-kontrol
+*          if dolu-konum = 1
+*             move "KONUM DOLU"        to gd-1-col-19
+*          end-if 
+*          if otel-dolu = 1
+*             move "TUM OTEL DOLU"     to gd-1-col-19
+*          end-if 
+         end-if 
+    move beklerez-anah                to gd-1-col-17
+    move confirme-Touropname(t)       to gd-1-col-20
+    
+    move function numval(confirme-Nights(t)) to zgece
+    move zgece                               to gd-1-col-22
+
+    move toplam-oda-sayisi                   to ztop
+    move ztop                                to gd-1-col-23
+
+    move beklerez-genel-not                  to gd-1-col-25
+
+    evaluate beklerez-balayi-mi(1:1)
+    when "N"
+        move "HAYIR"    to gd-1-col-26
+    when "Y"
+        move "EVET"    to gd-1-col-26
+    end-evaluate     
+    if genel-sejour-bay-kabul-etme = 1
+      if cins-hata-yok = 1
+         move "Bay Konaklama Uyarisi"  to gd-1-col-27
+      end-if 
+    end-if
+     if genel-sejour-grepeat-pasif not = 1
+       perform tekrar-gelen-misafir-kontrol
+       evaluate gr-misafir
+       when 1
+          move "GR-Misafir"  to gd-1-col-27
+       when 2
+          move "GR-Olabilir" to gd-1-col-27
+       end-evaluate 
+     end-if
+
+     if beklerez-dog-yil(1) > 1900
+        move beklerez-dog-yil(1)  to yyil
+        move beklerez-dog-ay(1)   to yay
+        move beklerez-dog-gun(1)  to ygun
+        move ytar                 to gd-1-col-28
+     end-if 
+ 
+*/*************************************rez kontrol******************************************
+
+       if confirme-PmsStatus(t)(1:1) not = "3"
+          initialize web
+
+          perform konum-kontrol
+          
+          if hata-konum = 1
+             move "Hatali Konum"  to  gd-1-col-19           
+          end-if 
+          
+          perform acenta-kontrol
+          
+          if hata-acenta = 1
+             move "Hatali Acenta"  to  gd-1-col-19           
+          end-if 
+          
+          perform pansiyon-kontrol
+          
+          if hata-pansiyon = 1
+             move "Hatali Pansiyon"  to  gd-1-col-19           
+          end-if
+
+
+     move beklerez-gir-tar to web2-bas-tar
+     move beklerez-cik-tar to web2-bit-tar
+     move beklerez-sat-tar to web2-al-tar 
+     initialize i
+     perform varying i from 1 by 1 until i > 7
+       if beklerez-adi(i) not = spaces or 
+          beklerez-soyadi(i) not = spaces
+        call "c$justify" using beklerez-title(i),"L"
+        call "c$justify" using beklerez-adi(i),"L"
+        call "c$justify" using beklerez-soyadi(i),"L"
+       
+        move beklerez-title(i)  to web2-title(i)
+        move beklerez-adi(i)    to web2-adi(i)
+        move beklerez-soyadi(i) to web2-soyadi(i)
+        move function numval(beklerez-yas(i)) to 
+             web-gelen-cocuk-yas(i)  
+        move beklerez-dog-tar(i) to 
+             web2-dog-tar(i)
+        if (web-gelen-cocuk-yas(i) = spaces or 
+            web-gelen-cocuk-yas(i) = zeroes ) and
+           (web2-dog-yil(i) < 1900 or 
+            web2-dog-yil(i) = spaces)
+          move 99 to web-gelen-cocuk-yas(i)
+        end-if            
+       end-if 
+     end-perform
+
+     move 01                 to web2-doviz
+     move 001                to web2-ulke
+     move 02                 to web2-rate-kodu
+     move 0                  to web2-rez-no                
+     move 1                  to web-tipxx 
+     move 0                  to web-debug
+     move beklerez-voucher   to web2-internal-voucher
+     move beklerez-balayi-mi to web2-balayimi
+     move beklerez-konfirme-notu  to web2-not
+     move beklerez-sat-tar        to web2-al-tar
+
+     if manuel-fiy > 0
+        move manuel-fiy              to web2-dv-tutar
+        move manuel-anlasma-kodu     to web2-anlasma 
+     end-if 
+     move 1                          to web2-kontrol
+     perform webrez2-cagir
+     if web2-hata-aciklama not = spaces
+        move web2-hata-aciklama to gd-1-col-19
+        move 1 to hata-var-mi
+     end-if 
+    end-if
+
+    if confirme-PmsStatus(t)(1:1) = "0"
+       perform rez-bul
+       if yedek-rez-no > 0
+          move "Rezervasyon Islenmis Manuel Konfirme"   to gd-1-col-19
+          move 1 to hata-var-mi
+       end-if 
+    end-if 
+*/*/*********************************************************************************************
+       add 1                      to grid-sayi
+    modify screen1-gd-1,
+           record-to-add(screen1-gd-1-record)
+
+    modify Screen1-Gd-1(grid-sayi,16),
+           hidden-data = "B"  |B-Secim yok
+    modify Screen1-Gd-1(grid-sayi,1),hidden-data  = confirme-KeyField(t)
+    modify Screen1-Gd-1(grid-sayi,17),hidden-data = beklerez-anah
+    modify Screen1-Gd-1(grid-sayi,13),hidden-data = confirme-AgencyId(t)
+    modify Screen1-Gd-1(grid-sayi,4),hidden-data  = beklerez-gir-tar
+
+    if beklerez-balayi-mi = "Y" |balayý olanlar kýrmýzý renk
+       modify Screen1-Gd-1(grid-sayi),
+              row-color = 176         
+    end-if 
+    if gr-misafir = 1
+       modify Screen1-Gd-1(grid-sayi),
+              row-color = 176              
+    end-if 
+    if genel-sejour-bay-kabul-etme = 1
+      if cins-hata-yok = 1
+       modify Screen1-Gd-1(grid-sayi),
+              row-color = 480                  
+      end-if 
+    end-if
+    initialize hatali
+    if hata-pansiyon = 1 or 
+       hata-acenta = 1 or 
+       hata-konum = 1 or 
+       stopsale-var-yok = "V" or 
+       otel-dolu = 1  or
+       dolu-konum = 1 or 
+       hata-var-mi = 1  or
+       hata-ulke = 1
+          move 1 to hatali
+         modify Screen1-Gd-1(grid-sayi,19),hidden-data = hatali 
+    else 
+         move 0 to hatali
+         modify Screen1-Gd-1(grid-sayi,19),hidden-data = hatali
+    end-if. 
+*
+ beklerez-kaydet.        
+     move 0                                     to ilk-kayit
+     move confirme-logid(t)                     to beklerez-logid
+     move confirme-serviceid(t)                 to beklerez-service-id
+     read beklerez no lock invalid 
+          continue 
+          move 1                                to ilk-kayit
+     end-read 
+     move confirme-KeyField(t)                  to beklerez-sejour-kodu
+     move confirme-VoucherNo(t)                 to beklerez-voucher
+     move confirme-CheckIn(t)(1:4)              to beklerez-gir-yil
+     move confirme-CheckIn(t)(6:2)              to beklerez-gir-ay
+     move confirme-CheckIn(t)(9:2)              to beklerez-gir-gun
+     move confirme-CheckOut(t)(1:4)             to beklerez-cik-yil
+     move confirme-CheckOut(t)(6:2)             to beklerez-cik-ay
+     move confirme-CheckOut(t)(9:2)             to beklerez-cik-gun
+
+     move confirme-AccomId(t)                   to beklerez-pan-kodu
+     move confirme-Adults(t)                    to beklerez-buyuk
+     move confirme-Childs(t)                    to beklerez-kucuk
+     move confirme-Infants(t)                   to beklerez-bebek
+     move confirme-sellDate(t)(1:4)             to beklerez-sat-yil
+     move confirme-sellDate(t)(6:2)             to beklerez-sat-ay
+     move confirme-sellDate(t)(9:2)             to beklerez-sat-gun
+     move confirme-AgencyId(t)                  to beklerez-acenta-kodu
+     move confirme-RoomTypeId(t)                to beklerez-konum 
+     move function numval(confirme-QuotaType(t))            to beklerez-QuotaType 
+     move function numval(confirme-PmsStatus(t))            to beklerez-PmsStatus 
+     move confirme-ConfirmationStatus(t)                    to beklerez-ConfirmationStatus 
+     move function numval(confirme-ReservationStatus(t))    to beklerez-ReservationStatus 
+     move confirme-FreeOfCharge(t)                          to beklerez-FreeOfCharge 
+     move confirme-PromosyonRoom(t)                         to beklerez-PromosyonRoom 
+     move confirme-HoneyMoon(t)                             to beklerez-balayi-mi
+     move function numval(confirme-RoomCount(t))            to beklerez-oda-adet
+     move confirme-Nights(t)                                to beklerez-geceleme
+     move confirme-SoldCurrency(t)                          to beklerez-doviz-kodu
+     move function numval(confirme-SoldPrice(t))            to beklerez-fiyat
+     initialize p
+     perform varying p
+               from 1
+               by 1
+               until p > 7
+                 if confirme-CustomerPms-Name(t,p) = spaces
+                      exit perform
+                 end-if 
+*                 call "c$toupper" using confirme-CustomerPms-Name(t,p)
+                move confirme-CustomerPms-Age(t,p)             to beklerez-yas(p)
+                move confirme-CustomerPms-BirthDate(t,p)(1:4)  to beklerez-dog-yil(p)
+                move confirme-CustomerPms-BirthDate(t,p)(6:2)  to beklerez-dog-ay(p)
+                move confirme-CustomerPms-BirthDate(t,p)(9:2)  to beklerez-dog-gun(p)
+                move confirme-CustomerPms-Nationality(t,p)     to beklerez-milliyet(p)
+**/******************************************************/********************/***********************
+                initialize temp-isim ucuncu-isim     
+                inspect confirme-CustomerPms-Name(t,1) converting ",?+- " to "     "
+                unstring confirme-CustomerPms-Name(t,1) delimited by space 
+                into beklerez-soyadi(1) beklerez-adi(1) ucuncu-isim
+
+                if ucuncu-isim not = spaces
+                   initialize temp-isim
+                   string beklerez-adi(1) delimited by "      "
+                          " " delimited by size
+                          beklerez-soyadi(1) delimited by "      "                        
+                   into temp-isim
+                   move temp-isim   to beklerez-adi(1)
+                   move ucuncu-isim to beklerez-soyadi(1)
+                end-if 
+
+                call "c$justify" using beklerez-adi(1) "L"
+                call "c$justify" using beklerez-soyadi(1) "L"
+                inspect beklerez-adi(1) converting ",?+-" to "    "
+                inspect beklerez-soyadi(1) converting ",?+-" to "    "      
+******************************************************************************************************
+                initialize temp-isim ucuncu-isim           
+                inspect confirme-CustomerPms-Name(t,2) converting ",?+- " to "     "
+
+                unstring confirme-CustomerPms-Name(t,2) delimited by space
+                into beklerez-soyadi(2) beklerez-adi(2) ucuncu-isim
+
+                if ucuncu-isim not = spaces
+                   initialize temp-isim
+                   string beklerez-adi(2) delimited by "      "
+                          " " delimited by size
+                          beklerez-soyadi(2) delimited by "      "                        
+                   into temp-isim
+                   move temp-isim   to beklerez-adi(2)
+                   move ucuncu-isim to beklerez-soyadi(2)
+                end-if 
+
+                call "c$justify" using beklerez-adi(2) "L"
+                call "c$justify" using beklerez-soyadi(2) "L"
+                inspect beklerez-adi(2) converting ",?+-" to "    "
+                inspect beklerez-soyadi(2) converting ",?+-" to "    "
+****************************************/***************************************************************     
+                initialize temp-isim ucuncu-isim           
+                inspect confirme-CustomerPms-Name(t,3) converting ",?+- " to "     "
+
+                unstring confirme-CustomerPms-Name(t,3) delimited by space
+                into beklerez-soyadi(3) beklerez-adi(3) ucuncu-isim
+
+                if ucuncu-isim not = spaces
+                   initialize temp-isim
+                   string beklerez-adi(3) delimited by "      "
+                          " " delimited by size
+                          beklerez-soyadi(3) delimited by "      "                        
+                   into temp-isim
+                   move temp-isim   to beklerez-adi(3)
+                   move ucuncu-isim to beklerez-soyadi(3)
+                end-if 
+
+                call "c$justify" using beklerez-adi(3) "L"
+                call "c$justify" using beklerez-soyadi(3) "L"
+                inspect beklerez-adi(3) converting ",?+-" to "    "
+                inspect beklerez-soyadi(3) converting ",?+-" to "    "
+*/**********************************************/*******************************************************     
+                initialize temp-isim ucuncu-isim           
+                inspect confirme-CustomerPms-Name(t,4) converting ",?+- " to "     "
+
+                unstring confirme-CustomerPms-Name(t,4) delimited by space
+                into beklerez-soyadi(4) beklerez-adi(4) ucuncu-isim
+
+                if ucuncu-isim not = spaces
+                   initialize temp-isim
+                   string beklerez-adi(4) delimited by "      "
+                          " " delimited by size
+                          beklerez-soyadi(4) delimited by "      "                        
+                   into temp-isim
+                   move temp-isim   to beklerez-adi(4)
+                   move ucuncu-isim to beklerez-soyadi(4)
+                end-if 
+
+                call "c$justify" using beklerez-adi(4) "L"
+                call "c$justify" using beklerez-soyadi(4) "L"
+                inspect beklerez-adi(4) converting ",?+-" to "    "
+                inspect beklerez-soyadi(4) converting ",?+-" to "    "
+*/**********************************************/*******************************************************     
+                initialize temp-isim ucuncu-isim      
+                inspect confirme-CustomerPms-Name(t,5) converting ",?+- " to "     "
+     
+                unstring confirme-CustomerPms-Name(t,5) delimited by space
+                into beklerez-soyadi(5) beklerez-adi(5) ucuncu-isim
+
+                if ucuncu-isim not = spaces
+                   initialize temp-isim
+                   string beklerez-adi(5) delimited by "      "
+                          " " delimited by size
+                          beklerez-soyadi(5) delimited by "      "                        
+                   into temp-isim
+                   move temp-isim   to beklerez-adi(5)
+                   move ucuncu-isim to beklerez-soyadi(5)
+                end-if 
+
+                call "c$justify" using beklerez-adi(5) "L"
+                call "c$justify" using beklerez-soyadi(5) "L"
+                inspect beklerez-adi(5) converting ",?+-" to "    "
+                inspect beklerez-soyadi(5) converting ",?+-" to "    "
+*/**********************************************/*******************************************************     
+                initialize temp-isim ucuncu-isim   
+                inspect confirme-CustomerPms-Name(t,6) converting ",?+- " to "     "
+        
+                unstring confirme-CustomerPms-Name(t,6) delimited by space
+                into beklerez-soyadi(6) beklerez-adi(6) ucuncu-isim
+
+                if ucuncu-isim not = spaces
+                   initialize temp-isim
+                   string beklerez-adi(6) delimited by "      "
+                          " " delimited by size
+                          beklerez-soyadi(6) delimited by "      "                        
+                   into temp-isim
+                   move temp-isim   to beklerez-adi(6)
+                   move ucuncu-isim to beklerez-soyadi(6)
+                end-if 
+
+                call "c$justify" using beklerez-adi(6) "L"
+                call "c$justify" using beklerez-soyadi(6) "L"
+                inspect beklerez-adi(6) converting ",?+-" to "    "
+                inspect beklerez-soyadi(6) converting ",?+-" to "    "
+*/**********************************************/*******************************************************     
+                initialize temp-isim ucuncu-isim         
+                inspect confirme-CustomerPms-Name(t,7) converting ",?+- " to "     "
+  
+                unstring confirme-CustomerPms-Name(t,7) delimited by space
+                into beklerez-soyadi(7) beklerez-adi(7) ucuncu-isim
+
+                if ucuncu-isim not = spaces
+                   initialize temp-isim
+                   string beklerez-adi(7) delimited by "      "
+                          " " delimited by size
+                          beklerez-soyadi(7) delimited by "      "                        
+                   into temp-isim
+                   move temp-isim   to beklerez-adi(7)
+                   move ucuncu-isim to beklerez-soyadi(7)
+                end-if 
+
+                call "c$justify" using beklerez-adi(7) "L"
+                call "c$justify" using beklerez-soyadi(7) "L"
+                inspect beklerez-adi(7) converting ",?+-" to "    "
+                inspect beklerez-soyadi(7) converting ",?+-" to "    "
+*/**********************************************/*******************************************************
+                 inspect beklerez-adi(p) 
+                         converting x"989E999A80A6A78D81879F94FE" to x"49534F55434767697563736F73"
+                 inspect beklerez-soyadi(p) 
+                         converting x"989E999A80A6A78D81879F94FE" to x"49534F55434767697563736F73"
+                 move confirme-CustomerPms-Title(t,p) to beklerez-title(p)
+            
+     end-perform
+ 
+     evaluate true
+     when konfirme-listesinden-geldi = 1 and 
+          ilk-kayit = 1
+            move 0                          to beklerez-onb-yazildi
+     when konfirme-listesinden-geldi = 1 and 
+          ilk-kayit = 0 and 
+          beklerez-gercek-rezno = zeroes 
+            move 0                          to beklerez-onb-yazildi          
+     when konfirme-listesinden-geldi = 0 and 
+          ilk-kayit = 0
+            move 0                          to beklerez-onb-yazildi
+     when konfirme-listesinden-geldi = 0 and 
+          ilk-kayit = 1
+            move 0                          to beklerez-onb-yazildi
+     end-evaluate 
+
+     evaluate confirme-ConfirmationStatus(t)(1:1) 
+     when "E"
+        move 1           to beklerez-konfirme-edildi
+     when "H"
+        move 2           to beklerez-konfirme-edildi
+     when "W" 
+        move 0           to beklerez-konfirme-edildi
+     when other
+        move 0           to beklerez-konfirme-edildi
+     end-evaluate
+
+     move confirme-ConfirmeNote(t)   to beklerez-konfirme-notu
+     move confirme-Note(t)           to beklerez-genel-not
+     move confirme-ExtraBed(t)       to beklerez-extrabed
+     move confirme-touropcode(t)     to beklerez-touropcode
+
+     initialize sejkar-rec
+     move confirme-AgencyId(t)       to sejkar-acenta
+     move "O"                        to sejkar-tip
+     move confirme-touropcode(t)     to sejkar-kodu
+     if onkpara-referans-var = 1
+        move secili-ref              to sejkar-ref
+     end-if 
+
+     read sejkar no lock invalid
+           continue 
+     end-read 
+          move confirme-touropname(t)   to sejkar-adi
+     write sejkar-rec invalid
+         rewrite sejkar-rec end-rewrite 
+     end-write
+
+     move confirme-touropname(t)           to beklerez-touropname
+     move confirme-RoomName(t)             to beklerez-roomname
+     move confirme-SoldPrice(t)            to beklerez-soldprice
+     move confirme-confirmationno(t)       to beklerez-confirmationno
+
+     inspect beklerez-genel-not 
+             converting x"989E999A80A6A78D81879F94FE" to 
+                        x"49534F55434767697563736F73"
+     inspect beklerez-konfirme-notu 
+             converting x"989E999A80A6A78D81879F94FE" to 
+                        x"49534F55434767697563736F73"
+          
+     write beklerez-rec invalid 
+         rewrite beklerez-rec end-rewrite 
+     end-write.
+*
+ xml-konfirme-gonder.
+    open i-o beklerez    
+    inquire Screen1-Gd-1,last-row in son-satir
+    initialize f
+    perform varying f from 2 by 1 until f > son-satir
+     initialize xkonfirme-gonder-key-field
+     inquire Screen1-Gd-1(f,1),hidden-data   
+             konfirme-gonder-key-field
+     move konfirme-gonder-key-field  to xkonfirme-gonder-key-field
+     inquire Screen1-Gd-1(f,13),
+             hidden-data konfirme-gonder-acenta-id
+     inquire Screen1-Gd-1(f,16),
+             hidden-data konfirme-mi
+                            
+     evaluate konfirme-mi
+     when "K"                                   
+       inquire screen1-gd-1(f,24),cell-data in 
+               konfirme-gonder-konfirme-notu
+       perform konfirme-gonder                         
+       move 1 to tek-konfirme
+       initialize sejour-kodu
+       move konfirme-gonder-key-field to sejour-kodu
+       inspect sejour-kodu replacing trailing low-values by spaces
+       perform rez-yaz-sil-deg |rezler direk içeri alýnýyor.
+                           
+     when "N"
+         inquire Screen1-Gd-1(f,18),
+           hidden-data notkonfirme-kod
+         perform not-konfirme-gonder
+     when "B"
+         exit perform cycle                      
+     when other
+         exit perform cycle 
+     end-evaluate 
+             
+    end-perform
+    close beklerez.
+*
+ konfirme-gonder.
+    move all low-values               to konfirme-gonder-link    
+    move yedek-sejkkod-paximum-id     to konfirme-gonder-paximum-id
+    inspect konfirme-gonder-acenta-id     replacing all spaces by low-values
+    inspect konfirme-gonder-key-field     replacing all spaces by low-values
+    inspect konfirme-gonder-paximum-id    replacing all spaces by low-values
+    inspect konfirme-gonder-konfirme-notu replacing all spaces by low-values
+            
+    move low-values to satirlar
+    perform varying ab from 1 by 1 until ab > 300
+     if konfirme-gonder-konfirme-notu(ab:1) = low-values and 
+        konfirme-gonder-konfirme-notu(ab + 1:) not = low-values                             
+        string satirlar                                      
+               konfirme-gonder-konfirme-notu(ab + 1 :) delimited by low-values 
+               "%20"  delimited by low-values 
+        into satirlar
+     end-if
+    end-perform 
+    move satirlar         to konfirme-gonder-konfirme-notu
+*******************kopya**************************     
+     inspect url-sorgu replacing trailing spaces by low-values
+     move all low-values to url-sorgu
+
+     string url-sorgu
+             url delimited by low-values
+             "/api/pax/sendconfirmationv2?keyField="
+     into url-sorgu
+*******************kopya**************************
+    string konfirme-gonder-link,
+           url-sorgu delimited by low-values
+           konfirme-gonder-key-field delimited by low-values
+           "&" delimited by low-values
+           "AgencyId=" delimited by low-values
+           konfirme-gonder-acenta-id delimited by low-values
+           "&paximumId=" delimited by low-values
+           konfirme-gonder-paximum-id delimited by low-values
+           "&confirmationNote=" delimited by low-values
+           konfirme-gonder-konfirme-notu delimited by low-values 
+           "&confirmationStatus=" delimited by low-values
+           "E" delimited by low-values
+           "&format=xml" delimited by low-values 
+    into konfirme-gonder-link
+    
+    inspect konfirme-gonder-link replacing all low-values by spaces                    
+
+    perform konfirmasyon-gonderiliyor
+ 
+    initialize i
+    perform varying i from 1 by 1 until i > max-kayitresp
+       if SendConfirmationlist-keyfield(i) = spaces
+          exit perform cycle 
+       end-if 
+       if SendConfirmationlist-status(i) not = "E"
+          exit perform cycle 
+       end-if 
+*       if SendConfirmationlist-VoucherUrl(i) not = spaces
+*          move SendConfirmationlist-VoucherUrl(i) to http-adres
+*          perform pdf-yukle
+*       end-if 
+       initialize beklerez-rec
+       move SendConfirmationlist-keyfield(i)  to beklerez-sejour-kodu
+       start beklerez key = beklerez-sejour-kodu invalid 
+            continue 
+       not invalid 
+       perform with test after until fs-beklerez = "10"
+       read beklerez next no lock end move "10" to fs-beklerez
+       not at end 
+           if beklerez-sejour-kodu = SendConfirmationlist-keyfield(i)
+              move 1   to beklerez-konfirme-edildi | konfirme
+              accept beklerez-konfirme-tar from century-date
+              rewrite beklerez-rec end-rewrite 
+              move "10" to fs-beklerez
+           end-if 
+       end-read 
+       end-perform
+       end-start 
+    end-perform.
+* 
+ not-konfirme-gonder.
+    move all low-values               to konfirme-gonder-link    
+    move yedek-sejkkod-paximum-id     to konfirme-gonder-paximum-id
+    inspect konfirme-gonder-acenta-id replacing all spaces by low-values
+    inspect konfirme-gonder-key-field replacing all spaces by low-values
+    inspect konfirme-gonder-paximum-id replacing all spaces by low-values
+    inspect notkonfirme-kod replacing all spaces by low-values
+*******************kopya**************************     
+     inspect url-sorgu replacing trailing spaces by low-values
+     move all low-values to url-sorgu
+
+     string url-sorgu
+             url delimited by low-values
+             "/api/pax/sendconfirmation?keyField="
+     into url-sorgu
+*******************kopya**************************
+    string konfirme-gonder-link,
+           url-sorgu
+           delimited by low-values
+           konfirme-gonder-key-field delimited by low-values
+           "&" delimited by low-values
+           "AgencyId=" delimited by low-values
+           konfirme-gonder-acenta-id delimited by low-values
+           "&paximumId=" delimited by low-values
+           konfirme-gonder-paximum-id delimited by low-values
+           "&confirmationStatus=" delimited by low-values
+           "H" delimited by low-values
+           "&notconfirmationNote=" delimited by low-values
+           notkonfirme-kod delimited by low-values
+           "&format=xml" delimited by low-values 
+    into konfirme-gonder-link
+    
+    inspect konfirme-gonder-link replacing all low-values by spaces                    
+
+    perform konfirmasyon-gonderiliyor
+    
+    initialize i
+    perform varying i
+             from 1
+             by 1
+             until i > max-kayitresp
+                if SendConfirmationlist-keyfield(i) = spaces
+                   exit perform cycle 
+                end-if 
+                if SendConfirmationlist-status(i) not = "H"
+                   exit perform cycle 
+                end-if
+*                if SendConfirmationlist-VoucherUrl(i) not = spaces
+*                   move SendConfirmationlist-VoucherUrl(i) to http-adres
+*                   perform pdf-yukle
+*                end-if 
+                initialize beklerez-rec
+                move SendConfirmationlist-keyfield(i)  to beklerez-sejour-kodu
+                start beklerez key = beklerez-sejour-kodu invalid 
+                     continue 
+                not invalid 
+                perform with test after until fs-beklerez = "10"
+                read beklerez next no lock end move "10" to fs-beklerez
+                not at end 
+                        if beklerez-sejour-kodu = SendConfirmationlist-keyfield(i)
+                           move 2               to beklerez-konfirme-edildi | not konfirme 
+                           move notkonfirme-kod to beklerez-not-konfirme-kod
+                           accept beklerez-konfirme-tar from century-date
+                           rewrite beklerez-rec end-rewrite 
+                           move "10" to fs-beklerez
+                        end-if 
+                end-read 
+                end-perform
+                end-start                  
+    end-perform.
+*   
+ xml-net-init-bitti.
+    call "NetFree" using response-payload
+    call "NetCleanup"
+    XML TERMINATE.
+*
+ XML-FATAL-ERROR.
+    move all low-values to xmlfatalerror
+    string "Fatal Error  -> Status : "
+           XML-Status into xmlfatalerror 
+            
+    perform get-xml-error-desc.
+
+    XML TERMINATE.
+
+    perform get-xml-error-desc.
+
+    display message box
+            "Hata olustu :",new-line,
+            xmlfatalerror
+            icon mb_error_icon
+            title "Hata".
+*
+ rmnet-fatal-error.
+    call "NetGetError" using response-payload 
+                             response-len
+                       giving response-status-2
+    set address of http-response1 to response-payload
+
+    inspect http-response1(1:response-len) replacing all "COBOL" by " C++ "
+ 
+    move all low-values to xmlfatalerror
+    string xmlfatalerror,
+           "Error Code : " delimited by low-values
+           response-status delimited by low-values
+           "  Error Code2 : " delimited by low-values
+           response-status-2 delimited by low-values
+           "  Error message : " delimited by low-values
+           http-response1(1:response-len) delimited by low-values
+           into xmlfatalerror
+    inspect xmlfatalerror replacing all low-values by spaces
+    display message box 
+            "Hata olustu :",new-line,
+            xmlfatalerror
+            icon mb_error_icon
+            title "Hata"
+    call "NetFree" using response-payload.   
+
+
+ get-xml-error-desc.
+    If Not XML-IsSuccess
+       Perform With Test After Until XML-NoMore
+             XML GET STATUS-TEXT
+             inspect xml-statustext replacing all "COBOL" by " C++ "
+             inspect xml-statustext replacing trailing spaces by low-values
+
+             string xmlfatalerror,
+                    xml-statustext         delimited by low-values
+                    into xmlfatalerror
+       End-Perform
+    end-if.
+*
+ konfirmasyon-aliniyor.
+    inspect auth replacing trailing spaces by low-values
+    inspect auth replacing all '"' by low-value
+    
+    move all low-values to cookie
+    string cookie
+           "cookie" delimited by low-values ,x"00" delimited by size,
+           auth delimited by low-values  into cookie
+
+
+
+    call "HttpGet" using 
+                   konfirme-link
+                   response-payload
+                   response-len
+                   cookie  
+    giving response-status. 
+
+    set address of http-response1 to response-payload.
+         
+    if not response-status = 0   | Gonderilemedi durumlari
+      perform RMNET-FATAL-ERROR
+      perform XML-FATAL-ERROR
+      exit paragraph
+    end-if
+
+    if is-remote
+        accept xml-yol-tarih from century-date
+        accept xml-yol-zaman from time 
+        move k-kodu-tasi   to xml-yol-k-kodu
+
+        string xsl-yol
+               "konfirmelistesi" delimited by size 
+               ".xml" delimited by size 
+        into temp-xsl-yol
+        inspect temp-xsl-yol replacing trailing spaces by low-values 
+
+      XML PUT TEXT
+          response-payload
+          response-len
+          temp-xsl-yol
+
+      if not XML-OK 
+         perform XML-FATAL-ERROR 
+         exit paragraph
+      end-if 
+    end-if 
+
+    initialize confirmelist 
+    if is-remote 
+       XML IMPORT TEXT
+           confirmelist,
+           response-payload
+           response-len
+           "confirmelist",
+           "/asya/ytl/xsl/otel/getconfirmedlist.xsl"              
+    end-if
+
+    if not XML-OK 
+       perform XML-FATAL-ERROR 
+       exit paragraph
+    end-if.  
+
+    
+*
+ konfirmasyon-aliniyor-txt.
+    inspect auth replacing trailing spaces by low-values
+    inspect auth replacing all '"' by low-value
+    
+    move all low-values to cookie
+    string cookie
+           "cookie" delimited by low-values ,x"00" delimited by size,
+           auth delimited by low-values  into cookie
+
+    call "HttpGet" using 
+                   checkreservationuploadfile_kodu(1)
+                   response-payload
+                   response-len
+                   cookie  
+    giving response-status. 
+
+    set address of http-response1 to response-payload.
+         
+    if not response-status = 0   | Gonderilemedi durumlari
+      perform RMNET-FATAL-ERROR
+      perform XML-FATAL-ERROR
+      exit paragraph
+    end-if.
+    if is-remote        
+        accept xml-yol-tarih from century-date
+        accept xml-yol-zaman from time 
+        move k-kodu-tasi   to xml-yol-k-kodu
+
+        string xsl-yol
+               "konfirmelistesitxt" delimited by size 
+               ".xml" delimited by size 
+        into temp-xsl-yol
+        inspect temp-xsl-yol replacing trailing spaces by low-values 
+
+      XML PUT TEXT
+          response-payload
+          response-len
+          temp-xsl-yol
+
+      if not XML-OK 
+         perform XML-FATAL-ERROR 
+         exit paragraph
+      end-if 
+    end-if 
+    initialize confirmelist 
+    if is-remote 
+       XML IMPORT TEXT
+           confirmelist,
+           response-payload
+           response-len
+           "confirmelist",
+           "/asya/ytl/xsl/otel/getconfirmedlist.xsl" 
+    end-if
+
+    if not XML-OK 
+       perform XML-FATAL-ERROR 
+       exit paragraph
+    end-if.
+
+*
+ konfirmasyon-hata-donus.
+    inspect auth replacing trailing spaces by low-values
+    inspect auth replacing all '"' by low-value
+    
+    move all low-values to cookie
+    string cookie
+           "cookie" delimited by low-values ,x"00" delimited by size,
+           auth delimited by low-values  into cookie
+
+    call "HttpGet" using 
+                   konfirme-link
+                   response-payload
+                   response-len
+                   cookie  
+    giving response-status 
+
+    set address of http-response1 to response-payload.
+         
+    if not response-status = 0   | Gonderilemedi durumlari
+      perform RMNET-FATAL-ERROR
+      perform XML-FATAL-ERROR
+      exit paragraph
+    end-if
+    if is-remote
+        accept xml-yol-tarih from century-date
+        accept xml-yol-zaman from time 
+        move k-kodu-tasi   to xml-yol-k-kodu
+
+        string xsl-yol
+               "checkreservationfile" delimited by size 
+               ".xml" delimited by size 
+        into temp-xsl-yol
+        inspect temp-xsl-yol replacing trailing spaces by low-values 
+
+            XML PUT TEXT
+                response-payload
+                response-len
+                temp-xsl-yol
+
+            if not XML-OK 
+               perform XML-FATAL-ERROR 
+               exit paragraph
+            end-if      
+    end-if 
+   
+    initialize checkreservationfile 
+    if is-remote 
+       XML IMPORT TEXT
+           checkreservationfile,
+           response-payload
+           response-len
+           "checkreservationfile"
+           "/asya/ytl/xsl/otel/checkreservationfile.xsl"
+            if not XML-OK 
+               perform XML-FATAL-ERROR 
+               exit paragraph
+            end-if
+
+    end-if
+       
+     if checkreservationfile_kodu(1) not = spaces
+        move all low-values to konfirme-hata-gonder-link                           
+        inspect checkreservationfile_kodu(1) replacing all spaces  by low-values      
+      
+*******************kopya**************************     
+     inspect url-sorgu replacing trailing spaces by low-values
+     move all low-values to url-sorgu
+
+     string url-sorgu
+             url delimited by low-values
+             "/api/pax/checkreservationfile?fileCode="
+     into url-sorgu
+*******************kopya**************************
+
+        string konfirme-hata-gonder-link,
+               url-sorgu delimited by low-values
+               checkreservationfile_kodu(1) delimited by low-values
+               "&format=xml" delimited by low-values 
+               into konfirme-hata-gonder-link
+      
+        inspect konfirme-hata-gonder-link replacing all low-values by spaces                    
+                              
+        perform checkreservationfile-gonder
+      end-if. 
+*
+ checkreservationfile-gonder.
+    inspect auth replacing trailing spaces by low-values
+    inspect auth replacing all '"' by low-value
+    
+    move all low-values to cookie
+    string cookie
+           "cookie" delimited by low-values ,x"00" delimited by size,
+           auth delimited by low-values  into cookie
+
+    call "HttpGet" using 
+                   konfirme-hata-gonder-link
+                   response-payload
+                   response-len
+                   cookie  
+    giving response-status. 
+
+    set address of http-response1 to response-payload.
+         
+    if not response-status = 0   | Gonderilemedi durumlari
+      perform RMNET-FATAL-ERROR
+      perform XML-FATAL-ERROR
+      exit paragraph
+    end-if 
+    if is-remote
+        accept xml-yol-tarih from century-date
+        accept xml-yol-zaman from time 
+        move k-kodu-tasi   to xml-yol-k-kodu
+
+        string xsl-yol
+               "checkreservationuploadfile" delimited by size 
+               ".xml" delimited by size 
+        into temp-xsl-yol
+        inspect temp-xsl-yol replacing trailing spaces by low-values
+
+            XML PUT TEXT
+                response-payload
+                response-len
+                temp-xsl-yol
+
+            if not XML-OK 
+               perform XML-FATAL-ERROR 
+               exit paragraph
+            end-if 
+    end-if 
+    initialize checkreservationuploadfile 
+    if is-remote 
+       XML IMPORT TEXT
+           checkreservationuploadfile,
+           response-payload
+           response-len
+           "checkreservationuploadfile",
+           "/asya/ytl/xsl/otel/checkreservationuploadfile.xsl"
+    end-if
+
+    if not XML-OK 
+       perform XML-FATAL-ERROR 
+       exit paragraph
+    end-if. 
+*
+ konfirmasyon-gonderiliyor.
+    inspect auth replacing trailing spaces by low-values
+    inspect auth replacing all '"' by low-value
+    
+    move all low-values to cookie
+    string cookie
+           "cookie" delimited by low-values ,x"00" delimited by size,
+           auth delimited by low-values  into cookie
+    call "HttpGet" using 
+                   konfirme-gonder-link
+                   response-payload                                                       
+                   response-len
+                   cookie  
+    giving response-status. 
+ 
+    set address of http-response1 to response-payload.
+         
+    if not response-status = 0  |Gonderilemedi durumlari
+      perform RMNET-FATAL-ERROR
+      perform XML-FATAL-ERROR
+      exit paragraph
+    end-if
+    if is-remote
+        accept xml-yol-tarih from century-date
+        accept xml-yol-zaman from time 
+        move k-kodu-tasi     to xml-yol-k-kodu
+
+        string xsl-yol
+               "sendconfirmation" delimited by size 
+               ".xml" delimited by size 
+        into temp-xsl-yol
+        inspect temp-xsl-yol replacing trailing spaces by low-values
+
+            XML PUT TEXT
+                response-payload
+                response-len
+                temp-xsl-yol
+        
+             if not XML-OK 
+                perform XML-FATAL-ERROR 
+                exit paragraph
+             end-if 
+     end-if 
+                           
+     initialize sendconfirmationlist 
+     if is-remote 
+        XML IMPORT TEXT
+            sendconfirmationlist,
+            response-payload
+            response-len
+            "sendconfirmationlist",
+            "/asya/ytl/xsl/otel/sendconfirmationlist.xsl"
+     end-if
+     
+     if not XML-OK 
+        perform XML-FATAL-ERROR 
+        exit paragraph
+     end-if.
+*
+ xml-konfirme-rez-al-kontrol-list.
+     inspect auth replacing trailing spaces by low-values
+     inspect auth replacing all '"' by low-value
+     
+     move all low-values to cookie
+     string cookie
+            "cookie" delimited by low-values ,x"00" delimited by size,
+            auth delimited by low-values  into cookie
+     
+     call "HttpGet" using 
+                    konfirme-rez-aliniyor-link
+                    response-payload
+                    response-len
+                    cookie  
+     giving response-status 
+     
+     set address of http-response1 to response-payload
+          
+     if not response-status = 0   | Gonderilemedi durumlari
+       perform RMNET-FATAL-ERROR
+       perform XML-FATAL-ERROR
+       exit paragraph
+     end-if
+
+    if is-remote
+
+        accept xml-yol-tarih from century-date
+        accept xml-yol-zaman from time 
+        move k-kodu-tasi   to xml-yol-k-kodu
+
+        string xsl-yol
+               "kontrollistesi" delimited by size 
+               ".xml" delimited by size 
+        into temp-xsl-yol
+        inspect temp-xsl-yol replacing trailing spaces by low-values
+
+            XML PUT TEXT
+                response-payload
+                response-len
+                temp-xsl-yol
+     end-if 
+                            
+     if not XML-OK 
+        perform XML-FATAL-ERROR 
+        exit paragraph
+     end-if.
+
+*
+ not-konfirme-kodlari-aliniyor.     
+     inspect auth replacing trailing spaces by low-values
+     inspect auth replacing all '"' by low-value
+    
+     move all low-values to cookie
+     string cookie
+            "cookie" delimited by low-values ,x"00" delimited by size,
+            auth delimited by low-values  into cookie
+
+     inspect url-sorgu replacing trailing spaces by low-values
+     move all low-values to url-sorgu
+
+     string url-sorgu
+             url delimited by low-values
+             "/api/pax/getnotconfirmmessages?format=xml"
+     into url-sorgu
+
+     call "HttpGet" using url-sorgu
+                    response-payload
+                    response-len
+                    cookie  
+     giving response-status. 
+
+     set address of http-response1 to response-payload.
+         
+     if not response-status = 0   | Gonderilemedi durumlari
+        perform RMNET-FATAL-ERROR
+        perform XML-FATAL-ERROR
+        exit paragraph
+     end-if
+    if is-remote
+        accept xml-yol-tarih from century-date
+        accept xml-yol-zaman from time 
+        move k-kodu-tasi   to xml-yol-k-kodu
+
+        string xsl-yol
+               "notkonfirmemesaj" delimited by size 
+               ".xml" delimited by size 
+        into temp-xsl-yol
+        inspect temp-xsl-yol replacing trailing spaces by low-values
+
+            XML PUT TEXT
+                response-payload
+                response-len
+                temp-xsl-yol
+        
+            if not XML-OK 
+               perform XML-FATAL-ERROR 
+               exit paragraph
+            end-if
+    end-if 
+
+     initialize notconfirmemessage 
+     if is-remote 
+        XML IMPORT TEXT
+            notconfirmemessage,
+            response-payload
+            response-len
+            "notconfirmemessage",
+            "/asya/ytl/xsl/otel/getnotconfirmmessages.xsl"            
+     end-if
+     
+     if not XML-OK 
+        perform XML-FATAL-ERROR 
+        exit paragraph
+     end-if
+ 
+     open i-o sejkar
+     initialize e
+     perform varying e
+                from 1
+                by 1
+                until e > max-kayitresp
+                   if notconfirmemessage_kodu(e) not = spaces
+                      perform notconfirme-kod-yaz             
+                   else
+                      exit perform
+                   end-if 
+     end-perform
+     close sejkar.
+*
+ notconfirme-kod-yaz.
+     initialize sejkar-rec
+     move "N"                             to sejkar-tip
+     move notconfirmemessage_kodu(e)      to sejkar-kodu 
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+ 
+     read sejkar no lock invalid 
+          continue 
+     end-read 
+         move notconfirmemessage_adi(e)   to sejkar-adi
+        write sejkar-rec invalid 
+            rewrite sejkar-rec end-rewrite 
+        end-write.      
+*
+ Screen1-Gd-1-Ev-Other.
+    evaluate event-type
+    when msg-begin-entry  
+       evaluate  event-data-1
+       when 16 
+          initialize hata-varmi
+          inquire Screen1-Gd-1(event-data-2,19),hidden-data hata-varmi
+          if hata-varmi = 1
+             display message box "Lutfen Hata Kodu Alanini Kontrol Ediniz.."
+                             title "Uyari"
+                             icon 1
+              move event-action-fail   to event-action
+              exit paragraph 
+          end-if 
+
+          move event-action-fail   to event-action
+
+          inquire Screen1-Gd-1(event-data-2,event-data-1),hidden-data mychar
+          evaluate mychar
+          when "K"
+               modify Screen1-Gd-1(event-data-2,event-data-1),cell-data = spaces
+                                                              hidden-data = "B"
+                                                              cell-color  = 000
+          when "B"
+               modify Screen1-Gd-1(event-data-2,event-data-1),cell-data = "Konfirme"
+                                                              hidden-data = "K"
+                                                              cell-color = 000
+          when "N"
+               modify Screen1-Gd-1(event-data-2,event-data-1),cell-data = spaces
+                                                              hidden-data = "B"
+                                                              cell-color = 000
+          end-evaluate
+                    modify Screen1-Gd-1(event-data-2,18),                           
+                           cell-data = spaces
+                           hidden-data = spaces
+       WHEN 24
+          continue 
+       when other
+             move event-action-fail   to event-action
+       end-evaluate
+    end-evaluate.
+*
+ konfirme-edilen-rez-grid-baslik-yukle.
+    modify Screen1-Gd-2, reset-grid = 1
+                         mass-update = 1
+    initialize screen1-gd-2-record
+    move "Islem No"      to gd-2-col-1
+    move "Adi"           to gd-2-col-2
+    move "Soyadi"        to gd-2-col-3
+    move "Yas"           to gd-2-col-4
+    move "C/in Tarihi"   to gd-2-col-5
+    move "C/Out Tarihi"  to gd-2-col-6
+    move "Satis Tarihi"  to gd-2-col-7
+    move "Voucher"       to gd-2-col-8
+    move "Pax"           to gd-2-col-9
+    move "Child"         to gd-2-col-10
+    move "Acenta"        to gd-2-col-11
+    move "Pansiyon"      to gd-2-col-12
+    move "O.Tipi"         to gd-2-col-13
+    move "Asya Rez No"   to gd-2-col-14
+    move "Durum"         to gd-2-col-15
+    move "Entegre"       to gd-2-col-16
+    move "Hata Aciklamasi" to gd-2-col-17
+    move "Tur Operatoru"   to gd-2-col-18
+    move "Gonderim Tarihi" to gd-2-col-19
+    move "Milliyet"        to gd-2-col-20
+    move "Gece"            to gd-2-col-21
+    modify screen1-gd-2,record-to-add(screen1-gd-2-record).
+*
+ konfirme-edilen-rez-grid-yukle.  
+    open input beklerez sejkar acenta konum kodlar02 ulke
+    initialize beklerez-rec
+    move 1                 to beklerez-konfirme-edildi konfirme-grid-sayi
+    start beklerez key not < beklerez-konfirme-edildi invalid 
+        continue 
+    not invalid 
+    perform with test after until fs-beklerez = "10"
+    read beklerez next no lock end move "10" to fs-beklerez
+    not at end 
+          if beklerez-konfirme-edildi <> 1
+              exit perform 
+          end-if
+          if entegre-edilenleri-goster not = 1
+            if beklerez-onb-yazildi = 1
+                exit perform cycle 
+            end-if           
+          end-if 
+          if sat-tik = 1
+           if (filtre-sat-bas-tar <> 0 and beklerez-sat-tar < filtre-sat-bas-tar) or        
+              (filtre-sat-bit-tar <> 0 and beklerez-sat-tar > filtre-sat-bit-tar)           
+                   exit perform  cycle                                        
+           end-if  
+          end-if
+          if cin-tik = 1
+           if (filtre-cin-bas-tar <> 0 and beklerez-gir-tar < filtre-cin-bas-tar) or        
+              (filtre-cin-bit-tar <> 0 and beklerez-gir-tar > filtre-cin-bit-tar)           
+                   exit perform  cycle                                        
+           end-if
+          end-if
+          if konf-tik = 1
+           if (filtre-konf-bas-tar <> 0 and beklerez-konfirme-tar < filtre-konf-bas-tar) or        
+              (filtre-konf-bit-tar <> 0 and beklerez-konfirme-tar > filtre-konf-bit-tar)           
+                   exit perform  cycle                                        
+           end-if
+          end-if
+
+           if filtre-voucher <> spaces
+             move beklerez-voucher        to kelime
+             move filtre-voucher       to aranan-kelime
+             move 0 to aranan-i aranan-kelime-boy
+             inspect aranan-kelime tallying aranan-kelime-boy
+                     for trailing spaces 
+             compute aranan-kelime-boy = function length(aranan-kelime) -
+                                         aranan-kelime-boy
+             inspect kelime tallying aranan-i 
+                     for all aranan-kelime(1:aranan-kelime-boy)
+             if aranan-i = 0               
+                exit perform cycle
+             end-if
+           end-if
+
+
+          perform konfirme-edilen-rez-grid-kayit-ekle
+    end-read 
+    end-perform
+    end-start
+    close beklerez sejkar acenta konum kodlar02 ulke
+    modify screen1-gd-2, mass-update = 0.
+*
+ konfirme-edilen-rez-grid-kayit-ekle.
+          add 1                    to konfirme-grid-sayi
+          initialize screen1-gd-2-record 
+          move beklerez-anah       to gd-2-col-1
+          move beklerez-adi(1)     to gd-2-col-2
+          move beklerez-soyadi(1)  to gd-2-col-3
+          move beklerez-yas(1)     to gd-2-col-4
+
+          initialize sejkar-rec hata-ulke
+          move "U"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-acenta
+          move beklerez-milliyet(1)                 to sejkar-kodu
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Ulke Kodu Yok"       to gd-2-col-20 
+               move 1                            to hata-ulke
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize ulke-rec
+                move sejkar-asya-kodu            to ulke-anah
+                read ulke no lock invalid 
+                     move "Asya Ulke Kodu Yok"   to gd-2-col-20 
+                     move 1                      to hata-ulke
+                not invalid 
+                    move ulke-adi                to gd-2-col-20
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to gd-2-col-20
+                move 1                           to hata-ulke 
+             end-if 
+          end-read 
+          if hata-ulke = 1
+               modify screen1-gd-2(konfirme-grid-sayi,20),
+                      cell-color = 176
+          end-if 
+
+
+          move beklerez-gir-gun    to ygun
+          move beklerez-gir-ay     to yay
+          move beklerez-gir-yil    to yyil
+          move ytar                to gd-2-col-5
+
+          move beklerez-cik-gun    to ygun
+          move beklerez-cik-ay     to yay
+          move beklerez-cik-yil    to yyil
+          move ytar                to gd-2-col-6
+
+          move beklerez-sat-gun    to ygun
+          move beklerez-sat-ay     to yay
+          move beklerez-sat-yil    to yyil
+          move ytar                to gd-2-col-7
+
+          move beklerez-voucher    to gd-2-col-8
+          move beklerez-buyuk      to gd-2-col-9
+          move beklerez-kucuk      to gd-2-col-10
+*/ acenta kontrol
+          initialize sejkar-rec hata-acenta
+          move "A"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-kodu sejkar-acenta
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Acenta Kodu Yok"     to gd-2-col-11 
+               move 1                            to hata-acenta
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize acenta-rec
+                move sejkar-asya-kodu            to acenta-kodu
+                read acenta no lock invalid 
+                     move "Asya Acenta Kodu Yok" to gd-2-col-11 
+                     move 1                      to hata-acenta
+                not invalid 
+                    move acenta-adi              to gd-2-col-11
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to gd-2-col-11
+                move 1                           to hata-acenta 
+             end-if 
+          end-read 
+          if hata-acenta = 1
+               modify screen1-gd-2(konfirme-grid-sayi,11),
+                      cell-color = 176
+          end-if 
+*/ acenta kontrol
+*/ konum kontrol
+          initialize sejkar-rec hata-konum
+          move "K"                               to sejkar-tip
+          move beklerez-konum                    to sejkar-kodu
+          move beklerez-acenta-kodu              to sejkar-acenta
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid
+               move "Sejour Konum Kodu Yok"      to gd-2-col-13
+               move 1                            to hata-konum
+          not invalid
+             if sejkar-asya-kodu not = spaces
+               initialize konum-rec
+               move function numval(sejkar-asya-kodu)  to konum-anahtar
+               read konum no lock invalid 
+                    move "Asya Konum Kodu Yok"   to gd-2-col-13
+                    move 1                            to hata-konum
+               not invalid 
+                    move konum-adi               to gd-2-col-13
+               end-read 
+             else 
+                move "Asya Karsilik Kodu Yok"    to gd-2-col-13
+                move 1                            to hata-konum
+             end-if 
+          end-read 
+          if hata-konum = 1
+             modify screen1-gd-2(konfirme-grid-sayi,13),
+                    cell-color = 176             
+          end-if 
+*/ konum kontrol
+*/ pansiyon kontrol
+          initialize sejkar-rec hata-pansiyon
+          move "P"                               to sejkar-tip
+          move beklerez-pan-kodu                 to sejkar-kodu
+          move beklerez-acenta-kodu              to sejkar-acenta
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid
+               move "Sejour Pansiyon Kodu Yok"      to gd-2-col-12
+               move 1 to hata-pansiyon
+          not invalid
+             if sejkar-asya-kodu not = spaces
+               initialize kodlar02-rec
+               move sejkar-asya-kodu    to kodlar02-kodu
+               move "A"                 to kodlar02-tipi
+               read kodlar02 no lock invalid 
+                    move "Asya Pansiyon Kodu Yok"   to gd-2-col-12
+                    move 1 to hata-pansiyon
+               not invalid 
+                    move kodlar02-adi               to gd-2-col-12
+               end-read 
+             else 
+                move "Asya Karsilik Kodu Yok"       to gd-2-col-12              
+                move 1                              to hata-pansiyon
+             end-if 
+          end-read 
+          if hata-pansiyon = 1
+             modify screen1-gd-2(konfirme-grid-sayi,12),
+                    cell-color = 176 
+          end-if
+*/ pansiyon kontrol
+          move beklerez-gercek-rezno   to gd-2-col-14
+
+          evaluate beklerez-PmsStatus
+          when "0"
+             move "Yeni Rezervasyon"   to gd-2-col-15
+          when "2"
+             move "Degisiklik"         to gd-2-col-15
+          when "3"
+             move "Iptal"              to gd-2-col-15
+          end-evaluate 
+          if beklerez-onb-yazildi = 1
+             move "E"                  to gd-2-col-16
+             modify screen1-gd-2(konfirme-grid-sayi,16),
+                    cell-color = 112 
+          else
+             move "H"                  to gd-2-col-16
+             modify screen1-gd-2(konfirme-grid-sayi,16),
+                    cell-color = 176 
+          end-if 
+
+
+
+
+
+          move beklerez-hata-aciklama   to gd-2-col-17
+          move beklerez-touropname      to gd-2-col-18
+          
+          move beklerez-konfirme-gun    to ygun
+          move beklerez-konfirme-ay     to yay
+          move beklerez-konfirme-yil    to yyil
+          move ytar                     to gd-2-col-19          
+          move beklerez-geceleme        to gd-2-col-21
+
+       
+
+
+          modify screen1-gd-2,record-to-add(screen1-gd-2-record) 
+          modify screen1-gd-2(konfirme-grid-sayi,1),hidden-data beklerez-anah.
+*
+ not-konfirme-edilen-rez-grid-baslik-yukle.
+    modify Screen1-Gd-3, reset-grid = 1
+                         mass-update = 1
+    initialize screen1-gd-3-record
+    move "Islem No"      to gd-3-col-1
+    move "Adi"           to gd-3-col-2
+    move "Soyadi"        to gd-3-col-3
+    move "Yas"           to gd-3-col-4
+    move "C/in Tarihi"   to gd-3-col-5
+    move "C/Out Tarihi"  to gd-3-col-6
+    move "Satis Tarihi"  to gd-3-col-7
+    move "Voucher"       to gd-3-col-8
+    move "Pax"           to gd-3-col-9
+    move "Child"         to gd-3-col-10
+    move "Bebek"         to gd-3-col-101
+    move "Acenta"        to gd-3-col-11
+    move "Pansiyon"      to gd-3-col-12
+    move "O.Tipi"         to gd-3-col-13
+    move "Tur Operatoru"    to gd-3-col-14
+    move "Gonderim Tarihi"  to gd-3-col-15
+    move "Rez.Durumu"       to Gd-3-Col-16
+    modify screen1-gd-3,record-to-add(screen1-gd-3-record) 
+      .
+*
+ not-konfirme-edilen-rez-grid-yukle.  
+    open input beklerez sejkar acenta konum kodlar02
+    initialize beklerez-rec
+    move 2                 to beklerez-konfirme-edildi  
+    move 1                 to konfirme-grid-sayi
+    start beklerez key not < beklerez-konfirme-edildi invalid 
+        continue 
+    not invalid 
+    perform with test after until fs-beklerez = "10"
+    read beklerez next no lock end move "10" to fs-beklerez
+    not at end 
+          if beklerez-konfirme-edildi <> 2
+              exit perform 
+          end-if 
+          add 1 to konfirme-grid-sayi
+          initialize screen1-gd-3-record 
+          move beklerez-anah       to gd-3-col-1          
+          move beklerez-adi(1)     to gd-3-col-2
+          move beklerez-soyadi(1)  to gd-3-col-3
+          move beklerez-yas(1)     to gd-3-col-4
+
+          move beklerez-gir-gun    to ygun
+          move beklerez-gir-ay     to yay
+          move beklerez-gir-yil    to yyil
+          move ytar                to gd-3-col-5
+
+          move beklerez-cik-gun    to ygun
+          move beklerez-cik-ay     to yay
+          move beklerez-cik-yil    to yyil
+          move ytar                to gd-3-col-6
+
+          move beklerez-sat-gun    to ygun
+          move beklerez-sat-ay     to yay
+          move beklerez-sat-yil    to yyil
+          move ytar                to gd-3-col-7
+
+          move beklerez-voucher    to gd-3-col-8
+          move beklerez-buyuk      to gd-3-col-9
+          move beklerez-kucuk      to gd-3-col-10
+          move beklerez-bebek      to gd-3-col-101
+
+*/ acenta kontrol
+          initialize sejkar-rec hata-acenta
+          move "A"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-kodu
+          move beklerez-acenta-kodu              to sejkar-acenta
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Acenta Kodu Yok"     to gd-3-col-11 
+               move 1                            to hata-acenta
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize acenta-rec
+                move sejkar-asya-kodu            to acenta-kodu
+                read acenta no lock invalid 
+                     move "Asya Acenta Kodu Yok" to gd-3-col-11 
+                     move 1                      to hata-acenta
+                not invalid 
+                    move acenta-adi              to gd-3-col-11
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to gd-3-col-11
+                move 1                           to hata-acenta 
+             end-if 
+          end-read 
+          if hata-acenta = 1
+               modify screen1-gd-3(konfirme-grid-sayi,12),
+                      cell-color = 176
+          end-if 
+*/ acenta kontrol
+*/ konum kontrol
+          initialize sejkar-rec hata-konum
+          move "K"                               to sejkar-tip
+          move beklerez-konum                    to sejkar-kodu
+          move beklerez-acenta-kodu              to sejkar-acenta
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid
+               move "Sejour Konum Kodu Yok"      to gd-3-col-13
+               move 1                            to hata-konum
+          not invalid
+             if sejkar-asya-kodu not = spaces
+               initialize konum-rec
+               move function numval(sejkar-asya-kodu)  to konum-anahtar
+               read konum no lock invalid 
+                    move "Asya Konum Kodu Yok"   to gd-3-col-13
+                    move 1                            to hata-konum
+               not invalid 
+                    move konum-adi               to gd-3-col-13
+               end-read 
+             else 
+                move "Asya Karsilik Kodu Yok"    to gd-3-col-13
+                move 1                            to hata-konum
+             end-if 
+          end-read 
+          if hata-konum = 1
+             modify screen1-gd-3(konfirme-grid-sayi,14),
+                    cell-color = 176             
+          end-if 
+*/ konum kontrol
+*/ pansiyon kontrol
+          initialize sejkar-rec hata-pansiyon
+          move "P"                               to sejkar-tip
+          move beklerez-pan-kodu                 to sejkar-kodu
+          move beklerez-acenta-kodu              to sejkar-acenta
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid
+               move "Sejour Pansiyon Kodu Yok"      to gd-3-col-12
+               move 1 to hata-pansiyon
+          not invalid
+             if sejkar-asya-kodu not = spaces
+               initialize kodlar02-rec
+               move sejkar-asya-kodu    to kodlar02-kodu
+               move "A"                 to kodlar02-tipi
+               read kodlar02 no lock invalid 
+                    move "Asya Pansiyon Kodu Yok"   to gd-3-col-12
+                    move 1 to hata-pansiyon
+               not invalid 
+                    move kodlar02-adi               to gd-3-col-12
+               end-read 
+             else 
+                move "Asya Karsilik Kodu Yok"       to gd-3-col-12              
+                move 1                              to hata-pansiyon
+             end-if 
+          end-read 
+          if hata-pansiyon = 1
+             modify screen1-gd-3(konfirme-grid-sayi,13),
+                    cell-color = 176 
+          end-if
+          move beklerez-touropcode                to gd-3-col-14
+
+          move beklerez-konfirme-gun    to ygun
+          move beklerez-konfirme-ay     to yay
+          move beklerez-konfirme-yil    to yyil
+          move ytar                     to gd-3-col-15
+
+
+          evaluate beklerez-PmsStatus
+          when "0"
+             move "Yeni Rezervasyon"   to gd-3-col-16
+          when "2"
+             move "Degisiklik"         to gd-3-col-16
+          when "3"
+             move "Iptal"              to gd-3-col-16
+          end-evaluate 
+
+
+          modify screen1-gd-3,record-to-add(screen1-gd-3-record)  
+          modify screen1-gd-3(konfirme-grid-sayi,1),hidden-data beklerez-anah       
+    end-read 
+    end-perform
+    end-start
+    close beklerez sejkar acenta konum kodlar02
+    modify Screen1-Gd-3, mass-update = 0.
+*
+ sag-menu-MI-NotKonfirme-Link.
+       inquire screen1-gd-1,
+               cursor-y satir
+
+*          initialize hata-varmi
+*          inquire Screen1-Gd-1(satir,19),hidden-data hata-varmi
+*          if hata-varmi = 1
+*             display message box "Lutfen Hata Kodu Alanini Kontrol Ediniz.."
+*                             title "Uyari"
+*                             icon 1
+*              move event-action-fail   to event-action
+*              exit paragraph 
+*          end-if 
+
+    perform Acu-Screen2-Routine
+    
+    if not-kon-sebep not = spaces
+       inquire screen1-gd-1,
+               cursor-y satir
+                 
+       modify Screen1-Gd-1(satir,16),
+              cell-data = "Not Konfirme"
+              hidden-data = "N"
+              cell-color = 486
+
+       modify Screen1-Gd-1(satir,18),
+              cell-data = temp-sebep-adi
+              hidden-data = temp-sebep-sejour-kodu
+    end-if .
+*
+ Screen2-Aft-Initdata.
+    open input sejkar
+    initialize sejkar-rec
+    move "N"           to sejkar-tip
+    start sejkar key not < sejkar-anah invalid 
+       continue 
+    not invalid 
+    perform with test after until fs-sejkar = "10"
+    read sejkar next no lock end move "10"  to fs-sejkar 
+    not at end 
+           if sejkar-tip <> "N"
+              exit perform 
+           end-if
+             if onkpara-referans-var = 1
+                 if sejkar-ref <> secili-ref
+                     exit perform cycle 
+                 end-if 
+             end-if 
+
+           initialize temp-sebep
+           move sejkar-adi   to temp-sebep-adi
+           move sejkar-kodu  to temp-sebep-sejour-kodu
+           modify cb-not-kon-sebep,item-to-add(temp-sebep)
+    end-read 
+    end-perform
+    end-start
+    close sejkar 
+    modify cb-not-kon-sebep, VALUE = sejkar-kodu.
+*
+ cb-not-kon-sebep-Ex-Ntf-Selchange.
+    move not-kon-sebep  to temp-sebep.
+*
+ Screen1-Ta-1-Aft-Tabchg-Display.
+    evaluate Screen1-Ta-1-Value
+    when 1      
+         modify Screen1-Pb-1,enabled = true
+         modify Screen1-Pb-1a ,enabled = true
+         modify Screen1-Pb-2,enabled = true 
+         modify Screen1-Pb-1aaa ,enabled = true
+         modify Screen1-Pb-1aaaa ,enabled = true
+**         perform xml-konfirme-cek-grid-baslik-doldur
+    when 2
+         perform konfirme-edilen-rez-grid-baslik-yukle
+         perform konfirme-edilen-rez-grid-yukle  
+       
+         modify Screen1-Pb-1,enabled = false
+         modify Screen1-Pb-1a ,enabled = false
+         modify Screen1-Pb-1aaa ,enabled = false
+         modify Screen1-Pb-1aaaa ,enabled = false
+         modify Screen1-Pb-2,enabled = false
+    when 3
+         perform not-konfirme-edilen-rez-grid-baslik-yukle
+         perform not-konfirme-edilen-rez-grid-yukle       
+          
+         modify Screen1-Pb-1,enabled = false
+         modify Screen1-Pb-1a ,enabled = false
+         modify Screen1-Pb-1aaa ,enabled = false
+         modify Screen1-Pb-1aaaa ,enabled = false
+         modify Screen1-Pb-2,enabled = false 
+    end-evaluate.
+*
+ rez-yaz-sil-deg.
+    open input  sejkar konum acenta kodlar02 ulke
+ 
+    open input rez
+    initialize beklerez-rec
+    move 1             to beklerez-konfirme-edildi
+    start beklerez key not < beklerez-konfirme-edildi invalid 
+          continue 
+    not invalid
+    perform with test after until fs-beklerez = "10"
+    read beklerez next no lock end move "10"  to fs-beklerez
+    not at end 
+          if beklerez-konfirme-edildi <> 1
+             exit perform 
+          end-if           
+          if tek-konfirme = 1
+             if beklerez-sejour-kodu <> sejour-kodu
+                 exit perform cycle 
+             end-if 
+          end-if 
+          evaluate beklerez-PmsStatus
+          when "0" | Rezervasyon ilk defa geldi beklerez-gercek-rezno dolu ise hatalidir
+             if beklerez-gercek-rezno not = 0                  
+                   exit perform cycle 
+             end-if
+             if beklerez-gercek-rezno = 0                  
+                  perform rez-bul|asyasofta elle girilmis rez sejourdan degisiklik geldi.
+                  if yedek-rez-no <> zeroes 
+                     move yedek-rez-no    to beklerez-gercek-rezno
+                     move 1               to beklerez-onb-yazildi
+                     rewrite beklerez-rec end-rewrite  
+                     exit perform cycle 
+                  end-if 
+             end-if
+          when "2"| Degisiklik yada iptal kaydý, ancak bizde böle bir rezervasyon yok.(elle silme ihtimalinde böyle bir durum oluþabilir)
+          when "3"| Degisiklik yada iptal kaydý, ancak bizde böle bir rezervasyon yok.(elle silme ihtimalinde böyle bir durum oluþabilir)
+             if beklerez-gercek-rezno = 0                  
+                  perform rez-bul|asyasofta elle girilmis rez sejourdan degisiklik geldi.
+                  if yedek-rez-no <> zeroes 
+                     move yedek-rez-no    to beklerez-gercek-rezno
+                     move 1               to beklerez-onb-yazildi
+                     rewrite beklerez-rec end-rewrite 
+                  else
+                     exit perform cycle 
+                  end-if 
+             end-if
+          when other 
+             if beklerez-gercek-rezno not = 0
+                   exit perform cycle 
+             end-if   
+                 if beklerez-gercek-rezno = 0                  
+                  perform rez-bul
+                  if yedek-rez-no <> zeroes 
+                     move yedek-rez-no    to beklerez-gercek-rezno
+                     move 1               to beklerez-onb-yazildi
+                     rewrite beklerez-rec end-rewrite  
+                     exit perform cycle 
+                  end-if 
+             end-if         
+          end-evaluate 
+
+          initialize web
+
+          perform konum-kontrol
+          
+          if hata-konum = 1
+             exit perform cycle            
+          end-if 
+          
+          perform acenta-kontrol
+          
+          if hata-acenta = 1
+              exit perform cycle 
+          end-if 
+          
+          perform pansiyon-kontrol
+          
+          if hata-pansiyon = 1
+              exit perform cycle 
+          end-if
+          
+          perform ulke-kontrol
+*          if hata-ulke = 1
+*             exit perform cycle 
+*          end-if 
+
+          evaluate beklerez-PmsStatus(1:1)
+          when "0"
+               if beklerez-oda-adet > 1
+                  perform varying w from 1 by 1 until w > beklerez-oda-adet 
+                       perform yeni-rez-kaydet
+                  end-perform 
+               else
+                  perform yeni-rez-kaydet
+               end-if 
+          when "2"             
+               if beklerez-oda-adet > 1
+                  perform varying w from 1 by 1 until w > beklerez-oda-adet 
+                       perform degisiklik-rez-kaydet
+                  end-perform 
+               else
+                  perform degisiklik-rez-kaydet
+               end-if 
+          when "3"
+               if beklerez-oda-adet > 1
+                  perform varying w from 1 by 1 until w > beklerez-oda-adet 
+                       perform sil-rez-kaydet
+                  end-perform 
+               else
+                  perform sil-rez-kaydet
+               end-if             
+          end-evaluate 
+    end-read 
+    end-perform
+    end-start
+    close rez sejkar konum acenta kodlar02 ulke.   
+*
+ yeni-rez-kaydet.     
+     move beklerez-gir-tar                  to web2-bas-tar
+     move beklerez-cik-tar                  to web2-bit-tar
+     move beklerez-sat-tar                  to web2-al-tar 
+     initialize i
+     perform varying i
+               from 1
+               by 1
+               until i > 7
+                  if beklerez-adi(i) not = spaces or 
+                     beklerez-soyadi(i) not = spaces
+                       call "c$justify" using beklerez-title(i),"L"
+                       call "c$justify" using beklerez-adi(i),"L"
+                       call "c$justify" using beklerez-soyadi(i),"L"
+
+                       
+                       call "c$toupper" using beklerez-adi(i) 
+                       call "c$toupper" using beklerez-soyadi(i)
+                       call "c$toupper" using beklerez-title(i) 
+
+                       move beklerez-title(i)  to web2-title(i)
+                       move beklerez-adi(i)    to web2-adi(i)
+                       move beklerez-soyadi(i) to web2-soyadi(i)
+
+                       move function numval(beklerez-yas(i)) to web-gelen-cocuk-yas(i)  
+                       move beklerez-dog-tar(i)              to web2-dog-tar(i)
+                       if (web-gelen-cocuk-yas(i) = spaces or web-gelen-cocuk-yas(i) = zeroes ) and
+                          (web2-dog-yil(i) < 1900 or web2-dog-yil(i) = spaces)
+                            move 99 to web-gelen-cocuk-yas(i)
+                       end-if 
+
+                  end-if 
+     end-perform
+
+     move 01                 to web2-doviz
+     move 001                to web2-ulke
+     move 02                 to web2-rate-kodu
+     move 0                  to web2-rez-no                
+     move 1                  to web-tipxx 
+     move 0                  to web-debug
+     move beklerez-voucher   to web2-internal-voucher
+     move beklerez-balayi-mi to web2-balayimi
+     move beklerez-genel-not to web2-not
+  
+     move beklerez-sat-tar        to web2-al-tar
+
+     if manuel-fiy > 0
+        move manuel-fiy              to web2-dv-tutar
+        move manuel-anlasma-kodu     to web2-anlasma 
+     end-if 
+     move 0 to web2-kontrol
+
+     perform webrez2-cagir
+
+     if web2-rez-no > 0
+        initialize beklerez-hata-aciklama
+        move web2-rez-no     to beklerez-gercek-rezno
+        move 1               to beklerez-onb-yazildi
+        accept beklerez-konfirme-tar from century-date
+        move web2-hata-aciklama to beklerez-hata-aciklama
+        rewrite beklerez-rec end-rewrite
+     else
+        accept beklerez-konfirme-tar from century-date
+        move web2-hata-aciklama to beklerez-hata-aciklama
+        rewrite beklerez-rec end-rewrite
+     end-if.
+
+*
+ degisiklik-rez-kaydet.      
+     move beklerez-gir-tar     to web2-bas-tar
+     move beklerez-cik-tar     to web2-bit-tar
+     move beklerez-sat-tar     to web2-al-tar
+     move beklerez-buyuk       to web2-gelen-pax 
+     move beklerez-kucuk       to web2-gelen-chi 
+ 
+     initialize i
+     perform varying i
+
+               from 1
+               by 1
+               until i > 7
+                  if beklerez-adi(i) not = spaces and 
+                     beklerez-soyadi(i) not = spaces
+                       call "c$justify" using beklerez-title(i),"L"
+                       call "c$justify" using beklerez-adi(i),"L"
+                       call "c$justify" using beklerez-soyadi(i),"L"
+
+                       call "c$toupper" using beklerez-adi(i) 
+                       call "c$toupper" using beklerez-soyadi(i)
+                       call "c$toupper" using beklerez-title(i)
+
+                       move beklerez-title(i)  to web2-title(i)
+                       move beklerez-adi(i)    to web2-adi(i)
+                       move beklerez-soyadi(i) to web2-soyadi(i)
+                       move function numval(beklerez-yas(i))    
+                            to web-gelen-cocuk-yas(i)
+                       move beklerez-dog-tar(i)        to web2-dog-tar(i)
+                       if (web-gelen-cocuk-yas(i) = spaces or web-gelen-cocuk-yas(i) = zeroes ) and
+                          (web2-dog-yil(i) < 1900 or web2-dog-yil(i) = spaces)
+                            move 99 to web-gelen-cocuk-yas(i)
+                       end-if 
+
+                  end-if 
+     end-perform
+
+     initialize konum-rec
+     move function numval(beklerez-konum)       to konum-anahtar
+     read konum no lock invalid 
+         move 1              to konum-anahtar
+     end-read 
+     move konum-anahtar      to web2-konum-kodu
+     
+     move 01                 to web2-doviz
+     move 001                to web2-ulke
+     move 02                 to web2-rate-kodu
+     move beklerez-gercek-rezno                  to web2-rez-no                
+     move 1                  to web-tipxx 
+     move 0                  to web-debug
+     move beklerez-voucher   to web2-internal-voucher
+     move beklerez-balayi-mi to web2-balayimi
+     move beklerez-genel-not to web2-not
+     move beklerez-sat-tar   to web2-al-tar 
+     move 0 to web2-kontrol
+
+     perform webrez2-cagir.
+*
+ sil-rez-kaydet.     
+     move beklerez-gir-tar                  to web2-bas-tar
+     move all zeroes                        to web2-bas-tar| webrez2 ye gore yapildi
+     move beklerez-cik-tar                  to web2-bit-tar
+
+     initialize i
+     perform varying i
+               from 1
+               by 1
+               until i > 7
+                  if beklerez-adi(i) not = spaces and 
+                     beklerez-soyadi(i) not = spaces
+                       call "c$justify" using beklerez-title(i),"L"
+                       call "c$justify" using beklerez-adi(i),"L"
+                       call "c$justify" using beklerez-soyadi(i),"L"
+                       
+                       call "c$toupper" using beklerez-adi(i) 
+                       call "c$toupper" using beklerez-soyadi(i)
+                       call "c$toupper" using beklerez-title(i)
+
+                       move beklerez-title(i)  to web2-title(i)
+                       move beklerez-adi(i)    to web2-adi(i)
+                       move beklerez-soyadi(i) to web2-soyadi(i)
+                       move function numval(beklerez-yas(i))    to web-gelen-cocuk-yas(i)
+                       move beklerez-dog-tar(i)                 to web2-dog-tar(i)
+                       if (web-gelen-cocuk-yas(i) = spaces or web-gelen-cocuk-yas(i) = zeroes ) and
+                          (web2-dog-yil(i) < 1900 or web2-dog-yil(i) = spaces)
+                            move 99 to web-gelen-cocuk-yas(i)
+                       end-if 
+                       
+                  end-if 
+     end-perform
+
+     move 01                 to web2-doviz
+     move 001                to web2-ulke
+     move 02                 to web2-rate-kodu
+     move beklerez-gercek-rezno                  to web2-rez-no                
+     move 1                  to web-tipxx 
+     move 0                  to web-debug
+     move beklerez-voucher   to web2-internal-voucher
+     move beklerez-sat-tar   to web2-al-tar
+*     move function numval(beklerez-bebek)     to web2-gelen-bebek
+*     move function numval(beklerez-buyuk)     to web2-gelen-pax
+     move 0 to web2-kontrol
+     perform webrez2-cagir.
+*
+ webrez2-cagir.
+     call "/asya/ytl/obj/otel/websej.asy" 
+                   using web
+                   on exception 
+                   perform callerr-proc
+                   exit paragraph
+                   not on exception 
+              cancel "/asya/ytl/obj/otel/websej.asy"
+     end-call.
+*
+ konum-kontrol.
+    initialize sejkar-rec hata-konum
+    move "K"                               to sejkar-tip
+    move beklerez-konum                    to sejkar-kodu
+    move beklerez-acenta-kodu              to sejkar-acenta
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+    read sejkar no lock invalid
+         move 1                            to hata-konum
+    not invalid
+       if sejkar-asya-kodu not = spaces
+         initialize konum-rec
+         move function numval(sejkar-asya-kodu)  to konum-anahtar
+         read konum no lock invalid 
+              move 1                             to hata-konum 
+                                                    web2-konum-kodu
+         not invalid 
+              move konum-anahtar                 to web2-konum-kodu
+         end-read 
+       else 
+          move 1                                 to hata-konum
+       end-if 
+    end-read. 
+*
+ acenta-kontrol.
+    initialize sejkar-rec hata-acenta 
+    move beklerez-touropcode               to sejkar-kodu
+    move "O"                               to sejkar-tip
+    move beklerez-acenta-kodu              to sejkar-acenta
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+    read sejkar no lock invalid 
+         move 1                            to hata-acenta
+    not invalid 
+       if sejkar-asya-kodu not = spaces
+          initialize acenta-rec
+          move sejkar-asya-kodu     to acenta-kodu
+          read acenta no lock invalid 
+              continue 
+          not invalid 
+              move acenta-kodu      to web2-acenta
+          end-read 
+       else 
+          move 1                    to hata-acenta
+       end-if 
+    end-read.
+*
+ pansiyon-kontrol.
+    initialize sejkar-rec hata-pansiyon
+    move "P"                               to sejkar-tip
+    move beklerez-pan-kodu                 to sejkar-kodu
+    move beklerez-acenta-kodu              to sejkar-acenta
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+    read sejkar no lock invalid
+         move 1 to hata-pansiyon
+    not invalid
+       if sejkar-asya-kodu not = spaces
+         initialize kodlar02-rec
+         move sejkar-asya-kodu    to kodlar02-kodu
+         move "A"                 to kodlar02-tipi
+         read kodlar02 no lock invalid 
+              move 1 to hata-pansiyon
+         end-read 
+       else 
+          move 1                              to hata-pansiyon
+       end-if 
+    end-read .
+*
+ ulke-kontrol.
+    initialize sejkar-rec hata-ulke
+    move "U"                               to sejkar-tip
+    move beklerez-acenta-kodu              to sejkar-acenta
+    move beklerez-milliyet(1)              to sejkar-kodu
+    if onkpara-referans-var = 1
+        move secili-ref         to sejkar-ref
+    end-if 
+
+    read sejkar no lock invalid 
+         move 1                            to hata-ulke
+    not invalid 
+       if sejkar-asya-kodu not = spaces
+          initialize ulke-rec
+          move sejkar-asya-kodu            to ulke-anah
+          read ulke no lock invalid 
+               move 1                      to hata-ulke
+          not invalid 
+              move ulke-anah               to web2-ulkem
+          end-read
+       else 
+          move 1                           to hata-ulke 
+       end-if 
+    end-read. 
+
+*
+ rez-bul.
+     initialize rez-rec yedek-rez-no
+     move beklerez-voucher        to rez-voucher 
+     move "I"                     to rez-durumu
+     start rez key not < rez-vouc invalid 
+         continue 
+     not invalid 
+     perform with test after until fs-rez = "10"
+     read rez next no lock end move "10"  to fs-rez
+     not at end 
+            if rez-durumu <> "I"
+               exit perform 
+            end-if 
+            if rez-voucher <> beklerez-voucher 
+               exit perform 
+            end-if
+            if rez-c-in = "E"
+               exit perform cycle 
+            end-if 
+            if rez-folio > 0
+               exit perform cycle 
+            end-if 
+            move rez-no           to yedek-rez-no
+            exit perform 
+     end-read 
+     end-perform
+     end-start.
+*
+ rez-cagir.
+     initialize dokcagir-tasi
+     set dokcagir-tasi-call-rez1   to true
+     move ydk-rez                  to dokcagir-rez-no
+     perform dokcagir-call
+     move dokcagir-rez-no          to rez-no.
+*
+ dokcagir-call.
+     call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+          on exception 
+             perform callerr-proc
+          not on exception
+             cancel "/asya/ytl/obj/otel/dokcagir.asy"
+     end-call.
+*
+ sag-menu-MI-RezervasyonDetaylari-Link.
+     perform Acu-Screen4-Routine
+     
+     .
+*
+ Screen4-Aft-Initdata.
+     if Screen1-Ta-1-Value = 1
+        inquire screen1-gd-1,
+                cursor-y satir     
+        inquire screen1-gd-1(satir,17),hidden-data xbeklerez-anah
+     end-if
+     if Screen1-Ta-1-Value = 2
+        inquire Screen1-Gd-2,
+                cursor-y satir     
+        inquire Screen1-Gd-2(satir,1),hidden-data xbeklerez-anah    
+        modify Screen4-Pb-1a,visible = false 
+        modify Screen4-Pb-1aa,visible = false 
+
+     end-if 
+     if Screen1-Ta-1-Value = 3
+        inquire Screen1-Gd-3,
+                cursor-y satir     
+        inquire Screen1-Gd-3(satir,1),hidden-data xbeklerez-anah        
+        modify Screen4-Pb-1a,visible = false 
+        modify Screen4-Pb-1aa,visible = false 
+
+     end-if 
+     perform form4-yukle.
+*
+ form4-yukle.
+     initialize bir-soy bir-adi iki-soy iki-adi uc-soy uc-adi dort-soy dort-adi 
+                bes-soy bes-adi alti-soy alti-adi yedi-soy yedi-adi logid service-id voucher
+                sejour-kodu rez-detay-gir-tar rez-detay-cik-tar pms-status ucretsiz-oda
+                rez-detay-sat-tar balayi-odasi rez-detay-konum detay-acenta detay-pansiyon
+                bir-ulke iki-ulke uc-ulke dort-ulke bes-ulke alti-ulke yedi-ulke
+                kontenjan-durumu tour-op-kod tour-op-name pms-status extra-yatak  
+                konfirme-durumu oda-fiyati konfirme-numarasi
+                top-kisi buyuk kucuk free bebek konfirme-notu detay-genel-not
+                bir-dog-gun bir-dog-ay bir-dog-yil
+                iki-dog-gun iki-dog-ay iki-dog-yil
+                uc-dog-gun uc-dog-ay uc-dog-yil
+                dort-dog-gun dort-dog-ay dort-dog-yil
+                bes-dog-gun bes-dog-ay bes-dog-yil
+                alti-dog-gun alti-dog-ay alti-dog-yil
+                yedi-dog-gun yedi-dog-ay yedi-dog-yil
+
+     display screen4
+          
+     open input beklerez sejkar ulke
+     initialize beklerez-rec
+     move xbeklerez-anah         to beklerez-anah
+     read beklerez no lock invalid 
+          continue 
+     not invalid 
+         move beklerez-soyadi(1)           to bir-soy
+         move beklerez-adi(1)       to bir-adi
+
+         move beklerez-yas(1)          to bir-yas
+         move beklerez-dog-yil(1)      to bir-dog-yil
+         move beklerez-dog-ay(1)       to bir-dog-ay
+         move beklerez-dog-gun(1)      to bir-dog-gun
+         if beklerez-milliyet(1) not = spaces
+          initialize sejkar-rec hata-ulke
+          move "U"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-acenta
+          move beklerez-milliyet(1)              to sejkar-kodu
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Ulke Kodu Yok"       to bir-ulke 
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize ulke-rec
+                move sejkar-asya-kodu            to ulke-anah
+                read ulke no lock invalid 
+                     move "Asya Ulke Kodu Yok"   to bir-ulke 
+                not invalid 
+                    move ulke-adi                to bir-ulke
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to bir-ulke
+             end-if 
+          end-read 
+         end-if
+         move beklerez-title(1)        to bir-unvan
+         move beklerez-title(2)        to iki-unvan
+         move beklerez-title(3)        to uc-unvan
+         move beklerez-title(4)        to dort-unvan
+         move beklerez-title(5)        to bes-unvan
+         move beklerez-title(6)        to alti-unvan
+         move beklerez-title(7)        to yedi-unvan
+
+         move beklerez-soyadi(2)       to iki-soy 
+         move beklerez-adi(2)          to iki-adi
+         move beklerez-yas(2)          to iki-yas
+         move beklerez-dog-yil(2)      to iki-dog-yil
+         move beklerez-dog-ay(2)       to iki-dog-ay
+         move beklerez-dog-gun(2)      to iki-dog-gun
+         if beklerez-milliyet(2) not = spaces
+          
+          initialize sejkar-rec hata-ulke
+          move "U"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-acenta
+          move beklerez-milliyet(2)              to sejkar-kodu
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Ulke Kodu Yok"       to iki-ulke 
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize ulke-rec
+                move sejkar-asya-kodu            to ulke-anah
+                read ulke no lock invalid 
+                     move "Asya Ulke Kodu Yok"   to iki-ulke 
+                not invalid 
+                    move ulke-adi                to iki-ulke
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to iki-ulke
+             end-if 
+          end-read 
+         end-if
+
+         move beklerez-soyadi(3)          to uc-soy 
+         move beklerez-adi(3)       to uc-adi
+         move beklerez-yas(3)          to uc-yas
+         move beklerez-dog-yil(3)      to uc-dog-yil
+         move beklerez-dog-ay(3)       to uc-dog-ay
+         move beklerez-dog-gun(3)      to uc-dog-gun
+         if beklerez-milliyet(3) not = spaces
+
+          initialize sejkar-rec hata-ulke
+          move "U"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-acenta
+          move beklerez-milliyet(3)              to sejkar-kodu
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Ulke Kodu Yok"       to uc-ulke 
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize ulke-rec
+                move sejkar-asya-kodu            to ulke-anah
+                read ulke no lock invalid 
+                     move "Asya Ulke Kodu Yok"   to uc-ulke 
+                not invalid 
+                    move ulke-adi                to uc-ulke
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to uc-ulke
+             end-if 
+          end-read 
+         end-if
+         move beklerez-soyadi(4)          to dort-soy 
+         move beklerez-adi(4)       to dort-adi
+         move beklerez-yas(4)          to dort-yas
+         move beklerez-dog-yil(4)      to dort-dog-yil
+         move beklerez-dog-ay(4)       to dort-dog-ay
+         move beklerez-dog-gun(4)      to dort-dog-gun
+         if beklerez-milliyet(4) not = spaces
+
+          initialize sejkar-rec hata-ulke
+          move "U"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-acenta
+          move beklerez-milliyet(4)              to sejkar-kodu
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Ulke Kodu Yok"       to dort-ulke 
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize ulke-rec
+                move sejkar-asya-kodu            to ulke-anah
+                read ulke no lock invalid 
+                     move "Asya Ulke Kodu Yok"   to dort-ulke 
+                not invalid 
+                    move ulke-adi                to dort-ulke
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to dort-ulke
+             end-if 
+          end-read 
+         end-if
+
+         move beklerez-soyadi(5)          to bes-soy 
+         move beklerez-adi(5)       to bes-adi
+         move beklerez-yas(5)          to bes-yas
+         move beklerez-dog-yil(5)      to bes-dog-yil
+         move beklerez-dog-ay(5)       to bes-dog-ay
+         move beklerez-dog-gun(5)      to bes-dog-gun
+         if beklerez-milliyet(5) not = spaces
+
+          initialize sejkar-rec hata-ulke
+          move "U"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-acenta
+          move beklerez-milliyet(5)              to sejkar-kodu
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Ulke Kodu Yok"       to bes-ulke 
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize ulke-rec
+                move sejkar-asya-kodu            to ulke-anah
+                read ulke no lock invalid 
+                     move "Asya Ulke Kodu Yok"   to bes-ulke 
+                not invalid 
+                    move ulke-adi                to bes-ulke
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to bes-ulke
+             end-if 
+          end-read 
+         end-if
+
+         move beklerez-soyadi(6)          to alti-soy 
+         move beklerez-adi(6)       to alti-adi
+         move beklerez-yas(6)          to alti-yas
+         move beklerez-dog-yil(6)      to alti-dog-yil
+         move beklerez-dog-ay(6)       to alti-dog-ay
+         move beklerez-dog-gun(6)      to alti-dog-gun
+         if beklerez-milliyet(6) not = spaces
+
+          initialize sejkar-rec hata-ulke
+          move "U"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-acenta
+          move beklerez-milliyet(6)              to sejkar-kodu
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Ulke Kodu Yok"       to alti-ulke 
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize ulke-rec
+                move sejkar-asya-kodu            to ulke-anah
+                read ulke no lock invalid 
+                     move "Asya Ulke Kodu Yok"   to alti-ulke 
+                not invalid 
+                    move ulke-adi                to alti-ulke
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to alti-ulke
+             end-if 
+          end-read 
+         end-if 
+
+         move beklerez-soyadi(7)          to yedi-soy 
+         move beklerez-adi(7)       to yedi-adi
+         move beklerez-yas(7)          to yedi-yas
+         move beklerez-dog-yil(7)      to yedi-dog-yil
+         move beklerez-dog-ay(7)       to yedi-dog-ay
+         move beklerez-dog-gun(7)      to yedi-dog-gun
+         if beklerez-milliyet(7) not = spaces
+          initialize sejkar-rec hata-ulke
+          move "U"                               to sejkar-tip
+          move beklerez-acenta-kodu              to sejkar-acenta
+          move beklerez-milliyet(7)              to sejkar-kodu
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+          read sejkar no lock invalid 
+               move "Sejour Ulke Kodu Yok"       to yedi-ulke 
+          not invalid 
+             if sejkar-asya-kodu not = spaces
+                initialize ulke-rec
+                move sejkar-asya-kodu            to ulke-anah
+                read ulke no lock invalid 
+                     move "Asya Ulke Kodu Yok"   to yedi-ulke 
+                not invalid 
+                    move ulke-adi                to yedi-ulke
+                end-read
+             else 
+                move "Asya Karsilik Kodu Yok"    to yedi-ulke
+             end-if 
+          end-read 
+         end-if 
+
+         move beklerez-service-id      to service-id
+         move beklerez-logid           to logid
+         move beklerez-sejour-kodu     to sejour-kodu
+         move beklerez-voucher         to voucher
+         move beklerez-gir-tar         to rez-detay-gir-tar
+         move beklerez-cik-tar         to rez-detay-cik-tar
+         move beklerez-sat-tar         to rez-detay-sat-tar
+         move beklerez-konum           to rez-detay-konum
+         move beklerez-extrabed        to extra-yatak
+         move beklerez-touropcode      to tour-op-kod
+         move beklerez-touropname      to tour-op-name
+
+         initialize sejkar-rec detay-ekran-acenta-kodu
+         move beklerez-acenta-kodu     to sejkar-acenta 
+                                          sejkar-kodu 
+                                          detay-ekran-acenta-kodu
+
+         move "A"                      to sejkar-tip
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+         read sejkar no lock invalid 
+            move "HATA"                to sejkar-adi
+         end-read 
+            move sejkar-adi            to detay-acenta
+
+         initialize sejkar-rec
+         move beklerez-acenta-kodu     to sejkar-acenta 
+         move beklerez-pan-kodu        to sejkar-kodu
+         move "P"                      to sejkar-tip
+             if onkpara-referans-var = 1
+                 move secili-ref         to sejkar-ref
+             end-if 
+
+         read sejkar no lock invalid 
+            move "HATA"                to sejkar-adi
+         end-read 
+            move sejkar-adi            to detay-pansiyon
+
+         evaluate beklerez-pmsstatus(1:1)
+         when "0"
+             move "YENI REZERVASYON"   to pms-status
+         when "2"
+             move "DEGISIKLIK"         to pms-status
+         when "3"
+             move "IPTAL"              to pms-status
+         end-evaluate
+
+         evaluate beklerez-FreeOfCharge(1:1)
+         when "N"
+             move "HAYIR"    to ucretsiz-oda
+         when "Y"
+             move "EVET"     to ucretsiz-oda
+         end-evaluate
+ 
+         evaluate beklerez-balayi-mi(1:1)
+         when "N"
+             move "HAYIR"    to balayi-odasi
+         when "Y"
+             move "HAYIR"    to balayi-odasi
+         end-evaluate 
+         compute top-kisi = 
+                 function numval(beklerez-buyuk) + function numval(beklerez-kucuk) + 
+                 function numval(beklerez-free) + function numval(beklerez-bebek)
+         move function numval(beklerez-buyuk) to buyuk
+         move function numval(beklerez-kucuk) to kucuk
+         move function numval(beklerez-free)  to free
+         move function numval(beklerez-bebek) to bebek
+         move beklerez-geceleme               to gece
+         move beklerez-fiyat                  to oda-fiyat
+         move beklerez-doviz-kodu             to dvz
+         move beklerez-RoomName               to oda-adi
+         move beklerez-konfirme-notu          to konfirme-notu
+         move beklerez-genel-not              to detay-genel-not
+
+         evaluate beklerez-QuotaType(1:1)
+         when 0
+             move "GARANTI"                   to kontenjan-durumu
+         when 1
+             move "NORMAL"                    to kontenjan-durumu
+         when 2
+             move "SOR SAT"                   to kontenjan-durumu
+         end-evaluate  
+
+         evaluate beklerez-ReservationStatus(1:1)
+         when 0
+              move "OK"                       to detay-rez-durumu           
+         when 1
+              move "SOR SAT"                  to detay-rez-durumu           
+         when 2
+              move "NoShow"                       to detay-rez-durumu           
+         when 3
+              move "GoShow"                       to detay-rez-durumu           
+         when 4
+              move "Option"                       to detay-rez-durumu           
+         end-evaluate 
+         
+            evaluate beklerez-ConfirmationStatus(1:1)
+            when "W"
+               move "Beklemede"           to konfirme-durumu
+            when "S"
+               move "Gonderildi"          to konfirme-durumu
+            when "G"
+               move "Gonderilmedi"        to konfirme-durumu
+             when other 
+               move "    "                to konfirme-durumu
+            end-evaluate 
+         move beklerez-soldprice          to oda-fiyati  
+         move beklerez-ConfirmationNo     to konfirme-numarasi
+     end-read                   
+     close beklerez sejkar  ulke
+     display screen4.
+
+*
+ xml-login-basla.
+    move all low-values              to login-link    
+    inspect yedek-cb-sej-kod replacing all spaces by low-values
+    inspect yedek-sejkkod-sifre replacing all spaces by low-values
+
+     inspect url-sorgu replacing trailing spaces by low-values
+     move all low-values to url-sorgu
+
+     string url-sorgu
+             url delimited by low-values
+             "/api/system/login?user="
+     into url-sorgu
+
+
+
+    string login-link,
+           url-sorgu delimited by low-values
+           yedek-cb-sej-kod delimited by low-values
+           "&pass=" delimited by low-values                      
+           yedek-sejkkod-sifre delimited by low-values
+           into login-link
+    
+    inspect login-link replacing all low-values by spaces                    
+
+    call "HttpGet" using 
+                   login-link 
+                   response-payload
+                   response-len
+                   giving 
+                   response-status. 
+
+    set address of http-response1 to response-payload.
+         
+    if not response-status = 0   | Gonderilemedi durumlari
+      perform RMNET-FATAL-ERROR
+      perform XML-FATAL-ERROR
+      exit paragraph
+    end-if
+    move http-response1(2:response-len - 1)         to auth.
+*
+ xml-net-init-basla.
+    XML INITIALIZE.
+    call "NetInit" giving response-status
+          on exception 
+                  display message box
+                          "exception on load Netinit ... "
+                          icon mb_error_icon
+                          title "Hata"
+                  XML TERMINATE
+                  exit paragraph
+    end-call.
+    if is-remote 
+       call "NetSetSSLCA" using "/asya/ytl/xsl/cert/GeoTrustGlobalCA.crt" 
+            giving response-status
+    end-if
+    if response-status <> 0 
+      perform RMNET-FATAL-ERROR
+      perform XML-FATAL-ERROR
+      exit paragraph
+    end-if.
+*
+ Screen5-Aft-Initdata.
+    perform takas-yaz-dosya-olustur
+    modify screen5-gd-1,reset-grid = 1
+                        mass-update = 1
+    initialize screen5-gd-1-record
+    move "SEC"             to gd-5-col-1
+    move "Acenta Adi"      to gd-5-col-2
+    modify screen5-gd-1,record-to-add(screen5-gd-1-record)
+    open input sejkar
+    initialize sejkar-rec gercek-kayit-sayi
+    move 1              to kayit-sayi
+    move "A"            to sejkar-tip
+    start sejkar key not < sejkar-anah1 invalid 
+         continue 
+    not invalid 
+    perform with test after until fs-sejkar = "10"
+    read sejkar next no lock end move "10"  to fs-sejkar
+    not at end 
+           if sejkar-tip <> "A"
+              exit perform 
+           end-if
+             if onkpara-referans-var = 1
+               if sejkar-ref <> secili-ref
+                   exit perform cycle
+               end-if 
+             end-if 
+
+           add 1                    to kayit-sayi
+           add 1                    to gercek-kayit-sayi
+           initialize screen5-gd-1-record
+           move sejkar-adi          to gd-5-col-2
+           modify screen5-gd-1,record-to-add(screen5-gd-1-record)
+           modify screen5-gd-1(kayit-sayi,2),hidden-data sejkar-kodu
+
+           modify screen5-gd-1(kayit-sayi,1),
+                  bitmap = check-bmp
+                  bitmap-width = 16
+                  bitmap-number = 2
+                  bitmap-trailing = 1
+
+           modify screen5-gd-1(kayit-sayi,1),
+                  hidden-data = "E"
+
+           initialize takas-acen-rec
+           move sejkar-kodu     to takas-acen-kodu
+           write takas-acen-rec invalid 
+               rewrite takas-acen-rec end-rewrite 
+           end-write 
+
+    end-read 
+    end-perform
+    end-start
+    close sejkar takas-acen
+    modify screen5-gd-1,mass-update = 0.
+*
+ Screen5-Gd-1-Ev-Other.
+    evaluate event-type
+    when msg-begin-entry
+       move event-action-fail                 to event-action
+    when msg-bitmap-clicked
+       evaluate event-data-1
+       when 1
+          inquire screen5-gd-1(event-data-2,1),hidden-data secim
+          if secim = "H"
+           modify screen5-gd-1(event-data-2,1),
+                  bitmap = check-bmp
+                  bitmap-width = 16
+                  bitmap-number = 2
+                  bitmap-trailing = 1 
+            modify screen5-gd-1(event-data-2,1),hidden-data "E" 
+          else 
+           modify screen5-gd-1(event-data-2,1),
+                  bitmap = check-bmp
+                  bitmap-width = 16
+                  bitmap-number = 1
+                  bitmap-trailing = 1             
+            modify screen5-gd-1(event-data-2,1),hidden-data "H" 
+          end-if
+       end-evaluate
+    when msg-heading-dblclick
+       evaluate event-data-1
+       when 1
+        inquire screen5-gd-1,last-row in son-satir
+        initialize i
+        perform varying i
+                from 2
+                by 1
+                until i > son-satir
+                  inquire screen5-gd-1(i,1),hidden-data secim
+                  if secim = "H"
+                   modify screen5-gd-1(i,1),
+                          bitmap = check-bmp
+                          bitmap-width = 16
+                          bitmap-number = 2
+                          bitmap-trailing = 1 
+                    modify screen5-gd-1(i,1),hidden-data "E" 
+                  else 
+                   modify screen5-gd-1(i,1),
+                          bitmap = check-bmp
+                          bitmap-width = 16
+                          bitmap-number = 1
+                          bitmap-trailing = 1             
+                    modify screen5-gd-1(i,1),hidden-data "H" 
+                  end-if
+        end-perform          
+       end-evaluate 
+    end-evaluate.
+*
+ Screen5-Ex-Other.
+    evaluate key-status
+    when 2
+       modify Screen5-Pb-1,enabled = false 
+       modify Screen5-Pb-1a,enabled = false 
+       perform takas-yaz-dosya-olustur
+       perform takas-yaz
+       set exit-pushed to true 
+       perform liste-cek
+    end-evaluate      
+     .
+*
+ takas-yaz-dosya-olustur.
+    open i-o genelfis
+    initialize genelfis-rec
+    move 1           to genelfis-anahtar
+    read genelfis no lock invalid 
+         continue 
+    end-read 
+        add 1 to ekran-fis-1
+        rewrite genelfis-rec end-rewrite 
+        move ekran-fis-1       to takas-acen-no
+    close genelfis 
+    move k-kodu-tasi           to takas-acen-kllnc
+    open output takas-acen close takas-acen open i-o takas-acen.
+*
+ takas-yaz.
+    initialize i
+    perform varying i
+             from 1
+             by 1 
+             until i > gercek-kayit-sayi
+                inquire screen5-gd-1(i + 1 ,1),hidden-data secim
+                if secim not = "E"
+                   exit perform cycle 
+                end-if
+
+                modify Screen5-St-1-Handle,panel-index  = 1
+                                      panel-text = takas-acen-kodu
+                initialize takas-acen-rec
+                inquire screen5-gd-1(i + 1,2),
+                        hidden-data takas-acen-kodu
+                if takas-acen-kodu = spaces
+                   exit perform cycle 
+                end-if 
+                write takas-acen-rec  invalid 
+                   rewrite takas-acen-rec end-rewrite 
+                end-write 
+    end-perform
+    close takas-acen. 
+*
+ stopsale-kontrol.       
+        move "Y"          to stopsale-var-yok.
+        move xrez-gir-tar to takvim-anah
+        start takvim key >= takvim-anah 
+          invalid
+          continue
+           not invalid
+         perform until fs-takvim = "10" or  stopsale-var-yok = "V"
+          read takvim next no lock 
+           end move "10" to fs-takvim
+           not end 
+           if takvim-anah >= xrez-cik-tar
+             move "10" to fs-takvim
+           else
+             move "S"           to aksiyhrk-tipi
+             move xrez-acenta   to aksiyhrk-acenta 
+             move takvim-anah   to aksiyhrk-tarih 
+             move xrez-fiyat-konumu to aksiyhrk-pan-tipi
+             move 0             to aksiyhrk-gecele
+             read aksiyhrk no lock invalid 
+               continue
+             not invalid
+                 move "V" to stopsale-var-yok
+                 exit perform 
+             end-read      
+
+          initialize  aksiyhrk-pan-tipi
+          read aksiyhrk no lock invalid 
+              continue
+          not invalid
+              move "V" to stopsale-var-yok
+              exit perform
+          end-read      
+
+         initialize aksiyhrk-acenta
+         read aksiyhrk no lock invalid 
+              continue
+         not invalid
+              move "V" to stopsale-var-yok
+              exit perform
+         end-read     
+         move xrez-fiyat-konumu to aksiyhrk-pan-tipi
+         read aksiyhrk no lock invalid 
+              continue
+         not invalid
+              move "V" to stopsale-var-yok
+              exit perform
+         end-read     
+         initialize grup-rec
+         move "A" to grup-tipi
+         start grup key > grup-anah
+           invalid
+            continue
+           not invalid
+             perform until fs-grup = "10" 
+              read grup next no lock 
+                end move "10" to fs-grup
+                not end
+                 if grup-tipi not = "A" then
+                     move "10" to fs-grup
+                   else
+                     if grup-alt = xrez-acenta 
+                       
+                        move grup-kodu to aksiyhrk-acenta
+                        initialize  aksiyhrk-pan-tipi
+
+                         read aksiyhrk no lock invalid 
+                            continue
+                         not invalid
+                        
+                           move "V" to stopsale-var-yok
+                         exit perform 
+                       end-read  
+                        move xrez-fiyat-konumu to aksiyhrk-pan-tipi
+                          read aksiyhrk no lock invalid 
+                            continue
+                         not invalid
+                        
+                        move "V" to stopsale-var-yok
+                         exit perform 
+                       end-read  
+                     end-if
+                 end-if
+               end-read
+             end-perform 
+         end-start
+         end-if
+
+        end-read
+        end-perform
+        end-start.
+*
+ otel-doluluk-kontrol.
+        initialize cast-rec toplam-oda-sayisi eklenecek-oda konum-toplam   
+        move xrez-gir-tar          to cast-tarih
+        start cast key not < cast-anah invalid 
+             continue 
+        not invalid 
+        perform with test after until fs-cast = "10"
+        read cast next no lock end move "10" to fs-cast
+        not at end 
+               if cast-tarih <> xrez-gir-tar 
+                   exit perform 
+               end-if
+               initialize rez-rec
+               move cast-rez-no      to rez-no
+               read rez no lock invalid
+                    exit perform cycle 
+               not invalid 
+                   if rez-k-g-b not = "K"
+                      exit perform cycle 
+                   end-if 
+                   if rez-durumu = "S"
+                      exit perform cycle 
+                   end-if
+                   if cast-tarih = rez-cik-tar
+                       exit perform cycle 
+                   end-if 
+                   if rezpara-trace = 1
+                       move cast-oda-no to rez-odano
+                       move cast-fiyat-konumu to rez-fiyat-konumu
+                       move cast-oda-konumu to rez-oda-konumu
+                       if rez-kisi not = cast-kisi
+                          move cast-kisi to rez-kisi
+                       end-if
+                       if rez-share = 1 then 
+                             move 0 to eklenecek-oda 
+                       else
+                             move 1 to eklenecek-oda
+                       end-if
+                   else 
+                       move 1       to eklenecek-oda
+                   end-if
+
+                   if rez-odano not = spaces  
+                      initialize odalar-rec   
+                      move cast-oda-no to odalar-anah
+                      read odalar no lock invalid continue
+                      not invalid
+                        if odalar-hayali = "H"
+                           move 0 to eklenecek-oda
+                        end-if
+                        if odalar-dis = 1 
+                           move 0 to eklenecek-oda
+                           exit perform cycle
+                        end-if 
+                      end-read
+                   end-if 
+
+                   add eklenecek-oda       to toplam-oda-sayisi
+                   if cast-oda-konumu = xrez-oda-konumu
+                      add 1                to konum-toplam
+                   end-if 
+               end-read 
+        end-read 
+        end-perform
+        end-start
+
+        initialize takvim-rec otel-dolu  dolu-konum
+        move xrez-gir-tar         to takvim-anah
+        read takvim no lock invalid 
+             continue 
+        not invalid 
+             if takvim-hazir-oda <= toplam-oda-sayisi
+                 move 1 to otel-dolu
+             end-if 
+             if takvim-konum-oda(xrez-oda-konumu) <= konum-toplam
+                move 1  to dolu-konum
+             end-if 
+        end-read.
+*
+ Screen1-Mn-1-MI-RezervasyonDetaylari-Link.
+     perform Acu-Screen4-Routine.     
+*
+ anlasma-oku.
+     open input kodlar02
+     initialize kodlar02-rec
+     move manuel-anlasma-kodu  to kodlar02-kodu
+     move "D"      to kodlar02-tipi
+     read kodlar02 no lock invalid 
+         move "-Hatali Anlasma"   to kodlar02-adi
+     end-read 
+         move kodlar02-adi  to manuel-anlasma-adi
+     close kodlar02
+     display accept-man-anlasma-adi
+    .
+*
+ Screen4-Ex-Other.
+     evaluate key-status
+     when 1 
+        evaluate control-id
+        when 151
+            initialize infox-cagir
+            move "D"   to infox-tipi-cagir
+            call "/asya/ytl/obj/otel/infoxara.asy" using infox-cagir
+               on exception perform callerr-proc
+                  not on exception
+            cancel "/asya/ytl/obj/otel/infoxara.asy" 
+            end-call
+            move infox-kodu-cagir     to manuel-anlasma-kodu
+            display accept-anlasma-kodu
+            move 4 to accept-control
+            move 151 to control-id  
+            perform anlasma-oku
+        end-evaluate 
+     when 1009
+         continue 
+     when 1001
+        if manuel-fiy > 0
+           if manuel-anlasma-kodu = spaces
+                display message box "Manuel Fiyat Girisinde Anlasma Kodu Zorunludur..."
+                                title "Uyari"
+                                icon 1
+                    exit paragraph 
+           end-if 
+        end-if 
+        display message box "Konfirme verilecektir...Emin Misiniz?"
+                        title "Uyari"
+                        icon 1 
+                        type 2
+                        default 2
+                        returning return-code 
+           if return-code = 2
+               exit paragraph 
+           end-if 
+
+       perform xml-net-init-basla 
+       perform xml-login-basla |cookie aliniyor
+        initialize konfirme-gonder-acenta-id 
+                   konfirme-gonder-konfirme-notu 
+                   konfirme-gonder-key-field
+
+        move detay-ekran-acenta-kodu to konfirme-gonder-acenta-id
+        move sejour-kodu             to konfirme-gonder-key-field
+        inspect sejour-kodu replacing trailing low-values by spaces
+        move kon-onay-not            to konfirme-gonder-konfirme-notu  
+        open i-o beklerez
+          perform konfirme-gonder
+        close beklerez
+       perform xml-net-init-bitti
+       initialize tek-konfirme
+       move 1 to tek-konfirme
+       open i-o beklerez
+       perform rez-yaz-sil-deg |rezler direk içeri alýnýyor.
+       close beklerez
+       perform liste-cek|liste tekrar yukleniyor
+       set exit-pushed to true 
+     when 1002
+        display message box "Not Konfirme verilecektir...Emin Misiniz?"
+                        title "Uyari"
+                        icon 1 
+                        type 2
+                        default 2
+                        returning return-code 
+        if return-code = 2
+           exit paragraph 
+        end-if 
+        perform Acu-Screen2-Routine
+        if not-kon-sebep not = spaces
+            perform xml-net-init-basla 
+            perform xml-login-basla |cookie aliniyor
+            initialize konfirme-gonder-acenta-id                     
+                       konfirme-gonder-key-field
+                       notkonfirme-kod
+            move detay-ekran-acenta-kodu to konfirme-gonder-acenta-id
+            move sejour-kodu             to konfirme-gonder-key-field
+            move temp-sebep-sejour-kodu  to notkonfirme-kod
+            open i-o beklerez
+            initialize tek-konfirme
+            move 1 to tek-konfirme
+            perform not-konfirme-gonder 
+               close beklerez
+          perform xml-net-init-bitti
+          open i-o beklerez
+          perform rez-yaz-sil-deg |rezler direk içeri alýnýyor.
+          close beklerez
+          perform liste-cek|liste tekrar yukleniyor
+          set exit-pushed to true 
+        end-if 
+     end-evaluate.
+*
+ tekrar-gelen-misafir-kontrol.
+    perform varying r from 1 by 1 until r > 7
+           initialize ad-kontrol-deg soyad-kontrol-deg dtar-kontrol-deg
+           move beklerez-adi(r)    to ad-kontrol-deg
+           move beklerez-soyadi(r) to soyad-kontrol-deg
+           move beklerez-dog-tar(r) to dtar-kontrol-deg
+           perform gr-kontrol-yap
+           if gr-misafir = 1
+               exit perform 
+           end-if 
+    end-perform. 
+* 
+ gr-kontrol-yap.
+    initialize  musteri-rec c5 aranan  apo
+    move soyad-kontrol-deg(1:kac-adet) to musteri-soyadi(1:kac-adet)
+    move ad-kontrol-deg(1:kac-adet)    to musteri-adi(1:kac-adet)
+    start musteri key not < musteri-soy-ad invalid
+          continue
+    not invalid
+    perform with test after until fs-musteri = "10"
+    read musteri next no lock end move "10" to fs-musteri
+    not at end
+            initialize takasp-rec
+            if musteri-sirket = spaces or 
+               musteri-no = zeroes
+                 exit perform cycle
+            end-if
+            if musteri-silindi = 1
+                 exit perform cycle 
+            end-if 
+            add 1 to apo
+            if musteri-soyadi(1:3) > soyad-kontrol-deg(1:3)
+              move "10"   to fs-musteri
+            end-if 
+            if musteri-adi(1:10) = ad-kontrol-deg(1:10) and
+               musteri-soyadi(1:10) = soyad-kontrol-deg(1:10) and
+               musteri-adi not = spaces and
+               musteri-soyadi not = spaces                 
+                 move 1   to takasp-tam-uyum  
+                                  
+            end-if 
+             initialize c1 c2 c3 c4 c6 puan
+            move musteri-adi     to aranan
+            move ad-kontrol-deg  to aranacak
+
+            if beklerez-adi(1) not = spaces
+               perform ada-gore
+            end-if 
+             initialize c1 c2 c3 c4  c6  
+            move musteri-soyadi      to aranan
+            move soyad-kontrol-deg   to aranacak
+
+            if soyad-kontrol-deg not = spaces
+               perform ada-gore
+            end-if 
+      
+        if puan > 0
+           add 1                        to c5            
+           move m-profil                to takasp-anah
+           move puan                    to takasp-puan
+           move musteri-adi             to takasp-adi
+           move musteri-soyadi          to takasp-soyadi
+           move musteri-ulke            to takasp-ulke
+           move musteri-d-tarihi        to takasp-d-tarih
+           move musteri-gelis-sayisi    to takas-p-gel-sayi
+           move musteri-kazanilan-puan  to takasp-gercek-puan
+           move musteri-kart-tipi       to takasp-kart-tipi
+           write takasp-rec invalid 
+              rewrite takasp-rec end-rewrite 
+           end-write 
+        end-if 
+
+     end-read
+    end-perform
+    end-start.
+
+    perform profile-grid.
+
+
+*
+ ada-gore.
+        inspect aranan tallying c1 for trailing spaces
+        compute c2 = 20 - c1
+        initialize c1
+        inspect aranacak tallying c1 for trailing spaces
+        compute c3 = 20 - c1 
+
+        move 0 to c4
+        inspect aranan(1:c3) tallying c4 for all aranacak(1:c3)
+        if c4 > 0
+           add 10000 to puan
+           if c2 = c3 
+               add 10000 to puan
+           end-if 
+        end-if 
+
+        move 0 to c4
+        inspect aranan(1:3) tallying c4 for all aranacak(1:3)
+        if c4 > 0
+           add 3000 to puan
+        end-if
+
+        move 0 to c4
+        inspect aranan tallying c4 for all aranacak(1:c3)
+        if c4 > 0
+           add 5000 to puan
+        end-if 
+
+        perform varying i 
+                  from 1
+                  by 1
+                  until i > c3 - 2
+                      move 0   to c4 
+
+
+                      inspect aranan tallying c4 for all aranacak(i:3)
+                      if c4 > 0
+                        if i = 1
+                           add 300 to puan
+                        end-if 
+                          add 100 to puan
+                      end-if 
+        end-perform
+
+        perform varying i 
+                  from 1
+                  by 1
+                  until i > c3 - 1
+                      move 0   to c4 
+                      inspect aranan tallying c4 for all aranacak(i:2)
+                      if c4 > 0
+                        if i = 1
+                           add 100 to puan
+                        end-if 
+                          add 10 to puan
+                      end-if 
+        end-perform.     
+*
+ profile-grid.
+    initialize takasp-rec gr-misafir
+    move 1  to satir
+    move high-values to takasp-puan
+    start takasp key not > takasp-puan invalid 
+         continue 
+    not invalid 
+    perform until fs-takasp = "10"  
+    read takasp previous no lock end move "10"  to fs-takasp
+    not at end           
+            if takasp-d-tarih = dtar-kontrol-deg 
+              if takasp-tam-uyum = 1
+                 move 1     to gr-misafir
+              end-if 
+            end-if 
+            move "10"  to fs-takasp
+    end-read 
+    end-perform
+    end-start.
+*
+ Screen1-Pb-5-Link.
+    perform pdf-yukle.
+*
+ pdf-yukle.
+     if is-remote
+        set ASYA-ReadHttp-Remote to true
+        set ASYAdll_Remote       to true
+     else
+        set ASYA-ReadHttp-local to true
+        set ASYAdll_local       to true
+     end-if.
+
+     call asyadll on exception
+          perform callerr-proc
+     end-call
+**     move "http://media.stage.hotel2sejour.com/temp/820c520b-2090-451c-a60d-634b1fcf6262.pdf"  to http-adres
+     inspect http-adres replacing trailing spaces by low-values
+     move all low-values to http-buffer
+     move function length(http-buffer)        to http-buffer-size
+    
+     call ASYA_ReadHttp using 
+                        by reference http-adres,
+                        by reference http-buffer
+                        by value http-buffer-size
+     on exception
+          display message box
+                  "Asyadll.dll (ASYA_ReadHttp) bulunamadi !!!",x"0a0d",
+                  "Pdf Dosyasi alinamiyor, Luten Tekrar Deneyiniz ...",x"0a0d",
+                  "Server'dan cekilecek *"
+                  icon mb_error_icon
+                  title "Hata"
+          cancel asyadll
+          call "c$copy" using "/asya/ytl/dll/asyadll.dll" 
+                              "@[DISPLAY]:c:\acucorp\acucbl701\acugt\bin\asyadll.dll"
+          set exit-pushed to true
+    not on exception
+    cancel ASYA_ReadHttp
+    cancel asyadll
+    end-call
+ 
+    string text-oku-adres
+           "/asya/ytl/data/otel/standart/voucher/" delimited by "                "
+           SendConfirmationlist-keyfield(i)   delimited by "                      "
+           ".pdf"  delimited by "        "
+    into text-oku-adres
+
+    open output text-oku  
+    initialize text-oku-rec
+    move http-buffer to text-oku-1
+    inspect text-oku-1 replacing trailing low-values by spaces
+    write text-oku-rec end-write 
+    close text-oku.
+
+ 

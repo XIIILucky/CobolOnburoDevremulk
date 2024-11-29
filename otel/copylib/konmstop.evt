@@ -1,0 +1,245 @@
+* konmstop.evt
+* konmstop.evt is generated from D:\asya\acugt.ytl\otel\konmstop.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     
+     .
+*
+ exception-procedure.
+     evaluate key-status
+         when 2 
+           perform kaydet
+         when 3
+           perform sil
+     end-evaluate.
+
+     .
+*
+ Form1-Aft-Initdata.
+     open i-o konstop close konstop
+     initialize tarih
+     move tarih-tasi    to tarih
+     move "1"           to ilk-gun
+     move "1"           to ilk-ay
+     move "31"          to son-gun
+     move "12"          to son-ay
+     move yil           to ilk-yil son-yil
+     display acc-1301 acc-1302 acc-1303 
+             acc-1304 acc-1305 acc-1306
+     perform odakonum-yukle
+     perform grid-yukle
+     .
+*
+ kaydet.
+     perform kaydet-kontrol
+     if tarih-hata = 1
+        display message box "Gecersiz tarih girildi.." new-line
+                            "Lutfen kontrol ediniz."
+        move 4 to accept-control
+        move 8 to control-id
+        exit paragraph
+     end-if
+     if tarih-hata = 2
+        display message box "Baslangic tarihi bitis tarihinden" new-line
+                            "buyuk olamaz.. Lutfen kontrol ediniz."
+        move 4 to accept-control
+        move 8 to control-id
+        exit paragraph
+     end-if
+     if cb-konumu(1:2) = spaces or cb-konumu(1:2) = zeroes
+        display message box "Konum bos gecilemez.."
+        move 4  to accept-control
+        move 16 to control-id
+     end-if
+     open i-o konstop
+     initialize konstop-rec
+     move ilk-gun    to konstop-ilk-gun
+     move ilk-ay     to konstop-ilk-ay
+     move ilk-yil    to konstop-ilk-yil 
+     move son-gun    to konstop-son-gun
+     move son-ay     to konstop-son-ay
+     move son-yil    to konstop-son-yil
+     move cb-konumu(1:2) to konstop-konum
+     write konstop-rec invalid 
+           rewrite konstop-rec end-rewrite
+     end-write
+     display message box "Kaydedildi.."
+     close konstop
+     perform grid-yukle
+     .
+*
+ Kaydet-Kontrol.
+     open input takvim
+     initialize takvim-rec tarih tarih-hata
+     move ilk-gun to gun
+     move ilk-ay  to ay
+     move ilk-yil to yil
+     move tarih   to takvim-anah tar-i
+     read takvim no lock invalid
+          move 1 to tarih-hata
+          close takvim 
+          exit paragraph
+     end-read
+     initialize takvim-rec tarih
+     move son-gun to gun
+     move son-ay  to ay
+     move son-yil to yil
+     move tarih   to takvim-anah tar-ii
+     read takvim no lock invalid
+          move 1 to tarih-hata
+          close takvim 
+          exit paragraph
+     end-read
+     if tar-ii < tar-i
+        move 2 to tarih-hata
+     end-if
+     close takvim
+
+     .
+*
+ sil.
+     perform kaydet-kontrol
+     if tarih-hata = 1
+        display message box "Gecersiz tarih girildi.." new-line
+                            "Lutfen kontrol ediniz."
+        move 4 to accept-control
+        move 8 to control-id
+        exit paragraph
+     end-if
+     if tarih-hata = 2
+        display message box "Baslangic tarihi bitis tarihinden" new-line
+                            "buyuk olamaz.. Lutfen kontrol ediniz."
+        move 4 to accept-control
+        move 8 to control-id
+        exit paragraph
+     end-if
+     if cb-konumu(1:2) = spaces or cb-konumu(1:2) = zeroes
+        display message box "Konum bos gecilemez.."
+        move 4  to accept-control
+        move 16 to control-id
+     end-if
+     open i-o konstop
+     initialize konstop-rec
+     move ilk-gun    to konstop-ilk-gun
+     move ilk-ay     to konstop-ilk-ay
+     move ilk-yil    to konstop-ilk-yil 
+     move son-gun    to konstop-son-gun
+     move son-ay     to konstop-son-ay
+     move son-yil    to konstop-son-yil
+     move cb-konumu(1:2) to konstop-konum
+     delete konstop end-delete 
+     display message box "Kayit silindi.."
+     close konstop
+     perform grid-yukle
+
+     .
+*
+ odakonum-yukle.
+     modify cb-1301, reset-list = 1
+                     mass-update = 1
+     open input konum
+     initialize konum-rec
+     start konum key not < konum-anahtar invalid
+          continue 
+     not invalid 
+     perform until fs-konum = "10"
+     read konum next no lock end move "10"  to fs-konum
+     not at end 
+           if konum-satis <> 1
+              exit perform cycle 
+           end-if 
+            initialize cb-kon 
+            move konum-anahtar   to cb-kon-kodu 
+            move konum-adi       to cb-kon-adi
+            modify cb-1301,item-to-add(cb-kon)
+     end-read
+     end-perform
+     end-start
+     close konum
+     modify cb-1301,mass-update = 0
+     .
+*
+ grid-yukle.
+     modify form1-gd-1,
+             reset-grid = 1
+             mass-update = 1
+     initialize form1-gd-1-record
+     move "Konum"     to gd-1-col-1
+     move "Baslangic" to gd-1-col-2
+     move "Bitis"     to gd-1-col-3
+     modify form1-gd-1,
+             record-to-add(form1-gd-1-record)
+     open input konstop konum
+     initialize konstop-rec
+     move 2 to i
+     start konstop key not < konstop-anah1 invalid
+           continue
+     not invalid
+     perform with test after until fs-konstop = "10"
+     read konstop next no lock end move "10" to fs-konstop
+     not at end 
+         move konstop-konum to cb-kon-kodu konum-anahtar
+         read konum no lock invalid
+              continue
+         end-read
+         move konum-adi to cb-kon-adi
+         initialize form1-gd-1-record
+         move cb-kon to gd-1-col-1
+         move konstop-ilk-gun to xgun
+         move konstop-ilk-ay  to xay
+         move konstop-ilk-yil to xyil
+         move xtar to gd-1-col-2
+         move konstop-son-gun to xgun
+         move konstop-son-ay  to xay
+         move konstop-son-yil to xyil
+         move xtar to gd-1-col-3
+         modify form1-gd-1,
+                 record-to-add(form1-gd-1-record)
+         modify form1-gd-1(i,1),
+                 hidden-data = konstop-rec
+         add 1 to i
+     
+     end-read
+     end-perform
+     end-start
+     close konstop konum
+     modify form1-gd-1,
+             mass-update = 0
+     .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+        when msg-begin-entry
+           move event-action-fail to event-action
+           inquire form1-gd-1(event-data-2,1),
+                   hidden-data in yedek-anah
+           move yedek-ilk-gun to ilk-gun
+           move yedek-ilk-ay  to ilk-ay 
+           move yedek-ilk-yil to ilk-yil
+           move yedek-son-gun to son-gun
+           move yedek-son-ay  to son-ay
+           move yedek-son-yil to son-yil
+           perform odakonum-yukle 
+           move yedek-konum   to cb-konumu
+           display acc-1301 acc-1302 acc-1303
+                   acc-1304 acc-1305 acc-1306
+                   cb-1301
+     end-evaluate
+     .
+
+ 

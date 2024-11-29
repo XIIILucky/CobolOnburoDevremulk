@@ -1,0 +1,1042 @@
+* mesajgir.evt
+* mesajgir.evt is generated from D:\asya\acugt.ytl\otel\mesajgir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Screen1-Event-Proc.
+     .
+
+ Screen1-Exception-Proc.
+     PERFORM Screen1-Ex-Other
+     .
+
+ Screen1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Goto-Cell
+        PERFORM not-display
+     WHEN Msg-Goto-Cell-Mouse
+        PERFORM not-display
+     END-EVALUATE
+     .
+
+ Screen1-Pb-1-Exception-Proc.
+     PERFORM not-sil
+     .
+***   start event editor code   ***
+*
+*
+ Screen1-Bef-Create.
+         move tarih-tasi to takip-tar
+         if link-not-islem not = "U" then 
+
+           move 0 to form-visible
+         end-if
+         initialize link-not-donus
+         perform adresleri-tasi
+     .
+*
+ data-ayarla.
+ 
+      initialize not-rec  acen-not-var
+      move "EHR"      to not-dos
+      start nt key > not-anah
+         invalid
+           move 0 to not-sira
+           MOVE not-sira to son-sira
+         not invalid
+            perform until fs-not = "10"
+              read nt next no lock
+                 end move "10" to fs-not
+                 not end
+                   if not-dos not = "EHR"   
+                         move "10" to fs-not
+                     else
+                         if NOT1(1:3) = "7 G" or NOT1(1:3) = "1 G" 
+*****                           delete nt end-delete
+                         end-if
+                                                 
+                   end-if
+              end-read
+            end-perform
+            
+      end-start 
+      
+     .
+*
+ Screen1-Ex-Other.
+     evaluate key-status
+        when 6
+           perform data-ayarla
+        when 44    
+           open input takvim
+           initialize takvim-rec
+           move takip-tar  to takvim-anah
+           read takvim no lock invalid 
+                display message box "Hatali Takip Tarihi Girdiniz.." new-line
+                                    "Kontrol Ediniz."
+                                title "Uyari"
+                                icon 1
+                            close takvim
+                            exit paragraph
+           end-read 
+           close takvim
+             
+           perform mesaj-ekle 
+     
+     
+     end-evaluate   
+     
+     .
+ mesaj-ekle.
+      move 0 to sil-en 
+        display sil-b
+          
+     initialize not-gerisi 
+*     if rap-nerede(1:11) = "00000000000" then
+*          display message box "Mesaj veya not icin adres belirleyin"
+*            title "mesaj-not kaydedilmedi"
+*           exit paragraph    
+*      end-if.
+      if aciklama-gir = spaces then 
+          display message box "Aciklama Giriniz"
+          title "mesaj-not kaydedilmedi"
+          exit paragraph
+      end-if.
+      
+      add 1 to son-sira
+      move son-sira to not-sira
+      move aciklama-gir to not1
+      move rap-nerede to not-nerede
+      move takip-tar  to not-takip-tar
+      if mesajmi = 1 then
+        move "M" to  not-tip
+      else
+        move "N" to not-tip
+      end-if
+
+      move k-kodu-tasi to not-giris-staf
+      accept not-giris-tarih from century-date
+      accept not-giris-zaman from time.
+      write not-rec invalid 
+         display message box "ILk Kayit hatasi 2378437"
+      end-write.
+      perform grid-ekle.
+*
+ rezicinacenta.
+      initialize not-rec  acen-not-var
+      move "ACE"      to not-dos
+      move rez-acenta to not-dos-anah
+      start nt key > not-anah
+         invalid
+           move 0 to not-sira
+           MOVE not-sira to son-sira
+         not invalid
+            perform until fs-not = "10"
+              read nt next no lock
+                 end move "10" to fs-not
+                 not end
+                   if not-dos not = "ACE"  or
+                      not-dos-anah(1:4) not = rez-acenta
+                         move "10" to fs-not
+                     else
+                        perform grid-ekle
+                        move 1 to acen-not-var
+                   end-if
+              end-read
+            end-perform
+            
+      end-start .
+      if acen-not-var = 1  then 
+          move link-not-donus to yedek-donus
+              initialize link-not-donus
+             string 
+               "****  ACENTA  *********" delimited by "hhh"
+               x"0D0A" delimited by spaces                   
+               yedek-donus delimited by size
+               
+               
+               into link-not-donus                 
+            end-string
+       end-if.
+*
+ rezicinprofil.
+
+      initialize yanrez-rec
+      move function numval(link-not-dos-anah(1:8))  to yanrez-rezno
+      start yanrez key not < yanrez-anah invalid 
+           continue 
+      not invalid 
+      perform with test after until fs-yanrez = "10"
+      read yanrez next no lock end move "10"  to fs-yanrez
+      not at end 
+             if yanrez-rezno <> link-not-dos-anah(1:8)
+                exit perform 
+             end-if 
+             if yanrez-profil-no > 0
+                 perform yanrez-tek-profil
+             end-if 
+      end-read 
+      end-perform
+      end-start .
+*
+  yanrez-tek-profil.
+      initialize not-rec  prof-not-var xmusteri-anah
+      move "PRF"              to not-dos
+*      move yanrez-profil-anah to not-dos-anah
+      move yanrez-profil-sirket to xmusteri-sirket  
+      move yanrez-profil-no     to xmusteri-no 
+      move xmusteri-anah       to not-dos-anah
+      start nt key > not-anah
+         invalid
+           move 0 to not-sira
+           MOVE not-sira to son-sira
+         not invalid
+            perform until fs-not = "10"
+              read nt next no lock
+                 end move "10" to fs-not
+                 not end
+                   if not-dos not = "PRF"  or
+                      not-dos-anah not = xmusteri-anah
+                         move "10" to fs-not
+                     else
+                        perform grid-ekle
+                        move 1 to prof-not-var
+                   end-if
+              end-read
+            end-perform
+            
+      end-start .
+      if prof-not-var = 1  then 
+          move link-not-donus to yedek-donus
+              initialize link-not-donus
+             string 
+               "****  PROFIL  *********" delimited by "hhh"
+               x"0D0A" delimited by spaces                   
+               yedek-donus delimited by size
+               
+               
+               into link-not-donus                 
+            end-string
+       end-if.
+*
+*
+ rezicinfirma.
+      initialize not-rec  firma-not-var
+      move "fir"      to not-dos
+      move rez-firma to not-dos-anah
+      start nt key > not-anah
+         invalid
+           move 0 to not-sira
+           MOVE not-sira to son-sira
+         not invalid
+            perform until fs-not = "10"
+              read nt next no lock
+                 end move "10" to fs-not
+                 not end
+                   if not-dos not = "fir"  or
+                      not-dos-anah(1:5) not = rez-firma
+                         move "10" to fs-not
+                     else
+                        perform grid-ekle
+                        move 1 to firma-not-var
+                   end-if
+              end-read
+            end-perform
+            
+      end-start .
+      if firma-not-var = 1  then 
+          move link-not-donus to yedek-donus
+              initialize link-not-donus
+             string 
+               "****  SIRKET  *********" delimited by "hhh"
+               x"0D0A" delimited by spaces                   
+               yedek-donus delimited by size
+               
+               
+               into link-not-donus                 
+            end-string
+       end-if.
+*
+*
+ rezicingrup.
+ 
+      initialize not-rec  grup-not-var
+      move "GRU"      to not-dos
+      move rez-grup-no to not-dos-anah
+      start nt key > not-anah
+         invalid
+           move 0 to not-sira
+           MOVE not-sira to son-sira
+         not invalid
+            perform until fs-not = "10"
+              read nt next no lock
+                 end move "10" to fs-not
+                 not end
+                   if not-dos not = "GRU" or
+                      function numval (not-dos-anah(1:6)) not = rez-grup-no
+                         move "10" to fs-not
+                     else
+                        perform grid-ekle
+                        move 1 to grup-not-var
+                   end-if
+              end-read
+            end-perform
+            
+      end-start .
+      if grup-not-var = 1  then 
+          move link-not-donus to yedek-donus
+              initialize link-not-donus
+             string 
+               "****  GRUP  *********" delimited by "hhh"
+               x"0D0A" delimited by spaces                   
+               yedek-donus delimited by size
+               
+               
+               into link-not-donus                 
+            end-string
+       end-if.
+*
+ rezicinfiyat.
+       
+      initialize not-rec  fiyat-not-var
+      move "FIY"      to not-dos
+      move rez-acenta to not-dos-anah
+      
+      start nt key > not-anah
+         invalid
+           move 0 to not-sira
+           MOVE not-sira to son-sira
+         not invalid
+            perform until fs-not = "10"
+              read nt next no lock
+                 end move "10" to fs-not
+                 not end
+                   if not-dos not = "FIY" or
+                      not-dos-anah(1:4) not = rez-acenta
+                         or  not-dos-anah(5:8) >  rez-cik-tar
+                         move "10" to fs-not
+                     else
+                        if not-dos-anah(5:8) <= rez-cik-tar   and
+                            not-dos-anah(13:8) >= rez-gir-tar  
+                            move 1 to fiyat-not-var
+                        perform grid-ekle
+                        end-if
+                   end-if
+              end-read
+            end-perform
+            
+      end-start .                                  
+
+      if fiyat-not-var = 1  then 
+          move link-not-donus to yedek-donus
+              initialize link-not-donus
+              
+             string 
+               "****  FIYAT  *********"   delimited by "jkhjk"
+               x"0D0A" delimited by spaces                   
+               yedek-donus delimited by size
+               into link-not-donus                 
+            end-string
+       end-if.
+      if link-nereden = 1 or link-nereden = 2 or link-nereden = 8                  
+      open i-o genelfis
+      initialize genelfis-rec fiyat-not-var
+      move 1   to genelfis-anahtar
+      read genelfis no lock invalid 
+           continue 
+      not invalid 
+          add 1 to ekran-fis-1
+          move ekran-fis-1     to takas-no
+          move k-kodu-tasi     to takas-k
+          rewrite genelfis-rec end-rewrite 
+      end-read 
+      close genelfis
+
+      open output takas close takas open i-o takas 
+
+      initialize olayhrk-rec
+      move rez-gir-tar  to olayhrk-tarih
+      start olayhrk key not < olayhrk-anah invalid 
+           continue 
+      not invalid 
+      perform with test after until fs-olayhrk = "10"
+      read olayhrk next no lock end move "10"  to fs-olayhrk
+      not at end 
+               if olayhrk-tarih > rez-cik-tar 
+                   exit perform 
+               end-if
+
+               initialize takas-rec 
+               move olayhrk-id   to takas-id  
+                   write takas-rec invalid 
+                       rewrite takas-rec end-rewrite 
+                   end-write 
+
+      end-read 
+      end-perform
+      end-start
+      
+      initialize takas-rec 
+      start takas key not < takas-anah invalid 
+           continue 
+      not invalid 
+      perform with test after until fs-takas = "10"
+      read takas next no lock end move "10"  to fs-takas
+      not at end
+                  initialize olay-rec 
+                  move takas-id   to olay-id
+                  read olay no lock invalid 
+                       exit perform cycle 
+                  not invalid 
+                       if olay-aciklama = spaces
+                            exit perform cycle 
+                       end-if 
+
+                  end-read 
+
+                   move olay-ilk-yil  to per-yazi-bas-yil
+                   move olay-ilk-ay  to per-yazi-bas-ay
+                   move olay-ilk-gun  to per-yazi-bas-gun
+                   move olay-son-yil  to per-yazi-bit-yil
+                   move olay-son-ay  to per-yazi-bit-ay
+                   move olay-son-gun  to per-yazi-bit-gun
+                   move link-not-donus to yedek-donus
+                    string
+                       per-yazi delimited by "    "
+                       x"0D0A" delimited by spaces
+                       olay-aciklama  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string           
+                   move 1 to fiyat-not-var
+      end-read 
+      end-perform
+      end-start
+      close takas 
+      delete file takas
+ 
+      if fiyat-not-var = 1  then 
+          move link-not-donus to yedek-donus
+              initialize link-not-donus
+              
+             string 
+               "****  EVENT  *********"   delimited by "jkhjk"
+               x"0D0A" delimited by spaces                   
+               yedek-donus delimited by size
+               into link-not-donus                 
+            end-string
+       end-if
+      end-if.
+
+         
+       
+*
+ Screen1-Aft-Initdata.
+      move 2 to xiii-sira
+      if k-kodu-tasi = "ASYA"
+            modify Screen1-Pb-3,visible = 1
+      END-iF
+      open i-o nt
+      open input kllnc
+      move "Tarih" to gr-1-1
+      move "Zaman" to gr-1-2
+      move "Giren Kullanici"  to gr-1-3
+      move "NOT"    to gr-1-4
+      modify gr-1  reset-grid = 1
+           mass-update = 1
+         record-to-add = gr-1-rec  .
+           
+      if link-not-dos = "REZ" and  link-not-islem = "F"
+          open input rez yanrez olay olayhrk
+          move  link-not-dos-anah       to rez-acenta
+          move  link-not-dos-anah(5:8)  to rez-gir-tar
+          move  link-not-dos-anah(13:8) to rez-cik-tar
+           move  link-not-dos-anah(22:5)  to rez-firma
+            perform rezicinacenta
+            perform rezicinfirma
+            perform rezicinprofil     
+            perform rezicinfiyat
+            perform rezicingrup  
+              initialize not-rec
+      move link-not-dos      to not-dos
+      move link-dosya-aciklamasi(1:10) to not-dos-anah (1:10)
+         
+      start nt key >= not-anah
+         invalid
+           move 0 to not-sira
+         MOVE not-sira to son-sira
+         not invalid
+            perform until fs-not = "10"
+              read nt next no lock
+                 end move "10" to fs-not
+                 not end
+                   if not-dos not = link-not-dos or
+                      link-dosya-aciklamasi(1:10) not = not-dos-anah (1:10)
+                         move "10" to fs-not
+                     else
+                        perform grid-ekle
+                   end-if
+              end-read
+            end-perform
+            
+      end-start
+     
+
+
+
+
+           close rez yanrez olay olayhrk
+           set exit-pushed to true
+           exit paragraph
+      end-if
+      if link-not-dos = "DEV" and  
+         link-not-islem = "F"
+         open input rez yanrez olay olayhrk
+         initialize not-rec acen-not-var
+         move "DEV"      to not-dos
+         move link-not-dos-anah(1:8) to not-dos-anah
+         start nt key > not-anah
+         invalid
+             move 0 to not-sira
+             move not-sira to son-sira
+         not invalid
+         perform until fs-not = "10"
+         read nt next no lock
+         end move "10" to fs-not
+         not end
+             if not-dos not = "DEV"  or
+                link-not-dos-anah(1:8) not = not-dos-anah
+                move "10" to fs-not
+             else
+                perform grid-ekle
+                move 1 to acen-not-var
+             end-if
+         end-read
+         end-perform
+         end-start
+         close rez yanrez olay olayhrk
+         set exit-pushed to true
+         exit paragraph
+      end-if     
+      if link-not-dos = "AIT" and    |Aidat tahakkuk mesajlar
+         link-not-islem = "F"
+         open input rez yanrez olay olayhrk
+         initialize not-rec acen-not-var
+         move "AIT"      to not-dos
+         move link-not-dos-anah(1:8) to not-dos-anah
+         start nt key > not-anah
+         invalid
+             move 0 to not-sira
+             move not-sira to son-sira
+         not invalid
+         perform until fs-not = "10"
+         read nt next no lock
+         end move "10" to fs-not
+         not end
+             if not-dos not = "AIT"  or
+                link-not-dos-anah(1:8) not = not-dos-anah
+                move "10" to fs-not
+             else
+                perform grid-ekle
+                move 1 to acen-not-var
+             end-if
+         end-read
+         end-perform
+         end-start
+         close rez yanrez olay olayhrk
+         set exit-pushed to true
+         exit paragraph
+      end-if     
+      if link-not-dos = "AIO" and    |Aidat odemesi mesajlar
+         link-not-islem = "F"
+         open input rez yanrez olay olayhrk
+         initialize not-rec acen-not-var
+         move "AIO"      to not-dos
+         move link-not-dos-anah(1:8) to not-dos-anah
+         start nt key > not-anah
+         invalid
+             move 0 to not-sira
+             move not-sira to son-sira
+         not invalid
+         perform until fs-not = "10"
+         read nt next no lock
+         end move "10" to fs-not
+         not end
+             if not-dos not = "AIO"  or
+                link-not-dos-anah(1:8) not = not-dos-anah
+                move "10" to fs-not
+             else
+                perform grid-ekle
+                move 1 to acen-not-var
+             end-if
+         end-read
+         end-perform
+         end-start
+         close rez yanrez olay olayhrk
+         set exit-pushed to true
+         exit paragraph
+      end-if     
+      if link-not-dos = "REZ" and  link-not-islem = "K"
+          open input rez yanrez olay olayhrk
+          move  link-not-dos-anah to rez-anah
+          read rez no lock invalid 
+                continue
+          not invalid
+            perform rezicinacenta
+             perform rezicinfirma
+             perform rezicinprofil
+            perform rezicinfiyat
+            perform rezicingrup  
+
+          end-read
+          close rez yanrez olay olayhrk
+      end-if
+
+      initialize not-rec
+      move link-not-dos      to not-dos
+      move link-not-dos-anah to not-dos-anah
+         
+      start nt key >= not-anah
+         invalid
+           move 0 to not-sira
+         MOVE not-sira to son-sira
+         not invalid
+            perform until fs-not = "10"
+              read nt next no lock
+                 end move "10" to fs-not
+                 not end
+                   if not-dos not = link-not-dos or
+                      link-not-dos-anah not = not-dos-anah
+                         move "10" to fs-not
+                     else
+                        perform grid-ekle
+                   end-if
+              end-read
+            end-perform
+            read nt previous   no lock
+              end 
+                 move link-not-dos      to not-dos
+                 move link-not-dos-anah to not-dos-anah
+                 move 0 to not-sira
+            end-read
+            if link-not-dos-anah not = not-dos-anah
+                  move link-not-dos      to not-dos
+                 move link-not-dos-anah to not-dos-anah
+                 move 0 to not-sira
+            end-if
+            MOVE not-sira to son-sira
+      end-start
+      if  link-not-islem = "K" then
+            set exit-pushed to true
+          else
+            modify gr-1 mass-update = 0
+      end-if.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+ grid-ekle.
+      move not-giris-staf to k-kodu
+      read kllnc invalid move "Silinmis" to k-soyadi end-read
+      
+
+       move not-giris-yil(3:2) to e-yil
+       move not-giris-ay       to e-ay
+       move not-giris-gun      to e-gun
+      
+       move not-giris-saat     to e-saat
+       move not-giris-dakika   to e-dak
+       move not-giris-saniye   to e-san
+      if  link-not-islem = "U" then 
+        move e-zaman to gr-1-2
+        move e-tarih to gr-1-1
+        move k-soyadi  to gr-1-3
+        move not1            to gr-1-4
+*        move not-sira        to gr-1-4(1:2)
+        modify gr-1    record-to-add = gr-1-rec
+
+        modify gr-1(xiii-sira,1) hidden-data = not-anah
+         if not-tip = "S"  
+              modify gr-1(xiii-sira ,1) row-color = 480 
+            else
+               modify gr-1(xiii-sira ,1) row-color = 0
+         end-if
+        add 1 to xiii-sira
+
+*        modify gr-1(not-sira + 1 ,1) hidden-data = not-anah
+*         if not-tip = "S"  
+*              modify gr-1(not-sira + 1 ,1) row-color = 480 
+*            else
+*               modify gr-1(not-sira + 1 ,1) row-color = 0
+*         end-if
+      end-if
+      if  ( link-nereden = 1 and  NOT-REZ    = 1 ) or
+          ( link-nereden = 2 and  NOT-Register = 1 ) or
+          ( link-nereden = 3 and  NOT-rackde   = 1 ) or
+          ( link-nereden = 4 and  NOT-blokaj  = 1 ) or
+          ( link-nereden = 5 and  NOT-cekR    = 1 ) or
+          ( link-nereden = 6 and  NOT-cekE    = 1 ) or
+          ( link-nereden = 11 and NOT-coutr  = 1 ) or
+          ( link-nereden = 12 and NOT-coute  = 1 ) or
+          ( link-nereden = 8 and  NOT-cin     = 1 ) or
+          ( link-nereden = 9 and  NOT-rfolio  = 1 ) or
+          ( link-nereden = 10 and NOT-efolio = 1 ) or 
+          ( link-nereden = 31 and NOT-pos = 1 ) or
+          ( link-nereden = 39 and not-profil = 1) or
+          ( link-nereden = 99 )  or
+           ( link-nereden = 98 ) or
+           ( link-nereden = 89 ) or
+           (link-nereden = 12 and not-devremulk = 1) then
+            if not-tip = "M" and (link-not-islem = "K" or link-not-islem = "F") then 
+              if link-not-mes-yok  not = 1 
+               display message box "BU KAYDA MESAJ VAR", new-line,new-line
+                           not1, new-line, new-line
+                           "Bu mesaji iptal etmek ister misiniz?"
+                           type 2, icon 2, default 2
+                           giving sonuc
+               title "DIKKAT"
+               if sonuc = 1 then 
+                 move k-kodu-tasi       to not-ilk-okuyan-staf
+                  accept not-ilk-okuyan-tarih from century-date
+                  accept not-ilk-okuyan-zaman from time 
+                 move"N" to not-tip
+               end-if
+               else
+               display message box "BU KAYDA MESAJ VAR", new-line,new-line
+                           not1, new-line, new-line
+                           
+                           type 1, icon 2, 
+                           
+               title "DIKKAT"
+              end-if 
+           end-if 
+
+              if link-not-islem = "K" 
+                 if not-ilk-oku-staf  = spaces
+                  move k-kodu-tasi to not-ilk-oku-staf
+                  accept not-ilk-oku-tarih from century-date
+                  accept not-ilk-oku-zaman from time 
+                 end-if
+                  move k-kodu-tasi to not-son-oku-staf
+                  accept not-son-oku-tarih from century-date
+                  accept not-son-oku-zaman from time 
+               end-if
+
+
+                 rewrite not-rec 
+                    invalid display message box "H35453" 
+                 end-rewrite
+
+           if not-tip not = "S"
+              move link-not-donus to yedek-donus
+              initialize link-not-donus
+              evaluate link-nereden 
+              when 99  
+                  string 
+                      "   " delimited by "    "
+                      e-tarih-k delimited by "  "
+                      "-" delimited by "   "
+                      e-zaman-k delimited by "   "
+                      "-" delimited by "   "
+                       k-soyadi(1:7) delimited by "   "
+                       " " delimited by "    "
+                       x"0D0A" delimited by spaces
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+              when 39  
+                  string 
+                      "   " delimited by "    "
+                      e-tarih-k delimited by "  "
+                      "-" delimited by "   "
+                      e-zaman-k delimited by "   "
+                      "-" delimited by "   "
+                       k-soyadi(1:7) delimited by "   "
+                       " " delimited by "    "
+                       x"0D0A" delimited by spaces
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+                  when 98  
+                  string 
+                      "   " delimited by "    "
+                      e-tarih-k delimited by "  "
+                      "-" delimited by "   "
+                      e-zaman-k delimited by "   "
+                      "-" delimited by "   "
+                       k-soyadi(1:7) delimited by "   "
+                       " " delimited by "    "
+                       x"0D0A" delimited by spaces
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+               when 89  
+                  string 
+                      "   " delimited by "    "
+                      e-tarih-k delimited by "  "
+                      "-" delimited by "   "
+                      e-zaman-k delimited by "   "
+                      "-" delimited by "   "
+                       k-soyadi(1:7) delimited by "   "
+                       " " delimited by "    "
+                       x"0D0A" delimited by spaces
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+
+
+
+              when other
+              
+              evaluate not-dos 
+                when "REZ" 
+                 
+                 string 
+                      "   " delimited by "    "
+                      e-tarih-k delimited by "  "
+                      "-" delimited by "   "
+                      e-zaman-k delimited by "   "
+                      "-" delimited by "   "
+                       k-soyadi(1:7) delimited by "   "
+                       " " delimited by "    "
+                       x"0D0A" delimited by spaces
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+               when "DEV"
+                    string 
+                      "   " delimited by "    "
+                      e-tarih-k delimited by "  "
+                      "-" delimited by "   "
+                      e-zaman-k delimited by "   "
+                      "-" delimited by "   "
+                      k-soyadi(1:7) delimited by "   "
+                       " " delimited by "    "
+                       x"0D0A" delimited by spaces
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+               when "AIT"      |Aidat odemesi mesajlar
+                    string 
+                      "   " delimited by "    "
+                      e-tarih-k delimited by "  "
+                      "-" delimited by "   "
+                      e-zaman-k delimited by "   "
+                      "-" delimited by "   "
+                      k-soyadi(1:7) delimited by "   "
+                       " " delimited by "    "
+                       x"0D0A" delimited by spaces
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+               when "AIO"     |Aidat tahakkuk mesajlar
+                    string 
+                      "   " delimited by "    "
+                      e-tarih-k delimited by "  "
+                      "-" delimited by "   "
+                      e-zaman-k delimited by "   "
+                      "-" delimited by "   "
+                      k-soyadi(1:7) delimited by "   "
+                       " " delimited by "    "
+                       x"0D0A" delimited by spaces
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+               when "FIY"
+                   move not-dos-anah (7:2) to per-yazi-bas-yil
+                   move not-dos-anah (9:2) to per-yazi-bas-ay
+                   move not-dos-anah (11:2) to per-yazi-bas-gun
+                   move not-dos-anah (15:2) to per-yazi-bit-yil
+                   move not-dos-anah (17:2) to per-yazi-bit-ay
+                   move not-dos-anah (19:2) to per-yazi-bit-gun
+                    string 
+                       
+                       per-yazi delimited by "    "
+                       x"0D0A" delimited by spaces
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+               when other
+                 string 
+                       
+                       not1  delimited by "      "
+                       x"0D0A" delimited by spaces                   
+                       yedek-donus delimited by size
+                       into link-not-donus                 
+                   end-string
+          end-evaluate
+       end-evaluate
+                       .
+*
+ Screen1-Aft-Create.
+     
+     .
+*
+ not-display.
+       
+        move event-data-2 to satir-yer
+      
+       if satir-yer not = son-bakilan
+           initialize ilk-alan son-alan
+          move satir-yer to son-bakilan
+          inquire gr-1(satir-yer,1)
+             hidden-data in gr-1-h
+             
+          move gr-1-h to not-anah 
+          read nt no lock invalid 
+              continue
+          end-read
+          initialize ilk-okuyan
+          if not-ilk-okuyan-staf not = spaces
+            move not-ilk-okuyan-staf to k-kodu
+            read kllnc no lock invalid move "Silinmis" to k-soyadi end-read
+             move not-ilk-okuyan-yil(3:2) to e-yil
+             move not-ilk-okuyan-ay       to e-ay
+             move not-ilk-okuyan-gun      to e-gun
+            
+             move k-soyadi(1:10) to ilk-okuyan
+             move e-tarih-k to ilk-okuyan(12:)
+             move not-ilk-okuyan-saat     to e-saat
+             move not-ilk-okuyan-dakika   to e-dak
+             move not-ilk-okuyan-saniye   to e-san
+            move e-zaman to ilk-okuyan(18:)
+
+          end-if 
+          if not-ilk-oku-staf not = spaces
+            move not-ilk-oku-staf to k-kodu
+            read kllnc no lock invalid move "Silinmis" to k-soyadi end-read
+             move not-ilk-oku-yil(3:2) to e-yil
+             move not-ilk-oku-ay       to e-ay
+             move not-ilk-oku-gun      to e-gun
+            
+             move k-soyadi(1:10) to ilk-alan
+             move e-tarih-k to ilk-alan(12:)
+             move not-ilk-oku-saat     to e-saat
+             move not-ilk-oku-dakika   to e-dak
+             move not-ilk-oku-saniye   to e-san
+            move e-zaman to ilk-alan(18:)
+          end-if
+          if not-son-oku-staf not = spaces
+            move not-son-oku-staf to k-kodu
+            read kllnc no lock invalid move "Silinmis" to k-soyadi end-read
+             move not-son-oku-yil(3:2) to e-yil
+             move not-son-oku-ay       to e-ay
+             move not-son-oku-gun      to e-gun
+            
+             move k-soyadi(1:10) to son-alan
+             move e-tarih-k to son-alan(12:)
+             move not-son-oku-saat     to e-saat
+             move not-son-oku-dakika   to e-dak
+             move not-son-oku-saniye   to e-san
+            move e-zaman to son-alan(18:)
+          end-if
+          if not-tip = "M" then 
+             move 1 to dos-mesajmi 
+           else
+             move 0 to dos-mesajmi 
+          end-if
+          if not-tip = "S"
+               move 0 to sil-en
+             else
+               move 1 to sil-en
+          end-if
+          move not1   to aciklama-goster
+          display sil-b
+          display t1 t2 t3 t4 t5 t6 t7 t7a t8 t9 t10  t11 t12 t13 t14 t15 t19 acc-goster
+       end-if
+     .
+*
+ not-sil.
+        display message box not1 new-line
+                            "Notunu silmek uzeresiniz" new-line
+                            "Silmek istediginize Emin misiniz?", 
+                            title "NOT SILINSIN MI?", 
+                            type 2 giving kaydet-eh
+        if kaydet-eh = 1 then 
+           move "S" to not-tip 
+           rewrite not-rec invalid 
+              display message box "hata:nots78877"
+           end-rewrite
+        
+           
+       end-if
+
+           
+     .
+*
+ Screen1-Pb-1-Link.
+      modify Screen1-Cb-1, value  1
+      modify Screen1-Cb-1a, value  1
+      modify Screen1-Cb-1b, value  1
+      modify Screen1-Cb-1c, value  1
+      modify Screen1-Cb-1d, value  1
+      modify Screen1-Cb-1e, value  1
+      modify Screen1-Cb-1eaaaa, value  1
+      modify Screen1-Cb-1eb, value  1
+      modify Screen1-Cb-1ea, value  1
+      modify Screen1-Cb-1eab, value  1
+      modify Screen1-Cb-1eaa, value  1
+      modify Screen1-Cb-1eaaa, value  1
+      modify Screen1-Cb-1eaaab, value  1
+      modify Screen1-Cb-3, value  1.
+*
+ Screen1-Pb-3-Link.
+     if k-kodu-tasi <> "ASYA" 
+           DISPLAY MESSAGE BOX "Bu islem icin yetkiniz yoktur !"
+           exit paragraph
+     END-IF
+
+     display message box "Bu Islem Acenta Default Degerleri Disindaki Tum Kayitlari Silecektir !" new-line
+     "Devam Etmek Istiyor musunuz ? "
+     default 2
+     type 2
+     returning return-code
+     if return-code <> 1
+          exit paragraph
+     end-if
+
+     initialize not-rec
+     start nt key not < not-anah invalid
+             continue
+     not invalid
+     perform until fs-not = "10"
+     read nt next no lock end move "10" to fs-not
+     not end
+            IF NOT-DOS = "ACE"  and not-dos-anah(1:7) = "Default"
+                  exit perform cycle
+            END-IF
+
+            IF NOT-Giris-TARIH >= "20160101"
+                  exit perform cycle 
+            END-IF
+
+            delete nt end-delete
+            display not-rec
+     end-read
+     end-perform
+     end-start
+     display message box "Islem Tamamlandi!".
+
+
+ 

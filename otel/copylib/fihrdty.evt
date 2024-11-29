@@ -1,0 +1,284 @@
+* fihrdty.evt
+* fihrdty.evt is generated from D:\asya\acugt.ytl\otel\fihrdty.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Exception-procedureler
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+     perform adresleri-tasi
+     open i-o fihrist
+     move fihrdty-anahtar to fihrist-anahtar
+     if fihrist-no = 0
+        perform fihrist-oto-al
+     end-if.
+     perform Kayit-Goster
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Exception-procedureler.
+     evaluate key-status
+       when 17 
+            move fihrist-dosya         to link-logview-dosya-adi
+            set link-logview-pointer  to address of fihrist-rec
+            set link-logview-rec-size to size of fihrist-rec
+            perform logview-call
+            initialize key-status
+       when 1 perform fihrist-ara
+       when 2 perform fihrist-kaydet
+       when 3 perform fihrist-sil
+       when 4 perform fihrist-yeni
+     end-evaluate
+     .
+*
+ Before-Procedurelar.
+     evaluate control-id
+       when 101
+         move "Fihrist Kodunu Girin..."           to mesaj
+       when 102
+         move "Grubu Girin..."                    to mesaj
+       when 201
+         move "Adi Girin..."                      to mesaj
+       when 202
+         move "Soyadi Girin..."                   to mesaj
+       when 203
+         move "Unvani Girin..."                   to mesaj
+       when 204
+       when 205
+       when 206
+         move "Adresi Girin..."                   to mesaj
+       when 207
+         move "ili Girin..."                      to mesaj
+       when 208
+         move "ilceyi Girin..."                   to mesaj
+       when 209
+         move "Ulkeyi Girin..."                   to mesaj
+       when 301
+         move "Telefon Numarasini Girin..."       to mesaj
+       when 302
+         move "Mobil Telefon Numarasini Girin..." to mesaj
+       when 303
+         move "Faks Numarasini Girin..."          to mesaj
+       when 304
+         move "internet Adresini Girin..."        to mesaj
+       when 305
+         move "e-mail Adresini Girin..."          to mesaj
+       when 306
+         move "Not Girin..."                      to mesaj
+     end-evaluate
+     .
+*
+ fihrist-ara.
+     if rapor not = fihrist-rec
+        perform Fihrist-Kaydet
+     end-if
+     initialize fihara-cagir
+     move rapor-anahtar to fihara-anahtar
+     call "/asya/ytl/obj/otel/fihara.asy"
+       using fihara-cagir
+       on exception perform callerr-proc
+       not on exception
+         cancel "/asya/ytl/obj/otel/fihara.asy"
+     end-call
+     move fihara-anahtar to fihrist-anahtar
+                            fihrdty-anahtar
+     perform kayit-goster
+     .
+*
+ kayit-goster.
+     read fihrist record no lock
+       key is fihrist-anahtar
+       invalid
+         initialize rapor
+       not invalid
+         move fihrist-rec to rapor
+     end-read
+     display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ fihrist-oto-al.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock
+       invalid
+         initialize genelfis-rec
+         move 1 to genelfis-anahtar
+     end-read
+     add 1 to fihrist-oto
+     if fihrist-oto > 999998
+        perform fihrist-bos-no-bul
+     else
+        move fihrist-oto to fihrist-no
+                            rapor-no
+     end-if
+     rewrite genelfis-rec
+       invalid
+         write genelfis-rec, end-write
+     end-rewrite
+     close genelfis
+     display acc-no.
+     .
+*
+ fihrist-bos-no-bul.
+     initialize fihrist-rec
+                fs-fihrist
+     move rapor-harf to fihrist-harf
+     move 1          to fihrist-no
+     move 1          to fihrdty-no
+     start fihrist key >= fihrist-anahtar
+       invalid
+         move "10" to fs-fihrist
+       not invalid
+         perform with test after
+                 until fs-fihrist = "10"
+           read fihrist next no lock
+             end
+               move "10" to fs-fihrist
+             not end
+               if fihrist-no > fihrdty-no
+                  move "10" to fs-fihrist
+               else
+                 add 1 to fihrdty-no
+               end-if
+           end-read
+         end-perform
+     end-start
+     move fihrdty-no to fihrist-no
+                        rapor-no
+     .
+*
+ fihrist-kaydet.
+     display message box
+       "Bu Kayit islensin mi?"
+       title   is "Kayit Onayi"
+       type    is MB-YES-NO
+       icon    is MB-WARNING-ICON
+       default is MB-YES
+       giving  Kayit-onay
+     if Kayit-onay = MB-YES
+        if rapor-anahtar not = fihrdty-anahtar
+           move fihrdty-anahtar to fihrist-anahtar
+           read fihrist record
+             key is fihrist-anahtar
+             invalid
+               continue
+             not invalid
+               delete fihrist record
+                 invalid
+                   display message box "Hata No:12889766"
+                 not invalid
+                   continue
+               end-delete
+               perform log-operation-fihrist
+           end-read
+           perform fihrist-oto-al
+        end-if
+        move rapor         to fihrist-rec
+        move rapor-anahtar to fihrdty-anahtar
+        move k-kodu-tasi to fihrist-staf
+        rewrite fihrist-rec
+          invalid
+            write fihrist-rec, end-write
+        end-rewrite
+        perform log-operation-fihrist
+           if tel-gor-ekle = 1
+                perform telefon-gorusme-ekle
+           end-if 
+        display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+        perform dil-ayarla-proc
+*/-----------------------------\*         
+     end-if
+     .
+*
+ fihrist-sil.
+     display message box
+       "Bu Kayit silinsin mi?"
+       title   is "Silme Onayi"
+       type    is MB-YES-NO
+       icon    is MB-WARNING-ICON
+       default is MB-NO
+       giving  Kayit-onay
+     if Kayit-onay = MB-YES
+        move fihrdty-anahtar to fihrist-anahtar
+        read fihrist record
+          key is fihrist-anahtar
+          invalid
+            continue
+          not invalid
+            delete fihrist record
+              invalid
+                display message box "Hata No:45567777"
+              not invalid
+               perform log-operation-fihrist
+                initialize rapor
+                           fihrist-rec
+                           fihrdty-cagir
+                display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+                perform dil-ayarla-proc
+*/-----------------------------\*         
+            end-delete
+        end-read
+     end-if
+     .
+*
+ fihrist-yeni.
+     if rapor not = fihrist-rec
+        perform Fihrist-Kaydet
+     end-if
+     initialize rapor
+                fihrist-rec
+                fihrdty-cagir
+     display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc
+*/-----------------------------\*         
+     .
+*
+ Form1-Aft-Routine.
+     move rapor-anahtar to fihrdty-anahtar
+     close fihrist
+     .
+*
+ telefon-gorusme-ekle.
+     open i-o telkim
+     initialize telkim-rec 
+     move fihrist-adi          to telkim-adi
+     move fihrist-soyadi       to telkim-soy
+     move FIHRIST-TELEFON      to TELKIM-TELNO
+     set telkim-is to true  
+     write telkim-rec invalid 
+        rewrite telkim-rec end-rewrite 
+     end-write 
+     close telkim
+     
+     open i-o telkim
+     initialize telkim-rec 
+     move fihrist-adi          to telkim-adi
+     move fihrist-soyadi       to telkim-soy
+     move FIHRIST-mobil-TEL      to TELKIM-TELNO
+     set telkim-is to true  
+     write telkim-rec invalid 
+        rewrite telkim-rec end-rewrite 
+     end-write 
+     close telkim.
+
+ 

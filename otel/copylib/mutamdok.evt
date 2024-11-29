@@ -1,0 +1,284 @@
+* mutamdok.evt
+* mutamdok.evt is generated from D:\asya\acugt.ytl\otel\mutamdok.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Resized
+           PERFORM Form1-Ex-Ntf-Resized
+        END-EVALUATE
+     ELSE
+        PERFORM Form1-Ex-Other
+     END-IF
+     .
+
+ richedit-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Ax-Event
+        EVALUATE Event-Data-2
+        WHEN RichTextBoxKeyDown
+           PERFORM richedit-Ev-KeyDown
+        END-EVALUATE
+     END-EVALUATE
+     .
+
+ richedit-Exception-Proc.
+     PERFORM richedit-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     initialize deg.
+     open input kllnc.
+     move k-kodu-tasi            to k-kodu
+     read kllnc no lock invalid
+          close kllnc
+          display message box
+                  "Tanimsiz Kullanici ..."
+                  icon mb_error_icon
+                  title "Hata"
+     end-read
+     close kllnc.
+
+*
+ Form1-Aft-Initdata.
+     perform load-replace-rtf.
+
+*
+ Form1-Ex-Ntf-Resized.
+     modify richedit, lines = event-data-2
+                      size  = event-data-1 .
+   
+
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+          perform yazdir
+     when 5
+          perform open-with-word
+     when 6
+          perform mail-gonder
+     end-evaluate.
+*
+ richedit-Ex-Other.
+     perform form1-ex-other.
+*
+ load-replace-rtf.
+     move all low-values to richedit-filename
+     inspect mutamdok-link-dizayn-dosya replacing trailing spaces by low-values
+     string richedit-filename
+            "C:\\acucorp\acucbl701\acugt\pdf_temp\" delimited by low-values
+            mutamdok-link-dizayn-dosya delimited by low-values
+            into richedit-filename
+     modify richedit, 
+            @LoadFile(richedit-filename)
+
+     move mutamdok-link-dosya          to mutamdok-dosya
+     open input mutamdok.
+     initialize mutamdok-rec
+     set mutamdok-mutabakat            to true
+     start mutamdok key not < mutamdok-anah invalid
+           close mutamdok
+           display message box
+                   "Mutabakat Bilgisi Bulunamadi !!!"
+                   icon mb_error_icon
+                   title "Hata"
+           set exit-pushed to true
+           exit paragraph
+     end-start
+     perform with test after until fs-mutamdok = "10"
+     read mutamdok next no lock end move "10" to fs-mutamdok
+     not at end
+          if not mutamdok-mutabakat
+             exit perform
+          end-if
+          if mutamdok-kaynak = spaces
+             exit perform cycle
+          end-if
+
+          move 0 to i ii
+          inspect mutamdok-kaynak replacing trailing spaces by low-values
+          inspect mutamdok-kaynak tallying i for all low-values
+          inspect mutamdok-hedef  replacing trailing spaces by low-values
+          inspect mutamdok-hedef  tallying ii for all low-values
+
+          compute i = function length(mutamdok-kaynak) - i
+          compute ii = function length(mutamdok-hedef) - ii
+          if ii <> 0
+             move all spaces to mutamdok-hedef(ii + 1 :)
+             move all low-values to mutamdok-hedef(i + 1:)
+          else
+             move all spaces to mutamdok-hedef(1: i)
+          end-if
+
+          move 0 to richedit-donus
+          perform with test after until richedit-donus = -1
+             modify richedit,
+                    @Find(mutamdok-kaynak(1:i))
+                    returning richedit-donus
+        
+             if richedit-donus <> -1 
+                modify richedit,
+                       @SelText(mutamdok-hedef(1:i + 1))
+             end-if
+          end-perform
+
+     end-read
+     end-perform.
+                 
+     close mutamdok.
+
+     modify richedit,
+            @Selstart(1)
+            @SaveFile(richedit-filename)
+            visible = true.
+*
+ richedit-Ev-KeyDown.
+     call "c$geteventdata" using event-control-handle,
+                                 richedit-keycode
+                                 richedit-shiftcode.
+
+     evaluate richedit-keycode
+     when 27
+          move 27 to key-status
+          perform form1-ex-other
+     when 113
+          move 2 to key-status
+          perform Form1-Ex-Other
+     when 114
+          move 3 to key-status
+          perform Form1-Ex-Other
+     when 115
+          move 4 to key-status
+          perform Form1-Ex-Other
+     end-evaluate.
+*
+ yazdir.
+
+    initialize winprint-selection
+    call "Win$printer" using winprint-setup-old
+         returning return-code
+    end-call
+
+    initialize winprint-no-of-printers winprint-selection. 
+    call "win$printer"  using winprint-get-current-info-ex, 
+                               winprint-selection 
+                        giving winprint-donus.
+
+     set wprt-auto-tray            to true
+     call "win$printer"  using winprint-set-printer-ex 
+                               winprint-selection
+                         giving winprint-donus
+ 
+
+    move "-P SPOOLER"    to yazici-dosya
+
+    open output yazici
+    write yazici-rec from " "
+    modify richedit,
+           @SelPrint(h-acu-spooler-dc,0).
+    close yazici.
+*
+ open-with-word.
+       if is-remote 
+          set shell32-dll-uzak to true
+          set shell-execute-uzak to true
+       else
+          set shell32-dll-yerel to true
+          set shell-execute-yerel to true
+       end-if
+       call shell32-dll on exception 
+            display message box
+                   "shell32.dll dosyasi bulunamiyor ....",x"0a0d",
+                   "Excel dosyaniz otomatik olarak acilmayacaktir",x"0a0d",
+                   "Kaydettiginiz dosyaya cift tiklayarak acabilirsiniz ... !"
+                   icon mb_error_icon 
+                   title "Hata"
+            exit paragraph.
+
+       move richedit-filename   to hedef
+       inspect hedef replacing trailing spaces by low-values
+
+       call shell-execute using by value 0,
+                                by reference ac-komut
+                                by reference hedef,
+                                null
+                                null
+                                by value SW_SHOW
+        on exception
+            display message box
+                   "ShellExecute Proseduru bulunamiyor ....",x"0a0d",
+                   "Excel dosyaniz otomatik olarak acilmayacaktir",x"0a0d",
+                   "Kaydettiginiz dosyaya cift tiklayarak acabilirsiniz ... !"
+                   icon mb_error_icon 
+                   title "Hata"
+            cancel shell32-dll
+            exit paragraph
+       end-call.
+       cancel shell-execute.
+       cancel shell32-dll.
+                                   
+*
+ mail-gonder.
+     initialize mailsend-link 
+                ek-dosya
+
+     perform mail-send-call-csvyap
+     perform mail-send-add-mail-attach
+     perform mail-send-call-mail.
+*
+ mail-send-call-csvyap.
+     move all low-values to richedit-filename
+     inspect mutamdok-link-dizayn-dosya replacing trailing spaces by low-values
+     string richedit-filename
+            "C:\acucorp\acucbl701\acugt\pdf_temp\" delimited by low-values
+            mutamdok-link-dizayn-dosya delimited by low-values
+            into richedit-filename
+      
+     move all low-values to hedef-filename
+     inspect mutamdok-link-dizayn-dosya replacing trailing spaces by low-values
+     string hedef-filename
+            "@[DISPLAY]:C:\acucorp\acucbl701\acugt\pdf_temp\" delimited by low-values
+            mutamdok-link-dizayn-dosya delimited by low-values
+            into hedef-filename
+                  
+      call "c$copy" using hedef-filename,
+                          "@[DISPLAY]:C:\acucorp\acucbl701\acugt\pdf_temp\HotelVoucher.rtf".      
+*
+ mail-send-add-mail-attach. 
+     add  1                                    to ek-dosya
+     move "HotelVoucher.rtf"                   to mailsend-link-dosya-aciklama(ek-dosya)
+     move "C:\acucorp\acucbl701\acugt\pdf_temp\HotelVoucher.rtf"                    to mailsend-link-dosya(ek-dosya)
+     inspect mailsend-link-dosya(ek-dosya) replacing trailing spaces by low-values
+     inspect mailsend-link-dosya-aciklama(ek-dosya) replacing trailing spaces by low-values.    
+*
+ mail-send-call-mail.
+     open i-o isyeri
+     initialize isyeri-rec
+     move isyeri-adres-tasi to isyeri-adres
+     read isyeri key is isyeri-adres invalid
+          continue
+     end-read
+     
+     move "Rezervasyon Formu"                   to mailsend-link-konu
+     move isyeri-res-adi                        to mailsend-link-aciklama(1) 
+     move 0                                     to mailsend-link-konu(99:1) |otomatik mail ---mail ekranýnýn açýlmamasý için
+     call "/asya/ytl/obj/otel/mailsend.asy" using mailsend-link
+          on exception 
+             perform callerr-proc
+     not on exception
+          cancel "/asya/ytl/otel/otel/mailsend.asy"
+     end-call
+     close isyeri.
+
+ 

@@ -1,0 +1,1670 @@
+* devfat.evt
+* devfat.evt is generated from D:\asya\acugt.ytl\otel\devfat.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Ex-Oth-Form1
+     .
+
+ Form1-Pb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Clicked
+           PERFORM fatura-bilgisi-profil
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Pb-1a-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Clicked
+           PERFORM fatura-bilgisi-cari
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Bef-Create-Form1.
+    perform adresleri-tasi
+ 
+        open input genel
+        initialize genel-rec 
+        move 1   to genel-anahtar
+        read genel no lock invalid 
+             display message box "Genel Parametre Tanimsiz.."
+                             title "Uyari"
+                             icon 1
+              close genel
+              exit paragraph 
+        end-read 
+        close genel
+        move tarih-tasi           to rap-fat-tar
+ 
+        move muha-sirketi to muhasebe-entegre-sirketi 
+                             mgenel-dosya-adres 
+                             cari-dosya-adres 
+                             alsat-dosya-adres 
+                             alsatek-dosya-adres
+                             muh-kodlar-DOSYA-adres
+   
+ 
+        move genel-printer-filtre to text-oku-filtre
+ 
+        if genel-e-arsiv-gecis-tarihi > "20150101"  then 
+          move 1 to e-arsiv-ac
+          if genel-folfatta-def-arsiv of genel-rec = 1 
+             move 1 to e-arsiv-var-mi
+          end-if
+        else
+             move 0 to e-arsiv-ac
+        end-if
+ 
+        open input mgenel
+        move 1 to mgenel-anahtar
+        read mgenel no lock invalid
+             display message box 
+                     "mgenel parametre tanimsiz ..."
+                     icon mb_error_icon
+                     title "Hata"
+                     close mgenel
+                     destroy form1-handle
+                     goback
+        end-read
+        close mgenel
+
+        open i-o earsbil close earsbil.
+*
+ Form1-Aft-Initdata.
+
+        call "c$narg" using link-var.
+        compute rap-fat-no = genel-fol-fat-no5  + 1        
+        display acc-fat-no
+
+        perform acc-fat-no-Aft-Procedure
+
+        if link-var = 1  
+
+
+            open input devremulk demi
+              initialize devremulk-rec
+              move link-dev-no to devremulk-no
+              read devremulk no lock invalid
+                      continue
+              end-read
+
+              move devremulk-oda-no to hisse-oda-no
+              perform odeme-bul
+              perform taksit-bul
+              if (odeme-toplam-bul - taksit-toplam-bul ) not = zeroes then
+                   display message box "BALANSLI FATURA KESILEMEZ !!!"
+                   set exit-pushed to true
+              end-if
+
+              if  devremulk-kdv-oran = zeroes or devremulk-kdv-oran = spaces  then
+                    display message box "Kdv Oranini Girip Kaydettikten Sonra Tekrar Deneyiniz ! ..."
+                   set exit-pushed to true
+              end-if
+
+              initialize demi-rec demi-maliyet
+              move devremulk-oda-no to demi-oda
+              start demi key not < demi-anahtar invalid
+                      continue
+              not invalid
+              perform until fs-demi = "10" 
+              read demi next no lock end move "10" to fs-demi
+              not end
+                        if demi-oda <> devremulk-oda-no then
+                              exit perform
+                        end-if
+
+                        move demi-fat-maliyet to demi-maliyet
+                        exit perform
+              end-read
+              end-perform
+              end-start
+
+             MOVE 100 TO demi-maliyet
+
+              move demi-maliyet to fat-dem-maliyet-z
+              move devremulk-kdv-oran to fat-kdv-oran fat-kdv-oran-z
+              perform fatura-bilgisi-profil
+
+ 
+              perform fatura-tutar-hesapla
+
+            close devremulk demi
+            display lbl-dem-mal
+        end-if. 
+*
+ odeme-bul.
+    open input odemeler
+    initialize odemeler-rec odeme-toplam-bul 
+    move devremulk-no            to odemeler-devremulk-no
+    start odemeler key not < odemeler-anah invalid 
+         continue 
+    not invalid 
+    perform with test after until fs-odemeler = "10"
+    read odemeler next no lock end move "10" to fs-odemeler
+    not at end 
+             if odemeler-devremulk-no <> devremulk-no
+                 exit perform 
+             end-if
+             if odemeler-hareket-turu <> "A"
+                 exit perform cycle 
+             end-if
+
+           evaluate odemeler-islem-turu
+           when "SO"
+               continue 
+           when "IO"
+               continue 
+           when "SP"               
+           when "NP"               
+           when "PM"
+           when "AG"               
+           when "DP"                
+           when "GS"               
+           when "GN"
+           WHEN "PP"
+           WHEN "SS"
+           when "AV"
+           WHEN "AI"
+           WHEN "AO"
+           WHEN "BO"
+                exit perform cycle 
+           when "FO"
+               continue                 
+           when "PI"
+               continue 
+           WHEN OTHER 
+                exit perform cycle 
+           end-evaluate
+             compute odeme-toplam-bul = odeme-toplam-bul + odemeler-tutar
+    end-read 
+    end-perform
+    end-start 
+    close odemeler.
+
+*
+ taksit-bul.
+      open input taksit
+            initialize taksit-rec taksit-toplam-bul 
+            move devremulk-no            to taksit-devremulk-no
+            start taksit key not < taksit-anah invalid 
+                 continue 
+            not invalid 
+            perform with test after until fs-taksit = "10"
+            read taksit next no lock end move "10" to fs-taksit
+            not at end 
+                     if taksit-devremulk-no <> devremulk-no
+                         exit perform  
+                     end-if
+                     compute taksit-toplam-bul = taksit-toplam-bul + taksit-tutar
+            end-read 
+            end-perform
+            end-start
+      close taksit.
+*
+ fatura-tutar-hesapla.
+     
+         initialize kalan-dev-fat-turt
+         if maliyet-var  = 1 then
+ 
+                 compute islem-tutar = odeme-toplam-bul - demi-maliyet 
+                 move islem-tutar to kalan-dev-fat-turt
+                 compute fat-matrah rounded =  islem-tutar / ( ( fat-kdv-oran / 100 ) + 1  ) 
+                 compute fat-kdv  = islem-tutar - fat-matrah
+                 compute fat-genel-toplamy = fat-matrah + fat-kdv
+  
+
+                 compute fat-matrah-dem rounded =  demi-maliyet / ( ( 18 / 100 ) + 1  ) 
+                 compute fat-kdv-dem  = demi-maliyet - fat-matrah-dem
+                 compute fat-genel-toplam =  ( fat-matrah-dem + fat-kdv-dem ) + fat-genel-toplamy
+
+                 compute fat-mat-top = fat-matrah + fat-matrah-dem 
+                 compute fat-kdv-top = fat-kdv + fat-kdv-dem 
+         else
+                 move odeme-toplam-bul to kalan-dev-fat-turt
+                 compute fat-matrah rounded =  odeme-toplam-bul / ( ( fat-kdv-oran / 100 ) + 1  ) 
+                 compute fat-kdv  = odeme-toplam-bul - fat-matrah
+                 compute fat-genel-toplam = fat-matrah + fat-kdv
+
+                 move fat-matrah to fat-mat-top 
+                 move fat-kdv    to fat-kdv-top 
+                 
+         end-if
+
+
+         move fat-mat-top       to fat-mahrah-z
+         move fat-kdv-top       to fat-kdv-z
+         move fat-genel-toplam to fat-genel-toplam-z
+
+         display sc-genel-toplam sc-kdv sc-matrah
+
+        
+         .
+ 
+*
+ fatura-bilgisi-profil.   
+     open input musteri 
+          initialize musteri-rec 
+          move devremulk-profil-sirket  to musteri-sirket
+          move devremulk-profil-no      to musteri-no
+          read musteri no lock invalid 
+               initialize musteri-rec
+          end-read
+ 
+          move musteri-unvan1     to rap-adi   
+          move musteri-unvan2     to rap-soyadi
+          move musteri-adres1     to rap-adr1  
+          move musteri-adres2     to rap-adr2  
+          move musteri-vdairesi   to rap-vd 
+          move musteri-vno        to rap-vno   
+          move musteri-il         to rap-il
+          move musteri-ilce       to rap-ilce
+          move musteri-fat-ulke   to rap-ulke  
+
+     close musteri 
+     display acc-adi,acc-soyadi,acc-adr1,acc-adr2,acc-ilce,acc-il,acc-ulke,acc-vd,acc-vno.
+*
+ fatura-bilgisi-cari.
+     
+ 
+     move MUHA-SIRKETI  to cari-dosya-adres
+     open input cari 
+         move devremulk-hesap-no to CARI-KODU
+         read cari no lock invalid
+                 initialize cari-rec
+         end-read
+
+         move c-unvan-1     to rap-adi
+         move c-unvan-2     to rap-soyadi
+         move c-adres-1     to rap-adr1
+         move c-adres-2     to rap-adr2
+         move c-il-ilce     to rap-ilce
+                               rap-il
+         move c-ulke        to rap-ulke
+         move c-vergi-daire to rap-vd
+         move c-vergi-no    to rap-vno
+         move "Oda/Extra Harcama Bedeli   "
+                                to rap-ack
+     close cari
+     display acc-adi,acc-soyadi,acc-adr1,acc-adr2,acc-ilce,acc-il,acc-ulke,acc-vd,acc-vno.
+ 
+*
+ Ex-Oth-Form1.
+        evaluate key-status
+  
+        when 2
+ 
+        move rap-fat-tar  to muhasebe-tar
+        perform muhasebe-entegre-kontrol
+        if  muh-isl-durdur = 1 
+          exit paragraph
+        end-if
+*********************************
+          if genel-toplam = 0 then  
+            display message box "Fatura kesilmis " title "Hareket Yok" 
+            exit paragraph
+         end-if
+
+*           if rap-fat-tar >= "20160101" 
+*               display message box "LUTFEN ASYASOFT YAZILIM DESTEK EKIBINI ARAYINIZ .." NEW-LINE
+*                                   "ISLEM IPTAL EDILDI...."
+*                               title "Uyari"
+*                               icon 2
+*               exit paragraph 
+*           end-if 
+           inspect rap-ack  replacing  all X"0D0A" by  "  "
+ 
+ 
+           open input takvim
+           initialize takvim-rec
+           move rap-fat-tar   to takvim-anah
+           read takvim no lock invalid 
+               display message box "Hatali Tarih Girdiniz.."
+                               title "Uyari"
+                               icon 1
+                   close takvim
+                   exit paragraph 
+           end-read 
+           close takvim
+           if k-kodu-tasi not = "ASYA" and k-kodu-tasi not = "X   "
+              if rap-fat-tar > tarih-tasi
+                 display message box "Ileri Tarihe Fatura Kesilemez..."
+                                 title "Uyari"
+                                 icon 1
+                       exit paragraph 
+              end-if 
+           end-if 
+           if efat-degil not = 1  
+              if genel-e-arsiv-gecis-tarihi <= rap-fat-tar and
+                 genel-e-arsiv-gecis-tarihi > "20150101"
+                  if e-arsiv-var-mi not = 1
+
+                      if mGENEL-EFATURA-ENT-TURU <> "E"
+                           if rap-e-mail = spaces  and rap-telefon = spaces
+                              display message box "E-Arsiv icin E-Mail yada Telefon girilmesi zorunludur..."
+                                              title "Uyari"
+                                              icon 1
+                                 move 4   to accept-control
+                                 move 35  to control-id 
+                                 exit paragraph 
+                           end-if 
+                           if rap-e-mail not = spaces
+                                   unstring rap-e-mail delimited by "@"
+                                   into dogru-mail delimiter IN karakter  
+                                   if karakter not = "@"
+                                      display message box "E-Mail Alaninda @ isareti olmalidir.."
+                                                      title "Uyari"
+                                                      icon 1
+                                         move 4   to accept-control
+                                         move 35  to control-id 
+                                         exit paragraph 
+                                   end-if 
+                           end-if 
+                      end-if
+                 end-if 
+              end-if 
+           end-if
+
+ 
+     
+           if rap-vno = spaces and rap-tcno = spaces and rap-pasno = spaces
+              display message box "Zorunlu Alanlarda Eksik Bilgi " new-line new-line
+                                  "Vergi No / TC Kimlik No veya Pasaport No Alanlarindan bir tanesinin dogru girilmis olmasi gereklidir."
+                                  "Fatura Kesilemez.."
+                              title "Uyari"
+                              icon 1
+                    exit paragraph 
+           end-if
+
+           if rap-il= spaces or  rap-ilce = spaces or rap-ulke = spaces or rap-adi = spaces
+                perform vergi-no-kontrol
+                if efat-degil = 1 or 0
+                   display message box "Eksik Cari Bilgisi Unvan Il Ilce ve Ulke Girilesi Zorunludur" new-line
+                                        "Lutfen Kontrol Ediniz."
+                                    title "Uyari"
+                                    icon 1
+                    exit paragraph 
+                end-if 
+           end-if
+
+           if rap-vno not = spaces               
+              move function numval(rap-vno)   to s-vno
+              if s-vno not = rap-vno
+                 display message box "Hatali Vergi Numarasi Girisi Yapildi.." new-line
+                                     "Lutfen Kontrol Ediniz."
+                                 title "Uyari"
+                                 icon 1
+                    exit paragraph 
+              end-if 
+              if s-vno < 65
+                 display message box "Hatali Vergi Numarasi Girisi Yapildi.." new-line
+                                     "Lutfen Kontrol Ediniz."
+                                 title "Uyari"
+                                 icon 1
+                    exit paragraph                 
+              end-if 
+           end-if
+ 
+           if rap-tcno not = spaces
+              move function numval(rap-tcno)   to stc
+              if stc not = rap-tcno
+                 display message box "Hatali TC Kimlik Numarasi Girisi Yapildi.." new-line
+                                     "Lutfen Kontrol Ediniz."
+                                 title "Uyari"
+                                 icon 1
+                    exit paragraph 
+              end-if 
+              if stc < 1000
+                 display message box "Hatali TC Kimlik Numarasi Girisi Yapildi.." new-line
+                                     "Lutfen Kontrol Ediniz."
+                                 title "Uyari"
+                                 icon 1
+                    exit paragraph                 
+              end-if                
+           end-if
+
+           if rap-vno not = spaces and 
+              rap-tcno not = spaces 
+                 display message box "Zorunlu alanlardan sadece bir tanesi dolu olmali"
+                                 title "Uyari"
+                                 icon 1
+                   exit paragraph 
+           end-if
+           
+           perform cari-ata
+
+           evaluate true
+           when  rap-vno not = spaces
+              perform vergi-no-kontrol
+              if efat-degil = 1
+                      if rap-fat-no > genel-fol-fat-no4 - 400 and rap-fat-no < genel-fol-fat-no4 + 400
+                         continue
+                      else
+                         compute rap-fat-no = genel-fol-fat-no4 + 1
+                         display acc-fat-no
+                         perform acc-fat-no-Aft-Procedure
+                      end-if
+                  display message box "!!!!          E-FATURA Kesilecektir          !!!!" new-line new-line new-line
+                                      "              Eminmisiniz?                       " new-line new-line new-line
+                                      "Not:E-FATURA Sisteminde Cikti Verilmeyecektir."
+                                  title "Dikkat"
+                                  icon 2
+                                  type 2 
+                                  default 2
+                                  returning return-code 
+                 if return-code = 2
+                    exit paragraph 
+                 end-if 
+             else
+                     stop  " "
+                 if rap-fat-no > genel-fol-fat-no5  - 400 and  rap-fat-no < genel-fol-fat-no5  + 400
+                       continue
+                 else
+                     compute rap-fat-no = genel-fol-fat-no5   + 1
+                     display acc-fat-no
+                     perform acc-fat-no-Aft-Procedure
+                 end-if
+             end-if
+           when rap-tcno not = spaces
+              perform vergi-no-kontrol
+              if efat-degil = 1
+                 if rap-fat-no > genel-fol-fat-no4 - 400 and  rap-fat-no < genel-fol-fat-no4+ 400
+                        continue
+                   else
+                       compute rap-fat-no = genel-fol-fat-no4 + 1
+                       display acc-fat-no
+                       perform acc-fat-no-Aft-Procedure
+
+                  end-if
+              
+                  display message box "!!!!          E-FATURA Kesilecektir          !!!!" new-line new-line new-line
+                                      "              Eminmisiniz?                       " new-line new-line new-line
+                                      "Not:E-FATURA Sisteminde Cikti Verilmeyecektir."
+                                  title "Dikkat"
+                                  icon 2
+                                  type 2 
+                                  default 2
+                                  returning return-code 
+                 if return-code = 2
+                    exit paragraph 
+                 end-if 
+
+              else 
+                 if rap-fat-no > genel-fol-fat-no5  - 400 and   rap-fat-no < genel-fol-fat-no5  + 400
+                     continue
+                 else
+                     compute rap-fat-no = genel-fol-fat-no5   + 1
+                     display acc-fat-no
+                     perform acc-fat-no-Aft-Procedure
+                 end-if
+              end-if 
+      
+           when other
+          
+              if rap-fat-no > genel-fol-fat-no5  - 400 and  rap-fat-no < genel-fol-fat-no5  + 400
+                    continue
+              else
+                    compute rap-fat-no = genel-fol-fat-no5   + 1
+                    display acc-fat-no
+                    perform acc-fat-no-Aft-Procedure
+              end-if
+
+
+           end-evaluate
+        
+           perform fatura-no-kontrol
+           
+           if hata = 1
+              exit paragraph
+           end-if
+ 
+ 
+           if efat-degil not = 1
+              evaluate fat-turu-value(1:1)
+              when "F"
+                      display message box rap-fat-no " 'Nolu Fatura Kesilecektir." new-line
+                                                     "Eminmisiniz?"
+                                      title "Uyari"
+                                      icon 1
+                                      type 2
+                                      default 2
+                                      returning return-code 
+                      if return-code = 2
+                         exit paragraph
+                      end-if 
+              when "T"
+                      display message box "                      !!! DIKKAT !!!" new-line new-line
+                                          "        !!! TEST !!!  !!! TEST !!!  !!! TEST !!!" new-line new-line
+                                          rap-fat-no " 'Nolu Fatura !!! TEST !!! Olarak Kesilecektir." new-line                                                  
+                                                     "Eminmisiniz?"
+                                      title "Dikkat"
+                                      icon 3
+                                      type 2
+                                      default 2
+                                      returning return-code 
+                      if return-code = 2
+                         exit paragraph
+                      end-if 
+              end-evaluate
+           end-if 
+
+ 
+           evaluate fat-turu-value(1:1)
+           when "F"
+                    perform fat-bas
+           end-evaluate
+
+           initialize yazici-secildi
+           if efat-degil = 1
+              display message box "E-FATURA Kesildi..."
+                              title "Uyari"
+                              icon 1
+              set exit-pushed to true 
+           else
+            if genel-e-arsiv-gecis-tarihi <= rap-fat-tar and
+               genel-e-arsiv-gecis-tarihi > "20150101"
+                 perform e-arsiv-fat-dok
+            end-if 
+              set exit-pushed to true              
+           end-if 
+        end-evaluate.
+
+*
+ dokcagir-call.
+     call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+          on exception 
+             perform callerr-proc
+          not on exception
+             cancel "/asya/ytl/obj/otel/dokcagir.asy"
+     end-call.
+
+
+ fat-bas. 
+     
+     open i-o genelfis doviz konum odalar kodlar02 fatura earsbil ALSAT alsatek MUH-KODLAR   
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+       accept print-no from time
+      not invalid
+       add 1 to print-no
+       rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+
+
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya 
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+     add 1 to dokumer-anah
+     write dokumer-rec
+
+       perform fat-dok
+       evaluate fat-turu-value(1:1)
+         when "F"
+                perform fatdetay-yaz
+                perform fatura-yaz
+                perform genel-fatura-no-yaz
+                perform devremulk-fat-yaz
+
+                if maliyet-var  = 1 then
+ 
+                    compute fat-genel-toplam = fat-genel-toplam - demi-maliyet
+                    initialize alsat-rec
+                    move 1                  to alsat-kdv-orani
+                    move fat-genel-toplam   to alsat-kdvli
+                    compute alsat-matrah rounded = alsat-kdvli / ((100 + alsat-kdv-orani) /100) 
+                    move 1                  to alsat-sira    
+                    move "Devremulk Satis Faturasi"      to alsat-fis-aciklama
+                    move "Devremulk Satis Faturasi" to alsat-satir-aciklama1 
+                    perform fatura-al-sat-yaz
+
+ 
+                    initialize alsat-rec
+                    move 18               to alsat-kdv-orani
+                    compute demi-maliyet  = fat-matrah-dem + fat-kdv-dem 
+                    move demi-maliyet     to alsat-kdvli
+                    compute alsat-matrah rounded = alsat-kdvli / ((100 + alsat-kdv-orani) /100) 
+                    move 2                  to alsat-sira
+                    move "Devremulk Maliyet Faturasi"      to alsat-fis-aciklama
+                    move "Devremulk Maliyet Faturasi"      to alsat-satir-aciklama1
+                    perform fatura-al-sat-yaz
+                else
+                    initialize alsat-rec
+                    move 1                  to alsat-kdv-orani
+                    move fat-genel-toplam   to alsat-kdvli
+                    compute alsat-matrah rounded = alsat-kdvli / ((100 + alsat-kdv-orani) /100) 
+                    move 1                  to alsat-sira  
+                    move "Devremulk Satis Faturasi"      to alsat-fis-aciklama
+                    move "Devremulk Satis Faturasi" to alsat-satir-aciklama1   
+                    perform fatura-al-sat-yaz
+                end-if
+                perform alsatek-odeme-bilgileri-yaz
+      end-evaluate  
+                            
+
+
+       set dokumer-yazici-text to true
+       move "H"                to dokumer-genel-baslik-yaz
+       move "E"                to faturaya-gonder
+
+     close dokumer doviz  konum odalar kodlar02  fatura earsbil ALSAT alsatek MUH-KODLAR   
+     if efat-degil not = 1  
+        if genel-e-arsiv-gecis-tarihi <= rap-fat-tar and
+           genel-e-arsiv-gecis-tarihi > "20150101"
+                 continue 
+**              perform e-arsiv-fat-dok
+        else   
+           call dokumer-prog on exception
+                 move   dokumer-prog to  hatali-program-adi
+                   initialize faturaya-gonder
+                perform callerr-proc
+           not on exception
+                   initialize faturaya-gonder
+                cancel dokumer-prog
+           end-call
+        end-if 
+     end-if.
+
+* 
+ devremulk-fat-yaz.
+         open i-o devremulk
+         initialize devremulk-rec
+         move link-dev-no to devremulk-no
+         read devremulk no lock invalid
+                 stop " "
+         not invalid
+             move rap-fat-no   to devremulk-fatura-no
+             accept fatdetay-kes-tarih from century-date
+             accept fatdetay-kes-zaman from time   
+
+             move fatdetay-kes-zaman to devremulk-fatura-saati
+             move rap-fat-tar        to devremulk-fatura-tarihi
+         
+             rewrite devremulk-rec invalid
+                     stop " "
+             end-rewrite
+         end-read
+         close devremulk
+
+         open i-o odemeler
+         initialize odemeler-rec
+         move link-dev-no  to odemeler-devremulk-no
+         move 1            to odemeler-sira
+         start odemeler key not < odemeler-anah invalid
+                 continue
+         not invalid
+         perform until fs-odemeler = "10"
+         read odemeler next no lock end move "10" to fs-odemeler
+         not end
+                 if link-dev-no <> odemeler-devremulk-no then
+                       exit perform
+                 end-if
+
+                 evaluate odemeler-islem-turu
+                   when "SO"
+                       continue 
+                   when "IO"
+                       continue 
+                   when "SP"               
+                   when "NP"               
+                   when "PM"
+                   when "AG"               
+                   when "DP"                
+                   when "GS"               
+                   when "GN"
+                   WHEN "PP"
+                   WHEN "SS"
+                   when "AV"
+                   WHEN "AI"
+                   WHEN "AO"
+                   WHEN "BO"
+                        exit perform cycle 
+                   when "FO"
+                       continue                 
+                   when "PI"
+                       continue 
+                   WHEN OTHER 
+                        exit perform cycle 
+                end-evaluate
+
+                 move rap-fat-no to odemeler-fatura-no
+                 rewrite odemeler-rec invalid
+                             stop " "
+                 end-rewrite
+
+         end-read
+         end-perform
+         end-start
+      
+         close odemeler.
+
+* 
+ fatura-yaz.
+    move rap-fat-no                to fatura-no
+    move 0                         to fatura-sira
+    
+    read fatura no lock invalid
+         continue
+    end-read
+
+    perform ara-to-fatura
+
+
+    open i-o gerfat
+    move fatura-anah to gerfat-anah
+    read gerfat no lock invalid continue end-read
+    move fatura-durumu to    gerfat-durumu
+    move rap-fat-tar to gerfat-fat-tar
+
+    if bulunan-arsiv-no > 0 then 
+        move bulunan-arsiv-no to FATURA-GERCEK-FAT gerfat-gerfatno
+         move rap-ger-seri to  fatura-onek  gerfat-onek    
+        move 1 to fatura-no-alindi gerfat-no-alindi
+    end-if
+    write gerfat-rec invalid 
+          rewrite gerfat-rec end-rewrite
+    end-write.
+    close gerfat
+
+    write fatura-rec invalid 
+          rewrite fatura-rec end-rewrite
+    end-write 
+         .
+
+*
+ fatdetay-yaz.
+         open i-o fatdetay
+         initialize fatdetay-rec
+         accept fatdetay-kes-tarih from century-date
+         accept fatdetay-kes-zaman from time   
+          
+         move rap-fat-tar       to  fatdetay-fat-tar                    
+         move rap-fat-no        to  fatdetay-fat-no                     
+         move link-dev-no       to  fatdetay-devremulk-no                              
+         move "D"               to  fatdetay-romhrk-exthrk              
+         move fatdetay-kes-tarih  to  fatdetay-isl-tar
+
+         move fat-kdv-oran        to  fatdetay-kdv-orani 
+                 
+         move fat-matrah     to  fatdetay-fatura-matrah              
+         move fat-kdv        to  fatdetay-fatura-kdv                 
+         move fat-genel-toplam      to  fatdetay-fatura-toplam  
+  
+         write fatdetay-rec invalid 
+                 rewrite fatdetay-rec 
+         end-write
+
+         close fatdetay
+         .
+*
+ fat-dok.   
+                   
+       move 1 to i  
+       initialize dokumer-rec  text-oku-rec
+       open input text-oku,
+       perform with test after until fs-text-oku = "10"
+       initialize text-oku-2
+       read text-oku next no lock end move "10" to fs-text-oku
+          not end
+          if text-oku-1(1:1) = "#"
+            exit perform cycle 
+          end-if
+ 
+          initialize dokumer-rec
+          if text-oku-1  = "0"
+             initialize text-oku-2
+          end-if
+
+
+          if text-oku-1 = "1"
+             move rap-fat-yil to eyil
+             move rap-fat-ay  to eay
+             move rap-fat-gun to egun
+              
+             inspect text-oku-2 replacing all "[ACENADI_______________________________]" 
+                   by rap-adi(1:40) 
+             inspect text-oku-2 replacing all "[ACENUNV_______________________________]"  
+                   by rap-soyadi(1:40)  
+             inspect text-oku-2 replacing all "[ACENADR1______________________________]"  
+                   by rap-adr1 (1:40) 
+             inspect text-oku-2 replacing all "[ACENADR2______________________________]"  
+                   by rap-adr2 (1:40) 
+             inspect text-oku-2 replacing all "[ACEN-IL___________]"                     
+                   by rap-il(1:20) 
+             inspect text-oku-2 replacing all "[ACEN-ILCE_________]"                     
+                   by rap-ilce(1:20) 
+             inspect text-oku-2 replacing all "[ACENULKE____]"                            
+                   by rap-ulke(1:14)  
+             inspect text-oku-2 replacing all "[ACENVDA___________]"                      
+                   by rap-vd (1:20) 
+             inspect text-oku-2 replacing all "[ACENVNO__________]"                       
+                   by rap-vno(1:19)
+             inspect text-oku-2 replacing all "[FATTAR__]"                                
+                   by etarih
+             accept zaman from time
+             move zaman(1:2)   to esaat
+             move zaman(3:2)   to edakika
+             move zaman(5:2)   to esaniye 
+
+             inspect text-oku-2 replacing all "[FATZ__]"                                
+                   by ezaman
+             
+             inspect text-oku-2 replacing all "[FATNO_]"                                
+                   by rap-fat-no
+                inspect text-oku-2 replacing all "[ACIKLAMA____________________]"                                
+                   by rap-ack
+
+
+          end-if
+
+          if text-oku-1 = "2"            
+               
+                 move hisse-oda-no to odalar-no
+                 read odalar no lock invalid
+                         continue
+                 not invalid
+                          initialize konum-rec
+                          move ODALAR-KONUMU to KONUM-ANAHTAR
+                          read konum no lock invalid
+                                  initialize konum-rec
+                          end-read
+                          move konum-adi to hisse-konum-adi
+        
+                          initialize kodlar02-rec
+                          move "F" to kodlar02-tipi
+                          move ODALAR-TIPI to kodlar02-kodu
+                          read kodlar02 no lock invalid
+                                initialize kodlar02-rec
+                          end-read
+                          move kodlar02-adi to hisse-kat-adi
+
+                          initialize aciklama-satir
+                          move all low-values to aciklama-satir
+
+                           inspect hisse-konum-adi replacing
+                             trailing spaces by low-values
+
+                            inspect hisse-kat-adi replacing
+                             trailing spaces by low-values
+
+
+                           string aciklama-satir, 
+                           hisse-konum-adi delimited by low-values
+                           "  "      delimited by low-values
+                           hisse-kat-adi delimited by low-values
+                            "  Daire No :"      delimited by low-values
+                           hisse-oda-no delimited by low-values
+                           into aciklama-satir
+         
+
+                end-read
+ 
+                inspect text-oku-2 replacing all "[ACIKLAMA__________________________________________________]"   by  aciklama-satir
+
+                move fat-genel-toplam to tl-tut
+                move tl-tut            to 13-z
+                inspect text-oku-2 replacing all "[TLGTOPLAM__]"  by  13-z
+
+
+                      move kalan-dev-fat-turt   to f-devmulk-tutar
+                      move fat-kdv-oran         to f-devmulk-kdv
+                      inspect text-oku-2 replacing all "[FAT_DEVREMULK_ACIKLAMA_________________]"   by  f-devmulk
+
+                if maliyet-var = 1 then
+                      move demi-maliyet        to f-demirbas-tutar
+                      move fat-kdv-oran-dem    to f-demirbas-kdv
+                      inspect text-oku-2 replacing all "[FAT_MALIYET_ACIKLAMA___________________]"   by  f-demirbas
+                else
+
+                      inspect text-oku-2 replacing all "[FAT_MALIYET_ACIKLAMA___________________]"   by  "                                         " 
+                end-if                                                                                            
+
+         
+
+
+
+             add 1 to i
+             
+          end-if
+                         
+           
+          if text-oku-1 = "4" 
+      
+                  move fat-kdv-oran to fat-kdv-oran-z
+                  inspect text-oku-2 replacing all "[K]"                                
+                  by fat-kdv-oran-z
+
+                  move fat-matrah to 13-z
+                  inspect text-oku-2 replacing all "[TLMATRAH___]"                                
+                  by 13-z
+                  move fat-kdv to 13-z
+                  inspect text-oku-2 replacing all "[TLKDV______]"                                
+                  by 13-z
+    
+
+               
+
+                  if maliyet-var = 1
+                          move fat-kdv-oran-dem to fat-kdv-oran-z-4
+                          inspect text-oku-2 replacing all "[K2]"                                
+                          by fat-kdv-oran-z-4
+
+                          move fat-matrah-dem to 13-z
+                          inspect text-oku-2 replacing all "[TLMATRAHDEM]"                                
+                          by 13-z
+                          move fat-kdv-dem to 13-z
+                          inspect text-oku-2 replacing all "[TLKDVDEM___]"                                
+                          by 13-z
+                  else
+                         inspect text-oku-2 replacing all "[K2]"                                
+                          by "    "
+                           inspect text-oku-2 replacing all "[TLMATRAHDEM]"                                
+                          by "             "
+                          inspect text-oku-2 replacing all "[TLKDVDEM___]"                                
+                          by "             "
+                  end-if
+
+                  move fat-genel-toplam to 13-z
+                  inspect text-oku-2 replacing all "[TLGTOPLAM__]"                                
+                  by 13-z
+
+                  add 1 to i
+           end-if 
+      
+                                     
+          if text-oku-1 = "4"
+             initialize rakam yaziile
+             move fat-genel-toplam to rakam
+             call "/asya/ytl/obj/otel/yaziile.asy" using rakam yaziile
+                  on exception perform callerr-proc
+                  not on exception
+                  cancel "/asya/ytl/obj/otel/yaziile.asy" 
+             end-call
+
+             inspect text-oku-2 replacing all
+             "[YAZI.........................................................................................]"
+                                                      by yaziile(1:95)
+          end-if,
+*          if text-oku-1 = "9"
+*             move text-oku-2 to yaziile(1:95)
+*          end-if
+          
+          move text-oku-2   to det-filler
+          write dokumer-rec from detay
+       end-read
+       end-perform
+       close text-oku.
+*    
+ max-satir-bul.
+       open input text-oku,
+       initialize max-satir
+       perform with test after until fs-text-oku = "10"
+       read text-oku next no lock end move "10" to fs-text-oku
+            not end
+              if text-oku-1 = "2"
+                  initialize  apo
+                  inspect text-oku-2 tallying apo for   all "[TLTUTAR____]" 
+                   if apo > 0
+                     add 1 to max-satir
+                  end-if
+              end-if
+       end-read
+       end-perform,
+       close text-oku.
+*
+ dep-bul.
+       open input deptop
+       initialize deptop-rec depler k  p
+       start deptop key not < deptop-anah invalid 
+            continue 
+       not invalid 
+       perform with test after until fs-deptop = "10"
+       read deptop next no lock end move "10" to fs-deptop
+       not at end         
+              evaluate deptop-ba
+              when "B"
+                add 1                to k
+                move deptop-dep-adi  to bordepadi(k)
+                move deptop-tutar    to bordeptutar(k)                 
+              when "A"
+                add 1                to p
+                move deptop-dep-adi  to aladepadi(p)
+                move deptop-tutar    to aladeptutar(p)
+              end-evaluate
+       end-read 
+       end-perform
+       end-start
+       close deptop.
+*
+ kdv-bul.
+       open input kdv
+       initialize kdv-rec b kdvler 
+                  kdv-matrah-toplam 
+                  kdv-kdv-toplam
+       start kdv key not < kdv-anah invalid 
+             continue 
+       not invalid 
+       perform with test after until fs-kdv = "10"
+       read kdv next no lock end move "10"  to fs-kdv 
+       not at end
+              if b < 6
+               add 1              to b
+               move kdv-orani     to kdvler-kodu(b)
+               move kdv-matrah    to kdvler-matrah(b)
+               move kdv-kdv-tutar to kdvler-kdv-tutar(b)
+               move kdv-tutar     to kdvler-tutar(b)
+               compute kdv-matrah-toplam = kdv-matrah-toplam + kdv-matrah
+               compute kdv-kdv-toplam    = kdv-kdv-toplam + kdv-kdv-tutar
+              end-if 
+       end-read 
+       end-perform
+       end-start
+       close kdv.
+
+*
+ genel-fatura-no-yaz.   
+      open i-o genel
+    initialize genel-rec
+    move 1                to genel-anahtar
+    read genel no lock invalid 
+       continue 
+    not invalid 
+         if efat-degil = 1
+             move rap-fat-no   to genel-fol-fat-no4
+         else
+             move rap-fat-no   to genel-fol-fat-no5
+        end-if
+        rewrite genel-rec end-rewrite 
+    end-read
+    close genel.
+
+*
+ ara-to-fatura.
+    move rap-fat-tar              to fatura-tarihi
+    move "D"                      to fatura-tipi
+    move "D"                      to fatura-durumu
+    move link-dev-no              to fatura-folio
+    move rap-adi                  to fatura-baslik-1 
+    move rap-soyadi               to fatura-baslik-2 
+    move rap-il                   to fatura-il
+    move rap-ilce                 to fatura-ilce
+    move rap-adr1                 to fatura-adres-1  
+    move rap-adr2                 to fatura-adres-2
+    move rap-ulke                 to fatura-ulke     
+    move rap-vd                   to fatura-ver-da   
+
+    move rap-vno                  to fatura-ver-no   
+    move rap-ack                  to fatura-aciklama 
+    move k-kodu-tasi              to fatura-staf
+
+    move fat-genel-toplam       to fatura-toplam fatura-g-toplam 
+    
+    move fat-kdv-top to FATURA-KDV  FATURA-KDV-8
+    
+    move fat-mat-top to FATURA-MATRAH-8  fatura-matrah
+                .
+
+
+*
+ fatura-no-kontrol.
+     open i-o fatura
+     move 1                 to hata
+     initialize fatura-rec
+     move rap-fat-no        to fatura-no
+     move 0                    to fatura-sira
+     read fatura no lock invalid
+          display message box 
+                  rap-fat-no," seri numarali fatura tanimlamasi yapilmamis"
+                  icon mb_error_icon
+                  title "Hata"
+          move 4 to accept-control
+          move 5 to control-id
+          exit paragraph
+     end-read
+     evaluate fatura-durumu
+     when "I"
+        display message box 
+                rap-fat-no," numarali fatura iptal edilmis !"
+                icon mb_error_icon
+                title "Hata"
+        move 4 to accept-control
+        move 5 to control-id
+        exit paragraph
+
+     when "D"
+        display message box 
+                rap-fat-no," seri numarali fatura daha once kesilmis !",
+                new-line,
+                new-line,
+                "Kesilmis fatura Bilgileri"
+                new-line,
+                "Fatura Tarihi :",x"09",fatura-gun,"/"fatura-ay,"/",fatura-yil
+                new-line,
+                "Folio :",x"0909",fatura-folio,
+                new-line,
+                fatura-baslik-1, new-line,
+                fatura-baslik-2, new-line,
+                "Adres 1 :", x"09",fatura-adres-1,  new-line,
+                "Adres 2 :", x"09",fatura-adres-2,  new-line,
+                "Il :",      x"09",fatura-il,       new-line,
+                "Ilce :",    x"09",fatura-ilce,     new-line,
+                "Ulke :",    x"09",fatura-ulke,     new-line,
+                "Vergi D.:", x"09",fatura-ver-da,   new-line,
+                "Vergi N. :",x"09",fatura-ver-no    new-line new-line
+                "Fatura tekrar kesilsin mi ?"
+                title "Uyari"
+                type mb_yes_no
+                default 2
+                returning return-code
+        if return-code <> 1
+           move 4 to accept-control
+           move 5 to control-id
+           exit paragraph
+        end-if                
+     end-evaluate
+     move 0                     to hata
+     close fatura
+     perform arsiv-kont.
+
+*
+ arsiv-kont.
+     if genel-e-arsiv-gecis-tarihi <= rap-fat-tar and
+        genel-e-arsiv-gecis-tarihi > "20150101" and e-arsiv-var-mi = 1
+
+*        if bu-fat-online = 1 
+*           move genel-online-onek to fatura-onek
+*
+*        else
+           if genel-online-onek = fatura-onek
+              display message box "Bu numaraya online kesilmis bu noya kesemessiniz"
+              move 1 to hata
+              exit paragraph
+           end-if
+*        end-if
+
+        if fatura-onek(1:1) not = spaces and 
+           fatura-onek(2:1) not = spaces and 
+           fatura-onek(3:1) not = spaces and 
+           function numval( fatura-onek(4:4)) = rap-fat-yil 
+           continue
+
+        else
+           move 1 to hata
+           display message box "Fatura Tanimlamadan Fatura Onserisi tanimlanmalidir"
+
+        end-if
+        move gerfat-dosya to mgerfat-dosya
+        open i-o gerfat mgerfat
+        initialize gerfat-rec bulunan-arsiv-no
+        move fatura-onek  to gerfat-onek
+        move 1            to gerfat-no-alindi
+        move 1 to olmasi-gereken-no
+        start gerfat key > gerfat-alinan  invalid 
+              continue
+        not invalid  
+        perform until fs-gerfat = "10"
+        read gerfat next no lock end move "10" to fs-gerfat
+        not end
+
+            if  FATURA-onek not = gerfat-onek or gerfat-no-alindi not = 1 
+                move "10" to fs-gerfat
+                exit perform cycle
+
+            end-if
+            if olmasi-gereken-no >= dur-no  and debug = 1 and (k-kodu-tasi = "ASYA" or "X   ")
+               stop " "
+
+            end-if
+            if gerfat-durumu  = "B"
+               if  gerfat-fat-tar = rap-fat-tar
+                   move gerfat-gerfatno to bos-bulundu
+
+               end-if
+               exit perform cycle
+
+            end-if
+            if gerfat-gerfatno not = olmasi-gereken-no
+               if gerfat-gerfatno < olmasi-gereken-no
+                  if gerfat-durumu = "D" or "I"
+                     if gerfat-fat-tar >= rap-fat-tar 
+                        display message box "Cift no " gerfat-onek gerfat-gerfatno " " gerfat-durumu  new-line
+                                             gerfat-anah new-line
+                                             "Olmasi gereken " olmasi-gereken-no
+                     end-if                   
+                  end-if
+               else
+                  if son-gerfat-tarih > rap-fat-tar  
+                    display message box " Uyumsuz tarih : fatura sirasinda bos yok lck"
+                    move 1 to hata
+                    stop " "
+                    exit perform
+                  end-if
+                  if son-gerfat-tarih < rap-fat-tar 
+*                    stop " "
+                     perform sonrasi-kontrol 
+                     if uyumsuz-fat = 1 
+                        display message box olmasi-gereken-no  "nolu fatura atlanmis "
+                        compute  olmasi-gereken-no  =  gerfat-gerfatno + 1 
+                        exit perform cycle
+
+                     else
+                        move olmasi-gereken-no to bulunan-arsiv-no
+                        exit perform
+
+                     end-if
+                  else                                        
+                     move olmasi-gereken-no to bulunan-arsiv-no
+                     exit perform
+
+                  end-if
+               end-if
+            else
+               if gerfat-durumu  = "D"  or "I"
+                  add 1 to olmasi-gereken-no
+
+               end-if
+            end-if 
+            if gerfat-durumu  not = "B"
+               move gerfat-fat-tar to son-gerfat-tarih
+
+            end-if
+
+        end-read
+        end-perform
+        end-start
+        close gerfat mgerfat
+     end-if
+     
+     if hata = 0 and bulunan-arsiv-no = 0 then
+        if son-gerfat-tarih > rap-fat-tar  
+           display message box " Uyumsuz tarih : fatura sirasinda bos yok "
+           move 1 to hata
+           stop " "                           
+        end-if
+        move  olmasi-gereken-no to bulunan-arsiv-no
+
+     end-if
+     if bulunan-arsiv-no > 0  then 
+        move    bulunan-arsiv-no  to rap-ger-no
+        move    fatura-onek   to  rap-ger-seri   
+        display acc-ger-no     acc-ger-seri
+     end-if.
+*
+ Form1-Cb-1-Link.
+       perform fatura-tutar-hesapla  
+     .
+
+
+*
+ cari-ata.
+    move rap-vno         to bakilacak-no
+    if bakilacak-no > 0
+       perform takcari-kontrol     
+            if cari-bulundu = 1
+               open input cari
+               initialize cari-rec
+               move bulunan-cari-kodu  to cari-kodu
+               read cari no lock invalid 
+                     continue 
+               not invalid
+                if rap-adi = spaces 
+                   perform cbilgi-at
+                 else
+                  if  rap-adi not =  C-UNVAN-1
+                   or C-UNVAN-2 not = rap-soyadi  then 
+                   display message box  "Muhasebe Cari Kartlarinde Ayni Vergi Numarasina Ait Asagidaki Fatura Bilgileri Bulunmustur." new-line 
+                                             new-line  
+                                         "Unvan :" C-UNVAN-1   new-line     
+                                         "            " C-UNVAN-2  new-line       
+                                         "Adres :" C-ADRES-1  new-line      
+                                         "            "  C-ADRES-2   new-line   
+                                         "            "  C-IL-ILCE  new-line         
+                                         "            "  C-IL-ILCE    new-line   
+                                         "            "  C-ULKE       new-line       
+                                                      new-line                                   
+                                 "Bulunan  cari bilgileri Fatura uzerine yazilsin mi?"
+                                  new-line  
+                       icon 2 type 2 default 1 giving sonucc
+                       if sonucc = 1   then 
+                         perform cbilgi-at
+                       end-if
+                  end-if
+                end-if               
+                   
+               end-read
+               display acc-adi,acc-soyadi,acc-adr1,acc-adr2,
+                       acc-ilce,acc-il,acc-ulke,acc-vd,acc-vno acc-e-mail acc-telefon
+               close cari
+             end-if
+    end-if.
+*
+ vergi-no-kontrol.
+     
+      open i-o efatci
+      initialize efatci-rec  efatcari efat-degil
+      if rap-tcno not = spaces 
+         move  rap-tcno   to efatci-kodu           
+      end-if 
+      if rap-vno not = spaces          
+         move  rap-vno    to efatci-kodu 
+      end-if
+      if genel-efatura-kllnc-degil not = 1
+              if   genel-e-arsiv-yil  < 2100 
+                      read efatci no lock invalid 
+                          move 0 to efatcari
+                      not invalid 
+                          if efatci-giris-tarih > rap-fat-tar
+                              move 0 to efatcari
+                          else
+                             move 1 to efatcari
+                          end-if
+                      end-read
+              end-if
+*\              close   efatci                       | ilgaz firat 31.10.2017
+      end-if
+      if efatcari <> 0    
+         move 1       to efat-degil
+      end-if
+      close efatci
+      .
+*
+ acc-fat-no-Aft-Procedure.
+     open i-o fatura gerfat
+     initialize fatura-rec
+     move rap-fat-no        to fatura-no
+     move 0                    to fatura-sira
+     read fatura no lock invalid
+          continue
+     end-read
+     move FATURA-GERCEK-FAT  to rap-ger-no
+     move FATURA-onek        to rap-ger-seri
+     display   acc-ger-no acc-ger-seri
+     close fatura gerfat.
+*
+ acc-ger-no-Aft-Procedure.
+      open i-o fatura gerfat
+       initialize gerfat-rec
+         move rap-ger-seri      to gerfat-onek
+         move rap-ger-no        to gerfat-gerfatno
+         read gerfat no lock key  gerfat-gerfat invalid 
+             
+            display message box "Bulunamadi"
+            close fatura gerfat
+             perform acc-fat-no-Aft-Procedure
+            not invalid
+             close fatura gerfat
+             move gerfat-no to rap-fat-no
+             display  acc-fat-no
+          end-read.
+
+ 
+*
+ e-arsiv-fat-dok. 
+     if e-arsiv-var-mi = 1     
+        initialize efatr1-lnk
+        move alsat-ana-anahtar         to efatr1-lnk
+        move k-kodu-tasi               to yedek-k-kodu-tasi
+        move isyeri-adres-tasi         to yedek-isyeri-adres-tasi        
+        move "ASYA"                    to k-kodu-tasi              
+        move muhasebe-entegre-sirketi              to isyeri-adres-tasi  
+
+        if genel-muha-uzak-ip not = spaces
+           move "ASYA"             to efatr1-uzak-k-kodu-tasi
+           move "E"                to efatr1-uzak-call 
+           move isyeri-adres-tasi  to efatr1-uzak-isyeri-adres-tasi
+           move genel-muha-uzak-ip to efatr1-uzak-ip       
+           call "/asya/ytl/obj/muha/earsivprintmanager.asy" using efatr1-lnk
+           on exception 
+              move   "/asya/ytl/obj/muha/earsivprintmanager.asy" to  hatali-program-adi
+              move yedek-k-kodu-tasi       to k-kodu-tasi
+              move yedek-isyeri-adres-tasi to isyeri-adres-tasi
+              perform callerr-proc
+           not on exception
+           cancel "/asya/ytl/obj/muha/earsivprintmanager.asy"
+           end-call            
+        else 
+           call "/asya/ytl/obj/muha/earsivprintmanager.asy" using efatr1-lnk
+           on exception 
+               move   "/asya/ytl/obj/muha/earsivprintmanager.asy" to  hatali-program-adi
+              move yedek-k-kodu-tasi       to k-kodu-tasi
+              move yedek-isyeri-adres-tasi to isyeri-adres-tasi
+              perform callerr-proc
+           not on exception
+           cancel "/asya/ytl/obj/muha/earsivprintmanager.asy"
+           end-call
+        end-if 
+        
+        move yedek-k-kodu-tasi       to k-kodu-tasi
+        move yedek-isyeri-adres-tasi to isyeri-adres-tasi
+     end-if. 
+
+*
+ acuserve-adres-aktar.
+     continue.
+*
+ cbilgi-at.
+      move C-UNVAN-1                 to rap-adi                
+      move C-UNVAN-2                 to rap-soyadi            
+      move C-IL-ILCE                 to rap-il                
+      move C-IL-ILCE                 to rap-ilce
+      move C-ADRES-1                 to rap-adr1              
+      move C-ADRES-2                 to rap-adr2              
+      move C-ULKE                    to rap-ulke              
+      move C-VERGI-DAIRE             to rap-vd                
+      move C-VERGI-NO                to rap-vno
+      move function numval(rap-vno)  to svno
+      move svno                      to rap-vno
+      move C-EMAIL                   to rap-e-mail
+      move C-TELEFON                 to rap-telefon.
+*
+ alsatek-odeme-bilgileri-yaz.       
+    initialize alsatek-rec
+    move "S"                        to alsatek-tipi   
+    move rap-fat-tar                to alsatek-tarih
+    move rap-fat-no                 to alsatek-belge-no 
+
+    if cari-kodu not = spaces and cari-bulundu = 1
+       move cari-kodu               to alsatek-toplam-hesap     
+    end-if
+    move "O"                        to alsatek-kaynak
+
+    perform earsbil-oku.        
+ 
+
+earsbil-oku.
+     initialize kayit-yok-earsbil
+     move 1            to odeme-kayit-sayi
+     move devremulk-no to earsbil-alt-anah
+     move "F"          to earsbil-tip
+     read earsbil no lock invalid
+           move 1 to kayit-yok-earsbil
+     end-read  
+
+     move rap-fat-tar                   to earsbil-odeme-tarihi
+     move 5                             to earsbil-odeme-tipi  
+     move earsbil-odeme-tarihi          to alsatek-odeme-tarihi(odeme-kayit-sayi)
+     move earsbil-odeme-tipi            to alsatek-online-odeme-yontemi(odeme-kayit-sayi)
+     move earsbil-odeme-notu            to alsatek-online-odeme-aciklama(odeme-kayit-sayi)  
+ 
+     move earsbil-kredi-karti           to alsatek-kredi-karti(odeme-kayit-sayi)
+     move earsbil-kredi-karti-onay-no   to alsatek-kredi-karti-onay-no(odeme-kayit-sayi) 
+     move "Devremulk Geliri"                to alsatek-odeme-departman-adi(odeme-kayit-sayi)
+     move fat-genel-toplam              to alsatek-odeme-dep-tutar(odeme-kayit-sayi)
+
+     |move "Devremulk Aidat Faturasý"    to alsatek-online-odeme-aciklama(odeme-kayit-sayi)
+
+     write alsatek-rec invalid 
+        rewrite alsatek-rec invalid
+            stop " "
+        end-rewrite
+     end-write. 
+
+*
+ fatura-al-sat-yaz.
+
+
+    move "S"                        to alsat-tipi   
+    move rap-fat-tar                to alsat-tarih
+    move rap-fat-no                 to alsat-belge-no 
+    if e-arsiv-var-mi = 1           
+        move rap-ger-no           to alsat-efatura-numarasi(8:9)
+        move rap-ger-seri         to alsat-efatura-numarasi(1:7)
+        move "K"                  to alsat-earsiv-gonderim-sekli         
+    end-if 
+                                                                          
+    if cari-kodu not = spaces and cari-bulundu = 1
+       move cari-kodu               to alsat-toplam-hesap-babs alsat-toplam-hesap     
+    end-if
+    move genel-muha-ref             to alsat-referans   
+    
+    if ONKPARA-REFERANS-VAR = 1  
+       and devremulk-oda-konumu > 0 then 
+        move xkonum-ref(devremulk-oda-konumu)  to alsat-referans
+        if onkpara-referans-nerden = 2          
+           initialize odalar-rec
+           move devremulk-oda-no       to odalar-anah
+           read odalar no lock invalid    
+                move 1                to odalar-referans
+           end-read 
+               move odalar-referans   to alsat-referans
+        end-if 
+    end-if  
+    
+
+    move 01                         to alsat-banka                
+    move alsat-matrah               to alsat-gercek-matrah
+    if rap-pasno not = spaces
+       initialize gercek-rap-pasno
+       move rap-pasno               to gercek-rap-pasno
+       move "11111111111"           to rap-tcno
+    end-if 
+
+    move  rap-vno                   to alsat-adres-vergi-no
+    if rap-vno = spaces
+       if  rap-tcno not = spaces
+           move rap-tcno                  to alsat-adres-vergi-no(1:)            
+           move rap-adi                   to alsat-adres-adi
+           move rap-soyadi                to alsat-adres-soyadi
+           set alsat-kayit-tckn to true
+       else
+           move rap-adi                   to alsat-adres-adi
+           move rap-soyadi                to alsat-adres-soyadi
+           move rap-tcno                  to alsat-adres-vergi-no(1:)          
+*           move rap-pasno                 to alsat-adres-vergi-no(1:)              
+*           move "P"                       to alsat-kayit-turu            
+           set alsat-kayit-tckn to true
+       end-if
+    else
+        move rap-adi                   to alsat-adres-unvani(1:40) 
+        move rap-soyadi                to alsat-adres-unvani(41:40) 
+        set alsat-kayit-vkn to true
+    end-if
+    move rap-adr1                  to alsat-adres-cadde-adi(1:40)
+    move rap-adr2                  to alsat-adres-cadde-adi(41:40)
+    move rap-ilce                  to alsat-adres-ilce 
+    move rap-il                    to alsat-adres-il  
+    move rap-vd                    to alsat-adres-vergi-dairesi  
+    move rap-ulke                  to alsat-adres-ulke
+    if rap-ack not = spaces
+       move rap-ack                to alsat-fis-not  
+    else
+       move alac-satirlar          to alsat-fis-not
+    end-if 
+ 
+    move "D"                       to alsat-kdv-dh              
+    move rap-e-mail                to alsat-adres-mail
+    move rap-telefon               to alsat-adres-tel
+    compute alsat-kdv-tutar = alsat-kdvli - alsat-matrah     
+    move 1                          to alsat-miktar           
+    move alsat-matrah               to alsat-birim-fiyat
+    move "Adet"                     to alsat-birim
+    move "O"                        to alsat-kaynak
+    if efat-degil = 1
+       move "E"                     to alsat-efatura-mi
+    else       
+       move " "                     to alsat-efatura-mi
+    end-if
+    move isyeri-adres-tasi          to alsat-kaynak-kutuphane
+ 
+*    initialize depkod2-rec
+*    move DEPKOD-KODU to DEPKOD2-KODU
+*    read depkod2 no lock invalid
+*            continue
+*    end-read
+*
+*    if depkod2-matrah-hesap <> spaces
+*          move depkod2-matrah-hesap to alsat-matrah-hesap
+*    else
+*          move depkod-matrah-hesap  to alsat-matrah-hesap
+*    end-if
+
+    initialize muh-kodlar-rec
+    set muh-kodlar-tipi-kdv to true
+    move rap-fat-yil    TO muh-kodlar-yil
+    MOVE "S"            TO muh-kodlar-kodu1
+    MOVE "O"            TO muh-kodlar-kodu2
+    move 1              to muh-kodlar-fis 
+    read muh-kodlar no lock invalid
+            continue
+    end-read
+    move muh-kodlar-kdv-hesap(rap-fat-ay) to alsat-kdv-hesap
+ 
+
+    MOVE rap-ack                    TO alsat-fis-not
+
+
+*    if  link2-fat-dv > 0
+*            initialize doviz-rec
+*            move konuk-doviz               to doviz-kodu
+*            read doviz no lock invalid 
+*               continue 
+*            end-read        
+*            move link2-fat-dv to 11-z
+*            string alsat-fis-not delimited by "      "                                   
+*                  11-z delimited by "           " 
+*                  "-" delimited by size  
+*                  d-kisa-adi  delimited by size
+*                  " -" delimited by size   
+*            into alsat-fis-not     
+*    end-if    
+    write alsat-rec invalid 
+           continue 
+    end-write.      
+       
+                                                                                                   
+*
+ sonrasi-kontrol.
+       initialize mgerfat-rec  uyumsuz-fat
+            move gerfat-rec to mgerfat-rec
+            start mgerfat key > mgerfat-alinan  invalid continue
+               not invalid  
+               perform until fs-mgerfat = "10"
+                   read mgerfat next no lock end move "10" to fs-mgerfat
+                      not end
+                    
+                         if  fatura-onek not = mgerfat-onek or mgerfat-no-alindi not = 1 
+                          move "10" to fs-mgerfat
+                          exit perform cycle
+                          end-if
+                          if mgerfat-durumu  = "B" or " "
+                             exit perform cycle
+                          end-if
+                         if  mgerfat-fat-tar < rap-fat-tar 
+                            move 1 to uyumsuz-fat
+                         end-if
+                       end-read
+                  end-perform 
+            end-start
+            .  
+     
+
+ 

@@ -1,0 +1,1710 @@
+* grapher.evt
+* grapher.evt is generated from D:\asya\acugt.ytl\otel\grapher.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Ntf-Resized
+        PERFORM Form1-Ev-Ntf-Resized
+     END-EVALUATE
+     .
+
+ Form1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Resized
+           PERFORM Form1-Ex-Ntf-Resized
+        END-EVALUATE
+     ELSE
+        PERFORM Form1-Ex-Other
+     END-IF
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ Form3-Event-Proc.
+     .
+
+ Form3-Exception-Proc.
+     PERFORM Form3-Ex-Other
+     .
+
+ Form3-Sb-Notu-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Sb-Next
+        PERFORM tahmin-notu-azalt
+     WHEN Msg-Sb-Prev
+        PERFORM tahmin-notu-arttir
+     END-EVALUATE
+     .
+
+ Form3-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-End-Drag
+        PERFORM Form3-Gd-1-Ev-Msg-End-Drag
+     WHEN Msg-Goto-Cell
+        PERFORM Form3-Gd-1-Ev-Msg-Goto-Cell
+     WHEN Msg-Goto-Cell-Mouse
+        PERFORM Form3-Gd-1-Ev-Msg-Goto-Cell
+     END-EVALUATE
+     .
+***   start event editor code   ***
+* ------------------------------------------------
+* Eventler - Exceptionlar Start
+* ------------------------------------------------
+* ------------------------------------------------
+* Form 1 - Start
+*
+ Form1-Ev-Ntf-Resized.
+     perform Form1-Boyutlandir
+     .
+*
+ Form1-Ex-Ntf-Resized.
+     perform Form1-Boyutlandir
+     .
+*
+ Form1-Aft-Initdata.
+     Perform Grapher-Baslat
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+       when 05
+         initialize key-status
+         perform Form1-Pb-Grafik-Duzenle
+       when 06
+         initialize key-status
+         perform Form1-Pb-Grafik-Ayarla
+       when other
+         continue
+     end-evaluate
+     .
+* Form 1 - End
+* ------------------------------------------------
+* ------------------------------------------------
+* Form 2 - Start
+*
+ Form2-Aft-Initdata.
+     Perform Grapher-Ayarlar-Baslat
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ Form2-Ex-Other.
+     evaluate key-status
+       when 02    perform Form2-F2-Tusu
+       when 03    perform Form2-F3-Tusu
+       when 04    perform Form2-F4-Tusu
+       when 08    perform Form2-F8-Tusu
+       when other continue
+     end-evaluate
+     .
+* Form 2 - End
+* ------------------------------------------------
+* ------------------------------------------------
+* Form 3 - Start
+*
+ Form3-Ex-Other.
+     evaluate key-status
+       when 1
+         perform tahmin-txt-al
+         initialize key-status
+       when 2
+         perform tahmin-ekle
+         initialize key-status
+       when 3
+         perform tahmin-sil
+         initialize key-status
+       when 4
+         perform tahmin-guncelle
+         initialize key-status
+       when 5
+         perform tahmin-txt-ver
+         initialize key-status
+     end-evaluate
+     .
+* Form 3 - End
+* ------------------------------------------------
+* ------------------------------------------------
+* Eventler - Exceptionlar End
+* ------------------------------------------------
+*
+* ------------------------------------------------
+* Form 1 - Start
+*
+ Form1-Boyutlandir.
+     inquire window form1-handle
+             size  in pen-x
+             lines in pen-y
+     modify graph-1, size  = pen-x,
+                        lines = pen-y
+     modify Form1-Fr-1, size  = pen-x
+     .
+*
+ Form1-Pb-Grafik-Duzenle.
+     Modify graph-1, ShowEditor(0)
+     .
+*
+ Form1-Pb-Grafik-Ayarla.
+     perform Acu-Form2-Routine
+     .
+*
+ Grapher-Baslat.
+     move "|" to dokumer-detay-kolon-ayirici
+     string
+       dokumer-dosya delimited by space
+       ".grf"        delimited by size
+       into grapher-dosya
+     end-string
+     open input dokumer with no rewind
+     open i-o grapher
+     perform dokumer-grapher-aktar
+     close dokumer
+     if say-T = zero or say-T = null
+        open i-o tahmin
+        move "T" to tahmin-tipi
+        move 1 to islem-sutun
+        perform Grapher-Tahmin-Y
+        if islem-satir > zero
+           perform Grapher-Veri-Oku
+           move "T" to grapher-20-islem
+           add 1 to say-T
+           move say-T to grapher-satir-no
+           rewrite grapher-rec, end-rewrite
+        end-if
+        close tahmin
+     end-if
+     if say-Y = zero or say-Y = null
+        open i-o tahmin
+        move "Y" to tahmin-tipi
+        move 1 to islem-sutun
+        perform Grapher-Tahmin-Y
+        if islem-satir > zero
+           perform Grapher-Veri-Oku
+           move "Y" to grapher-20-islem
+           add 1 to say-Y
+           move say-Y to grapher-satir-no
+           rewrite grapher-rec, end-rewrite
+        end-if
+        close tahmin
+     end-if
+     move grapher-cagir-seri-sayisi to grapher-seri-sayisi
+     move grapher-cagir-ptr         to grapher-ptr
+     
+     if grapher-ptr not = null and
+        grapher-seri-sayisi not = zero
+        perform grapher-ekran-ciz
+     else
+        perform grapher-init
+        move "T" to grapher-seri-tipi
+        move "X" to grapher-veri-yonu
+        move "+" to grapher-toplam
+        move "+" to grapher-yuzde
+        perform grapher-seri-ekle
+        move grapher-seri-sayisi to grapher-cagir-seri-sayisi
+        perform grapher-ekran-ciz
+     end-if
+     .
+*
+ dokumer-grapher-aktar.
+     initialize say-W
+                say-B
+                say-O
+                say-D
+                say-space
+                say-T
+                say-Y
+                say-other
+                fs-dokumer
+                grapher-ana-no
+                grapher-20
+     open i-o tahmin
+     Modify graph-1, ClearChart()
+     modify graph-1, Header::Text::Clear()
+     modify graph-1, Legend::CheckBoxes(1)
+     perform with test after until fs-dokumer = "10"
+       read dokumer next no lock
+         end
+           move "10" to fs-dokumer
+         not end
+           initialize grapher-400
+           if not dokumer-20-ekran-yazma
+              compute dokumer-20-top-sutunu = dokumer-20-top-sutunu - 32
+              compute dokumer-20-yuz-sutunu = dokumer-20-yuz-sutunu - 32
+              if grapher-20-top-var and dokumer-20-top-yok
+                 move grapher-20-top-sutunu to dokumer-20-top-sutunu
+              end-if
+              if grapher-20-yuz-var and dokumer-20-yuz-yok
+                 move grapher-20-yuz-sutunu to dokumer-20-yuz-sutunu
+              end-if
+              move dokumer-20  to grapher-20
+              move dokumer-400 to grapher-400
+              if grapher-20-detay  or
+                 grapher-20-data   or
+                 grapher-20-toplam or
+                 grapher-20-yuzde
+                 add 1 to grapher-ana-no
+              end-if
+              evaluate true
+                when grapher-20-win-baslik
+                  add  1         to say-W
+                  move say-W     to grapher-satir-no
+                  perform grapher-pen-title-yaz
+                  move "W"       to grapher-20-islem
+                when grapher-20-baslik
+                  add  1         to say-B
+                  move say-B     to grapher-satir-no
+                  perform grapher-ana-baslik-ekle
+                  move "B"       to grapher-20-islem
+                when grapher-20-ozellik
+                  add  1         to say-O
+                  move say-O     to grapher-satir-no
+                  move "O"       to grapher-20-islem
+                when grapher-20-detay
+                  initialize grapher-20-top-sutunu
+                             grapher-20-yuz-sutunu
+                  add  1         to say-D
+                  move say-D     to grapher-satir-no
+                  perform grapher-baslik-satiri-yaz
+                  move "D"       to grapher-20-islem
+                when grapher-20-data
+                  add  1         to say-space
+                  move say-space to grapher-satir-no
+                  perform sutun-bosluk-temizle
+                  move "V"       to grapher-20-islem
+                when grapher-20-toplam
+                  add  1         to say-T
+                  move say-T     to grapher-satir-no
+                  perform sutun-bosluk-temizle
+                  move "T"       to grapher-20-islem
+                when grapher-20-yuzde
+                  add  1         to say-Y
+                  move say-Y     to grapher-satir-no
+                  perform sutun-bosluk-temizle
+                  move "Y"       to grapher-20-islem
+                when grapher-20-islem-yok
+                when other
+                  add  1         to say-other
+                  move say-other to grapher-satir-no
+              end-evaluate
+              if grapher-20-detay  or
+                 grapher-20-data   or
+                 grapher-20-toplam or
+                 grapher-20-yuzde
+                 write grapher-rec
+                   invalid
+                     rewrite grapher-rec, end-rewrite
+                 end-write
+                 perform grapher-pipe-oku
+              end-if
+           end-if
+       end-read
+     end-perform
+     close tahmin
+     .
+*
+ grapher-pen-title-yaz.
+     modify window Form1-Handle, TITLE = dokumer-400
+     .
+*
+ grapher-baslik-satiri-yaz.
+     perform grapher-sutunlara-ayir
+     if grapher-20-top-yok
+        move "T" to tahmin-tipi
+        perform grapher-tahmin-x
+     end-if
+     if grapher-20-yuz-yok
+        move "Y" to tahmin-tipi
+        perform grapher-tahmin-x
+     end-if
+     perform grapher-pipe-yaz
+     perform Grapher-Plus-Yaz
+     perform sutun-bosluk-temizle
+     .
+*
+ grapher-pipe-yaz.
+     move "|" to grapher-20-islem
+     move grapher-ana-no to transfer-9
+     move all high-value to grapher-ana-no
+     compute grapher-ana-no = grapher-ana-no - (( Say-D * 2 ) - 1 )
+     rewrite grapher-rec
+       invalid
+         write grapher-rec, end-write
+     end-rewrite
+     move transfer-9 to grapher-ana-no
+     .
+*
+ grapher-plus-yaz.
+     move grapher-ana-no to transfer-9
+     move "+" to grapher-20-islem
+     move all high-value to grapher-ana-no
+     compute grapher-ana-no = grapher-ana-no - ( Say-D * 2 )
+     rewrite grapher-rec
+       invalid
+         write grapher-rec, end-write
+     end-rewrite
+     move all high-value to grapher-ana-no
+     compute grapher-ana-no = grapher-ana-no - ( Say-D * 2 )
+     read grapher record no lock
+                  key is grapher-ana-no
+       invalid
+         display message box "Hayret bisey! Simdi yazdigimi okuyamadim" new-line
+                             "Dostum aldirma biz bilgisayarlar boyleyiz"
+     end-read
+     move 1 to islem-bos
+     if say-D = 1
+        perform varying islem-sutun
+                   from    1
+                   by      1
+                   until   islem-sutun > grapher-sutun-sayisi
+             move islem-sutun to grapher-sutun-pos(islem-sutun)
+        end-perform
+        rewrite grapher-rec
+          invalid
+            write grapher-rec, end-write
+        end-rewrite
+     else
+        perform varying islem-sutun
+                from    1
+                by      1
+                until   islem-sutun > grapher-sutun-sayisi
+          move grapher-sutun-pos(islem-sutun) to islem-pos
+          move all high-value to grapher-ana-no
+          compute grapher-ana-no = grapher-ana-no - 1
+          read grapher record no lock
+                       key is grapher-ana-no
+            invalid
+              display message box "Hayret bisey! Simdi yazdigimi okuyamadim" new-line
+                                  "Dostum aldirma biz bilgisayarlar boyleyiz"
+            not invalid
+              initialize fs-grapher
+              move 1 to islem-bos
+              perform with test after
+                      until fs-grapher = "10"
+                if islem-pos >= grapher-sutun-pos(islem-bos) and
+                   islem-pos <= (grapher-sutun-pos(islem-bos) + grapher-sutun-boy(islem-bos))
+                   move "10" to fs-grapher
+                else
+                   add 1 to islem-bos
+                   if islem-bos > grapher-sutun-sayisi
+                      move "10" to fs-grapher
+                   end-if
+                end-if
+              end-perform
+          end-read
+          move all high-value to grapher-ana-no
+          compute grapher-ana-no = grapher-ana-no - ( Say-D * 2 )
+          read grapher record no lock
+                       key is grapher-ana-no
+            invalid
+              display message box "Hayret bisey! Simdi yazdigimi okuyamadim" new-line
+                                  "Dostum aldirma biz bilgisayarlar boyleyiz"
+          end-read
+          move islem-bos to grapher-sutun-pos(islem-sutun)
+          move all high-value to grapher-ana-no
+          compute grapher-ana-no = grapher-ana-no - ( Say-D * 2 )
+          rewrite grapher-rec
+            invalid
+              write grapher-rec, end-write
+          end-rewrite
+        end-perform
+     end-if
+     move transfer-9 to grapher-ana-no
+     perform grapher-pipe-oku
+     .
+*
+ grapher-ana-baslik-ekle.
+     modify graph-1, Header::Text::add(dokumer-400)
+     .
+*
+ grapher-sutunlara-ayir.
+     initialize islem
+                grapher-sutun-sayisi
+                grapher-sutunlar
+     move 1 to islem-sutun, islem-pos, islem-bos
+     move islem-pos to grapher-sutun-pos(islem-sutun)
+*/ dokumer-detay-kolon-ayirici ya gore
+*/ sutunlarin baslangic yerini ve boyunu bulur 
+     perform varying islem-pos
+             from    1
+             by      1
+             until   islem-pos > 400
+       if grapher-400(islem-pos:1) = dokumer-detay-kolon-ayirici
+          move islem-boy to grapher-sutun-boy(islem-sutun)
+          add  1         to islem-sutun
+          move islem-pos to islem-bos
+          add  1         to islem-bos
+          move islem-bos to grapher-sutun-pos(islem-sutun)
+          initialize islem-boy
+       else
+          add 1 to islem-boy
+       end-if
+     end-perform
+     compute grapher-sutun-sayisi = islem-sutun - 1
+     .
+*
+*/ sutunlarin icindeki verilerin basindaki ve
+*/ sonundaki bosluklari cikarir.
+ sutun-bosluk-temizle.
+     perform varying islem-sutun
+             from    1
+             by      1
+             until   islem-sutun > grapher-sutun-sayisi
+       perform grapher-boy-pos-oku
+       initialize islem-bos
+       inspect transfer-alfa(1:islem-boy)
+               tallying islem-bos
+               for trailing spaces
+       subtract islem-bos from grapher-sutun-boy(islem-sutun)
+       if islem-bos = islem-boy
+          move 1     to grapher-sutun-boy(islem-sutun)
+          move space to grapher-400(islem-pos:1)
+       else
+          move function reverse(transfer-alfa(1:islem-boy)) to transfer-alfa(1:islem-boy)
+          initialize islem-bos
+          inspect transfer-alfa(1:islem-boy)
+                  tallying islem-bos
+                  for trailing spaces
+          add      islem-bos to   grapher-sutun-pos(islem-sutun)
+          subtract islem-bos from grapher-sutun-boy(islem-sutun)
+       end-if
+     end-perform
+     .
+*
+ grapher-tahmin-x.
+     initialize tahmin-notu
+                tahmin-sakla
+     perform varying islem-sutun
+             from    1
+             by      1
+             until   islem-sutun > grapher-sutun-sayisi
+        initialize transferler
+        perform grapher-boy-pos-oku
+        call "C$TOUPPER" using transfer-alfa(1:islem-boy)
+                         value islem-boy
+        end-call
+        perform tahmin-ara
+        if tahmin-notu > tahmin-sakla
+           move tahmin-notu to tahmin-sakla
+           evaluate true
+             when tahmin-toplam
+               move islem-sutun to grapher-20-top-sutunu
+             when tahmin-yuzde
+               move islem-sutun to grapher-20-yuz-sutunu
+           end-evaluate
+        end-if
+     end-perform
+     .
+*
+ grapher-tahmin-y.
+     initialize tahmin-notu
+                tahmin-sakla
+     move all high-values to grapher-rec
+     move "V" to grapher-20-islem
+     start grapher key <= grapher-anahtar
+       invalid
+         display message box "Gosterecek veri yok"
+       not invalid
+         initialize fs-grapher
+                    islem-satir
+         perform with test after until fs-grapher = "10"
+           if grapher-20-data
+              read grapher previous no lock
+                end
+                  move "10" to fs-grapher
+                  move zero to islem-satir
+                not end
+                  perform Grapher-Boy-Pos-Oku
+                  call "C$TOUPPER" using transfer-alfa(1:islem-boy)
+                                   value islem-boy
+                  end-call
+                  perform tahmin-ara
+                  if tahmin-notu > tahmin-sakla
+                     move tahmin-notu      to tahmin-sakla
+                     move grapher-satir-no to islem-satir
+                     if tahmin-tam
+                        move "10" to fs-grapher
+                     end-if
+                  end-if
+              end-read
+           else
+              move "10" to fs-grapher
+              move zero to islem-satir
+           end-if
+         end-perform
+     end-start
+     if islem-satir = zero
+        evaluate true
+          when tahmin-toplam
+            move say-T to islem-satir
+          when tahmin-yuzde
+            move say-Y to islem-satir
+        end-evaluate
+     end-if
+     .
+*
+ grapher-veri-update.
+     initialize grapher-rec
+                say-Space
+     move "V" to grapher-20-islem
+     if islem-satir > zero
+        move islem-satir to grapher-satir-no
+     end-if
+     start grapher key >= grapher-anahtar
+       invalid
+         continue
+       not invalid
+         initialize fs-grapher
+         perform with test after
+                 until fs-grapher ="10"
+           read grapher next no lock
+             end
+               move "10" to fs-grapher
+             not end
+               if grapher-20-data
+                  compute grapher-satir-no = say-space + 1
+                  rewrite grapher-rec
+                    invalid continue
+                    not invalid
+                      add 1 to say-space
+                  end-rewrite
+               else
+                  move "10" to fs-grapher
+               end-if
+           end-read
+         end-perform
+     end-start
+     .
+*
+ grapher-seri-oku.
+     compute grapher-byte-pos = ((islem-seri - 1) * grapher-data-boyu) + 1
+     if grapher-byte-pos not > ((grapher-top-byte - grapher-data-boyu) + 1) and
+        grapher-ptr      not = NULL
+        call "M$GET" using, grapher-ptr,
+                            grapher-seri,
+                            grapher-data-boyu,
+                            grapher-byte-pos
+        end-call
+     else
+        initialize grapher-seri
+     end-if
+     .
+*
+ grapher-tmp-seri-yaz.
+     compute grapher-byte-pos = ((islem-seri - 1) * grapher-data-boyu) + 1
+     call "M$PUT" using, grapher-new-ptr,
+                         grapher-seri,
+                         grapher-data-boyu,
+                         grapher-byte-pos
+     end-call
+     .
+*
+ grapher-tmp-seri-oku.
+     compute grapher-byte-pos = ((islem-seri - 1) * grapher-data-boyu) + 1
+     if grapher-byte-pos not > ((grapher-top-byte - grapher-data-boyu) + 1) and
+        grapher-new-ptr  not = NULL
+        call "M$GET" using, grapher-new-ptr,
+                            grapher-seri,
+                            grapher-data-boyu,
+                            grapher-byte-pos
+        end-call
+     else
+        initialize grapher-seri
+     end-if
+     .
+*
+ grapher-baslik-oku.
+     initialize grapher-rec
+     if grapher-baslik-search
+        move say-D to grapher-ana-no
+     else
+        move grapher-baslik-sira to grapher-ana-no
+     end-if
+     read grapher record no lock
+                  key is grapher-ana-no
+       invalid key
+         move "10" to fs-grapher
+     end-read
+     .
+*
+ grapher-veri-oku.
+     initialize grapher-rec
+     if (islem-satir = zero) or
+        (islem-satir = null)
+        compute islem-satir = say-D + 1
+     end-if
+     move islem-satir to grapher-ana-no
+     read grapher record no lock
+                  key is grapher-ana-no
+       invalid
+         move "10" to fs-grapher
+     end-read
+     .
+*
+ grapher-veri-oku-tip.
+     initialize grapher-rec
+     if (islem-satir = zero) or
+        (islem-satir = null)
+        move 1 to islem-satir
+     end-if
+     evaluate true
+       when grapher-seri-veri
+         move islem-tipi to grapher-20-islem
+       when grapher-seri-toplam
+         move islem-tipi to grapher-20-islem
+       when grapher-seri-yuzde
+         move islem-tipi to grapher-20-islem
+       when other
+         move "V"        to grapher-20-islem
+     end-evaluate
+     move islem-satir to grapher-satir-no
+     read grapher record no lock
+                  key is grapher-anahtar
+       invalid
+         move "10" to fs-grapher
+     end-read
+     .
+*
+ grapher-pipe-oku.
+     move grapher-ana-no to transfer-9
+     initialize grapher-rec
+     move "|"   to grapher-20-islem
+*     move all high-value to grapher-ana-no
+*     compute grapher-ana-no = grapher-ana-no - (( Say-D * 2 ) - 1 )
+     move say-D to grapher-satir-no
+     read grapher record no lock
+                  key is grapher-anahtar
+       invalid key
+         display message box "Dokumer ['|'- Pipe] Hatasi"
+     end-read
+     move transfer-9 to grapher-ana-no
+     .
+*
+ grapher-plus-oku.
+     move grapher-ana-no to transfer-9
+     move "+" to grapher-20-islem
+*     move all high-value to grapher-ana-no
+*     compute grapher-ana-no = grapher-ana-no - ( Say-D * 2 )
+     move say-D to grapher-satir-no
+     read grapher record no lock
+                  key is grapher-anahtar
+       invalid key
+         display message box "Dokumer ['+'- Plus] Hatasi"
+     end-read
+     move transfer-9 to grapher-ana-no
+     .
+*
+ grapher-boy-pos-oku.
+*     initialize transfer-alfa
+     move grapher-sutun-pos(islem-sutun)   to islem-pos
+     move grapher-sutun-boy(islem-sutun)   to islem-boy
+     if islem-pos < 1
+        move 1   to islem-pos
+        move "@" to grapher-400(islem-pos:1)
+     end-if
+     if islem-boy < 1
+        move 1     to islem-boy
+        move space to grapher-400(islem-pos:1)
+     end-if
+     move grapher-400(islem-pos:islem-boy) to transfer-alfa(1:islem-boy)
+     
+     .
+*
+ grapher-ekran-ciz.
+     perform grapher-islem-ayarlari
+     perform varying islem-seri
+             from    1
+             by      1
+             until   islem-seri > grapher-seri-sayisi
+       perform grapher-seri-oku
+       perform kontrol-illegal
+       perform kontrol-zero-seri-bas
+       perform ekran-seri-ciz
+     end-perform
+     .
+*
+ grapher-islem-ayarlari.
+     compute grapher-data-boyu = function length (grapher-seri)
+     compute grapher-top-byte  = grapher-seri-sayisi * grapher-data-boyu
+     move    grapher-top-byte to grapher-yeni-byte
+                                 grapher-eski-byte
+     if say-D > 1
+        perform Kontrol-Plus-Serisi
+     end-if
+     .
+*
+ kontrol-plus-serisi.
+     if grapher-new-ptr not = NULL
+        call "M$FREE" using grapher-new-ptr, end-call
+     end-if
+     call "M$ALLOC" using grapher-top-byte,
+                          grapher-new-ptr,
+     end-call
+     perform varying islem-seri
+             from    1
+             by      1
+             until   islem-seri > grapher-seri-sayisi
+       perform grapher-seri-oku
+       perform grapher-tmp-seri-yaz
+     end-perform
+     perform grapher-init
+     perform varying islem-seri
+             from    1
+             by      1
+             until   islem-seri > grapher-cagir-seri-sayisi
+       compute grapher-top-byte  = grapher-cagir-seri-sayisi * grapher-data-boyu
+       move    grapher-top-byte to grapher-yeni-byte
+                                   grapher-eski-byte
+       perform grapher-tmp-seri-oku
+       compute grapher-top-byte  = grapher-seri-sayisi * grapher-data-boyu
+       move    grapher-top-byte to grapher-yeni-byte
+                                   grapher-eski-byte
+       perform cevir-plus-seri
+       perform grapher-yeni-seri
+     end-perform
+     if grapher-new-ptr not = NULL
+        call "M$FREE" using grapher-new-ptr, end-call
+     end-if
+     .
+*
+ cevir-plus-seri.
+     perform grapher-plus-oku
+     evaluate true
+       when grapher-veri-x
+         perform cevir-plus-seri-y
+       when grapher-veri-y
+         perform cevir-plus-seri-x
+     end-evaluate
+     if grapher-baslik-sira < say-D
+        move say-D to grapher-baslik-sira
+     end-if
+     .
+*
+ cevir-plus-seri-x.
+     move grapher-seri-bas to grapher-seri-son
+     move 1 to islem-sutun
+     if grapher-seri-bas not = zero or
+        grapher-seri-bas not = null
+        initialize fs-grapher
+        perform with test after
+                until fs-grapher = "10"
+          if grapher-seri-bas = grapher-sutun-pos(islem-sutun)
+             move "10" to fs-grapher
+          else
+             add 1 to islem-sutun
+             if islem-sutun > grapher-sutun-sayisi
+                move "10" to fs-grapher
+             end-if
+          end-if
+        end-perform
+        move islem-sutun to grapher-seri-bas
+     end-if
+     move grapher-sutun-sayisi to islem-sutun
+     if grapher-seri-son not = zero or
+        grapher-seri-son not = null
+        initialize fs-grapher
+        perform with test after
+                until fs-grapher = "10"
+          if grapher-seri-son = grapher-sutun-pos(islem-sutun)
+             move "10" to fs-grapher
+          else
+             subtract 1 from islem-sutun
+             if islem-sutun < 1
+                move "10" to fs-grapher
+             end-if
+          end-if
+        end-perform
+        move islem-sutun to grapher-seri-son
+     end-if
+     if grapher-seri-adi not = zero or
+        grapher-seri-adi not = null
+        initialize fs-grapher
+        perform with test after
+                until fs-grapher = "10"
+          if grapher-seri-adi = grapher-sutun-pos(islem-sutun)
+             move "10" to fs-grapher
+          else
+             add 1 to islem-sutun
+             if islem-sutun > grapher-sutun-sayisi
+                move "10" to fs-grapher
+             end-if
+          end-if
+        end-perform
+        move islem-sutun to grapher-seri-adi
+     end-if
+     move grapher-seri-bas to grapher-sel-x1
+     move grapher-seri-son to grapher-sel-x2
+     move grapher-veri-bas to grapher-sel-y1
+     move grapher-veri-son to grapher-sel-y2
+     .
+*
+ cevir-plus-seri-y.
+     move 1 to islem-sutun
+     if grapher-veri-bas not = zero or
+        grapher-veri-bas not = null
+        initialize fs-grapher
+        perform with test after
+                until fs-grapher = "10"
+          if grapher-veri-bas = grapher-sutun-pos(islem-sutun)
+             move "10" to fs-grapher
+          else
+             add 1 to islem-sutun
+             if islem-sutun > grapher-sutun-sayisi
+                move "10" to fs-grapher
+             end-if
+          end-if
+        end-perform
+        move islem-sutun to grapher-veri-bas
+     end-if
+     move grapher-sutun-sayisi to islem-sutun
+     if grapher-veri-son not = zero or
+        grapher-veri-son not = null
+        initialize fs-grapher
+        perform with test after
+                until fs-grapher = "10"
+          if grapher-veri-son = grapher-sutun-pos(islem-sutun)
+             move "10" to fs-grapher
+          else
+             subtract 1 from islem-sutun
+             if islem-sutun < 1
+                move "10" to fs-grapher
+             end-if
+          end-if
+        end-perform
+        move islem-sutun to grapher-veri-son
+     end-if
+*     if grapher-seri-adi not = zero or
+*        grapher-seri-adi not = null
+*        initialize fs-grapher
+*        perform with test after
+*                until fs-grapher = "10"
+*          if grapher-seri-adi = grapher-sutun-pos(islem-sutun)
+*             move "10" to fs-grapher
+*          else
+*             if islem-sutun > grapher-sutun-sayisi
+*                move "10" to fs-grapher
+*             else
+*                add 1 to islem-sutun
+*             end-if
+*          end-if
+*        end-perform
+*        move islem-sutun to grapher-seri-adi
+*     end-if
+     move grapher-seri-bas to grapher-sel-y1
+     move grapher-seri-son to grapher-sel-y2
+     move grapher-veri-bas to grapher-sel-x1
+     move grapher-veri-son to grapher-sel-x2
+     .
+*
+ kontrol-illegal.
+     perform kontrol-illegal-baslik
+     perform kontrol-illegal-seri
+     perform kontrol-illegal-seri-adi
+     perform kontrol-illegal-veri
+     .
+*
+ kontrol-illegal-baslik.
+     initialize fs-grapher
+     perform Grapher-Baslik-Oku
+     if fs-grapher = "10"
+        move Say-D to grapher-baslik-sira
+     end-if
+     .
+*
+ kontrol-illegal-seri.
+     initialize fs-grapher
+     evaluate true
+       when grapher-veri-x
+         move grapher-seri-bas to islem-satir
+         perform Grapher-Veri-Oku
+         evaluate true
+           when grapher-seri-veri
+             if not grapher-20-data
+                move "10" to fs-grapher
+             end-if
+           when grapher-seri-toplam
+             if not grapher-20-toplam
+                move "10" to fs-grapher
+             end-if
+           when grapher-seri-yuzde
+             if not grapher-20-yuzde
+                move "10" to fs-grapher
+             end-if
+         end-evaluate
+       when grapher-veri-y
+         perform Grapher-Baslik-Oku
+         if    (grapher-seri-bas < 2)
+            or (grapher-seri-bas > grapher-sutun-sayisi)
+            or (    grapher-seri-veri
+                and (  (grapher-seri-bas = grapher-20-top-sutunu)
+                    or (grapher-seri-bas = grapher-20-yuz-sutunu)))
+            or (    grapher-seri-toplam
+                and (grapher-seri-bas not = grapher-20-top-sutunu))
+            or (    grapher-seri-yuzde
+                and (grapher-seri-bas not = grapher-20-yuz-sutunu))
+            move "10" to fs-grapher
+         end-if
+     end-evaluate
+     if fs-grapher = "10"
+        move zero to grapher-seri-bas
+     end-if
+     .
+*
+ kontrol-illegal-seri-adi.
+     initialize fs-grapher
+     evaluate true
+       when grapher-veri-x
+         if    (grapher-seri-adi < 1)
+            or (grapher-seri-adi > grapher-sutun-sayisi) 
+            move 1 to grapher-seri-adi
+         end-if
+       when grapher-veri-y
+         if grapher-seri-adi < say-D
+            move say-D to grapher-seri-adi
+         end-if
+         move grapher-seri-adi to islem-satir
+         perform grapher-veri-oku
+         if fs-grapher = "10"
+            move say-D to grapher-seri-adi
+            if grapher-seri-adi < say-D
+               move say-D to grapher-seri-adi
+            end-if
+         end-if
+     end-evaluate
+     .
+*
+ kontrol-illegal-veri.
+     initialize grapher-rec
+     perform Grapher-Baslik-Oku
+     if grapher-veri-selected and
+       (grapher-veri-bas > grapher-veri-son)
+        move grapher-veri-bas to transfer-9
+        move grapher-veri-son to grapher-veri-bas
+        move transfer-9       to grapher-veri-son
+     end-if
+     if grapher-veri-all
+        evaluate true
+          when grapher-veri-x
+            move grapher-sutun-sayisi to grapher-veri-son
+          when grapher-veri-y
+            move all high-value       to grapher-veri-son
+        end-evaluate
+     end-if
+     evaluate true
+       when grapher-veri-x
+         if grapher-veri-son > grapher-sutun-sayisi
+            move grapher-sutun-sayisi to grapher-veri-son
+         end-if
+         if grapher-veri-bas < 2
+            move 2 to grapher-veri-bas
+         end-if
+         if grapher-veri-son < 2
+            move 2 to grapher-veri-son
+         end-if
+       when grapher-veri-y
+         if grapher-veri-bas < (say-D + 1)
+            compute grapher-veri-bas = (say-D + 1)
+         end-if
+         if grapher-veri-son < (say-D + 1)
+            compute grapher-veri-bas = (say-D + 1)
+         end-if
+     end-evaluate
+     .
+*
+ kontrol-zero-seri-bas.
+     if grapher-seri-all
+        evaluate true
+          when grapher-veri-y
+            perform grapher-baslik-oku
+            if grapher-20-top-var
+               move grapher-20-top-sutunu to grapher-seri-bas
+            else
+               compute grapher-seri-bas = grapher-sutun-sayisi - 1
+            end-if
+          when grapher-veri-x
+            if say-T <= zero
+               move "T" to tahmin-tipi
+               if grapher-seri-adi-selected
+                  move grapher-seri-adi to islem-sutun
+               else
+                  move 1 to islem-sutun
+               end-if
+               open i-o tahmin
+               perform Grapher-Tahmin-Y
+               close tahmin
+            else
+               move 1           to islem-satir
+            end-if
+            move "T" to grapher-seri-tipi
+                        islem-tipi
+            initialize fs-grapher
+            perform Grapher-Veri-Oku-Tip
+            if fs-grapher = "10"
+               compute grapher-seri-bas = say-D + 1
+            else
+               move grapher-ana-no to grapher-seri-bas
+            end-if
+        end-evaluate
+        move "T"      to grapher-seri-tipi
+        move "+"      to grapher-toplam
+        move "+"      to grapher-yuzde
+     end-if
+     .
+*
+ ekran-seri-ciz.
+     compute seri-tchart = islem-seri - 1
+     perform ekran-seri-ekle
+     perform ekran-veri-yaz
+     .
+*
+ ekran-seri-ekle.
+     modify graph-1, AddSeries(@scLine)
+     modify graph-1, aSeries(seri-tchart)::clear()
+* @smsValue
+*     modify Form1-TC-1, aseries(islem-seri)::marks::Style()
+     perform kontrol-illegal-seri-adi
+     evaluate true
+       when grapher-veri-x
+         move grapher-seri-bas to islem-satir
+         move grapher-seri-adi to islem-sutun
+       when grapher-veri-y
+         move grapher-seri-adi to islem-satir
+         move grapher-seri-bas to islem-sutun
+     end-evaluate
+     perform grapher-veri-oku
+     perform grapher-boy-pos-oku
+     perform tahmin-tarih
+     modify graph-1, aSeries(seri-tchart)::@title(transfer-alfa(1:islem-boy))
+*     modify graph-1, aSeries(seri-tchart)::@marks::@style() @smsValue
+     .
+*
+ ekran-veri-yaz.
+     evaluate true
+       when grapher-veri-x
+         perform ekran-veri-yaz-x
+       when grapher-veri-y
+         perform ekran-veri-yaz-y
+     end-evaluate
+     .
+*
+ ekran-veri-yaz-x.
+     move grapher-seri-bas to islem-satir
+     perform Kontrol-Illegal-Veri
+     perform Grapher-Veri-Oku
+     if grapher-sutun-sayisi < 2
+        modify graph-1, aSeries(seri-tchart)::add(1,"Gosterecek Veri Yok",@clTeeColor)
+     else
+        perform varying islem-sutun
+                from    grapher-veri-bas
+                by      1
+                until   islem-sutun > grapher-veri-son
+*/ veri ignore kontrolu
+          initialize grapher-ignore
+          evaluate true
+            when (grapher-top-bul or grapher-top-all) and
+                 islem-sutun not = grapher-20-top-sutunu
+            when grapher-top-ignore and
+                 islem-sutun = grapher-20-top-sutunu
+            when grapher-top-ignore-plus and
+                 (islem-sutun = grapher-20-top-sutunu or
+                  islem-sutun = grapher-20-yuz-sutunu)
+            when grapher-top-all-plus and
+                 (islem-sutun not = grapher-20-top-sutunu or
+                  islem-sutun not = grapher-20-yuz-sutunu)
+              set ignore-veri to true
+          end-evaluate
+          evaluate true
+            when (grapher-yuz-bul or grapher-yuz-all) and
+                 islem-sutun not = grapher-20-yuz-sutunu
+            when grapher-yuz-ignore and
+                 islem-sutun = grapher-20-yuz-sutunu
+            when grapher-yuz-ignore-plus and
+                 (islem-sutun = grapher-20-yuz-sutunu or
+                  islem-sutun = grapher-20-top-sutunu)
+            when grapher-yuz-all-plus and
+                 (islem-sutun not = grapher-20-yuz-sutunu or
+                  islem-sutun not = grapher-20-top-sutunu)
+              set ignore-veri to true
+          end-evaluate
+          if not-ignore-veri
+             perform Grapher-Veri-Oku
+             perform Grapher-Boy-Pos-Oku
+             compute transfer-z = function numval (transfer-alfa(1:islem-boy))
+             move transfer-z to transfer-9
+             perform grapher-baslik-oku
+             perform Grapher-Boy-Pos-Oku
+             perform tahmin-tarih
+             modify graph-1, aSeries(seri-tchart)::add(transfer-9, transfer-alfa(1:islem-boy),@clTeeColor)
+          end-if
+        end-perform
+     end-if
+     .
+*
+ ekran-veri-yaz-y.
+     perform grapher-baslik-oku
+     perform Grapher-Boy-Pos-Oku
+*/ Veri Bas-Son illegal kontrolu
+*/ veri ignore kontrolu
+     evaluate true
+       when grapher-top-ignore
+       when grapher-top-ignore-plus
+       when grapher-yuz-ignore
+       when grapher-yuz-ignore-plus
+         move "V"       to islem-tipi
+         compute islem-satir = grapher-veri-bas - say-D
+         compute grapher-veri-son = grapher-veri-son - say-D
+       when grapher-top-bul
+       when grapher-top-all
+         move "T"       to islem-tipi
+         move 1 to islem-satir
+       when grapher-yuz-bul
+       when grapher-yuz-all
+         move "Y"       to islem-tipi
+         move 1 to islem-satir
+       when grapher-top-all-plus
+       when grapher-yuz-all-plus
+         move "A"       to islem-tipi
+         move 1 to islem-satir
+     end-evaluate
+     evaluate islem-tipi
+       when "V"
+         perform ekran-veri-tipi-yaz-y
+         if not (grapher-top-ignore or
+                 grapher-top-ignore-plus)
+            move "T" to islem-tipi
+            move 1   to islem-satir
+            perform ekran-veri-tipi-yaz-y
+         end-if
+         if not (grapher-yuz-ignore or
+                 grapher-yuz-ignore-plus)
+            move "Y" to islem-tipi
+            move 1   to islem-satir
+            perform ekran-veri-tipi-yaz-y
+         end-if
+       when "A"
+         move 1   to islem-satir
+         perform ekran-veri-tipi-yaz-y
+         move 1   to islem-satir
+         perform ekran-veri-tipi-yaz-y
+       when "T"
+       when "Y"
+         perform ekran-veri-tipi-yaz-y
+     end-evaluate
+     .
+*
+ ekran-veri-tipi-yaz-y.
+     initialize fs-grapher
+     perform with test after
+             until fs-grapher="10"
+       move islem-tipi  to grapher-20-islem
+       perform Grapher-Veri-Oku-Tip
+       if not fs-grapher ="10"
+          move grapher-seri-bas to islem-sutun
+          perform Grapher-Boy-Pos-Oku
+          compute transfer-z = function numval (transfer-alfa(1:islem-boy))
+          move transfer-z to transfer-9
+          move 1 to islem-sutun
+          perform Grapher-Boy-Pos-Oku
+          modify graph-1, aSeries(seri-tchart)::add(transfer-9, transfer-alfa(1:islem-boy),@clTeeColor)
+          add 1 to islem-satir
+       end-if
+       if islem-satir > grapher-veri-son
+          move "10" to fs-grapher
+       end-if
+     end-perform
+     .
+* Form 1 - End
+* ------------------------------------------------
+* ------------------------------------------------
+* Form 2 - Start
+*
+ Grapher-Ayarlar-Baslat.
+     perform Gd2-Ana-Baslik-init
+     .
+*
+ Gd2-Ana-Baslik-init.
+     initialize grapher-rec
+     move "B" to grapher-20-islem
+     initialize fs-grapher
+     start grapher key >= grapher-anah2
+       invalid
+         display message box "Grapher Start Hatasi"
+       not invalid
+         modify Gd2-Ana-Baslik, reset-grid = 1
+         perform with test after
+                           until fs-grapher = "10"
+           read grapher next no lock
+             end
+               move "10" to fs-grapher
+             not end
+               if grapher-20-baslik
+                  modify Gd2-Ana-Baslik, record-to-add grapher-400
+               else
+                  move "10" to fs-grapher
+               end-if
+           end-read
+         end-perform
+     end-start
+     .
+*
+ Form2-F2-Tusu.
+     initialize key-status
+     evaluate control-id
+       when 1001
+       when 2101
+       when 2102
+       when 3101
+         perform gd2-ana-baslik-ekle
+       when 2001
+       when other
+         perform grapher-ayarlari-uygula
+     end-evaluate
+     .
+*
+ Form2-F3-Tusu.
+     initialize key-status
+     evaluate control-id
+       when 1001
+       when 2101
+       when 2102
+       when 3101
+         perform gd2-ana-baslik-sil
+     end-evaluate
+     .
+*
+ Form2-F4-Tusu.
+     initialize key-status
+     evaluate control-id
+       when 2002  perform grapher-tahmin-pen-ac
+       when other continue
+     end-evaluate
+     .
+*
+ Form2-F8-Tusu.
+     initialize key-status
+     evaluate control-id
+       when 1001
+       when other
+         perform grapher-tahmin-button-ac-kapa
+     end-evaluate
+     .
+*
+ gd2-ana-baslik-ekle.
+     display message box "Baslik Ekle"
+     .
+*
+ gd2-ana-baslik-sil.
+     display message box "Baslik Sil"
+     .
+*
+ grapher-ayarlari-uygula.
+     set exit-pushed to true
+     .
+*
+ grapher-tahmin-pen-ac.
+     perform Acu-Form3-Routine
+     .
+*
+ grapher-tahmin-button-ac-kapa.
+     modify Pb2-Tahmin, visible = true
+     .
+* Form 2 - End
+* ------------------------------------------------
+* ------------------------------------------------
+* Form 3 - Start
+*
+ Form3-Aft-Routine.
+     close tahmin
+     .
+*
+ txt-import-init.
+     open i-o tahmin
+     modify Form3-Gd-1, RESET-GRID = 1
+     move "Tipi"           to gd-imp-tipi
+     move "Yeri"           to gd-imp-yeri
+     move "Yuzde"          to gd-imp-notu
+     move "Aranacak Metin" to gd-imp-str
+     modify Form3-Gd-1, RECORD-TO-ADD gd-imp
+     perform tahmin-idx-al
+     perform tahmin-txt-al
+     modify Form3-Gd-1, Y = 2
+     perform Tahmin-Kayit-Goster
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ tahmin-idx-al.
+     modify Form3-Gd-1, MASS-UPDATE = 1
+     initialize fs-tahmin
+     move all high-values to tahmin-rec
+     start tahmin key <= tahmin-tip-not
+       invalid
+         continue
+       not invalid
+         perform with test after until fs-tahmin = "10"
+           read tahmin previous no lock
+             end
+               move "10" to fs-tahmin
+             not end
+               initialize gd-imp
+               move tahmin-tipi to gd-imp-tipi
+               move tahmin-yeri to gd-imp-yeri
+               move tahmin-notu to z3
+               move z3          to gd-imp-notu
+               move tahmin-str  to gd-imp-str
+               modify Form3-Gd-1, RECORD-TO-ADD gd-imp
+           end-read
+         end-perform
+     end-start
+     modify Form3-Gd-1, MASS-UPDATE = 0
+     .
+*
+ tahmin-txt-al.
+     open input  txtimp with no rewind
+     modify Form3-Gd-1, MASS-UPDATE = 1
+     initialize fs-txtimp
+     perform with test after until fs-txtimp="10"
+       initialize txtimp-rec
+       read txtimp next no lock
+         end
+           move "10" to fs-txtimp
+         not end
+           if txtimp-data
+              initialize tahmin-rec, gd-imp
+              move txtimp-tipi to tahmin-tipi, gd-imp-tipi
+              move txtimp-yeri to tahmin-yeri, gd-imp-yeri
+              move txtimp-notu to tahmin-notu, z3
+              move z3          to gd-imp-notu
+              move txtimp-str  to tahmin-str , gd-imp-str
+              perform tahmin-str-boy-bul
+              write tahmin-rec
+                invalid
+                  continue
+                not invalid
+                  modify Form3-Gd-1, RECORD-TO-ADD gd-imp
+              end-write
+           end-if
+       end-read
+     end-perform
+     modify Form3-Gd-1, MASS-UPDATE = 0
+     close txtimp
+     .
+*
+ tahmin-str-boy-bul.
+     inspect tahmin-str
+             tallying tahmin-str-boy
+             for trailing spaces
+     compute tahmin-str-boy = function length(tahmin-str) - tahmin-str-boy
+     .
+*
+ tahmin-txt-ver.
+     open output txtimp
+     
+     move "******************************" to txtimp-rec
+     write txtimp-rec, end-write
+     move "* 1  : #    = Comment        *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "*      >    = oku            *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "* 2  : bos                   *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "* 3  : T    = Toplam         *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "*      Y    = Yuzde          *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "* 4  : bos                   *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "* 5  : B    = String Basi    *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "*      O    = String Ortasi  *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "* 6  : bos                   *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "* 7-9: xxx  = isabet puan    *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "* 10 : bos                   *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "* 11-: x(20)= aranan str     *" to txtimp-rec
+     write txtimp-rec, end-write
+     move "******************************" to txtimp-rec
+     write txtimp-rec, end-write
+     move "                              " to txtimp-rec
+     write txtimp-rec, end-write
+     move "* T A xxx      ARANAN STR     " to txtimp-rec
+     write txtimp-rec, end-write
+     move "* - - --- --------------------" to txtimp-rec
+     write txtimp-rec, end-write
+     
+     initialize fs-tahmin
+     move all high-values to tahmin-rec
+     start tahmin key <= tahmin-tip-not
+       invalid
+         continue
+       not invalid
+         perform with test after until fs-tahmin = "10"
+           read tahmin previous no lock
+             end
+               move "10" to fs-tahmin
+             not end
+               initialize txtimp-rec
+               move ">"         to txtimp-bos
+               move tahmin-tipi to txtimp-tipi
+               move tahmin-yeri to txtimp-yeri
+               move tahmin-notu to txtimp-notu
+               move tahmin-str  to txtimp-str
+               write txtimp-rec, end-write
+           end-read
+         end-perform
+     end-start
+     close txtimp
+     .
+*
+ Form3-Gd-1-Ev-Msg-Goto-Cell.
+     initialize gd-select
+     inquire Form3-Gd-1, CURSOR-X in gd-sel-x2
+                         CURSOR-Y in gd-sel-y2
+     move event-data-1 to gd-sel-x1
+     move event-data-2 to gd-sel-y1
+     perform tahmin-kayit-goster
+     .
+*
+ Form3-Gd-1-Ev-Msg-End-Drag.
+     initialize gd-select
+     inquire Form3-Gd-1, CURSOR-X in gd-sel-x1
+                         CURSOR-Y in gd-sel-y1
+                         START-X  in gd-sel-x2
+                         START-Y  in gd-sel-y2
+*     move event-data-1 to gd-sel-x1
+*     move event-data-2 to gd-sel-y1
+     perform tahmin-kayit-goster
+     .
+*
+ tahmin-kayit-goster.
+     inquire Form3-Gd-1 RECORD-DATA in gd-imp
+     display Form3-Ef-tipi,
+             Form3-Ef-yeri,
+             Form3-Ef-notu
+             Form3-Ef-str
+     .
+*
+ tahmin-notu-arttir.
+     compute transfer-9 = function numval (gd-imp-notu)
+     add 1 to transfer-9
+     if transfer-9 > 100
+        move 100 to transfer-9
+     end-if
+     move transfer-9 to zz9
+     move zz9 to gd-imp-notu
+     display Form3-Ef-notu
+     .
+*
+ tahmin-notu-azalt.
+     compute transfer-9 = function numval (gd-imp-notu)
+     if transfer-9 not = zero
+        subtract 1 from transfer-9
+     end-if
+     move transfer-9 to zz9
+     move zz9 to gd-imp-notu
+     display Form3-Ef-notu
+     .
+*
+ tahmin-ekle.
+     move gd-imp-tipi to tahmin-tipi
+     move gd-imp-yeri to tahmin-yeri
+     compute tahmin-notu = function numval(gd-imp-notu)
+     move gd-imp-str  to tahmin-str
+     perform tahmin-str-boy-bul
+     write tahmin-rec
+       invalid
+         display message box "Kayit Mevcut"
+       not invalid
+         modify Form3-Gd-1, RECORD-TO-ADD gd-imp
+     end-write
+     .
+*
+ tahmin-sil.
+     perform gd-kayit-ara
+     if gd-ara-bulundu
+        perform tahmin-kayit-goster
+        move gd-imp-tipi to tahmin-tipi
+        move gd-imp-yeri to tahmin-yeri
+        compute tahmin-notu = function numval(gd-imp-notu)
+        move gd-imp-str  to tahmin-str
+        perform tahmin-str-boy-bul
+        delete tahmin record
+          invalid
+            display message box "Kayit Yok"
+          not invalid
+            modify Form3-Gd-1, RECORD-TO-DELETE gd-sel-y1
+        end-delete
+     else
+        display message box "Kayit Yok"
+     end-if
+     perform Form3-Gd-1-Ev-Msg-End-Drag
+     .
+*
+ tahmin-guncelle.
+     move    gd-imp to gd-ara
+     modify  Form3-Gd-1, Y = gd-sel-y1
+     inquire Form3-Gd-1, RECORD-DATA in gd-imp
+     move gd-imp-tipi to tahmin-tipi
+     move gd-imp-yeri to tahmin-yeri
+     compute tahmin-notu = function numval(gd-imp-notu)
+     move gd-imp-str  to tahmin-str
+     perform tahmin-str-boy-bul
+     delete tahmin record
+       invalid
+         display message box "Bu Bilgisayarin Gozleri Gormuyor"
+       not invalid
+         move gd-ara      to gd-imp
+         move gd-imp-tipi to tahmin-tipi
+         move gd-imp-yeri to tahmin-yeri
+         compute tahmin-notu = function numval(gd-imp-notu)
+         move gd-imp-str  to tahmin-str
+         perform tahmin-str-boy-bul
+         write tahmin-rec
+           invalid
+             modify  Form3-Gd-1, Y = gd-sel-y1
+             inquire Form3-Gd-1, RECORD-DATA in gd-imp
+             move gd-imp-tipi to tahmin-tipi
+             move gd-imp-yeri to tahmin-yeri
+             compute tahmin-notu = function numval(gd-imp-notu)
+             move gd-imp-str  to tahmin-str
+             perform tahmin-str-boy-bul
+             write tahmin-rec
+               invalid
+                 display message box "Ben Aptal Bir Bilgisayarim"
+             end-write
+             display message box "Kayit Var"
+           not invalid
+             modify Form3-Gd-1, Y = gd-sel-y1
+                                RECORD-DATA gd-imp
+         end-write
+     end-delete
+     .
+*
+ gd-kayit-ara.
+     initialize gd-ara-degis
+     move gd-imp to gd-ara
+     compute transfer-9 = function numval(gd-ara-notu)
+     move transfer-9 to z3 
+     move z3         to gd-ara-notu
+     inquire Form3-Gd-1, LAST-ROW in gd-ara-satir
+     perform varying gd-ara-islem
+             from    2
+             by      1
+             until   gd-ara-islem > gd-ara-satir
+       modify  Form3-Gd-1, Y = gd-ara-islem
+       inquire Form3-Gd-1, RECORD-DATA in gd-imp
+       if gd-imp = gd-ara
+          move 1            to gd-ara-bul
+          move gd-ara-islem to gd-sel-y1
+          compute gd-ara-islem = gd-ara-satir + 1
+       end-if
+     end-perform
+     .
+*
+ tahmin-ara.
+     move tahmin-tipi to tahmin-tipi-sakla
+     move all high-values to tahmin-rec
+     move tahmin-tipi-sakla to tahmin-tipi
+     start tahmin key <= tahmin-tip-not
+       invalid
+         move zero to tahmin-notu
+       not invalid
+         perform with test after until fs-tahmin = "10"
+           read tahmin previous no lock
+             end
+               move zero to tahmin-notu
+               move "10" to fs-tahmin
+             not end
+               if tahmin-tipi = tahmin-tipi-sakla
+                  perform Tahmin-Str-Boy-Bul
+                  perform tahmin-not-ver
+                  if tahmin-bulundu
+                     move "10" to fs-tahmin
+                  end-if
+               else
+                  move zero to tahmin-notu
+                  move "10" to fs-tahmin
+               end-if
+           end-read
+         end-perform
+     end-start
+     move tahmin-tipi-sakla to tahmin-tipi
+     .
+*
+ tahmin-not-ver.
+     initialize tahmin-ara-bul
+     perform tahmin-str-boy-bul
+     evaluate true
+       when tahmin-bastan
+         perform tahmin-not-ver-bastan
+       when tahmin-ortadan
+         perform tahmin-not-ver-ortadan
+       when tahmin-sondan
+         perform tahmin-not-ver-sondan
+       when other
+         move zero to tahmin-notu
+     end-evaluate
+     .
+*
+ tahmin-not-ver-bastan.
+     inspect        transfer-alfa(1:islem-boy)
+       tallying     tahmin-ara-bul
+       for leading  tahmin-str(1:tahmin-str-boy)
+     .
+*
+ tahmin-not-ver-ortadan.
+     inspect       transfer-alfa(1:islem-boy)
+       tallying    tahmin-ara-bul
+       for all     tahmin-str(1:tahmin-str-boy)
+     .
+ tahmin-not-ver-sondan.
+     move function reverse(transfer-alfa(1:islem-boy))   to transfer-alfa(1:islem-boy)
+     move function reverse(tahmin-str(1:tahmin-str-boy)) to tahmin-str(1:tahmin-str-boy)
+     inspect       transfer-alfa(1:islem-boy)
+       tallying    tahmin-ara-bul
+       for leading tahmin-str(1:tahmin-str-boy)
+     move function reverse(transfer-alfa(1:islem-boy))   to transfer-alfa(1:islem-boy)
+     move function reverse(tahmin-str(1:tahmin-str-boy)) to tahmin-str(1:tahmin-str-boy)
+     .
+*
+ tahmin-tarih.
+     initialize tahmin-tarih-vars
+     move transfer-alfa(1:2) to tahmin-gun
+     move transfer-alfa(3:2) to tahmin-ay
+     if tahmin-ay >= 1 and tahmin-ay <=12
+        if tahmin-gun >= 1 and tahmin-gun <= 31
+           move yil-tasi to tahmin-yil
+           move 10 to islem-boy
+           move tahmin-tarih-vars to transfer-alfa(1:10)
+        end-if
+     end-if
+     .
+* Form 3 - End
+* ------------------------------------------------
+*
+ After-Program.
+     close grapher
+     delete file grapher
+     .
+ 

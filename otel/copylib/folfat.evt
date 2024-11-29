@@ -1,0 +1,710 @@
+* folfat.evt
+* folfat.evt is generated from D:\asya\acugt.ytl\otel\folfat.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+
+ Form1-Gd-1-Exception-Proc.
+     PERFORM Form1-Gd-1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+      call "c$narg" using link-var.
+    
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+    move genel-printer-filtre to text-oku-filtre.
+     .
+*
+ Form1-Aft-Initdata.
+    move "I" to fol-tip.
+    display com-01.
+      if  link-var > 0 then 
+         move link-fol-no to konuk-folio
+         open input konuk
+         read konuk no lock invalid
+            continue
+            not invalid 
+            move konuk-durumu to fol-tip
+             display com-01
+          end-read
+          close konuk
+         move link-oda to oda-num 
+         perform acc-01-aft-Procedure
+         perform Form1-Gd-1-Bef-Procedure
+         perform Form1-Gd-1-Aft-Procedure
+         move 20 to control-id
+         move 4 to accept-control
+      end-if.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ acc-01-Aft-Procedure.
+    initialize odalar-rec.
+    open input odalar.
+    move oda-num to odalar-anah.
+    read odalar no lock invalid
+         display message box "Oda numarasi tanimsiz..."
+         move 4    to accept-control
+         move 1001 to control-id
+         close odalar
+         exit paragraph.
+    close odalar.
+
+    open input konuk.
+    initialize konuk-rec.
+    move fol-tip to konuk-durumu.
+    move oda-num to konuk-odano.
+    start konuk key not < konuk-oda invalid  continue.
+    modify form1-gd-1, reset-grid  = 1 mass-update = 1.
+    move "Folio"     to gd-1-col-1
+    move "Adi"       to gd-1-col-2
+    move "Soyadi"    to gd-1-col-3
+    move "Gelis T."  to gd-1-col-4
+    move "Gidis T."  to gd-1-col-5
+    move "S"         to gd-1-col-6
+    modify form1-gd-1,record-to-add(form1-gd-1-record)
+    move 1 to kayit-sayi
+
+    perform with test after until fs-konuk = "10" 
+      read konuk next no lock end move "10" to fs-konuk
+        not end
+          if konuk-odano <> oda-num 
+             move "10" to fs-konuk
+           else
+             if oda-num = konuk-odano and 
+                fol-tip = konuk-durumu  and (link-var = 0 or 
+                link-fol-no = konuk-folio)
+             move konuk-folio   to gd-1-col-1
+             move konuk-adi     to gd-1-col-2
+             move konuk-soyadi  to gd-1-col-3
+             move konuk-gel-gun to xgun
+             move konuk-gel-ay  to xay
+             move konuk-gel-yil to xyil
+             move xtarih        to gd-1-col-4 
+             move konuk-git-gun to xgun
+             move konuk-git-ay  to xay
+             move konuk-git-yil to xyil
+             move xtarih        to gd-1-col-5 
+             move spaces        to gd-1-col-6 
+
+             if kayit-sayi = 1
+                move konuk-folio  to fol-sak
+                move konuk-adi    to adi
+                if adi (1:1) = "E" and adi(3:1) = ">" then 
+                   move adi(4:) to adi
+                end-if
+                move konuk-soyadi to soy
+                move konuk-ulke   to ulke-anah
+                open input ulke
+                read ulke no lock invalid continue
+                  not invalid
+                    move ulke-adi to ulk 
+                end-read
+                close ulke
+             end-if
+
+             add 1 to kayit-sayi
+             modify form1-gd-1,record-to-add(form1-gd-1-record)
+             modify form1-gd-1(kayit-sayi , 1 )
+                    hidden-data = konuk-fol-kodu
+            if link-var > 0 then 
+                   modify form1-gd-1(kayit-sayi ,6 )
+                     hidden-data = "*"
+                     bitmap = check-bmp
+                     bitmap-number = 2 
+                    bitmap-width = 16
+                     bitmap-trailing = 1
+              end-if
+             end-if
+          end-if
+      end-read
+    end-perform
+    close konuk.
+    modify form1-gd-1, mass-update = 0.
+    move "Konaklama bedeli geregi" to ack.
+    display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 acc-07 acc-08 acc-09 acc-10 acc-11.
+     .
+*
+ Form1-Gd-1-Ev-Other.
+    evaluate event-type 
+      when msg-begin-entry
+        move event-action-fail to event-action,
+        inquire Form1-Gd-1, x in i y in ii
+        inquire Form1-Gd-1(ii,6), hidden-data in yed-tip
+        if yed-tip <> "S" 
+          evaluate yed-tip
+            when "*" 
+                 modify Form1-Gd-1(ii,6), 
+                 hidden-data = " "
+                 bitmap = check-bmp
+                 bitmap-number = 1 
+                 bitmap-width = 16
+                 bitmap-trailing = 1
+            when " " 
+                 modify Form1-Gd-1(ii,6), 
+                 hidden-data = "*"
+                 bitmap = check-bmp
+                 bitmap-number = 2 
+                 bitmap-width = 16
+                 bitmap-trailing = 1
+          end-evaluate
+        end-if
+    end-evaluate.
+     .
+*
+ Form1-Gd-1-Ex-Other.
+    evaluate key-status
+      when 1
+        inquire Form1-Gd-1, last-row kayit-sayi
+        perform varying i from 2 by 1 until i > kayit-sayi
+          initialize new-tip
+          inquire Form1-Gd-1(i,6), hidden-data in new-tip
+                                   
+          if new-tip <> "S" 
+             evaluate true
+               when new-tip = "*" 
+                    modify Form1-Gd-1(i,6), 
+                           hidden-data = " "
+                           bitmap = check-bmp
+                           bitmap-number = 1 
+                           bitmap-width = 16
+                           bitmap-trailing = 1
+               when new-tip = " " 
+                    modify Form1-Gd-1(i,6), 
+                           hidden-data = "*"
+                           bitmap = check-bmp
+                           bitmap-number = 2 
+                           bitmap-width = 16
+                           bitmap-trailing = 1
+             end-evaluate
+          end-if
+        end-perform  
+    end-evaluate.
+     .
+*
+ Form1-Gd-1-Aft-Procedure.
+    initialize ind-toplam ind-kdv rapor-indirim net-sakla  net-toplam tek-kdv kdv-toplam gen-toplam.
+        inquire Form1-Gd-1, last-row kayit-sayi
+        perform varying i from 2 by 1 until i > kayit-sayi
+          initialize new-tip
+          inquire Form1-Gd-1(i,6), hidden-data in new-tip
+          if new-tip = "*" 
+             inquire Form1-Gd-1(i,1), hidden-data in re
+             inquire Form1-Gd-1(i,1), cell-data in fol-num
+             move fol-num to romhrk-folio exthrk-folio
+             perform gd-konuk-oku
+             evaluate re
+               when "R"   
+                  perform romhrk-al thru romhrk-al-exit
+                  move "Konaklama bedeli geregi       " to ack
+    
+               when other  
+                  perform exthrk-al thru exthrk-al-exit
+                  move "Extra Harcamalar bedeli geregi" to ack
+ 
+             end-evaluate
+          end-if
+        end-perform.
+    perform gen-hesapla
+    display acc-12 acc-13 acc-14 acc-15 ACC-11.
+     .
+*
+ gd-konuk-oku.
+     open i-o konuk ozluk ulke  ozluk2   rez
+     initialize konuk-rec
+                ozluk-rec
+                ulke-rec
+     move fol-num to konuk-folio
+                     ozluk-folio
+                     OZLUK2-FOLIO
+     read konuk no lock
+       invalid
+         initialize konuk-rec
+     end-read
+      if konuk-fol-kodu = "E" then
+           move konuk-extra-rez-no to rez-no
+          
+         
+        read rez no lock invalid
+            continue
+            not invalid
+            move rez-folio to ozluk-folio
+                     OZLUK2-FOLIO
+        end-read
+     END-IF 
+     read ozluk no lock
+       invalid
+         initialize ozluk-rec
+     end-read
+     read ozluk2 no lock
+       invalid
+         initialize ozluk2-rec
+     end-read
+     move konuk-ulke to ulke-anah1
+     read ulke no lock
+       invalid
+         initialize ulke-rec
+     end-read
+     move konuk-adi    to adi
+     if adi (1:1) = "E" and adi(3:1) = ">" then 
+                   move adi(4:) to adi
+                end-if
+     move konuk-soyadi to soy
+     move ozluk-adres1 to ad1
+     move ozluk-adres2 to ad2
+     move ozluk-il   to ili
+     move ozluk-ilce to ilc
+
+     if OZLUK2-FAT-UNVAN-1   not = spaces  
+            move OZLUK2-FAT-UNVAN-1 to adi
+            move OZLUK2-FAT-UNVAN-2 to soy
+     end-if
+      if  OZLUK2-FAT-ADRES-1  not = spaces
+    
+          move  OZLUK2-FAT-ADRES-1 to ad1          
+          move  OZLUK2-FAT-ADRES-2   to ad2 
+      end-if
+
+     if    OZLUK2-FAT-IL-ILCE not = spaces
+          move     OZLUK2-FAT-IL-ILCE  to ili
+     end-if
+     move ozluk2-fat-vergi-daire to vda
+     move ozluk2-fat-vergi-no to vno
+     move ozluk-ulke to ulk
+     if (ad1 = spaces and ad2 = spaces) or (konuk-fol-kodu = "E")
+       
+        
+         if konuk-fol-kodu = "E" then
+           move konuk-extra-rez-no to rez-no
+                else 
+           move konuk-rez-no to rez-no
+         end-if
+        read rez no lock invalid
+             continue
+             modify form1-la-1, title = ""
+             not invalid
+              if rez-adres1 <> spaces 
+                 move rez-adres1 to ad1
+              end-if
+              if rez-adres2 <> spaces
+                 move rez-adres2 to ad2
+              end-if
+             modify form1-la-1, title = rez-no
+        end-read
+        
+     end-if
+     if ulk = spaces then 
+     move ulke-adi     to ulk
+     end-if
+     display acc-02
+             acc-03 acc-04 acc-05 acc-06 acc-07
+             acc-08
+             acc-09
+             acc-10
+     close konuk ozluk ulke ozluk2   rez
+     .
+*
+ romhrk-al.
+    open input romhrk depkod.
+    initialize romhrk-rec
+    move fol-num to romhrk-folio
+    start romhrk key not < romhrk-anah invalid continue,
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+            read romhrk next no lock end move "E" to evet-hayir,
+                not end,
+                evaluate true
+                   when romhrk-folio > fol-num move "E" to evet-hayir,
+                   when romhrk-folio = fol-num,
+                    if romhrk-ba         = "B"                  and
+                       romhrk-depkod not = onkpara-paid-out     and
+                       romhrk-depkod not = onkpara-guest-refund 
+                       compute gen-toplam = gen-toplam + romhrk-tl-tutar,
+                       initialize depkod-rec,
+                       move romhrk-depkod to depkod-kodu,
+                       read depkod no lock invalid continue,
+                            not invalid,
+                            initialize tek-kdv,
+                            compute tek-kdv rounded =
+                            ((romhrk-tl-tutar * depkod-kdv) / (depkod-kdv + 100)),
+                            compute kdv-toplam = kdv-toplam + tek-kdv,
+                       end-read,
+                    else
+                    if romhrk-ba         = "A"                  and
+                       romhrk-depkod  = onkpara-corr-eksi       or
+                       romhrk-depkod  = onkpara-discount  
+                       initialize depkod-rec,
+                       move romhrk-depkod to depkod-kodu,
+                       read depkod no lock invalid continue,
+                            not invalid,
+                       compute gen-toplam = gen-toplam - romhrk-tl-tutar,
+                            initialize tek-kdv,
+                            compute tek-kdv rounded =
+                            ((romhrk-tl-tutar * depkod-kdv) / (depkod-kdv + 100)),
+                            compute kdv-toplam = kdv-toplam - tek-kdv,
+                        end-read,
+                    end-if,
+                    end-if,
+                end-evaluate,
+            end-read,
+        end-perform,
+    end-start.
+    compute net-toplam = gen-toplam - kdv-toplam.
+    move net-toplam to net-sakla.
+    close romhrk depkod.
+ romhrk-al-exit.
+    exit.
+ exthrk-al.
+    open input exthrk depkod.
+    initialize exthrk-rec
+    move fol-num to exthrk-folio
+    start exthrk key not < exthrk-anah invalid continue,
+        not invalid,
+        move spaces to evet-hayir,
+        perform with test after until evet,
+            read exthrk next no lock end move "E" to evet-hayir,
+                not end,
+                evaluate true
+                   when exthrk-folio > fol-num move "E" to evet-hayir,
+                   when exthrk-folio = fol-num,
+                    if exthrk-ba         = "B"                  and
+                       exthrk-depkod not = onkpara-paid-out     and
+                       exthrk-depkod not = onkpara-guest-refund 
+                       compute gen-toplam = gen-toplam + exthrk-tl-tutar,
+                       initialize depkod-rec,
+                       move exthrk-depkod to depkod-kodu,
+                       read depkod no lock invalid continue,
+                            not invalid,
+                            initialize tek-kdv,
+                            compute tek-kdv rounded =
+                            ((exthrk-tl-tutar * depkod-kdv) / (depkod-kdv + 100)),
+                            compute kdv-toplam = kdv-toplam + tek-kdv,
+                       end-read,
+                    else
+                    if exthrk-ba         = "A"                  and
+                       exthrk-depkod  = onkpara-corr-eksi       or
+                       exthrk-depkod  = onkpara-discount  
+                       initialize depkod-rec,
+                       move exthrk-depkod to depkod-kodu,
+                       read depkod no lock invalid continue,
+                            not invalid,
+                       compute gen-toplam = gen-toplam - exthrk-tl-tutar,
+                            initialize tek-kdv,
+                            compute tek-kdv rounded =
+                            ((exthrk-tl-tutar * depkod-kdv) / (depkod-kdv + 100)),
+                            compute kdv-toplam = kdv-toplam - tek-kdv,
+                        end-read,
+                    end-if,
+                    end-if,
+                end-evaluate,
+            end-read,
+        end-perform,
+    end-start.
+    compute net-toplam = gen-toplam - kdv-toplam.
+    move net-toplam to net-sakla.
+    close exthrk depkod.
+ exthrk-al-exit.
+    exit.
+*
+ acc-12-Aft-Procedure.
+    perform gen-hesapla.
+     .
+*
+ acc-13-Bef-Procedure.
+     .
+*
+ acc-13-Aft-Procedure.
+    move net-toplam to net-sakla .
+    perform gen-hesapla.
+*
+ acc-15-Aft-Procedure.
+    perform gen-hesapla.
+     .
+* 
+ genelden-hesapla.
+     compute net-toplam rounded = gen-toplam / ( 1 + (cinpara-mus-kdv / 100))
+     compute kdv-toplam rounded = ( gen-toplam * (cinpara-mus-kdv /100) ) / ( 1 + cinpara-mus-kdv / 100 )
+     compute net-sakla rounded = net-toplam + rapor-indirim
+     display acc-12 acc-13 acc-14 acc-15.
+     .
+* 
+ gen-hesapla.
+    compute net-toplam rounded = (gen-toplam - rapor-indirim) /
+            ( 1 + (cinpara-mus-kdv / 100))
+    compute kdv-toplam = gen-toplam - net-toplam.
+*-------------------
+*   compute net-toplam rounded = net-sakla  - rapor-indirim.
+*   initialize kdv-toplam.
+*   compute kdv-toplam rounded =
+*          ((net-toplam * cinpara-mus-kdv ) / 100).
+*   compute gen-toplam rounded = net-toplam + kdv-toplam.
+*--------------------
+    display acc-12 acc-13 acc-14 acc-15.
+     .
+*
+ gen-hesapla-1.
+*
+ Form1-Gd-1-Bef-Procedure.
+    initialize dsg-degiskenler oda-num fol-num ili ilc
+               vda vno net-sakla net-toplam
+               kdv-toplam gen-toplam adi soy
+               ad1 ad2 ulk ack ind-toplam ind-kdv
+               d01-detay d02-detay d03-detay d04-detay.
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 1
+          evaluate control-id
+          when 1001
+          when 14
+          initialize oda-cagir
+          if fol-tip = "I"
+             move "D"  to oda-db-cagir
+          end-if
+          call "/asya/ytl/obj/otel/odaara.asy" using
+               oda-cagir
+          on exception 
+             perform callerr-proc
+          not on exception 
+          cancel "/asya/ytl/obj/otel/odaara.asy" 
+          end-call
+             if odano-cagir <> spaces
+                move odano-cagir  to oda-num
+                display acc-01
+             end-if
+          move 4 to accept-control
+          move 1001 to control-id
+          end-evaluate
+
+      when 2
+*        perform Form1-Gd-1-Bef-Procedure
+        move oda-num       to oda-goster
+        move fol-sak       to folio-goster
+        move konuk-gel-gun to cin-gun
+        move konuk-gel-ay  to cin-ay
+        move konuk-gel-yil to cin-yil
+        move konuk-git-gun to cout-gun
+        move konuk-git-ay  to cout-ay
+        move konuk-git-yil to cout-yil
+        move calis-gun     to f-gun
+        move calis-ay      to f-ay
+        move calis-yil     to f-yil
+        initialize rakam yaziile
+        move gen-toplam     to rakam
+        call "/asya/ytl/obj/otel/yaziile.asy" using rakam yaziile
+              on exception perform callerr-proc
+                 not on exception
+                 cancel "/asya/ytl/obj/otel/yaziile.asy" 
+         end-call
+       
+        perform main thru main-ex
+        open i-o fatura
+        initialize fatura-rec
+        move fol-sak to konuk-folio
+        open input konuk
+        read konuk no lock invalid continue
+        end-read
+        close      konuk
+        move calisma-tarihi to fatura-tarih
+        move konuk-folio    to fatura-folio
+        move "F"            to fatura-tipi
+        move konuk-acenta   to fatura-acenta
+        move konuk-pan-tipi to fatura-pan-tipi
+        move konuk-gel-tar  to fatura-gir-tar
+        move konuk-git-tar  to fatura-cik-tar
+        move konuk-odano    to fatura-odano
+        move 1              to fatura-oda
+        move konuk-buyuk    to fatura-buyuk
+        move konuk-kucuk    to fatura-kucuk
+        move konuk-free     to fatura-free
+        move konuk-bebek    to fatura-bebek
+        move rapor-indirim  to fatura-indirim
+        move net-toplam     to fatura-matrah
+        move kdv-toplam     to fatura-kdv
+        move gen-toplam     to fatura-toplam
+        write fatura-rec invalid 
+              rewrite fatura-rec invalid continue
+              end-rewrite
+        end-write
+        perform log-operation-fatura
+        close fatura
+        if link-var > 0 then 
+              set exit-pushed to true
+            else
+              perform Form1-Gd-1-Bef-Procedure
+        end-if
+    end-evaluate.
+     .
+ main.
+    open i-o genelfis
+    move 1 to genelfis-anahtar
+    read genelfis no lock invalid
+            accept print-no from time
+        not invalid
+            add 1 to print-no
+            rewrite genelfis-rec end-rewrite
+    end-read
+    close genelfis
+    initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+               dokumer-dosya
+    set  dokumer-asya-set to true
+    move print-no         to dokumer-dosya-adi.
+    move "H"              to dokumer-genel-baslik-yaz.
+    open output dokumer
+*/ DOKUMER OZELLIKLER-REC
+    initialize dokumer-rec
+    move "O" to det-dokumer-20(1:)
+    move "E" to dokumer-oto-sayfa-basi
+    move 56  to dokumer-oto-sayfa-satir
+    move "|" to dokumer-detay-kolon-ayirici
+    move "LLLLLLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+    move dokumer-ozellikler-rec     to det-filler
+    write dokumer-rec from en-detay-1
+
+ 
+    open input text-oku.
+    perform text-oku    thru text-oku-ex.
+    perform rapor-liste thru rapor-liste-exit.
+    close text-oku.
+
+              close dokumer
+              set dokumer-yazici-text to true
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer.
+ main-ex.
+    exit.
+ text-oku.
+    perform with test after until fs-text-oku = "10"
+        initialize text-oku-rec
+        read text-oku next no lock end
+                                   move "10" to fs-text-oku
+        not at end
+            if text-oku-rec(1:1) = "*" and text-oku-rec(2:1) = "A" then 
+                move text-oku-rec(3:2) to unst-i
+                 if unst-i<30 then 
+                    move text-oku-rec(6:)  to tanimlar(unst-i)
+                 end-if
+            end-if         
+
+            if text-oku-rec(1:1) not = "*" and text-oku-rec not = spaces
+              initialize unst-sayi unst-i unst-ii
+              unstring text-oku-rec delimited by "-" into
+                       unst(01) unst(01) unst(02) unst(03) unst(04) unst(05)
+                       unst(06) unst(07) unst(08) unst(09) unst(10)
+                       unst(11) unst(12) unst(13) unst(14) unst(15)
+                       tallying unst-sayi
+              end-unstring
+              subtract 1 from unst-sayi
+              if unst-sayi > zeroes
+                 perform det thru det-ex
+              end-if
+           end-if
+        end-read
+    end-perform.
+ text-oku-ex.
+    exit.
+ det.
+    
+    perform varying unst-i from 1 by 1 until unst-i > unst-sayi
+         evaluate true
+              when newline(unst-i)
+                   add unst-au(unst-i)    to dsg-real
+              when faturatarihi(unst-i)
+                   move f-tarihi          to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when musteriadi(unst-i)
+                   move adi               to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when musterisoy(unst-i)
+                   move soy               to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when adres1(unst-i)
+                   move ad1               to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when adres2(unst-i)
+                   move ad2               to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when vergidaire(unst-i)
+                   move vda     to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when vergino(unst-i)
+                   move vno        to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when sayfaatla(unst-i)
+                   move x"0b"             to dsg-dizi(dsg-real)
+              when ulke(unst-i)
+                   move ulk               to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when il(unst-i)
+                   move ili               to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when ilce(unst-i)
+                   move ilc               to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when aciklama(unst-i)
+                   move ack               to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when d01(unst-i)
+                   move d01-detay         to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when d02(unst-i)
+                   move d02-detay         to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when d03(unst-i)
+                   move d03-detay         to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when d04(unst-i)
+                   move d04-detay         to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when matrah(unst-i)
+                   move net-sakla to z-goster
+                   move z-goster           to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when nettoplam(unst-i)
+                   move net-toplam to z-goster
+                   move z-goster           to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when kdv(unst-i)
+                   move kdv-toplam to z-goster,
+                   move z-goster           to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when indirim(unst-i)
+                   move rapor-indirim to z-goster,
+                   move z-goster           to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when geneltoplam(unst-i)
+                   move gen-toplam to z-goster,
+                   move z-goster           to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when parayaz(unst-i)
+                   move yaziile            to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+              when yeni-tanim (unst-i)
+                   move unst-isl(unst-i)(2:2)       to tanim-i
+                   if tanim-i > zeroes and tanim-i < 31
+                      move tanimlar(tanim-i)   to dsg-dizi(dsg-real)(unst-bp(unst-i):unst-au(unst-i))
+                   end-if
+              when eof(unst-i)
+                   move "EOF"              to dsg-dizi(dsg-real)
+         end-evaluate
+    end-perform.
+    add 1 to dsg-real.
+ det-ex.
+    exit.
+ rapor-liste.
+    perform varying dsg-i from 1 by 1 until dsg-i > max-liste-satir
+            if dsg-dizi(dsg-i)(1:3) = "EOF" or dsg-dizi(dsg-i)(1:1) = x"0b"
+               initialize en-detay-1
+               move max-liste-satir to dsg-i
+            else
+              initialize en-detay-1
+              move dsg-dizi(dsg-i) to en-detay
+              write dokumer-rec from en-detay-1
+            end-if
+    end-perform.
+ rapor-liste-exit.
+    exit.
+ 

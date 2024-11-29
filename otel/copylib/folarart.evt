@@ -1,0 +1,535 @@
+* folarart.evt
+* folarart.evt is generated from D:\asya\acugt.ytl\otel\folarart.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ arama-combo-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM arama-combo-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Lb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM Form1-Lb-1-Ex-Cmd-Dblclick
+        WHEN Ntf-Pl-First
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-First
+        WHEN Ntf-Pl-Last
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Last
+        WHEN Ntf-Pl-Next
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Next
+        WHEN Ntf-Pl-Nextpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Nextpage
+        WHEN Ntf-Pl-Prev
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prev
+        WHEN Ntf-Pl-Prevpage
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Prevpage
+        WHEN Ntf-Pl-Search
+           PERFORM Form1-Lb-1-Ex-Ntf-Pl-Search
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     if folarart-gel-gun-harf = spaces or folarart-gel-gun = zeroes
+        initialize folarart-gel-tar
+     end-if
+     if folarart-grup not numeric
+        initialize folarart-grup
+     end-if
+     move folarart-gel-tar         to flt-gel-tarih
+     move folarart-grup            to flt-grup.
+
+*
+ Form1-Aft-Initdata.
+
+     modify arama-combo,reset-list = 1 
+                        mass-update = 1
+     modify arama-combo,
+            item-to-add("1-Ada gore","2-Soyada gore","3-Giris tarihi")
+     modify arama-combo,
+            item-to-add("4-Cikis tarihi","5-Oda")
+
+
+
+
+     if folarart-gel-gun-harf = spaces or folarart-gel-gun = zeroes
+        move "1-Ada gore"  to arama-combo-value
+        initialize folarart-gel-tar
+        move 1 to arama
+     else
+        move "3-Giris tarihi"  to arama-combo-value
+        move 3 to arama
+     end-if
+     modify arama-combo,mass-update = 0
+                        value = arama-combo-value.
+
+     open input konuk.
+
+     perform kolon-ayarla.
+     perform  Form1-Lb-1-Ex-Ntf-Pl-First
+     modify form1-lb-1, selection-index = 1
+                        mass-update = 0.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+get-next-item.
+    evaluate state-flag
+*       when reading-backwards
+        when "b"
+             move kayit-sayisi to number-reads-needed
+*       when at-end
+        when "e"
+             exit paragraph
+*       when reading-forwards
+        when "f"
+          move 1 to number-reads-needed
+
+*       when at-start
+       when "s"
+          move low-values to konuk-rec
+          move folarart-cagri-tipi   to konuk-durumu
+          evaluate arama
+             when 1
+               start konuk key not < konuk-ad    invalid
+                     exit paragraph
+               end-start
+             when 2
+               start konuk key not < konuk-soy    invalid
+                     exit paragraph
+               end-start
+             when 3
+               start konuk key not < konuk-gel     invalid
+                     exit paragraph
+               end-start
+             when 4
+               start konuk key not < konuk-git     invalid
+                     exit paragraph
+               end-start
+             when 5
+               start konuk key not < konuk-oda invalid
+                     exit paragraph
+               end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+    end-evaluate.
+
+    perform varying i from 1 by 1 until i > number-reads-needed
+        read konuk next no lock end 
+                      set at-end to true
+                      exit paragraph
+        not at end
+               if konuk-durumu <> folarart-cagri-tipi
+                      set at-end to true
+                      exit paragraph
+               end-if
+
+               if flt-gel-gun <> zeroes
+                  if konuk-gel-tar <> flt-gel-tarih
+                     subtract 1 from i
+                     exit perform cycle
+                  end-if
+               end-if
+
+               if flt-grup <> zeroes
+                  if konuk-grup-no <> flt-grup
+                     subtract 1 from i
+                     exit perform cycle
+                  end-if
+               end-if
+
+               if flt-firma <> spaces
+                  if konuk-firma <> flt-firma
+                     subtract 1 from i
+                     exit perform cycle
+                  end-if
+               end-if
+
+
+        end-read
+    end-perform
+    perform kayit-yerlestir
+
+
+    modify form1-lb-1, item-to-add = form1-lb-1-value
+
+    set reading-forwards to true.
+
+get-prev-item.
+    evaluate state-flag
+       when "b"
+*       when reading-backwards
+          move 1 to number-reads-needed
+*       when at-end
+       when  "e"
+          move high-values to konuk-rec
+          move folarart-cagri-tipi  to konuk-durumu
+          evaluate arama
+          when 1 
+              start konuk key not > konuk-ad    
+                   invalid key      exit paragraph
+              end-start
+          when 2
+              start konuk key not > konuk-soy   
+                   invalid key      exit paragraph
+              end-start
+          when 3
+              start konuk key not > konuk-gel    
+                   invalid key      exit paragraph
+              end-start
+          when 4
+              start konuk key not > konuk-git    
+                   invalid key      exit paragraph
+              end-start
+          when 5
+              start konuk key not > konuk-oda 
+                   invalid key      exit paragraph
+              end-start
+          end-evaluate
+          add 1 to kayit-sayisi giving number-reads-needed
+       when "f"
+*       when reading-forwards
+          move kayit-sayisi to number-reads-needed
+       when "s"
+*       when at-start
+          exit paragraph
+    end-evaluate.
+
+    perform varying i from 1 by 1 until i > number-reads-needed
+        read konuk previous no lock end 
+                      set at-start to true
+                      exit paragraph
+        not at end
+               if konuk-durumu <> folarart-cagri-tipi
+                  set at-start to true
+                  exit paragraph
+               end-if
+
+
+
+               if flt-gel-gun <> zeroes
+                  if konuk-gel-tar <> flt-gel-tarih
+                     subtract 1 from i
+                     exit perform cycle
+                  end-if
+               end-if
+
+               if flt-grup <> zeroes
+                  if konuk-grup-no <> flt-grup
+                     subtract 1 from i
+                     exit perform cycle
+                  end-if
+               end-if
+
+               if flt-firma <> spaces
+                  if konuk-firma <> flt-firma
+                     subtract 1 from i
+                     exit perform cycle
+                  end-if
+               end-if
+
+        end-read
+    end-perform
+
+    perform kayit-yerlestir
+
+    modify form1-lb-1, 
+       insertion-index = 1
+       item-to-add = form1-lb-1-value
+
+    set reading-backwards to true.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Next.
+    perform get-next-item.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prev.
+    perform get-prev-item.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Nextpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Prevpage.
+     modify form1-lb-1, mass-update = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-First.
+     move low-values to konuk-rec
+     move folarart-cagri-tipi     to konuk-durumu
+     evaluate arama
+     when 1 
+     start konuk key not < konuk-ad   
+           invalid key    exit paragraph
+     end-start
+     when 2
+     start konuk key not < konuk-soy   
+           invalid key    exit paragraph
+     end-start
+     when 3
+     if folarart-gel-gun <> zeroes
+        move folarart-gel-tar  to konuk-gel-tar
+     end-if
+     start konuk key not < konuk-gel    
+           invalid key    exit paragraph
+     end-start
+     when 4
+     start konuk key not < konuk-git    
+           invalid key    exit paragraph
+     end-start
+     when 5
+     start konuk key not < konuk-oda 
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Last.
+     move high-values to konuk-rec
+     move folarart-cagri-tipi     to konuk-durumu
+     evaluate arama
+     when 1 
+     start konuk, key not > konuk-ad    
+           invalid key    exit paragraph
+     end-start
+     when 2 
+     start konuk, key not > konuk-soy   
+           invalid key    exit paragraph
+     end-start
+     when 3 
+     start konuk, key not > konuk-gel    
+           invalid key    exit paragraph
+     end-start
+     when 4 
+     start konuk, key not > konuk-git    
+           invalid key    exit paragraph
+     end-start
+     when 5 
+     start konuk, key not > konuk-oda 
+           invalid key    exit paragraph
+     end-start
+     end-evaluate.
+     set reading-backwards to true
+     modify form1-lb-1, mass-update = 1, reset-list = 1
+     perform get-prev-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0.
+*
+ Form1-Lb-1-Ex-Ntf-Pl-Search.
+     inquire form1-lb-1, search-text in arama-kelime
+     move folarart-cagri-tipi       to konuk-durumu
+     evaluate arama
+     when 1 
+     move arama-kelime to konuk-adi
+     start konuk key not < konuk-ad    
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 2 
+     move arama-kelime to konuk-soyadi
+     start konuk key not < konuk-soy   
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 3 
+     move arama-kelime(1:2) to konuk-gel-gun
+     move arama-kelime(4:2) to konuk-gel-ay 
+     move arama-kelime(7:4) to konuk-gel-yil
+     start konuk key not < konuk-gel     
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 4 
+     move arama-kelime(1:2) to konuk-git-gun
+     move arama-kelime(4:2) to konuk-git-ay 
+     move arama-kelime(7:4) to konuk-git-yil
+     start konuk key not < konuk-git    
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     when 5 
+     move arama-kelime to konuk-odano
+     start konuk key not < konuk-oda 
+           invalid key   
+                   perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+                   exit paragraph
+     end-start
+     end-evaluate.
+     set reading-forwards to true
+     modify form1-lb-1, mass-update = 1
+     perform get-next-item kayit-sayisi times
+     modify form1-lb-1, mass-update = 0
+     if at-end
+        perform  Form1-Lb-1-Ex-Ntf-Pl-Last
+     end-if.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2000
+
+     when 2001
+        inquire form1-lb-1,selection-index in i
+        inquire form1-lb-1(i),value in form1-lb-1-value
+        evaluate arama
+        when 1 
+        when 2 
+        when 3 
+        when 4
+        when 5 
+             inquire form1-lb-1(i),value in form1-lb-1-value
+             move lb-1-col-6     to folarart-konuk-no-cagir
+             set exit-pushed to true
+        end-evaluate
+     when 2002
+        if flt-gel-gun <> zeroes
+           move "3-Giris tarihi"  to arama-combo-value
+           move 3 to arama
+           modify arama-combo,mass-update = 0
+                              value = arama-combo-value
+           perform kolon-ayarla
+        end-if
+        perform Form1-Lb-1-Ex-Ntf-Pl-First
+        move 4 to accept-control
+        move 9 to control-id
+     when 2003
+        initialize flt-deg
+        display acc-1 acc-2 acc-3 acc-4 acc-5
+        if flt-gel-gun <> zeroes
+           move "3-Giris tarihi"  to arama-combo-value
+           move 3 to arama
+           modify arama-combo,mass-update = 0
+                              value = arama-combo-value
+           perform kolon-ayarla
+        end-if
+        perform Form1-Lb-1-Ex-Ntf-Pl-First
+        move 4 to accept-control
+        move 9 to control-id
+     end-evaluate.
+
+ kolon-ayarla.
+*     evaluate arama
+*         when 1 
+*              modify form1-lb-1,data-columns = 0
+*                                display-columns = 0
+*                                data-columns(1,31)
+*                                display-columns(1,32)
+*         when 2 
+*              modify form1-lb-1,data-columns = 0
+*                                display-columns = 0
+*                                data-columns(1,3)
+*                                display-columns(1,4)
+*     end-evaluate.
+*
+ arama-combo-Ex-Ntf-Selchange.
+     move arama-combo-value(1:1)  to arama
+     perform kolon-ayarla.
+     perform Form1-Lb-1-Ex-Ntf-Pl-First.
+*
+ kayit-yerlestir.
+    evaluate arama
+         when 1 
+              move konuk-adi         to det-1
+              move konuk-soyadi      to det-2
+              move konuk-gel-gun     to egun
+              move konuk-gel-ay      to eay
+              move konuk-gel-yil     to eyil
+              move etarih          to det-3
+              move konuk-git-gun     to egun
+              move konuk-git-ay      to eay
+              move konuk-git-yil     to eyil
+              move etarih          to det-4
+              move konuk-odano     to det-5
+              move konuk-anah        to det-6
+              move detay           to form1-lb-1-value
+         when 2
+              move konuk-adi         to det-2
+              move konuk-soyadi      to det-1
+              move konuk-gel-gun     to egun
+              move konuk-gel-ay      to eay
+              move konuk-gel-yil     to eyil
+              move etarih          to det-3
+              move konuk-git-gun     to egun
+              move konuk-git-ay      to eay
+              move konuk-git-yil     to eyil
+              move etarih          to det-4
+              move konuk-odano     to det-5
+              move konuk-anah        to det-6
+              move detay           to form1-lb-1-value
+         when 3
+              move konuk-adi         to det-2
+              move konuk-soyadi      to det-3
+              move konuk-gel-gun     to egun
+              move konuk-gel-ay      to eay
+              move konuk-gel-yil     to eyil
+              move etarih          to det-1
+              move konuk-git-gun     to egun
+              move konuk-git-ay      to eay
+              move konuk-git-yil     to eyil
+              move etarih          to det-4
+              move konuk-odano     to det-5
+              move konuk-anah        to det-6
+              move detay           to form1-lb-1-value
+         when 4
+              move konuk-adi         to det-2
+              move konuk-soyadi      to det-3
+              move konuk-gel-gun     to egun
+              move konuk-gel-ay      to eay
+              move konuk-gel-yil     to eyil
+              move etarih          to det-4
+              move konuk-git-gun     to egun
+              move konuk-git-ay      to eay
+              move konuk-git-yil     to eyil
+              move etarih          to det-1
+              move konuk-odano     to det-5
+              move konuk-anah        to det-6
+              move detay           to form1-lb-1-value
+         when 5
+              move konuk-adi         to det-2
+              move konuk-soyadi      to det-3
+              move konuk-gel-gun     to egun
+              move konuk-gel-ay      to eay
+              move konuk-gel-yil     to eyil
+              move etarih          to det-4
+              move konuk-git-gun     to egun
+              move konuk-git-ay      to eay
+              move konuk-git-yil     to eyil
+              move etarih          to det-5
+              move konuk-odano     to det-1
+              move konuk-anah        to det-6
+              move detay           to form1-lb-1-value
+
+    end-evaluate.
+*
+ Form1-Lb-1-Ex-Cmd-Dblclick.
+    move 2001 to key-status.
+    perform  Form1-Ex-Other.
+*
+ Form1-Aft-Routine.
+     close konuk.
+ 

@@ -1,0 +1,243 @@
+* satgor.evt
+* satgor.evt is generated from D:\asya\acugt.ytl\otel_ramazan\satgor.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     open input genel
+     initialize genel-rec
+     move 1 to genel-anahtar
+     read genel no lock invalid 
+          continue 
+     end-read 
+     close genel.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+        perform yeni-kaydet 
+        perform tazele
+     when 5
+        perform tazele
+     end-evaluate.
+*
+ tazele.
+     perform Grid-Baslik-Yukle
+     perform grid-ekle.
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+          move event-action-fail to event-action
+          initialize temp-fis-no  temp-kayit-edildi
+          inquire form1-gd-1(event-data-2,1),hidden-data in temp-fis-no
+          inquire form1-gd-1(event-data-2,11),hidden-data in temp-kayit-edildi
+          if temp-fis-no > 0
+            if temp-kayit-edildi = 0
+              call "/asya/ytl/obj/otel/satgir.asy" using temp-fis-no
+              on exception 
+                 perform callerr-proc
+              not on exception
+                 cancel "/asya/ytl/obj/otel/satgir.asy"
+              end-call
+            else
+              display message box "Onaylanmis Kayit Duzeltilemez..."                
+                              title "Uyari"
+                              icon 1
+                           exit paragraph 
+            end-if 
+          end-if 
+     end-evaluate.
+*
+ yeni-kaydet.
+     initialize temp-fis-no
+     call "/asya/ytl/obj/otel/satgir.asy" using temp-fis-no
+     on exception 
+        perform callerr-proc
+     not on exception
+        cancel "/asya/ytl/obj/otel/satgir.asy"
+     end-call.
+*
+ grid-baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "K.No"        to gd-1-col-1
+     move "Tesis"       to gd-1-col-2
+     move "Ind Tipi"    to gd-1-col-3
+     move "A.Tarihi"    to gd-1-col-4
+     move "S.Bas.Tar"   to gd-1-col-5
+     move "S.Bit.Tar"   to gd-1-col-6
+     move "K.Bas.Tar"   to gd-1-col-7
+     move "K.Bit.Tar"   to gd-1-col-8
+     move "Ind"         to gd-1-col-9
+     move "Mail Konu"   to gd-1-col-10
+     move "Durumu"      to gd-1-col-11
+     move "Acenta"      to gd-1-col-12
+     modify form1-gd-1,record-to-add(form1-gd-1-record).
+*
+ Form1-Aft-Initdata.
+     perform Grid-Baslik-Yukle.
+     perform grid-ekle.
+*
+ grid-ekle.
+     open i-o genelfis
+     initialize genelfis-rec
+     move 1  to genelfis-anahtar 
+     read genelfis no lock invalid 
+          continue 
+     end-read 
+     add 1 to print-no
+     rewrite genelfis-rec end-rewrite 
+     close genelfis
+
+     open output takasg close takasg open i-o takasg
+
+     open i-o sathrk
+     open input acenta
+     initialize sathrk-rec
+     start sathrk key not < sathrk-alt-anah invalid
+         continue 
+     not invalid 
+     perform until fs-sathrk = "10"
+     read sathrk next no lock end move "10" to fs-sathrk
+     not at end 
+             if tesis-kod(1:2) not = "TT"
+                if sathrk-tesis-kodu not = tesis-kod(1:2)
+                    exit perform cycle 
+                end-if 
+             end-if 
+             if dur(1:1) not = "T"
+                evaluate dur(1:1)
+                when "I" 
+                   if sathrk-durumu = "S"
+                     exit perform cycle 
+                   end-if 
+                when "S" 
+                   if sathrk-durumu = " "
+                     exit perform cycle 
+                   end-if
+                end-evaluate 
+             end-if 
+             if sathrk-fis-no > 0
+                initialize takasg-rec
+                move sathrk-fis-no          to takasg-fis-no
+                move sathrk-tesis-kodu      to takasg-tesis-kodu
+                read takasg no lock invalid                     
+                     continue 
+                end-read
+                     initialize acenta-rec
+                     move sathrk-acenta-kodu   to acenta-kodu
+                     read acenta no lock invalid 
+                        continue 
+                     end-read 
+                        string takasg-acenta-kodu
+                             acenta-adi delimited by "     "
+                             "+" delimited by size 
+                        into takasg-acenta-kodu  
+                
+                    move sathrk-diger to takasg-diger   
+                    move sathrk-kayit-edildi to takasg-kayit-edildi
+                  write takasg-rec invalid 
+                      rewrite takasg-rec end-rewrite 
+                  end-write 
+             end-if 
+     end-read 
+     end-perform
+     end-start
+     close sathrk acenta
+     open input onbkodlar10
+     move 1                      to kayit-adet
+     initialize takasg-rec
+     start takasg key not < takasg-anah invalid 
+        continue 
+     not invalid 
+     perform until fs-takasg = "10"
+     read takasg next no lock end move "10"  to fs-takasg
+     not at end 
+                initialize form1-gd-1-record
+                move takasg-fis-no          to gd-1-col-1
+                initialize onbkodlar10-rec
+                move takasg-tesis-kodu   to onbkodlar10-kodu1
+                move "OT"                to onbkodlar10-tipi
+                read onbkodlar10 no lock invalid
+                      continue 
+                end-read 
+                     move onbkodlar10-adi to gd-1-col-2
+            
+                evaluate takasg-ind-tip
+                when "0"
+                   move "EB Uzatma"         to gd-1-col-3
+                when "A"
+                   move "Aksiyon"    to gd-1-col-3
+                when "E"
+                   move "EB"         to gd-1-col-3
+                end-evaluate
+ 
+                move takasg-anlasma-yil   to eyil
+                move takasg-anlasma-ay    to eay
+                move takasg-anlasma-gun   to egun
+                move etarih               to gd-1-col-4
+
+                move takasg-sat-bas-yil   to eyil
+                move takasg-sat-bas-ay    to eay
+                move takasg-sat-bas-gun   to egun
+                move etarih               to gd-1-col-5
+
+                move takasg-sat-bit-yil   to eyil
+                move takasg-sat-bit-ay    to eay
+                move takasg-sat-bit-gun   to egun
+                move etarih               to gd-1-col-6
+
+                move takasg-kon-bas-yil   to eyil
+                move takasg-kon-bas-ay    to eay
+                move takasg-kon-bas-gun   to egun
+                move etarih               to gd-1-col-7
+
+                move takasg-kon-bit-yil   to eyil
+                move takasg-kon-bit-ay    to eay
+                move takasg-kon-bit-gun   to egun
+                move etarih               to gd-1-col-8
+
+                move takasg-ind-yuzde     to eind
+                move eind                 to gd-1-col-9
+
+                move takasg-mail-konu     to gd-1-col-10
+                evaluate takasg-durumu
+                when "S"
+                   move "Iptal"           to gd-1-col-11
+                when other 
+                   move "Islemde"         to gd-1-col-11
+                end-evaluate 
+                move takasg-acenta-kodu   to gd-1-col-12
+                add 1                     to kayit-adet
+
+                modify form1-gd-1,record-to-add(form1-gd-1-record)           
+                modify form1-gd-1(kayit-adet,1),hidden-data takasg-fis-no
+                modify form1-gd-1(kayit-adet,11),hidden-data takasg-kayit-edildi
+
+                if takasg-kayit-edildi = 1
+                   modify form1-gd-1(kayit-adet) ,row-color = 480
+                end-if 
+     end-read 
+     end-perform
+     end-start
+     close takasg onbkodlar10
+
+     delete file takasg
+     modify form1-gd-1,mass-update = 0.
+
+ 

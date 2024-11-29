@@ -1,0 +1,1126 @@
+* blokaj01.evt
+* blokaj01.evt is generated from D:\asya\acugt.ytl\otel\blokaj01.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-3-Event-Proc.
+     EVALUATE Event-Control-Id
+     WHEN 30
+        PERFORM gd-odatip3-Ev-Other
+     WHEN 29
+        PERFORM gd-odatip2-Ev-Other
+     WHEN 28
+        PERFORM gd-odatip1-Ev-Other
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    perform konumlar-oku
+    open input genel
+    initialize genel-rec
+    move 1  to genel-anahtar
+    read genel no lock invalid
+       continue 
+    end-read 
+    close genel
+     .
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to tarih.
+    open input kodlar02
+     perform oda-tipleri-yukle
+     close kodlar02
+    move "T" to isl-tip.
+    display acc-01 acc-02 acc-03 com-02.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 2 
+        open input kllnc odalar acenta
+         open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no 
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+                 move print-no         to takas-no
+   
+        perform takas-dosya-yaz thru takas-dosya-yaz-exit
+           initialize takas-rec
+               open input rez
+              start takas key not < takas-oda invalid
+                continue
+                not invalid
+                 perform until fs-takas = "10"
+                    read takas next no lock 
+                      end move "10" to fs-takas
+                      not end
+                       initialize rez-no ad-yer
+                       perform varying j from 1 by 1 until j > 31
+                           if takas-rez-no(j) not = rez-no then
+                              if rez-no not = 0 and j > 1 then
+                                 
+                                 if takas-late(j - 1)  > 0 then
+                                   if  takas-adi(j - 1)(1:1)  not = "<" 
+                                       move ">" to takas-adi(j - 1 )(1:1) 
+                                   end-if  
+                                     move takas-late(j - 1) to takas-adi(j - 1)(2:2)
+                                     move "*" to takas-adi(j - 1 )(4:1)
+                                   else
+                                    move ">" to takas-adi(j - 1 )(4:1)
+                                 end-if 
+                               end-if 
+                             initialize ad-yer blok-aciklama
+                             move takas-rez-no(j) to rez-no
+                             read rez no lock invalid continue
+                                not invalid
+
+                               initialize kodlar02-rec
+                               move "v"     to kodlar02-tipi
+                               move rez-vip to kodlar02-kodu
+                               read kodlar02 no lock invalid
+                                    initialize kodlar02-rec
+                                    move "*"  to kodlar02-adi
+                               end-read
+                                     
+                               evaluate true
+                                 when rez-vip = "N"
+                                when rez-vip = " "
+                                      move rez-adi to rez-adi(1:)
+                                     
+                               when rez-vip = kodlar02-kodu
+                                      move rez-adi to rez-adi(8:)
+                                      move "-"   to rez-adi(7:1)
+                                      move kodlar02-adi to rez-adi(1:6)
+                              
+                                when other 
+                                  move rez-adi to rez-adi(1:)
+                               end-evaluate
+ 
+
+                                if rez-k-g-b  = "O"   then 
+                                  initialize blok-aciklama
+                                  move all all "O" to blok-aciklama
+                                  else
+                                  move rez-acenta to acenta-kodu
+                                  read acenta no lock invalid continue
+                                  end-read
+                                
+                                 string 
+                                   
+                                   acenta-adi(1:5) delimited by size
+                                   "-"        delimited by size
+                                   rez-adi   delimited by "  "
+                                   " " delimited by "ggg"
+                                   rez-soyadi delimited by "   "
+                                   ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+                                   delimited by "hnhhhhhh"
+                                   into blok-aciklama
+                                 end-if
+                             end-read
+                            end-if
+                            if rez-no not = 0 
+                             evaluate takas-oda-cin(j) 
+                                 when  "C"
+                                   move blok-aciklama(ad-yer + 1 : 4) to takas-adi(j)
+                                      add 4 to ad-yer
+                                 when "B"
+                                   move blok-aciklama(ad-yer + 1 : 4) to takas-adi(j)
+                                   add 4 to ad-yer
+                                when  "E"
+                                   move "<" to takas-adi(j)(1:1)
+                                    move blok-aciklama(ad-yer + 1 : 3) to takas-adi(j)(3:)
+                                 
+                                   add 3 to ad-yer
+                                 when "D"
+                                   move "<<" to takas-adi(j)(1:2)
+                                   move blok-aciklama(ad-yer + 1 : 2) to takas-adi(j)(3:)
+                                   add 2 to ad-yer
+                                 when "O"
+                                    move blok-aciklama(ad-yer + 1 : 4) to takas-adi(j)
+                                      add 4 to ad-yer
+*                                   move "****" to takas-adi(j)(1:)
+                           end-evaluate
+                          end-if
+                       end-perform 
+                       rewrite takas-rec invalid write takas-rec 
+                       end-write end-rewrite
+
+                   end-read
+                 end-perform 
+              end-start
+                close rez acenta
+              initialize takas-rec
+              start takas key not < takas-oda invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                  close  takas kllnc odalar kodlar02 konum
+                    exit paragraph
+              end-start
+
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "BLOKAJA GORE FORECAST"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "BLOKAJA GORE FORECAST"   to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move gun            to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ay             to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move yil            to det-filler(57:04)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Rapor Tipi.:"     to det-filler(01:15)
+     if isl-tip = "I"
+        move "Islem Goren Odalar   "   to det-filler(15:)
+     else
+        move "Tum Odalar           "   to det-filler(15:)
+     end-if
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+     initialize dokumer-rec detay  
+     move "D1"           to det-dokumer-20(1:2)
+       move "Kat" to det-1 
+       move "|"             to fil-oda fil-hous,
+       perform varying sayac from 1 by 1 until sayac > 31,
+                move gun-dizi(sayac) to det-1(sutun(sayac):02),
+                move ay-dizi(sayac)  to det-1(sutun(sayac) + 2:02),
+                move "|"             to det-1(sutun(sayac) - 1:1),
+       end-perform
+              move "|"               to det-1(160:1),
+              move "|"               to det-1(167:1),
+              move "Toplam" to det-1(161:06)
+              write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     perform varying xx from 1 by 1 until xx > 31,
+          move "-----" to det-1(sutun(xx):05),
+          move "|"     to det-1(sutun(xx) + 1:01),
+     end-perform
+          move "-----" to det-1(161:05)
+     write dokumer-rec from detay
+*********************************
+              initialize alt-toplam-dizi alt-yuzde-dizi
+              initialize fs-takas
+              perform with test after until fs-takas = "10"
+                    read takas next no lock end move "10" to fs-rez
+                    not at end
+                      initialize dokumer-rec detay
+                      move takas-oda          to det-oda(01:04)
+                      move takas-oda to odalar-no
+                      read odalar no lock invalid
+                         continue
+                      not invalid
+                          if odalar-uzun-no not = spaces
+                               move odalar-uzun-no to det-oda(01:05)
+                          end-if
+                         move odalar-konumu to konum-anahtar
+                         read konum no lock invalid
+                              continue
+                         end-read
+*                         move konum-adi to det-oda(6:4)
+                         move konum-adi to det-oda(6:7)
+
+                         initialize kodlar02-rec
+                         move "G" to kodlar02-tipi
+                         move odalar-tipi to kodlar02-kodu
+                         read kodlar02 no lock invalid
+                            continue 
+                         end-read
+*                         move kodlar02-adi to det-oda(11:6)
+                         move kodlar02-adi to det-oda(14:6)
+                         
+                         initialize kodlar02-rec
+                         move "H" to kodlar02-tipi
+                         move odalar-tipi2 to kodlar02-kodu
+                         read kodlar02 no lock invalid
+                            continue 
+                         end-read
+*                         move kodlar02-adi to det-oda(18:6)
+                         move kodlar02-adi to det-oda(21:6)
+
+                         initialize kodlar02-rec
+                         move "I" to kodlar02-tipi
+                         move odalar-tipi3 to kodlar02-kodu
+                         read kodlar02 no lock invalid
+                            continue 
+                         end-read
+*                         move kodlar02-adi to det-oda(25:6)  
+                         move kodlar02-adi to det-oda(28:6)  
+
+*                         move "-" to det-oda(10:1) det-oda(17:1) det-oda(24:1)
+                         move "-" to det-oda(13:1) det-oda(20:1) det-oda(27:1)
+
+                          move "|"    to fil-oda   fil-hous
+                      end-read 
+                        move odalar-kat  to det-1(2:)
+                            move house-durumu  to det-hous
+
+                      initialize toplam
+                      perform varying sayac from 1 by 1 until sayac > 31,
+                         move takas-adi(sayac) to det-1(sutun(sayac):04)
+*                        evaluate takas-oda-cin(sayac) 
+*                         when  "C"
+*                           move "C/In" to det-1(sutun(sayac):04)
+*                         when "B"
+*                           move "Blok" to det-1(sutun(sayac):04)
+*                         when  "E"
+*                           move ">>C/" to det-1(sutun(sayac):04)
+*                         when "D"
+*                           move ">>Bl" to det-1(sutun(sayac):04)
+*                         when "O"
+*                           move "****" to det-1(sutun(sayac):04)
+*                          when  spaces
+*                           move spaces to det-1(sutun(sayac):04)
+*                        end-evaluate
+                        move "|"    to det-1(sutun(sayac) + 4:01)
+                        compute toplam = toplam + takas-toplam(sayac),
+                        compute alt-toplam(sayac) = alt-toplam(sayac) + takas-toplam(sayac),
+
+                      end-perform
+
+
+  
+                       move toplam     to toplam-z-2
+                       move toplam-z-2 to det-1(161:05)
+                       move "|"               to det-1(167:1),
+
+
+                       write dokumer-rec from detay
+                    end-read
+              end-perform
+
+                 initialize dokumer-rec detay
+                 move "-"            to det-dokumer-20(5:1)
+              perform varying xx from 1 by 1 until xx > 31,
+                 move "-----" to det-1(sutun(xx):05),
+                 move "+"     to det-1(sutun(xx) + 1:01),
+              end-perform
+              move "-----" to det-1(161:05)
+              write dokumer-rec from detay
+                  
+              initialize dokumer-rec detay son-toplam
+              move "A"          to det-dokumer-20(3:1)
+              move 481          to det-renk1
+              move "1"          to det-dokumer-20(10:1)
+              move "Top:" to det-1(01:04)
+              perform varying xx from 1 by 1 until xx > 31,
+                move alt-toplam(xx) to toplam-z,
+                move toplam-z       to det-1(sutun(xx):05),
+                compute alt-yuzde(xx) = (alt-toplam(xx) * 100) / hazir-oda(xx),
+                compute son-toplam = son-toplam + alt-toplam(xx),
+              end-perform
+              move "|"               to det-1(167:1),
+              move son-toplam   to toplam-z-2
+              move toplam-z-2   to det-1(161:05)
+              write dokumer-rec from detay
+
+                 initialize dokumer-rec detay
+                 move "-"            to det-dokumer-20(5:1)
+              perform varying xx from 1 by 1 until xx > 31,
+                 move "-----" to det-1(sutun(xx):05),
+                 move "+"     to det-1(sutun(xx) + 1:01),
+              end-perform
+              move "-----" to det-1(161:05)
+              write dokumer-rec from detay
+*                 initialize dokumer-rec detay
+*                 move "A"          to det-dokumer-20(3:1)
+*                 move 481          to det-renk1
+*                 move "1"          to det-dokumer-20(10:1)
+*                 move "(%)" to det-1(1:4)
+*                 move "|"               to det-1(167:1),
+*                 perform varying xx from 1 by 1 until xx > 31,
+*                   move alt-yuzde(xx)       to yuzde-goster,
+*                   move yuzde-goster(01:5)  to det-1(sutun(xx):06),
+*                 end-perform,
+*                compute son-yuzde = (son-toplam * 100) / (hazir-oda-ortalama * 31),
+*                move son-yuzde    to yuzde-goster,
+*                move yuzde-goster to det-1(161:06),
+
+*                write dokumer-rec from detay
+
+                 initialize dokumer-rec detay
+                 move "-"            to det-dokumer-20(5:1)
+              perform varying xx from 1 by 1 until xx > 31,
+                 move "-----" to det-1(sutun(xx):05),
+                 move "+"     to det-1(sutun(xx) + 1:01),                   
+              end-perform
+              move "-----" to det-1(161:05)
+              write dokumer-rec from detay
+
+
+              close dokumer
+              call  dokumer-prog on exception
+                   perform callerr-proc
+              not on exception     
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer
+              close takas kllnc odalar kodlar02 konum
+              delete file takas
+    end-evaluate.
+     .
+
+ takas-dosya-yaz.
+      perform odatip-pass-kontrol.
+    open output takas close takas open i-o takas with mass-update.
+
+    if isl-tip = "T" 
+        perform odalar-olustur.
+    open input takvim.
+    initialize takvim-rec sayac tarih-dizi hazir-oda-dizi hazir-oda-ortalama
+               hazir-oda-sayac.
+    move tarih to takvim-anah.
+    start takvim key not < takvim-anah invalid close takvim
+                                       go takas-dosya-yaz-exit,
+          not invalid,
+          open input rez cast kodlar02 konum outof ,
+
+          move spaces to evet-hayir,
+          perform with test after until evet,
+              read takvim next no lock end move "E" to evet-hayir,
+                   not end,
+                       if sayac > 31,
+                                     move "E" to evet-hayir,
+                          else,
+                                 add 1 to sayac,
+                                 if sayac < 32,
+                                    perform cast-oku thru cast-oku-exit,
+
+                                    move takvim-gun       to gun-dizi(sayac),
+                                    move takvim-ay        to ay-dizi(sayac),
+                                    move takvim-yil       to yil-dizi(sayac),
+                                    move takvim-hazir-oda to hazir-oda(sayac),
+                                    if takvim-hazir-oda not = zeroes,
+                                       add 1 to hazir-oda-sayac,
+                                       compute hazir-oda-ortalama = hazir-oda-ortalama + takvim-hazir-oda,
+                                    end-if,
+
+                                     |||||||||outoforder bul
+                                      initialize outof-rec 
+                                      start outof key not < outof-anah invalid
+                                              continue
+                                      not invalid
+                                      perform until fs-outof = "10"
+                                      read outof next no lock end move "10" to fs-outof
+                                      not end
+                                                initialize odalar-rec
+                                                move outof-odano           to odalar-anah
+                                                read odalar no lock invalid
+                                                     exit perform cycle 
+                                                not invalid
+                                                    move odalar-konumu        to rez-oda-konumu rez-fiyat-konumu
+                                                    if onkpara-referans-var = 1 then     
+                                                       perform ref-filtre
+                                                       if  not ref-gecti then 
+                                                           exit perform cycle 
+                                                       end-if
+                                                    end-if                                                     
+                                                end-read 
+                                                if takvim-anah >= outof-bas-tarih and takvim-anah <= outof-bit-tarih
+                                                        initialize takas-rec
+                                                        move outof-odano to takas-oda
+                                                        read takas no lock invalid
+                                                                exit perform cycle
+                                                        end-read
+                                                        move "XOOX" to TAKAS-ADI(sayac) 
+                                                        move 1 to takas-outof(sayac)
+                                                        write takas-rec invalid
+                                                                rewrite takas-rec invalid
+                                                                        stop " "
+                                                                end-rewrite
+                                                        end-write
+                                                end-if
+                                      end-read
+                                      end-perform
+                                      end-start
+                                     ||||||||||||
+
+                                 end-if,
+
+                                
+                       end-if,
+              end-read,
+          end-perform,
+    end-start.
+    close takvim rez cast outof .
+    compute hazir-oda-ortalama = hazir-oda-ortalama / hazir-oda-sayac.
+ takas-dosya-yaz-exit.
+    exit.
+
+ cast-oku.
+    initialize cast-rec.
+    move takvim-anah to cast-tarih.
+    start cast key not < cast-tarih invalid continue,
+        not invalid,
+
+        move spaces to var-yok,
+        perform with test after until var,
+            read cast next no lock end move "V" to var-yok,
+                 not end,
+                 if cast-tarih > takvim-anah move "V" to var-yok,
+                    else,
+                     if cast-tarih not > takvim-anah,
+                        initialize rez-rec,
+                        move cast-rez-no to rez-no,
+                        if cast-share = 1 then exit perform cycle end-if
+                        read rez no lock invalid 
+                                 continue,
+                        not invalid 
+                            perform takas-kaydet thru takas-kaydet-exit,
+                        end-read,
+                     end-if,
+                 end-if,
+            end-read,
+        end-perform,
+    end-start.
+ cast-oku-exit.
+    exit.
+
+ odalar-olustur.
+  
+    initialize odalar-rec
+    start odalar key not < odalar-anah invalid 
+           continue
+    not invalid
+    perform with test after until fs-odalar = "10"
+    read odalar next no lock end move "10" to fs-odalar
+     not at end
+         if odalar-hayali = "G" or odalar-hayali = spaces
+           initialize takas-rec
+           move odalar-anah to takas-oda
+                if odalar-kat not = r-kat and r-kat not = 0 then 
+                 exit perform cycle
+            end-if
+           if house-durumu not = h-d and h-d not = spaces then 
+                  exit perform cycle
+           end-if
+            move odalar-konumu        to rez-oda-konumu rez-fiyat-konumu
+            if onkpara-referans-var = 1 then     
+               perform ref-filtre
+               if  not ref-gecti then 
+                   exit perform cycle 
+               end-if
+            end-if
+      if konum-pass-gec = 0 then
+              if  (konumlar-cb-secili(1) = 1 and odalar-konumu = 1) or
+                      (konumlar-cb-secili(2) = 1 and odalar-konumu = 2) or
+                      (konumlar-cb-secili(3) = 1 and odalar-konumu = 3) or
+                      (konumlar-cb-secili(4) = 1 and odalar-konumu = 4) or
+                      (konumlar-cb-secili(5) = 1 and odalar-konumu = 5) or
+                      (konumlar-cb-secili(6) = 1 and odalar-konumu = 6) or
+                      (konumlar-cb-secili(7) = 1 and odalar-konumu = 7) or
+                      (konumlar-cb-secili(8) = 1 and odalar-konumu = 8) or
+                      (konumlar-cb-secili(9) = 1 and odalar-konumu = 9) or
+                      (konumlar-cb-secili(10) = 1 and odalar-konumu = 10) or
+                      (konumlar-cb-secili(11) = 1 and odalar-konumu = 11) or
+                      (konumlar-cb-secili(12) = 1 and odalar-konumu = 12) or
+                      (konumlar-cb-secili(13) = 1 and odalar-konumu = 13) or
+                      (konumlar-cb-secili(14) = 1 and odalar-konumu = 14) or
+                      (konumlar-cb-secili(15) = 1 and odalar-konumu = 15) or
+                      (konumlar-cb-secili(16) = 1 and odalar-konumu = 16) or
+                      (konumlar-cb-secili(17) = 1 and odalar-konumu = 17) or
+                      (konumlar-cb-secili(18) = 1 and odalar-konumu = 18) or
+                      (konumlar-cb-secili(19) = 1 and odalar-konumu = 19) or
+                      (konumlar-cb-secili(20) = 1 and odalar-konumu = 20) or
+                      (konumlar-cb-secili(21) = 1 and odalar-konumu = 21) or
+                      (konumlar-cb-secili(22) = 1 and odalar-konumu = 22) or
+                      (konumlar-cb-secili(23) = 1 and odalar-konumu = 23) or
+                      (konumlar-cb-secili(24) = 1 and odalar-konumu = 24) or
+                      (konumlar-cb-secili(25) = 1 and odalar-konumu = 25) or
+                      (konumlar-cb-secili(26) = 1 and odalar-konumu = 26) or
+                      (konumlar-cb-secili(27) = 1 and odalar-konumu = 27) or
+                      (konumlar-cb-secili(28) = 1 and odalar-konumu = 28) or
+                      (konumlar-cb-secili(29) = 1 and odalar-konumu = 29) or
+                      (konumlar-cb-secili(30) = 1 and odalar-konumu = 30) or
+                      (konumlar-cb-secili(31) = 1 and odalar-konumu = 31) or
+                      (konumlar-cb-secili(32) = 1 and odalar-konumu = 32) or
+                      (konumlar-cb-secili(33) = 1 and odalar-konumu = 33) or
+                      (konumlar-cb-secili(34) = 1 and odalar-konumu = 34) or
+                      (konumlar-cb-secili(35) = 1 and odalar-konumu = 35) or
+                      (konumlar-cb-secili(36) = 1 and odalar-konumu = 36) or
+                      (konumlar-cb-secili(37) = 1 and odalar-konumu = 37) or
+                      (konumlar-cb-secili(38) = 1 and odalar-konumu = 38) or
+                      (konumlar-cb-secili(39) = 1 and odalar-konumu = 39) or
+                      (konumlar-cb-secili(40) = 1 and odalar-konumu = 40)
+                     
+                      continue
+                  else
+                       exit perform cycle
+                  end-if
+
+          end-if
+
+
+*/ Oda tip 1 kontrolu
+          if odalar-tipi <> spaces
+             if odatip1-pass-gec = 0
+             perform varying dummy-999
+                     from 1
+                     by 1
+                     until dummy-999 > max-odatip-occurs
+                     evaluate odatip1-sec(dummy-999)
+                     when "E"
+                        if odatip1-tip(dummy-999) = odalar-tipi
+                           initialize dummy-999
+                           exit perform
+                        end-if
+                     when "H"
+                        if odatip1-tip(dummy-999) = odalar-tipi
+                           move max-odatip-occurs to dummy-999
+                        end-if
+                     end-evaluate
+             end-perform
+             if dummy-999 > max-odatip-occurs
+                  exit perform cycle
+             end-if
+             end-if
+          end-if
+                   
+*/ Oda tip 2 kontrolu
+          
+          if odalar-tipi2 <> spaces
+             if odatip2-pass-gec = 0
+             perform varying dummy-999
+                     from 1
+                     by 1
+                     until dummy-999 > max-odatip-occurs
+                     evaluate odatip2-sec(dummy-999)
+                     when "E"
+                        if odatip2-tip(dummy-999) = odalar-tipi2
+                           initialize dummy-999
+                           exit perform
+                        end-if
+                     when "H"
+                        if odatip2-tip(dummy-999) = odalar-tipi2
+                            move max-odatip-occurs to dummy-999
+                        end-if
+                     end-evaluate
+             end-perform
+             if dummy-999 > max-odatip-occurs
+                  exit perform cycle
+             end-if
+             end-if
+          end-if
+
+*/ Oda tip 3 kontrolu
+          if odalar-tipi3 <> spaces 
+             if odatip3-pass-gec = 0
+             perform varying dummy-999
+                     from 1
+                     by 1
+                     until dummy-999 > max-odatip-occurs
+                     evaluate odatip3-sec(dummy-999)
+                     when "E"
+                        if odatip3-tip(dummy-999) = odalar-tipi3
+                           initialize dummy-999
+                           exit perform
+                        end-if
+                     when "H"
+                       if odatip3-tip(dummy-999) = odalar-tipi3
+                           move max-odatip-occurs to dummy-999
+                       end-if
+                     end-evaluate
+             end-perform
+             if dummy-999 > max-odatip-occurs
+               exit perform cycle
+             end-if
+             end-if
+          end-if
+
+           write takas-rec invalid rewrite takas-rec end-rewrite end-write
+         end-if
+     end-read
+    end-perform
+    end-start.
+ takas-kaydet.
+    if onkpara-referans-var = 1 then 
+       perform ref-filtre
+       if  not ref-gecti then 
+           exit paragraph
+       end-if
+    end-if    
+    if rez-durumu not = "I"         go takas-kaydet-exit.
+    if rez-k-g-b  not = "K"   and not = "O"      go takas-kaydet-exit.
+    if rez-cik-tar    = takvim-anah 
+    go takas-kaydet-exit.
+    initialize takas-rec.
+    move cast-oda-no to odalar-no takas-oda.
+       .
+ 
+ 
+    read odalar no lock invalid go takas-kaydet-exit.
+************** filtreler buraya konacak *********** 
+       if odalar-kat not = r-kat and r-kat not = 0 then 
+                go takas-kaydet-exit
+            end-if
+             if house-durumu not = h-d and h-d not = spaces then 
+                  go takas-kaydet-exit
+            end-if
+            
+            if onkpara-referans-var = 1 then     
+               perform ref-filtre
+               if  not ref-gecti then 
+                   go takas-kaydet-exit 
+               end-if
+            end-if
+      if konum-pass-gec = 0 then
+      if  (konumlar-cb-secili(1) = 1 and odalar-konumu = 1) or
+              (konumlar-cb-secili(2) = 1 and odalar-konumu = 2) or
+              (konumlar-cb-secili(3) = 1 and odalar-konumu = 3) or
+              (konumlar-cb-secili(4) = 1 and odalar-konumu = 4) or
+              (konumlar-cb-secili(5) = 1 and odalar-konumu = 5) or
+              (konumlar-cb-secili(6) = 1 and odalar-konumu = 6) or
+              (konumlar-cb-secili(7) = 1 and odalar-konumu = 7) or
+              (konumlar-cb-secili(8) = 1 and odalar-konumu = 8) or
+              (konumlar-cb-secili(9) = 1 and odalar-konumu = 9) or
+              (konumlar-cb-secili(10) = 1 and odalar-konumu = 10) or
+              (konumlar-cb-secili(11) = 1 and odalar-konumu = 11) or
+              (konumlar-cb-secili(12) = 1 and odalar-konumu = 12) or
+              (konumlar-cb-secili(13) = 1 and odalar-konumu = 13) or
+              (konumlar-cb-secili(14) = 1 and odalar-konumu = 14) or
+              (konumlar-cb-secili(15) = 1 and odalar-konumu = 15) or
+              (konumlar-cb-secili(16) = 1 and odalar-konumu = 16) or
+              (konumlar-cb-secili(17) = 1 and odalar-konumu = 17) or
+              (konumlar-cb-secili(18) = 1 and odalar-konumu = 18) or
+              (konumlar-cb-secili(19) = 1 and odalar-konumu = 19) or
+              (konumlar-cb-secili(20) = 1 and odalar-konumu = 20) or
+              (konumlar-cb-secili(21) = 1 and odalar-konumu = 21) or
+              (konumlar-cb-secili(22) = 1 and odalar-konumu = 22) or
+              (konumlar-cb-secili(23) = 1 and odalar-konumu = 23) or
+              (konumlar-cb-secili(24) = 1 and odalar-konumu = 24) or
+              (konumlar-cb-secili(25) = 1 and odalar-konumu = 25) or
+              (konumlar-cb-secili(26) = 1 and odalar-konumu = 26) or
+              (konumlar-cb-secili(27) = 1 and odalar-konumu = 27) or
+              (konumlar-cb-secili(28) = 1 and odalar-konumu = 28) or
+              (konumlar-cb-secili(29) = 1 and odalar-konumu = 29) or
+              (konumlar-cb-secili(30) = 1 and odalar-konumu = 30) or
+              (konumlar-cb-secili(31) = 1 and odalar-konumu = 31) or
+              (konumlar-cb-secili(32) = 1 and odalar-konumu = 32) or
+              (konumlar-cb-secili(33) = 1 and odalar-konumu = 33) or
+              (konumlar-cb-secili(34) = 1 and odalar-konumu = 34) or
+              (konumlar-cb-secili(35) = 1 and odalar-konumu = 35) or
+              (konumlar-cb-secili(36) = 1 and odalar-konumu = 36) or
+              (konumlar-cb-secili(37) = 1 and odalar-konumu = 37) or
+              (konumlar-cb-secili(38) = 1 and odalar-konumu = 38) or
+              (konumlar-cb-secili(39) = 1 and odalar-konumu = 39) or
+              (konumlar-cb-secili(40) = 1 and odalar-konumu = 40) 
+
+              continue
+          else
+             go takas-kaydet-exit
+          end-if
+         end-if
+*/ Oda tip 1 kontrolu
+
+          if odalar-tipi <> spaces
+             if odatip1-pass-gec = 0
+             perform varying dummy-999
+                     from 1
+                     by 1
+                     until dummy-999 > max-odatip-occurs
+                     evaluate odatip1-sec(dummy-999)
+                     when "E"
+                        if odatip1-tip(dummy-999) = odalar-tipi
+                           initialize dummy-999
+                           exit perform
+                        end-if
+                     when "H"
+                        if odatip1-tip(dummy-999) = odalar-tipi
+                           move max-odatip-occurs to dummy-999
+                        end-if
+                     end-evaluate
+             end-perform
+             if dummy-999 > max-odatip-occurs
+                go takas-kaydet-exit
+             end-if
+             end-if
+          end-if
+                   
+*/ Oda tip 2 kontrolu
+          if odalar-tipi2 <> spaces
+             if odatip2-pass-gec = 0
+             perform varying dummy-999
+                     from 1
+                     by 1
+                     until dummy-999 > max-odatip-occurs
+                     evaluate odatip2-sec(dummy-999)
+                     when "E"
+                        if odatip2-tip(dummy-999) = odalar-tipi2
+                           initialize dummy-999
+                           exit perform
+                        end-if
+                     when "H"
+                        if odatip2-tip(dummy-999) = odalar-tipi2
+                            move max-odatip-occurs to dummy-999
+                        end-if
+                     end-evaluate
+             end-perform
+             if dummy-999 > max-odatip-occurs
+                go takas-kaydet-exit
+             end-if
+             end-if
+          end-if
+
+*/ Oda tip 3 kontrolu
+          if odalar-tipi3 <> spaces 
+             if odatip3-pass-gec = 0
+             perform varying dummy-999
+                     from 1
+                     by 1
+                     until dummy-999 > max-odatip-occurs
+                     evaluate odatip3-sec(dummy-999)
+                     when "E"
+                        if odatip3-tip(dummy-999) = odalar-tipi3
+                           initialize dummy-999
+                           exit perform
+                        end-if
+                     when "H"
+                       if odatip3-tip(dummy-999) = odalar-tipi3
+                           move max-odatip-occurs to dummy-999
+                       end-if
+                     end-evaluate
+             end-perform
+             if dummy-999 > max-odatip-occurs
+               go takas-kaydet-exit
+             end-if
+             end-if
+          end-if
+
+    read takas no lock invalid continue.
+       move rez-no to takas-rez-no(sayac)
+*    if takas-toplam(sayac) = 0 then
+       compute takas-toplam(sayac) = 
+             takas-toplam(sayac) + 1
+*     end-if
+         if rez-late-zaman > "0000" and rez-late-zaman < "2400" then
+          
+            move rez-late-gel-saat to takas-late(sayac)
+         end-if
+       if rez-c-in not = "E" then 
+           if takas-oda-cin(sayac) = " " then
+               If rez-gir-tar    = takvim-anah then 
+                   move "D" to takas-oda-cin(sayac)
+                else
+                   move "B" to takas-oda-cin(sayac)
+                end-if
+             else
+               move "O" to takas-oda-cin(sayac)
+           end-if
+         else 
+            if takas-oda-cin(sayac) = " " then
+               If rez-gir-tar    = takvim-anah then 
+                   move "E" to takas-oda-cin(sayac)
+                else
+                   move "C" to takas-oda-cin(sayac)
+                end-if
+            else
+               move "O" to takas-oda-cin(sayac)
+           end-if
+       end-if
+       
+       perform kaydet
+*    end-if
+        . 
+ takas-kaydet-exit.
+    exit.
+ kaydet.
+    write takas-rec invalid rewrite takas-rec end-write.
+
+*
+*
+ oda-tipleri-yukle.
+    initialize gd-odatip1-record
+               gd-odatip2-record
+               gd-odatip3-record
+               odatip-ana-dizi
+               gd-odatip1-yer
+               gd-odatip2-yer
+               gd-odatip3-yer
+    move "Oda Tipi"        to gd-odatip1-col-2
+                              gd-odatip2-col-2
+                              gd-odatip3-col-2
+
+    initialize kodlar02-rec
+    modify gd-odatip1,
+           reset-grid = 1
+           mass-update = 1
+           record-to-add(gd-odatip1-record)
+    modify gd-odatip2,
+           reset-grid = 1
+           mass-update = 1
+           record-to-add(gd-odatip2-record)
+    modify gd-odatip3,
+           reset-grid = 1
+           mass-update = 1
+           record-to-add(gd-odatip2-record)
+
+    initialize kodlar02-rec
+    move "G"         to kodlar02-tipi
+    start kodlar02 key not < kodlar02-anah invalid
+          continue
+    not invalid
+    initialize fs-kodlar02
+    perform with test after until fs-kodlar02 = "10"
+    read kodlar02 next no lock end move "10" to fs-kodlar02
+    not at end
+         initialize gd-odatip1-record
+                    gd-odatip2-record
+                    gd-odatip3-record
+         evaluate kodlar02-tipi
+         when "G" 
+                  add 1 to gd-odatip1-yer
+                  move kodlar02-adi        to gd-odatip1-col-2
+                  move kodlar02-kodu       to odatip1-tip(gd-odatip1-yer)
+                  modify gd-odatip1,
+                         record-to-add(gd-odatip1-record)
+                  
+         when "H" 
+                  add 1 to gd-odatip2-yer
+                  move kodlar02-adi        to gd-odatip2-col-2
+                  move kodlar02-kodu       to odatip2-tip(gd-odatip2-yer)
+                  modify gd-odatip2,
+                         record-to-add(gd-odatip2-record)
+                  
+         when "I" 
+                  add 1 to gd-odatip3-yer
+                  move kodlar02-adi        to gd-odatip3-col-2
+                  move kodlar02-kodu       to odatip3-tip(gd-odatip3-yer)
+                  modify gd-odatip3,
+                         record-to-add(gd-odatip3-record)
+                  
+         when other
+              exit perform
+         end-evaluate
+    end-read
+    end-perform
+    end-start.
+
+    modify gd-odatip1,
+           mass-update = 0
+    modify gd-odatip2,
+           mass-update = 0
+    modify gd-odatip3,
+           mass-update = 0.
+    
+*
+ gd-odatip1-Ev-Other.
+    evaluate event-type
+    when msg-begin-entry
+             inquire gd-odatip1(event-data-2,1),
+                     hidden-data in dummy-x
+             move event-action-fail to event-action
+             if event-data-2 > max-odatip-occurs
+                exit paragraph
+             end-if
+             if dummy-x = space
+                move "E"       to dummy-x
+                modify gd-odatip1(event-data-2,1),
+                       hidden-data = dummy-x
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+                move "E"       to odatip1-sec(event-data-2 - 1)
+             else
+                move space         to dummy-x
+                modify gd-odatip1(event-data-2,1),
+                       hidden-data = dummy-x
+                       bitmap = null
+                move "H"     to odatip1-sec(event-data-2 - 1)
+
+             end-if
+    end-evaluate.
+     
+     .
+*
+ gd-odatip2-Ev-Other.
+    evaluate event-type
+    when msg-begin-entry
+             inquire gd-odatip2(event-data-2,1),
+                     hidden-data in dummy-x
+             move event-action-fail to event-action
+             if event-data-2 > max-odatip-occurs
+                exit paragraph
+             end-if
+
+             if dummy-x = space
+                move "E"       to dummy-x
+                modify gd-odatip2(event-data-2,1),
+                       hidden-data = dummy-x
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+                move "E"       to odatip2-sec(event-data-2 - 1)
+             else
+                move space         to dummy-x
+                modify gd-odatip2(event-data-2,1),
+                       hidden-data = dummy-x
+                       bitmap = null
+                move "H"     to odatip2-sec(event-data-2 - 1)
+             end-if
+    end-evaluate.
+     .
+*
+ gd-odatip3-Ev-Other.
+    evaluate event-type
+    when msg-begin-entry
+             inquire gd-odatip3(event-data-2,1),
+                     hidden-data in dummy-x
+             move event-action-fail to event-action
+             if event-data-2 > max-odatip-occurs
+                exit paragraph
+             end-if
+
+             if dummy-x = space
+                move "E"       to dummy-x
+                modify gd-odatip3(event-data-2,1),
+                       hidden-data = dummy-x
+                       bitmap = yes-bmp
+                       bitmap-number = 1
+                       bitmap-width = 16
+                move "E"       to odatip3-sec(event-data-2 - 1)
+             else
+                move space         to dummy-x
+                modify gd-odatip3(event-data-2,1),
+                       hidden-data = dummy-x
+                       bitmap = null
+                move "H"     to odatip3-sec(event-data-2 - 1)
+             end-if
+    end-evaluate.
+
+*
+ odatip-pass-kontrol.
+*/ pas gecilecekse 
+     initialize dummy-9999 | secilen kayit adedi
+*/ eger hepsi secildiyse yada hic biri secilmediyse 
+                odatip1-pass-gec
+                odatip2-pass-gec
+                odatip3-pass-gec
+                konum-pass-gec
+     perform varying dummy-999
+             from 1
+             by 1
+             until dummy-999 > max-odatip-occurs
+                   if odatip1-sec(dummy-999) = "H" or space
+                      add 1 to dummy-9999
+                   end-if
+     end-perform
+     
+*/ hesp secili ise yada hic biri secýlý degil ise
+     if dummy-9999 = 0  or 
+        dummy-9999 = max-odatip-occurs
+        move 1 to odatip1-pass-gec
+     end-if
+     initialize dummy-9999
+     perform varying dummy-999
+             from 1
+             by 1
+             until dummy-999 > max-odatip-occurs
+                   if odatip2-sec(dummy-999) = "H" or space
+                      add 1 to dummy-9999
+                   end-if
+     end-perform
+     if dummy-9999 = 0 or
+        dummy-9999 = max-odatip-occurs
+        move 1 to odatip2-pass-gec
+     end-if
+     initialize dummy-9999
+     perform varying dummy-999
+             from 1
+             by 1
+             until dummy-999 > max-odatip-occurs
+                   if odatip3-sec(dummy-999) = "H" or space
+                      add 1 to dummy-9999
+                   end-if
+     end-perform
+     if dummy-9999 = 0 or
+        dummy-9999 = max-odatip-occurs
+        move 1 to odatip3-pass-gec
+     end-if.
+     initialize dummy-9999
+     perform varying dummy-999
+             from 1
+             by 1
+             until dummy-999 > 40
+                   if konumlar-cb-secili(dummy-999) = 1 or space
+                      add 1 to dummy-9999
+                   end-if
+     end-perform
+     if dummy-9999 = 0
+        
+        move 1 to konum-pass-gec
+     end-if.
+*
+ konumlar-oku.
+    open input konum
+    initialize i konumlar-cb-bilgiler.
+    perform varying i from 1 by 1 until i > 40
+            move i to konum-anahtar
+            read konum no lock invalid
+                 continue
+            not invalid
+                 if hangi-ref-secildi > 0
+                    if konum-ref <> hangi-ref-secildi
+                       exit perform cycle 
+                    end-if 
+                 end-if 
+                 if oda-konum-cagir = 0 or
+                    oda-konum-cagir = i
+                    move 1      to konumlar-cb-secili(i)
+                 end-if
+                 move konum-adi to konumlar-cb-title(i)
+                 move 1         to konumlar-cb-visible(i)
+            end-read
+    end-perform
+    close konum.
+
+ 

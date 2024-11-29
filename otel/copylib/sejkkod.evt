@@ -1,0 +1,172 @@
+* sejkkod.evt
+* sejkkod.evt is generated from D:\asya\acugt.ytl\otel\sejkkod.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ cb-otel-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-otel-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     open i-o sejkkod close sejkkod
+     open input genel
+     initialize genel-rec
+     move 1  to genel-anahtar
+     read genel no lock invalid 
+        continue 
+     end-read 
+     close genel.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+         perform form-kaydet
+     when 3    
+         perform form-sil
+     end-evaluate.
+*
+ form-kaydet.
+     if sejkkod-kodu of sejkkod = spaces
+         display message box "Sejour Kullanici Kodu Giriniz..."
+                         title "Uyari"
+                         icon 1
+            exit paragraph 
+     end-if 
+     display message box "Bilgiler Kaydedilecektir..." new-line        
+                         "Eminmisiniz?"
+                     title "Uyari"
+                     icon 1
+                     type 2 
+                     default 2
+                     returning return-code 
+     if return-code = 2
+        exit paragraph 
+     end-if 
+     open i-o sejkkod
+     write sejkkod-rec invalid 
+         rewrite sejkkod-rec end-rewrite 
+     end-write      
+     close  sejkkod
+     perform form-temizle
+
+      .
+*
+ form-sil.
+     if sejkkod-kodu of sejkkod = spaces
+         display message box "Sejour Kullanici Kodu Giriniz..."
+                         title "Uyari"
+                         icon 1
+            exit paragraph 
+     end-if 
+     display message box "Bilgiler Silinecektir..." new-line        
+                         "Eminmisiniz?"
+                     title "Uyari"
+                     icon 1
+                     type 2 
+                     default 2
+                     returning return-code 
+     if return-code = 2
+        exit paragraph 
+     end-if 
+     open i-o sejkkod
+     delete sejkkod end-delete     
+     close  sejkkod
+     perform form-temizle
+      .
+*
+ form-temizle.
+     initialize sejkkod-diger 
+     perform form-goster
+      .
+*
+ form-goster.
+     display acc-2 acc-3 acc-4 cb-otel
+      .
+*
+ acc-1-Aft-Procedure.
+     perform kayit-oku.
+*
+ kayit-oku.
+     open input sejkkod
+     read sejkkod no lock invalid 
+          perform form-temizle 
+     not invalid
+          perform form-goster
+     end-read 
+     close sejkkod
+     .
+*
+ Form1-Aft-Initdata.
+     if onkpara-referans-var = 1 then
+         modify cb-otel reset-list = 1           
+         perform varying ref from 1 by 1 until ref > max-ref
+            move ref  to ref-ekle
+            move "->" to ref-ekle(2:2)
+            move ref-adi(ref) to  ref-ekle(4:)
+            modify cb-otel item-to-add ref-ekle
+         end-perform 
+     end-if  
+     perform baslik-yukle
+     perform grid-yukle.
+*
+ baslik-yukle. 
+     modify form1-gd-1,mass-update = 1
+                       reset-grid = 1
+     initialize form1-gd-1-record
+     move "K.Kodu"      to gd-1-col-1
+     move "Paximum ID"  to gd-1-col-2
+     modify form1-gd-1,record-to-add(form1-gd-1-record)
+     .
+*
+ grid-yukle.
+     open input sejkkod
+     initialize sejkkod-rec
+     start sejkkod key not < sejkkod-anah invalid 
+          continue 
+     not invalid 
+     perform with test after until fs-sejkkod = "10"
+     read sejkkod next no lock end move "10"   to fs-sejkkod
+     not at end 
+             initialize form1-gd-1-record
+             move sejkkod-kodu       to gd-1-col-1
+             move sejkkod-paximum-id to gd-1-col-2
+             modify form1-gd-1,record-to-add(form1-gd-1-record)
+     end-read 
+     end-perform
+     end-start
+     close sejkkod
+     modify form1-gd-1,mass-update = 0.
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+          move event-action-fail to event-action
+          inquire form1-gd-1(event-data-2,1),cell-data in sejkkod-kodu
+          perform kayit-oku
+          display acc-1
+     end-evaluate.
+*
+ cb-otel-Ex-Ntf-Selchange.
+     
+     .
+
+ 

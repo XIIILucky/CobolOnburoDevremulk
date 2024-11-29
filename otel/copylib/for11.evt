@@ -1,0 +1,686 @@
+* for11.evt
+* for11.evt is generated from D:\asya\acugt.ytl\otel\for11.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+     .
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to flt-ilk-tarih-rapor          |* calisma tarihi rapor ve aralik tarihi olarak atanir
+                       flt-son-tarih-rapor
+                       flt-ilk-tarih-tekrar
+                       flt-son-tarih-tekrar.
+    move 1          to flt-ilk-gun-rapor            |* rapor baslangic tarihi ayin ilk gunune atanir.
+                       flt-ilk-gun-tekrar           |* tekrar araligi yilin ilk gunune atanir
+                       flt-ilk-ay-tekrar            |* tekrar araligi yilin ilk ayina atanir
+    move "O"        to flt-fc-tipi com-01-value.    |* forcast tipi oda ya ayarlanir
+    move spaces     to flt-acenta.                  |* acenta filtresi tumune ayarlanir
+    display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06 acc-01a acc-02a acc-03a acc-04a acc-05a acc-06a acc-07 com-01.  
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 1
+        evaluate control-id
+        when 14
+        when 2001
+             initialize acenta-cagir
+             call "/asya/ytl/obj/otel/acenara.asy" 
+                  using acenta-cagir  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     if acenta-cagir <> spaces
+                        move acenta-cagir to flt-acenta
+                        display acc-07
+                     end-if
+             end-call
+             move 4 to accept-control
+             move 14 to control-id
+        when 25
+        when 26
+             initialize flt-grup-kod
+             call "/asya/ytl/obj/otel/grupara.asy" 
+                  using "A", flt-grup-kod  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     display acc-08
+             end-call
+             move 4 to accept-control
+             move 25 to control-id
+        end-evaluate
+        exit paragraph
+
+      when 2
+        move flt-ilk-gun-rapor  to i-gun
+        move flt-ilk-ay-rapor   to i-ay
+        move flt-ilk-yil-rapor  to i-yil
+        move flt-son-gun-rapor  to s-gun
+        move flt-son-ay-rapor   to s-ay
+        move flt-son-yil-rapor  to s-yil
+        move flt-acenta         to r-acenta
+        move acenta-adi         to r-adi
+        if flt-acenta = spaces
+           move "butu"       to r-acenta
+           move "n"          to r-ara
+           move " acentalar" to r-adi
+        end-if
+
+*       REZERVASYON Kayitlari dosyasini ac
+        open input rez
+        if fs-rez not = zero                        |* rezervasyon kayitlari dosyasinda hata varsa cik      
+           close rez
+           exit paragraph
+        end-if
+
+*       TEMP Dosya numarasi olustur
+*       GENELFIS dosyasindan son rakami al, mevcut dosya isminin sonuna ata
+*       ve GENELFIS dosyasindaki rakami bir arttirarak geri yaz
+        open i-o genelfis
+        move 1 to genelfis-anahtar
+        read genelfis no lock invalid 
+             move 1 to ekran-fis-1,
+        end-read
+       
+        add 1 to ekran-fis-1
+        move ekran-fis-1(2:) to takas-no
+        rewrite genelfis-rec
+          invalid 
+            write genelfis-rec
+              invalid continue
+            end-write
+        end-rewrite
+        close genelfis
+
+   
+*       REZ Dosyasini ilk tekrar tarihinden basliyacak sekilde baslat    
+        initialize takas-rec rez-rec
+        move flt-ilk-tarih-tekrar to rez-gir-tar
+        move "I"                  to rez-durumu
+        start rez key not < rez-gir
+          invalid
+            initialize mesaj-link
+            move 04 to mesaj-no
+            perform mesaj-ver
+            close takas
+            exit paragraph
+        end-start
+
+        open output takas close takas open i-o takas with mass-update
+     
+*       TEKRAR Araligi icinde musteri gelis sayisini bul
+*       REZ dosyasindaki musteri isimlerini teker teker kontrol et
+
+        perform takas-dosya-yaz thru takas-dosya-yaz-exit
+
+
+*       TAKVIM dosyasini ac
+        open input takvim
+        if fs-takvim not = zero                     |* TAKVIM dosyasinda hata varsa cik      
+           close takvim
+           exit paragraph
+        end-if
+    
+*       CAST dosyasini ac
+        open input cast
+        if fs-cast not = zero                       |* CAST dosyasinda hata varsa cik      
+           close cast
+           close takvim
+           exit paragraph
+        end-if
+     
+*       REZ dosyasini ac
+        open input rez
+        if fs-rez not = zero                       |* REZ dosyasinda hata varsa cik      
+           close cast
+           close takvim
+           close rez
+           exit paragraph
+        end-if
+    
+*       TAKVIM Dosyasini ilk rapor tarihinden basliyacak sekilde baslat    
+        initialize takas-rec ara-rec cast-rec takvim-rec toplamlar
+        move flt-ilk-tarih-rapor to takvim-anah
+     
+        start takvim key not < takvim-anah 
+          invalid
+            initialize mesaj-link
+            move 04 to mesaj-no
+            perform mesaj-ver
+            close takvim
+            close cast
+            exit paragraph
+        end-start
+          
+        open input takas
+
+        open i-o genelfis
+        move 1 to genelfis-anahtar
+        read genelfis no lock
+          invalid
+            accept print-no from time
+          not invalid
+            add 1 to print-no
+            rewrite genelfis-rec end-rewrite
+        end-read
+        close genelfis
+   
+**************************
+        initialize dokumer-rec
+                   dokumer-anah
+                   dokumer-ozellikler-rec
+                   dokumer-dosya
+
+        set  dokumer-asya-set  to true
+        move print-no          to dokumer-dosya-adi
+        open output dokumer
+    
+*/WINDOW TITLE
+        initialize dokumer-rec detay
+        move "W"                to det-dokumer-20(1:)
+        move "Musteri Tekrar Gelis Orani Raporu" to det-filler
+        write dokumer-rec from detay, end-write
+*/ BASLIKLAR
+        initialize dokumer-rec detay
+        move "1"                to det-dokumer-20(10:1)
+        move "B"                to det-dokumer-20(1:1)
+        move "Musteri Tekrar Gelis Orani Raporu"   to det-filler
+        move "Tarih..:  "       to det-filler(41:10)
+        move flt-ilk-gun-rapor  to det-filler(51:02)
+        move "/"                to det-filler(53:01)
+        move flt-ilk-ay-rapor   to det-filler(54:02)
+        move "/"                to det-filler(56:01)
+        move flt-ilk-yil-rapor  to det-filler(57:04)
+        move "-"                to det-filler(61:01)
+        move flt-son-gun-rapor  to det-filler(62:02)
+        move "/"                to det-filler(64:01)
+        move flt-son-ay-rapor   to det-filler(65:02)
+        move "/"                to det-filler(67:01)
+        move flt-son-yil-rapor  to det-filler(68:04)
+        write dokumer-rec from detay, end-write
+
+        initialize dokumer-rec detay
+        move "1"                to det-dokumer-20(10:1)
+        move "B"                to det-dokumer-20(1:1)
+        move "Rapor Tipi..:"    to det-filler(01:15)
+
+        move "Acenta....:"      to det-filler(40:)
+        move flt-acenta         to det-filler(55:04)
+        move "<->"              to det-filler(60:03)
+        if flt-acenta = spaces
+           move "Tum Acentalar.." to det-filler(63:15)
+        else
+           open input acenta
+           initialize acenta-rec  
+           move flt-acenta      to acenta-kodu
+           read acenta no lock
+             invalid 
+               move all "*"     to acenta-adi  
+             not invalid continue
+           end-read
+           close acenta
+           move acenta-adi      to det-filler(63:15)
+        end-if
+        evaluate flt-fc-tipi 
+          when "O" move "Oda     Sayilari" to det-filler(80:)
+          when "P" move "Buyuk   Sayilari" to det-filler(80:)
+          when "C" move "U.Cocuk Sayilari" to det-filler(80:)
+          when "F" move "F.Cocuk Sayilari" to det-filler(80:)
+        end-evaluate
+        write dokumer-rec from detay, end-write
+
+        initialize dokumer-rec detay
+        move "B"                to det-dokumer-20(1:)
+        write dokumer-rec from detay, end-write
+
+
+*/ DOKUMER OZELLIKLER-REC
+        initialize dokumer-rec detay
+        move "O" to det-dokumer-20(1:)
+        move "E" to dokumer-oto-sayfa-basi
+        move 56  to dokumer-oto-sayfa-satir
+        move "|" to dokumer-detay-kolon-ayirici
+        move "LCCRRRRR" to dokumer-align-occ
+        move dokumer-ozellikler-rec     to det-filler
+        write dokumer-rec from detay, end-write
+
+*/ BASLIKLAR  
+        initialize dokumer-rec detay  
+        move "D1"         to det-dokumer-20(1:2)
+        perform varying xx from 1 by 1 until xx > 7,
+          move "|"        to det-1(sutun(xx) - 1:1),
+        end-perform 
+        move "|"          to det-1(80:1),
+*        write dokumer-rec from detay
+        move "Tarih.:   " to det-1(01:10)
+        move "Hazir Oda"  to det-1(sutun(1):9)
+        move "Dolu Oda "  to det-1(sutun(2):9)
+        move "Dolu %"     to det-1(sutun(3):6)
+        move "Ilk Gelen"  to det-1(sutun(4):9)
+        move "Ilk G%"     to det-1(sutun(5):6)
+        move "Tekrar G."  to det-1(sutun(6):9)
+        move "Tkr G%"     to det-1(sutun(7):6)
+        move "1"          to det-dokumer-20(10:1)
+        write dokumer-rec from detay, end-write
+    
+        initialize dokumer-rec detay
+        move "D2"         to det-dokumer-20(1:2)
+        move "-"          to det-dokumer-20(5:1)
+        move "----------" to det-1(01:10)
+        move "---------"  to det-1(sutun(1):9)
+        move "---------"  to det-1(sutun(2):9)
+        move "------"     to det-1(sutun(3):6)
+        move "---------"  to det-1(sutun(4):9)
+        move "------"     to det-1(sutun(5):6)
+        move "---------"  to det-1(sutun(6):9)
+        move "------"     to det-1(sutun(7):6)
+        write dokumer-rec from detay, end-write
+
+*********************************
+
+       perform documer-dosya-yaz thru dokumer-dosya-yaz-exit
+
+      
+      
+       close dokumer
+       call  dokumer-prog
+         on exception
+            perform callerr-proc
+         not on exception
+            cancel dokumer-prog
+       end-call
+       delete file dokumer
+*       close takas
+
+    end-evaluate.
+
+*
+ takas-dosya-yaz.
+
+* TEKRAR Araligi icinde musteri gelis sayisini bul.
+* REZ dosyasindaki musteri isimlerini teker teker kontrol et.
+ takas-tekrar-bul.
+    read rez next no lock end go takas-olustur-ex, end-read
+    if fs-rez = 02 move 00 to fs-rez, end-if
+    if fs-rez = 99 go takas-tekrar-bul, end-if                         |* Dosya mesgulde tekrar dene
+    if rez-gir-tar > flt-son-tarih-tekrar go takas-olustur-ex, end-if  |* Giris tarihi Son Tekrar tarihini gecti ise bitir
+    if rez-durumu not = "I" go takas-olustur-ex, end-if                |* Rezervasyon durumu icerideki rezervasyon degilse bitir
+    if rez-k-g-b  not = "K" go takas-tekrar-bul, end-if                |* Rezervasyon Konfirme degilse sonraki kaydi oku.
+*   ACENTA Kontrolu yapilmiyor cunku musteri farkli acenta dan gelmis olabilir
+    
+*   Kaydedilecek bilgileri hazirla
+    move rez-adi     to takas-adi
+    move rez-soyadi  to takas-soyadi
+    move 999         to takas-defa
+
+*   O ana kadar kaydedilmis musteri icinde var yok kontrolu yap.
+    start takas key not > takas-anah 
+          invalid
+            move 1 to takas-defa                                |* Dosya start edilemedi ise ilk defa gelmistir                          
+          not invalid
+            read takas previous no lock, end-read
+            if (takas-adi not = rez-adi) or (takas-soyadi not = rez-soyadi)
+               move 1          to takas-defa                    |* Adi yada Soyadi farkli ise ilk defa gelmistir.
+            else
+               if takas-rez-no not = rez-no                     |* Rezervasyon numarasi farkli ise tekrar gelmistir
+                  add  1          to takas-defa                 |* Gelis Sayisini 1 Arttir
+               else
+                  go takas-tekrar-bul                           |* Rezervasyon numarasi ayni ise degisiklik yapma.
+               end-if
+            end-if
+    end-start
+    
+*   Hesaplanan gelisi kaydet.
+*   Kaydedilecek bilgileri hazirla
+    move rez-no      to takas-rez-no
+    move rez-adi     to takas-adi
+    move rez-soyadi  to takas-soyadi
+    move rez-acenta  to takas-acenta
+    write takas-rec
+      invalid rewrite takas-rec , end-rewrite 
+      continue
+    end-write
+    go takas-tekrar-bul.                        |* Bir sonraki rezervasyon kaydi ile devam et
+    
+ takas-olustur-ex.                               |* TAKAS Dosyasi olusturma sonu
+    close rez takas.
+
+ takas-dosya-yaz-exit.
+    exit.
+
+
+ documer-dosya-yaz.
+    initialize ara-rec.
+    
+ takvim-oku.
+*   TAKVIM dosyasini teker teker gecerek gunluk hazir oda bul
+    read takvim next no lock end go toplam-yaz, end-read
+    if fs-takvim = 99 go takvim-oku, end-if                  |* TAKVIM dosyasi mesgulse tekrar dene
+    if takvim-anah > flt-son-tarih-rapor                     |* Tarih Rapor son tarihini gecti ise cik
+       go toplam-yaz
+    end-if
+    move takvim-hazir-oda to ara-hazir-oda                   |* TAKVIM tarihindeki hazir oda sayisi
+    move takvim-anah      to ara-tarih                      |* TAKVIM tarihi ARA gunun tarihine ata
+    .
+    
+ cast-start.
+    initialize cast-rec
+    move takvim-anah to cast-tarih
+    start cast key not < cast-anah
+          invalid                               |* CAST startlanamadi ise musteri yoktur.
+             move 0 to ara-dolu-oda             |* oranlari sifirla
+             move 0 to ara-dolu-oran           
+             move 0 to ara-ilk-gelen           
+             move 0 to ara-tekrar-gelen           
+             move 0 to ara-tekrar-oran           
+             go takvim-oku                      |* Bir sonraki takvime gec
+          not invalid
+             continue                           |* Start gerceklesti ise devam et
+    end-start.
+
+ cast-oku.
+*   CAST dosyasini TAKVIM islem tarihi boyunca kontrol et.
+    read cast next no lock end go takvim-oku, end-read
+    if fs-cast = 99 go cast-oku, end-if       |* CAST dosyasi mesgulse tekrar dene
+    if cast-tarih > takvim-anah               |* Tarih takvim tarihini gecti ise oran hesapla yeni takvim oku
+       perform oran-hesap
+       go takvim-oku
+    end-if.
+    
+ rez-oku.
+*   REZ dosyasinda CAST tan okunan REZ numarasinin durumunu kontrol et
+    initialize rez-rec
+    move cast-rez-no to rez-no
+    read rez no lock
+      invalid
+*        if fs-rez = 99
+*           go rez-oku
+*        else
+           go cast-oku
+*        end-if
+      not invalid
+*        if rez-cik-tar = "20030617" stop "REZ",end-if
+        if rez-durumu not = "I" go cast-oku, end-if
+        if rez-k-g-b  not = "K" go cast-oku, end-if
+        if rez-cik-tar = takvim-anah  go cast-oku, end-if
+
+    end-read
+*    if rez-cik-tar = "20030617" stop "REZ",end-if
+*    if takvim-anah = "20030617" stop "REZ",end-if
+    .
+    
+ takas-start.
+*   Eski yontem ---> Basla
+**   TAKAS dosyasinda okunan rezervasyon numarasinin kacinci gelisi bak
+*    INITIALIZE TAKAS-REC
+*    MOVE CAST-REZ-NO TO TAKAS-REZ-NO
+*    START TAKAS KEY = TAKAS-ANAH-4
+*          INVALID
+*             ADD 1 TO ARA-ILK-GELEN(ARA-ISLEM)  |* Start lanamadi ise Tekrar tarihleri disinda islem gormektedir
+*          NOT INVALID
+**            TAKAS daki rezervasyon numarasi dosya sonuna dusmemesi gerekir
+**            duserse de onemseme ve bir sonraki cast girisini oku
+*             READ TAKAS NEXT NO LOCK END GO CAST-OKU, END-READ
+*             IF TAKAS-DEFA > 1
+*                ADD 1 TO ARA-TEKRAR-GELEN(ARA-ISLEM) |* TAKAS-DEFA 1 den buyukse tekrar gelistir
+*             ELSE
+*                ADD 1 TO ARA-ILK-GELEN(ARA-ISLEM)    |* TAKAS-DEFA 1 den buyuk degilse ilk gelistir
+*             END-IF
+*    END-START
+* 
+*   Eski yontem ----> Bitti
+
+*   TAKAS dosyasinda okunan rezervasyon numarasinin kacinci gelisi bak
+    initialize takas-rec
+    move cast-rez-no to takas-rez-no
+    read takas no lock 
+      invalid                                 |* TAKAS da Kayit yoksa ilk gelis olarak kabul et
+        add 1 to ara-ilk-gelen
+      not invalid
+        if takas-defa > 1
+          add 1 to ara-tekrar-gelen           |* TAKAS-DEFA 1 den buyukse tekrar gelistir
+        else
+          add 1 to ara-ilk-gelen              |* TAKAS-DEFA 1 den buyuk degilse ilk gelistir
+        end-if
+    end-read
+
+    add 1 to ara-dolu-oda           
+    go cast-oku.
+
+    
+ oran-hesap.
+    if not ara-dolu-oda = 0
+* **** Buraya ARA-HAZIR-ODA kontrolu koy. ARA-HAZIR-ODA = 0 olursa sifira bolme hatasi olusur.
+       compute ara-dolu-oran = (ara-dolu-oda*100) / ara-hazir-oda
+       
+       if not ara-ilk-gelen = 0           |* ILK GELEN sifir degilse oran hesapla
+       
+          if not ara-tekrar-gelen = 0     |* TEKRAR GELEN sifir degilse oran hesapla  
+             compute ara-tekrar-oran = (ara-tekrar-gelen*100) / ara-dolu-oda
+          else                            |* TEKRAR Gelen sifir ise orani da sifirdir
+             move 0 to ara-tekrar-oran    
+          end-if
+          
+       else                               |* ILK GELEN sifir ise gelenlerin tamami tekrar gelendir
+          move 100 to ara-tekrar-oran
+       end-if
+       
+    else                                  |* DOLU ODA sifir ise otel bostur
+       move 0 to ara-dolu-oran
+       move 0 to ara-tekrar-oran
+    end-if
+    compute ara-ilk-oran = 100 - ara-tekrar-oran
+    move spaces to ara-kontrol ara-alt-kontrol
+    perform toplam-al.
+    
+ toplam-al.
+    compute top-hazir-oda    = top-hazir-oda    + ara-hazir-oda
+    compute top-dolu-oda     = top-dolu-oda     + ara-dolu-oda
+    compute top-ilk-gelen    = top-ilk-gelen    + ara-ilk-gelen
+    compute top-tekrar-gelen = top-tekrar-gelen + ara-tekrar-gelen
+    initialize dokumer-rec detay
+*    move "D2"           to det-dokumer-20(1:2)
+    perform ara-doc-yaz
+    perform ara-yaz
+    initialize ara-rec.
+    
+ toplam-yaz.
+    initialize ara-dizi
+*    move all "-" to ara-dizi
+    initialize dokumer-rec detay
+    move "-"          to det-dokumer-20(5:1)
+    move "----------" to det-1(01:10)
+    move "---------"  to det-1(sutun(1):9)
+    move "---------"  to det-1(sutun(2):9)
+    move "------"     to det-1(sutun(3):6)
+    move "---------"  to det-1(sutun(4):9)
+    move "------"     to det-1(sutun(5):6)
+    move "---------"  to det-1(sutun(6):9)
+    move "------"     to det-1(sutun(7):6)
+    move detay-ciz to det-1
+    perform ara-yaz
+    initialize ara-dizi
+
+    if not top-dolu-oda = 0
+* **** Buraya TOP-HAZIR-ODA kontrolu koy. TOP-HAZIR-ODA = 0 olursa sifira bolme hatasi olusur.
+       compute top-dolu-oran = (top-dolu-oda*100) / top-hazir-oda
+       
+       if not top-ilk-gelen = 0           |* ILK GELEN sifir degilse oran hesapla
+       
+          if not top-tekrar-gelen = 0     |* TEKRAR GELEN sifir degilse oran hesapla  
+             compute top-tekrar-oran = (top-tekrar-gelen*100) / top-dolu-oda
+          else                            |* TEKRAR Gelen sifir ise orani da sifirdir
+             move 0 to top-tekrar-oran
+          end-if
+          
+       else                               |* ILK GELEN sifir ise gelenlerin tamami tekrar gelendir
+          move 100 to top-tekrar-oran
+       end-if
+       
+    else                                  |* DOLU ODA sifir ise otel bostur
+       move 0 to top-dolu-oran
+       move 0 to top-tekrar-oran
+    end-if
+    compute top-ilk-oran = 100 - top-tekrar-oran
+    move top-hazir-oda    to ara-hazir-oda
+    move top-dolu-oda     to ara-dolu-oda
+    move top-dolu-oran    to ara-dolu-oran
+    move top-ilk-gelen    to ara-ilk-gelen
+    move top-ilk-oran     to ara-ilk-oran
+    move top-tekrar-gelen to ara-tekrar-gelen
+    move top-tekrar-oran  to ara-tekrar-oran
+    move "G"              to ara-alt-kontrol
+    move "E"              to ara-kontrol
+    move "TOPLAM:"        to detay-00
+    move "|"              to ciz-03
+    move ara-hazir-oda    to detay-rakam-z
+    move detay-rakam-z    to detay-04
+    move "|"              to ciz-04
+    move ara-dolu-oda     to detay-rakam-z
+    move detay-rakam-z    to detay-05
+    move "|"              to ciz-05
+    move ara-dolu-oran    to detay-oran-z
+    move detay-oran-z     to detay-06
+    move "|"              to ciz-06
+    move ara-ilk-gelen    to detay-rakam-z
+    move detay-rakam-z    to detay-07
+    move "|"              to ciz-07
+    move ara-tekrar-gelen to detay-rakam-z
+    move ara-ilk-oran     to detay-oran-z
+    move detay-oran-z     to detay-08
+    move "|"              to ciz-08
+    move detay-rakam-z    to detay-09
+    move "|"              to ciz-09
+    move ara-tekrar-oran  to detay-oran-z
+    move detay-oran-z     to detay-10
+*    move "|"              to ciz-10
+    initialize dokumer-rec detay
+    move "A"          to det-dokumer-20(3:1)
+    move 481          to det-renk1
+    move "1"          to det-dokumer-20(10:1)
+    move detay-ciz to det-1
+    write dokumer-rec from detay, end-write
+    initialize dokumer-rec detay
+    move "-"          to det-dokumer-20(5:1)
+    move "----------" to det-1(01:10)
+    move "---------"  to det-1(sutun(1):9)
+    move "---------"  to det-1(sutun(2):9)
+    move "------"     to det-1(sutun(3):6)
+    move "---------"  to det-1(sutun(4):9)
+    move "------"     to det-1(sutun(5):6)
+    move "---------"  to det-1(sutun(6):9)
+    move "------"     to det-1(sutun(7):6)
+    .
+    
+ ara-yaz.
+    write dokumer-rec from detay, end-write
+    initialize ara-rec.
+    
+ ara-olustur-ex.
+    write dokumer-rec from detay, end-write
+    close takas rez cast takvim
+    delete file takas.
+
+ dokumer-dosya-yaz-exit.
+    .
+
+ ara-doc-yaz.
+    move ara-gun          to detay-01
+    move "/"              to ciz-01
+    move ara-ay           to detay-02
+    move "/"              to ciz-02
+    move ara-yil          to detay-03
+    move "|"              to ciz-03
+    move ara-hazir-oda    to detay-rakam-z
+    move detay-rakam-z    to detay-04
+    move "|"              to ciz-04
+    move ara-dolu-oda     to detay-rakam-z
+    move detay-rakam-z    to detay-05
+    move "|"              to ciz-05
+    move ara-dolu-oran    to detay-oran-z
+    move detay-oran-z     to detay-06
+    move "|"              to ciz-06
+    move ara-ilk-gelen    to detay-rakam-z
+    move detay-rakam-z    to detay-07
+    move "|"              to ciz-07
+    move ara-tekrar-gelen to detay-rakam-z
+    move ara-ilk-oran     to detay-oran-z
+    move detay-oran-z     to detay-08
+    move "|"              to ciz-08
+    move detay-rakam-z    to detay-09
+    move "|"              to ciz-09
+    move ara-tekrar-oran  to detay-oran-z
+    move detay-oran-z     to detay-10
+*    move "|"              to ciz-10
+    move detay-ciz to det-1
+    .
+*
+ com-01-Aft-Procedure.
+     inquire com-01, value in flt-fc-tipi
+     .
+*
+ acc-07-Aft-Procedure.
+     open input acenta
+     if flt-acenta = spaces
+        if flt-grup-kod = spaces
+           move "Tum Acentalar"   to acenta-adi
+        end-if
+     else
+        move flt-acenta    to acenta-kodu
+        read acenta no lock invalid
+             move "Tanimsiz Acenta ..." to acenta-adi
+             move 4 to accept-control
+             move 12 to control-id
+        end-read
+        initialize flt-grup-kod
+        move "Acenta Filtresi" to grup-adi
+        display acc-08 lb-acngrupadi
+     end-if
+     display lb-acenadi
+     close acenta
+     .
+*
+ acc-08-Aft-Procedure.
+     open input grup
+     if flt-grup-kod = spaces
+        if flt-acenta = spaces
+           move "Tum Gruplar"   to grup-adi
+        end-if
+     else
+        initialize grup-rec
+        set grup-acenta to true
+        move flt-grup-kod    to grup-kodu
+        read grup no lock invalid
+             move "Tanimsiz Acenta Grubu..." to grup-adi
+             move 4 to accept-control
+             move 17 to control-id
+        end-read
+        initialize flt-acenta
+        move "Grup Filtresi" to acenta-adi
+        display acc-07 lb-acenadi
+     end-if
+     display lb-acngrupadi
+     close grup
+     .
+ 

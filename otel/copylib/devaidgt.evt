@@ -1,0 +1,717 @@
+* devaidgt.evt
+* devaidgt.evt is generated from D:\asya\acugt.ytl\otel\devaidgt.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      move tarih-tasi(7:2) to tarihhh(1:2)
+      move "/"             to tarihhh(3:1)
+      move tarih-tasi(5:2) to tarihhh(4:2)
+      move "/"             to tarihhh(6:1)
+      move tarih-tasi(1:4) to tarihhh(7:4)
+     .
+*
+ Form1-Pb-1-Link.
+      if oda-konum = zeroes or oda-tip = zeroes or dov-kodu = zeroes then
+            exit paragraph
+      end-if
+
+      display message box "Bu Islem Secilen Oda Konumuna Ait Sozlesmelere Belirtilen Tutar Kadar Borclandirma Yapacaktir Eminmisiniz !"
+              icon 1
+              type 2
+              default 2
+              returning return-code 
+
+        if return-code not = 1 then
+             exit paragraph
+        end-if
+
+      open i-o devremulk  odalar
+          initialize devremulk-rec
+          start devremulk key not < devremulk-anah invalid        
+                  continue
+          not invalid
+          perform until fs-devremulk = "10" 
+          read devremulk next no lock end move "10" to fs-devremulk
+          not end
+
+               move devremulk-oda-no to odalar-no
+               read odalar no lock invalid
+                      exit perform cycle
+               not invalid
+                    if  ODALAR-KONUMU not = oda-konum
+                         exit perform cycle
+                    end-if
+                    if odalar-tipi not = oda-tip then
+                         exit perform cycle
+                    end-if 
+               end-read
+
+               initialize islem-yap
+               perform aidat-kaydet-duzenle
+
+               if not(islem-yap = 1 and chk-kontrol = 1)
+                     exit perform cycle
+               end-if
+
+               move dov-kodu    to devremulk-aidat-doviz-kodu
+               move aidat-tutar to devremulk-aidat-tutar
+        
+               rewrite devremulk-rec invalid
+                       continue
+               end-rewrite
+              | display devremulk-rec
+          end-read
+          end-perform
+          end-start
+
+      close devremulk odalar
+      display message box "ISLEM TAMAMLANDI"
+
+     .
+*
+ Form1-Ex-Other.
+      evaluate key-status
+          when 1
+                 if control-id = 2 then
+                        call "/asya/ytl/obj/otel/konumara.asy" using oda-konum
+                              on exception
+                                 perform callerr-proc
+                              not on exception
+                                 cancel "/asya/ytl/obj/otel/konumara.asy"
+                        end-call
+                        display Form1-Ef-1
+                 end-if
+
+                  if control-id = 4 then
+                      call "/asya/ytl/obj/otel/dovizara.asy" using dov-kodu
+                            on exception perform callerr-proc
+                               not on exception
+                               cancel "/asya/ytl/obj/otel/dovizara.asy" 
+                       end-call
+                       display Form1-Ef-2
+
+                  end-if
+
+              if control-id = 11 then
+                    initialize pazar-cagir
+                    move "G"   to pazar-tipi-cagir
+                    call "/asya/ytl/obj/otel/odatara.asy" using pazar-cagir
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                         cancel "/asya/ytl/obj/otel/odatara.asy" 
+                    end-call
+                    move pazar-kodu-cagir to oda-tip
+                    display Form1-Ef-1a
+             end-if
+       when 1987
+         perform excel-aidat-guncelle
+       end-evaluate
+     .
+*
+ demir-bas.
+     open i-o odemeler kur 
+     initialize odemeler-rec 
+     move devremulk-no     to odemeler-devremulk-no
+     start odemeler key not < odemeler-dev-tar invalid
+           continue 
+     not invalid 
+     perform with test after until fs-odemeler = "10"
+     read odemeler next no lock end move "10" to fs-odemeler
+     not at end 
+            if odemeler-devremulk-no <> devremulk-no
+                exit perform 
+            end-if
+            evaluate odemeler-islem-turu
+            when "DM"
+                if odemeler-tarih-yil = tarih-tasi(1:4)  then
+                     if debug = 1 then stop  " " end-if
+                     delete odemeler end-delete
+                end-if
+            WHEN OTHER 
+                 continue
+            end-evaluate
+     end-read 
+     end-perform
+     end-start
+     
+     
+     initialize odemeler-rec son-sira
+     move devremulk-no           to odemeler-devremulk-no
+     move high-values      to odemeler-sira 
+     start odemeler key < odemeler-anah invalid 
+          move 1 TO son-sira
+          continue 
+     not invalid 
+     perform with test after until fs-odemeler = "10"
+     read odemeler previous no lock end move "10"   to fs-odemeler
+     not at end 
+              if odemeler-devremulk-no <> devremulk-no
+                  move 1 to  son-sira
+                  exit perform 
+              end-if
+              if odemeler-sira is not numeric 
+                  initialize odemeler-sira 
+              end-if 
+              move odemeler-sira     to son-sira
+              compute son-sira = son-sira + 1
+              exit perform 
+     end-read 
+     end-perform
+     end-start
+     
+ 
+     initialize odemeler-rec 
+     move devremulk-no         to odemeler-devremulk-no
+     move son-sira             to odemeler-sira
+     move "DM"                 to odemeler-islem-turu
+     move yil-tasi             to odemeler-tarih-yil
+     move ay-tasi              to odemeler-tarih-ay
+     move gun-tasi             to odemeler-tarih-gun
+     move "B"                  to odemeler-hareket-turu
+     move k-kodu-tasi          to odemeler-prim-staf                            
+     move aidat-tutar          to odemeler-tutar-dv                                
+     move dov-kodu             to odemeler-doviz-kodu
+     move "NA"                 to odemeler-odeme-turu 
+     move k-kodu-tasi          to odemeler-staf
+     move 01                   to odemeler-banka-kodu
+     initialize kur-rec
+     move tarih-tasi           to kur-tarih
+     move 01                   to kur-banka
+     move odemeler-doviz-kodu  to kur-doviz
+     read kur no lock invalid        
+          initialize odemeler-tutar
+          display message box "gunluk kur kaydi bulunamadiii"
+          exit paragraph
+     not invalid
+         compute odemeler-tutar rounded = odemeler-tutar-dv * DOVIZ-ALIS
+     end-read
+     move yil-tasi to odemeler-donem-yili
+     write odemeler-rec invalid 
+           display message box "Odeme Yazilamadi.."
+     end-write
+
+     close odemeler kur.
+*
+ aidat-kaydet-duzenle.
+     |||duun aidat taksitlerini sill
+            open i-o odemeler kur       
+            initialize odemeler-rec 
+            move devremulk-no     to odemeler-devremulk-no
+            start odemeler key not < odemeler-dev-tar invalid
+                  continue 
+            not invalid 
+            perform with test after until fs-odemeler = "10"
+            read odemeler next no lock end move "10" to fs-odemeler
+            not at end 
+                   if odemeler-devremulk-no <> devremulk-no
+                       exit perform 
+                   end-if
+                   evaluate odemeler-islem-turu
+                   when "AI"
+                       if chk-kontrol = 1 
+                            if odemeler-tarih-yil = tarih-tasi(1:4)
+                            and odemeler-fatura-no = zeroes then
+                                 if debug = 1 then stop  " " end-if
+                                 delete odemeler end-delete
+                                 move 1 to islem-yap
+                            end-if
+                       else
+                            if odemeler-tarih-yil = tarih-tasi(1:4) then
+                                 if debug = 1 then stop  " " end-if
+                                 delete odemeler end-delete
+                                 move 1 to islem-yap
+                            end-if
+                       end-if
+
+                   WHEN OTHER 
+                        continue
+                   end-evaluate
+            end-read 
+            end-perform
+            end-start 
+     ||||||
+             if islem-yap = 0  and chk-kontrol = 1
+                  close odemeler kur 
+                  exit paragraph
+             end-if
+        
+             initialize odemeler-rec son-sira
+             move devremulk-no           to odemeler-devremulk-no
+             move high-values      to odemeler-sira 
+             start odemeler key < odemeler-anah invalid 
+                  move 1 TO son-sira
+                  continue 
+             not invalid 
+             perform with test after until fs-odemeler = "10"
+             read odemeler previous no lock end move "10"   to fs-odemeler
+             not at end 
+                      if odemeler-devremulk-no <> devremulk-no
+                          move 1 to  son-sira
+                          exit perform 
+                      end-if
+                      if odemeler-sira is not numeric 
+                          initialize odemeler-sira 
+                      end-if 
+                      move odemeler-sira     to son-sira
+                      compute son-sira = son-sira + 1
+                      exit perform 
+             end-read 
+             end-perform
+             end-start
+         
+ 
+                initialize odemeler-rec 
+                 move DEVREMULK-NO         to odemeler-devremulk-no
+                 move son-sira             to odemeler-sira
+                 move "AI"                 to odemeler-islem-turu
+                 move yil-tasi             to odemeler-tarih-yil
+                 move ay-tasi              to odemeler-tarih-ay
+                 move gun-tasi             to odemeler-tarih-gun
+                 move "B"                  to odemeler-hareket-turu
+                 move k-kodu-tasi          to odemeler-prim-staf                            
+                 move aidat-tutar          to odemeler-tutar-dv                                
+                 move dov-kodu             to odemeler-doviz-kodu
+                 move "NA"                 to odemeler-odeme-turu 
+                 move k-kodu-tasi          to odemeler-staf
+                 move 01                   to odemeler-banka-kodu
+                 initialize kur-rec
+                 move tarih-tasi           to kur-tarih
+                 move 01                   to kur-banka
+                 move odemeler-doviz-kodu  to kur-doviz
+                 read kur no lock invalid        
+                      initialize odemeler-tutar
+                      display message box "gunluk kur kaydi bulunamadiii"
+                      exit paragraph
+                 not invalid
+                     compute odemeler-tutar rounded = odemeler-tutar-dv * DOVIZ-ALIS
+                 end-read
+                 move yil-tasi to odemeler-donem-yili
+                 write odemeler-rec invalid 
+                       display message box "Odeme Yazilamadi.."
+                 end-write
+
+     close odemeler kur.
+*
+ Form1-Pb-2-Link.
+      if oda-konum = zeroes or oda-tip = zeroes or dov-kodu = zeroes then
+            exit paragraph
+      end-if
+
+      display message box "Bu Islem Secilen Oda Konumuna Ait Odalarda Belirtilen Tutar Kadar Demirbas Maliyetlendirmesi Yapacaktir Eminmisiniz !"
+              icon 1
+              type 2
+              default 2
+              returning return-code 
+
+        if return-code not = 1 then
+             exit paragraph
+        end-if
+
+      open i-o devremulk  odalar demi
+          initialize devremulk-rec
+          start devremulk key not < devremulk-anah invalid        
+                  continue
+          not invalid
+          perform until fs-devremulk = "10" 
+          read devremulk next no lock end move "10" to fs-devremulk
+          not end
+
+               move devremulk-oda-no to odalar-no
+               read odalar no lock invalid
+                      exit perform cycle
+               not invalid
+                    if  ODALAR-KONUMU not = oda-konum
+                         exit perform cycle
+                    end-if
+                    if odalar-tipi not = oda-tip then
+                         exit perform cycle
+                    end-if 
+               end-read
+
+
+    
+               initialize demi-rec
+               move devremulk-oda-no to demi-oda
+               start demi key not < demi-anahtar invalid
+                      continue
+               not invalid
+               perform until fs-demi = "10"
+               read demi next no lock end move "10" to fs-demi 
+               not end
+                      if demi-oda <> devremulk-oda-no then
+                            exit perform
+                      end-if
+
+                      move aidat-tutar to demi-fat-maliyet
+                      rewrite demi-rec invalid
+                              stop " "
+                      end-rewrite
+               end-read
+               end-perform
+               end-start
+
+          end-read
+          end-perform
+          end-start
+
+      close devremulk odalar  demi
+      display message box "ISLEM TAMAMLANDI"
+
+     .
+*
+ Form1-Pb-3-Link.
+            STOP "ASYASOFT YETKILISI DISINDA KIMSE ISLEM YAPMASIN"
+            open i-o ODEMELER2 ODEMELER  
+
+                    initialize odemeler2-rec 
+                    start odemeler2 key not < odemeler2-dev-tar invalid
+                          continue 
+                    not invalid 
+                    perform with test after until fs-odemeler2 = "10"
+                    read odemeler2 next no lock end move "10" to fs-odemeler2
+                    not at end 
+                           evaluate odemeler2-islem-turu
+                           when "AI"
+                               if odemeler2-tarih-yil = 2014 then
+                                    initialize odemeler-rec 
+                                    move odemeler2-rec to odemeler-rec
+                                    write odemeler-rec invalid
+                                            continue
+                                    end-write
+                                    display odemeler-rec
+                               end-if
+                           end-evaluate
+                    end-read 
+                    end-perform
+                    end-start
+          CLOSE ODEMELER2 ODEMELER
+          display message box "bitti"
+     .
+*
+ pb-dem-bas-Link.
+     if oda-konum = zeroes or oda-tip = zeroes or dov-kodu = zeroes then
+        exit paragraph
+     end-if
+
+     display message box "Bu Islem Secilen Oda Konumuna Ait Sozlesmelere" new-line
+                         "Belirtilen Tutar Kadar Borclandirma Yapacaktir." new-line 
+                         "Eminmisiniz ?"
+                     icon 1
+                     type 2
+                  default 2
+                returning return-code 
+     if return-code not = 1 then
+        exit paragraph
+     end-if
+
+     open i-o devremulk  odalar
+     initialize devremulk-rec
+     start devremulk key not < devremulk-anah invalid        
+             continue
+     not invalid
+     perform until fs-devremulk = "10" 
+     read devremulk next no lock end move "10" to fs-devremulk
+     not end
+
+          move devremulk-oda-no to odalar-no
+          read odalar no lock invalid
+                 exit perform cycle
+          not invalid
+               if  ODALAR-KONUMU not = oda-konum
+                    exit perform cycle
+               end-if
+               if odalar-tipi not = oda-tip then
+                    exit perform cycle
+               end-if 
+          end-read
+*          move dov-kodu    to devremulk-aidat-doviz-kodu
+*          move aidat-tutar to devremulk-aidat-tutar
+*          rewrite devremulk-rec invalid
+*                  continue
+*          end-rewrite
+          perform demir-bas
+         | display devremulk-rec
+     end-read
+     end-perform
+     end-start
+     close devremulk odalar
+     display message box "ISLEM TAMAMLANDI"
+     .
+*
+ Form1-Mn-1-MI-Yapistir-Link.
+      inquire form1-gd-1, start-x in st-x
+                          cursor-x in end-x
+      if st-x <> end-x and
+         st-x <> zeroes
+         display message box 
+                 "Birden fazla sutun secemezsiniz !!!"
+                 title " Hata "
+                 icon mb-error-icon
+         exit paragraph
+      end-if
+      inquire form1-gd-1, CURSOR-X in i CURSOR-Y in ii
+     call "c$sleep" using 0.
+
+     if is-remote    
+        perform clipboard-islem 
+     end-if     
+     .
+
+*
+ clipboard-islem.
+     initialize buf
+     call "@[DISPLAY]:C:\windows\system32\user32.dll" 
+     on exception
+           display message box "user32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph
+     end-call      .
+     call "@[DISPLAY]:C:\windows\system32\kernel32.dll" on exception
+           display message box "kernel32.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:C:\windows\system32\msvcrt.dll" on exception
+           display message box "msvcrt.dll bulunamadi ..."
+           icon mb_error_icon
+           title "Hata"
+           exit paragraph.
+     call "@[DISPLAY]:OpenClipboard" using by value 0
+          giving hwnd.
+
+     call "@[DISPLAY]:GetClipboardData" using by value cf_text
+                                        giving hglobal.
+
+     call "@[DISPLAY]:GlobalLock" using by value hglobal
+                                  returning ptr
+
+     call "@[DISPLAY]:lstrlenA" using by value ptr 
+                               returning boy.
+
+     if boy > 0
+     call "@[DISPLAY]:RtlMoveMemory" using by reference buf
+                                     by value ptr
+                                     by value boy
+     end-call
+            initialize sayac sayac2 l k m satirlar
+            move 1 to sayac
+            perform varying k 
+                    from 1 
+                    by 1 
+                    until k > ust-occ                        
+                         unstring buf delimited by x"0d0a"
+                         into satir(k)   pointer sayac
+                         
+                         if satir(k) = spaces
+                            exit perform cycle 
+                         end-if 
+
+                         initialize sayac2
+                         move 1 to sayac2
+                         perform varying l 
+                                 from 1 
+                                 by 1 
+                                 until l > 10
+                                  unstring satir(k) delimited by x"09"
+                                       into sutun(k,l)   pointer sayac2                                                                           
+                         end-perform
+            end-perform
+            
+           perform varying m 
+                   from 1 
+                   by 1 
+                   until m >= k            
+                   initialize form1-gd-1-record
+                   move 1 to yapistir
+                   if i = 1 
+                      display message box
+                              "Bu kolonda islem yapamazsiniz."
+                              title "Uyari"
+                              icon mb-warning-icon
+                      exit perform
+                   end-if
+
+                   if i = 2 
+                      move m                to zzz
+                      modify form1-gd-1(ii,1),Cell-Data zzz                     
+                      modify form1-gd-1(ii,2),Cell-Data sutun(m,1)
+                   end-if
+                   if i = 3 modify form1-gd-1(ii,3),Cell-Data sutun(m,1)  end-if 
+                   add 1 to ii 
+                  
+           
+           end-perform
+     call "@[DISPLAY]:GlobalUnlock" using hglobal.
+     call "@[DISPLAY]:CloseClipboard".
+     cancel "@[DISPLAY]:user32.dll".
+     cancel "@[DISPLAY]:kernel32.dll".
+     cancel "@[DISPLAY]:msvcrt.dll".     
+     modify form1-gd-1,
+            mass-update = 0.     
+
+*
+ excel-aidat-guncelle.
+     display message box "Aidatlari excelden aktarilan verilere gore guncellemek istediginize emin misiniz?"
+             title "Uyari"
+             icon 1
+             type 2
+             default 2
+             returning return-code 
+
+     open i-o devremulk odalar odemeler kur
+     perform varying o
+     from 1
+     by 1
+     until o > 300
+
+          inquire form1-gd-1(o,2),cell-data in tr-oda-no
+
+          if tr-oda-no = spaces
+             exit perform cycle             
+          end-if
+
+          initialize devremulk-rec
+          move tr-oda-no to devremulk-oda-no
+          start devremulk key not < devremulk-anah1 invalid        
+                  continue
+          not invalid
+          perform until fs-devremulk = "10" 
+          read devremulk next no lock end move "10" to fs-devremulk
+          not end
+
+               if tr-oda-no not = devremulk-oda-no
+                     exit perform
+               end-if
+
+               move devremulk-oda-no to odalar-no
+               read odalar no lock invalid
+                      exit perform
+               end-read
+
+               initialize islem-yap  
+               perform excel-aidat-kaydet-duzenle
+
+               if islem-yap = 1
+                     exit perform cycle
+               end-if
+
+               move dov-kodu    to devremulk-aidat-doviz-kodu
+               move aidat-tutar to devremulk-aidat-tutar
+        
+               rewrite devremulk-rec invalid
+                       continue
+               end-rewrite
+              | display devremulk-rec
+          end-read
+          end-perform
+          end-start
+
+
+     end-perform
+     close devremulk odalar odemeler kur
+     display message box "ISLEM TAMAMLANDI".
+
+
+*
+ excel-aidat-kaydet-duzenle.
+ 
+      |||duun aidat taksitlerini sill 
+      initialize odemeler-rec islem-yap
+      move devremulk-no     to odemeler-devremulk-no
+      start odemeler key not < odemeler-dev-tar invalid
+            continue 
+      not invalid 
+      perform with test after until fs-odemeler = "10"
+      read odemeler next no lock end move "10" to fs-odemeler
+      not at end 
+             if odemeler-devremulk-no <> devremulk-no
+                 exit perform 
+             end-if
+             evaluate odemeler-islem-turu
+             when "AI"
+                  if odemeler-tarih-yil = tarih-tasi(1:4) then
+                          move 1 to islem-yap
+                          exit perform 
+                   end-if
+             WHEN OTHER 
+                  continue
+             end-evaluate
+      end-read 
+      end-perform
+      end-start
+      ||||||
+      if islem-yap = 1
+           exit paragraph
+      end-if 
+  
+     
+     initialize odemeler-rec son-sira
+     move devremulk-no           to odemeler-devremulk-no
+     move high-values      to odemeler-sira 
+     start odemeler key < odemeler-anah invalid 
+          move 1 TO son-sira
+          continue 
+     not invalid 
+     perform with test after until fs-odemeler = "10"
+     read odemeler previous no lock end move "10"   to fs-odemeler
+     not at end 
+              if odemeler-devremulk-no <> devremulk-no
+                  move 1 to  son-sira
+                  exit perform 
+              end-if
+              if odemeler-sira is not numeric 
+                  initialize odemeler-sira 
+              end-if 
+              move odemeler-sira     to son-sira
+              compute son-sira = son-sira + 1
+              exit perform 
+     end-read 
+     end-perform
+     end-start
+     
+ 
+     initialize odemeler-rec 
+     move DEVREMULK-NO         to odemeler-devremulk-no
+     move son-sira             to odemeler-sira
+     move "AI"                 to odemeler-islem-turu
+     move yil-tasi             to odemeler-tarih-yil
+     move 01                   to odemeler-tarih-ay
+     move 01                    to odemeler-tarih-gun
+     move "B"                  to odemeler-hareket-turu
+     move k-kodu-tasi          to odemeler-prim-staf 
+     inquire form1-gd-1(o,3),cell-data in xtutar
+     move function numval-c(xtutar)        to odemeler-tutar-dv                 
+*     move aidat-tutar          to odemeler-tutar-dv                                
+     move dov-kodu             to odemeler-doviz-kodu
+     move "NA"                 to odemeler-odeme-turu 
+     move k-kodu-tasi          to odemeler-staf
+     move 01                   to odemeler-banka-kodu
+     initialize kur-rec
+     move tarih-tasi           to kur-tarih
+     move 01                   to kur-banka
+     move odemeler-doviz-kodu  to kur-doviz
+     read kur no lock invalid        
+          initialize odemeler-tutar
+          display message box "gunluk kur kaydi bulunamadiii"
+          exit paragraph
+     not invalid
+         compute odemeler-tutar rounded = odemeler-tutar-dv * DOVIZ-ALIS
+     end-read
+     move yil-tasi to odemeler-donem-yili
+     write odemeler-rec invalid 
+           display message box "Odeme Yazilamadi.."
+     end-write.
+
+ 

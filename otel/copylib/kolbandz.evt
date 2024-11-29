@@ -1,0 +1,978 @@
+* kolbandz.evt
+* kolbandz.evt is generated from D:\asya\acugt.ytl\otel\kolbandz.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ cb-0101-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM cb-0101-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ cb-0102-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM cb-0102-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ cb-0103-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM cb-0103-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ cb-0104-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Cmd-Clicked
+        PERFORM cb-0104-Ev-Cmd-Clicked
+     END-EVALUATE
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form3-Event-Proc.
+     .
+
+ Form4-Event-Proc.
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     open input genel genel2
+     initialize genel-rec  genel2-rec
+     move 1 to genel-anahtar
+     read genel no lock invalid 
+         continue 
+     end-read 
+     move 1 to genel2-anah
+     read genel2 no lock invalid 
+         continue 
+     end-read 
+     close genel genel2.
+*
+ exception-procedure.
+     evaluate key-status
+         when 5 
+              perform baslik-yukle
+              perform grid-yukle
+     end-evaluate.
+* 
+ baslik-yukle.
+     modify form1-gd-1, reset-grid  = 1
+                        mass-update = 1
+     initialize form1-gd-1-record 
+     move "Rez No"          to gd-1-col-1
+     move "Adi"             to gd-1-col-2
+     move "Soyadi"          to gd-1-col-3
+     move "Durum"           to gd-1-col-4
+     move "Seri No"         to gd-1-col-5
+     move "Oda"             to gd-1-col-5-1
+     move "C-in"            to gd-1-col-6
+     move "C-out"           to gd-1-col-7
+     move "Kay Tarih/Staff" to gd-1-col-8
+     move "Deg Tarih/Staff" to gd-1-col-9
+     move "Profil No"       to gd-1-col-10
+     move "EP"              to gd-1-col-11
+     move "Uz"              to gd-1-col-12
+     move "#"               to gd-1-col-13
+     modify form1-gd-1, record-to-add(form1-gd-1-record)
+     modify form1-gd-1, mass-update = 0.
+
+* 
+ grid-yukle.
+     modify Form1-La-1, VISIBLE = true
+     modify form1-gd-1, mass-update = 1
+     move 2 to xiii
+     open i-o kolbant odalar bant13 rez musteri
+     initialize kolbant-rec
+     if ilk-rez <> 0 and spaces
+        move ilk-rez to kolbant-rez-no
+     end-if
+     start kolbant key not < kolbant-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-kolbant = "10"
+     read kolbant next no lock end move "10" to fs-kolbant 
+     not at end
+         if (son-rez <> 0 and spaces) and kolbant-rez-no > son-rez 
+            exit perform 
+         end-if
+
+         initialize rez-rec musteri-rec 
+         move kolbant-rez-no to rez-no 
+         read rez no lock invalid
+              continue
+         end-read
+
+         move kolbant-mus-anah to m-profil
+         read musteri no lock invalid
+              continue
+         end-read
+         if spaces <> ilk-oda and son-oda
+            perform oda-kontrol
+            if gec-gecme = 0 
+               exit perform cycle
+            end-if   
+         end-if
+
+
+         if cin-pasif = 0 
+            if rez-gir-tar < cin-ilk or
+               rez-gir-tar > cin-son
+               exit perform cycle
+            end-if
+         end-if   
+         if cout-pasif = 0 
+            if rez-cik-tar < cout-ilk or
+               rez-cik-tar > cout-son
+               exit perform cycle
+            end-if
+         end-if   
+         if kayit-pasif = 0 
+            if kolbant-kayit-tar < kayit-ilk or
+               kolbant-kayit-tar > kayit-son
+               exit perform cycle
+            end-if
+         end-if   
+         if degisiklik-pasif = 0 
+            if kolbant-deg-tar < deg-ilk or
+               kolbant-deg-tar > deg-son
+               exit perform cycle
+            end-if
+         end-if   
+
+
+         evaluate filt-durumu(1:1)
+             when "P"
+                  if kolbant-durumu = 1
+                     exit perform cycle
+                  end-if
+             when "H"
+                  continue
+             when other
+                  if kolbant-durumu <> filt-durumu(1:1)
+                     exit perform cycle
+                  end-if                                
+         end-evaluate
+         if bant-seri <> spaces       
+            move function upper-case(kolbant-seri-no)          to kelime
+            move bant-seri      to aranan-kelime
+            move 0 to aranan-i aranan-kelime-boy
+            inspect aranan-kelime tallying aranan-kelime-boy
+                    for trailing spaces 
+            compute aranan-kelime-boy = function length(aranan-kelime) -
+                                        aranan-kelime-boy
+            inspect kelime tallying aranan-i 
+                    for all aranan-kelime(1:aranan-kelime-boy)
+            if aranan-i = 0              
+               exit perform cycle  
+            end-if
+         end-if
+
+         initialize form1-gd-1-record musteri-sirket-birle
+         move rez-no              to z-8
+         move z-8                 to gd-1-col-1
+         move musteri-Adi         to gd-1-col-2
+         move musteri-Soyadi      to gd-1-col-3
+         evaluate kolbant-durumu
+             when 1
+                  move "Aktif"    to gd-1-col-4
+             when 2
+                  move "Zaiyat"   to gd-1-col-4
+             when 3
+                  move "Kayip"    to gd-1-col-4
+             when 4
+                  move "C-out"    to gd-1-col-4
+         end-evaluate
+         move kolbant-seri-no     to gd-1-col-5
+         move rez-odano           to gd-1-col-5-1
+         
+         move rez-gir-tar(7:)     to gd-1-col-6(1:)
+         move "/"                 to gd-1-col-6(3:)
+         move rez-gir-tar(5:2)    to gd-1-col-6(4:)
+         move "/"                 to gd-1-col-6(6:)
+         move rez-gir-tar(1:4)    to gd-1-col-6(7:)
+
+         move rez-cik-tar(7:)     to gd-1-col-7(1:)
+         move "/"                 to gd-1-col-7(3:)
+         move rez-cik-tar(5:2)    to gd-1-col-7(4:)
+         move "/"                 to gd-1-col-7(6:)
+         move rez-cik-tar(1:4)    to gd-1-col-7(7:)
+
+         move kolbant-kayit-tar(7:)  to gd-1-col-8(1:)
+         move "/"                    to gd-1-col-8(3:)
+         move kolbant-kayit-tar(5:2) to gd-1-col-8(4:)
+         move "/"                    to gd-1-col-8(6:)
+         move kolbant-kayit-tar(1:4) to gd-1-col-8(7:)
+         move "-"                    to gd-1-col-8(11:)
+         move kolbant-kayit-staff    to gd-1-col-8(12:)
+
+         move kolbant-deg-tar(7:)    to gd-1-col-9(1:)
+         move "/"                    to gd-1-col-9(3:)
+         move kolbant-deg-tar(5:2)   to gd-1-col-9(4:)
+         move "/"                    to gd-1-col-9(6:)
+         move kolbant-deg-tar(1:4)   to gd-1-col-9(7:)
+         move "-"                    to gd-1-col-9(11:)
+         move kolbant-deg-staff      to gd-1-col-9(12:)
+         string musteri-sirket-birle
+                kolbant-mus-profil delimited by "    "
+                " - "              delimited by size 
+                kolbant-mus-sirket delimited by "    "
+           into musteri-sirket-birle
+         move musteri-sirket-birle     to gd-1-col-10
+         if kolbant-ex-pax = 1 
+            move "E"       to gd-1-col-11
+         end-if
+         if kolbant-uzatma = 1 
+            move "U"       to gd-1-col-12
+         end-if
+         modify form1-gd-1, 
+                record-to-add(form1-gd-1-record)
+         modify Form1-Gd-1(xiii,1), 
+                hidden-data = kolbant-anah
+         add 1 to xiii
+     end-read
+     end-perform
+     end-start
+     close kolbant odalar bant13 rez musteri
+     modify form1-gd-1, mass-update = 0
+     modify Form1-La-1, VISIBLE = false.
+*
+ seri-kontrol.
+     initialize bant13-rec gec-gecme
+     if ilk-seri <> spaces
+        move ilk-seri to bant13-seri-no 
+     end-if
+     start bant13 key not < bant13-anah1 invalid
+           continue
+     not invalid
+     perform with test after until fs-bant13= "10"
+     read bant13 next no lock end move "10" to fs-bant13 
+     not at end
+         if bant13-seri-no = kolbant-seri-no
+            move 1  to gec-gecme
+         end-if
+         if son-seri = bant13-seri-no 
+            exit perform 
+         end-if
+     end-read
+     end-perform 
+     end-start
+     .   
+*
+ oda-kontrol.
+     
+     initialize odalar-rec gec-gecme
+     move ilk-oda to odalar-anah 
+     start odalar key not < odalar-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-odalar = "10"
+     read odalar next no lock end move "10" to fs-odalar 
+     not at end
+         if odalar-anah = rez-odano
+            move 1  to gec-gecme
+            exit perform
+         end-if
+         if son-oda = odalar-anah 
+            exit perform 
+         end-if
+     end-read
+     end-perform 
+     end-start
+     .   
+*
+ form1-aft-initdata.
+      move isyeri-adres-tasi to bant13-dosya-adres
+      open i-o bant13 close bant13
+
+      open i-o bantstok
+      initialize bantstok-rec stok-var
+      move 1 to bantstok-anah-kodu
+      read bantstok no lock invalid
+           move 0 to stok-var
+      not invalid 
+           move 1 to stok-var
+      end-read 
+      close bantstok
+
+      if stok-var = 1
+         perform acuserve-bant-adres-aktar
+      end-if  
+    
+      move tarih-tasi  to deg-ilk deg-son
+                          cin-ilk cin-son
+                          cout-ilk cout-son
+                          kayit-ilk kayit-son
+                          
+      move 1           to cout-ilk-gun cout-ilk-ay
+                          deg-ilk-gun deg-ilk-ay
+      move 12          to cout-son-ay deg-son-ay
+      move 31          to cout-son-gun deg-son-gun
+                          
+      display acc-1305 acc-1306 acc-1307 
+              acc-1308 acc-1309 acc-1310
+              acc-1311 acc-1312 acc-1313 
+              acc-1314 acc-1315 acc-1316
+              acc-1317 acc-1318 acc-1319 
+              acc-1320 acc-1321 acc-1322
+              acc-1324 acc-1325 acc-1326
+              acc-1327 acc-1328 acc-1329
+      perform baslik-yukle
+*      perform grid-yukle
+     .
+*
+ acc-1302-Aft-Procedure.
+     if ilk-rez <> 0 and son-rez < ilk-rez 
+        display message box "Son rezervasyon no kucuk olamaz.."
+        move 4 to accept-control
+        move 5 to control-id
+     end-if
+     .
+*
+ acc-1304-Aft-Procedure.
+     if spaces = ilk-oda or son-oda
+        exit paragraph
+     end-if
+     open i-o odalar 
+     initialize odalar-rec gec-gecme
+     move ilk-oda to odalar-no 
+     start odalar key not < odalar-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-odalar = "10"
+     read odalar next no lock end move "10" to fs-odalar
+     not at end
+         if odalar-no = son-oda
+            move 1 to gec-gecme
+            exit perform
+         end-if
+     end-read
+     end-perform 
+     end-start
+     close odalar
+     if gec-gecme <> 1 
+        display message box "Son oda no kucuk olamaz.."
+        move 4 to accept-control
+        move 5 to control-id
+     end-if
+     .
+*
+ acc-1307-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec gec-gecme
+     move cin-ilk to takvim-anah
+     read takvim no lock invalid
+          display message box "Ilk Cin tarihi tanimsiz."
+          move 4  to accept-control
+          move 23 to control-id
+     end-read
+     close takvim
+     .
+*
+ acc-1310-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec gec-gecme
+     move cin-son to takvim-anah
+     read takvim no lock invalid
+          display message box "Son Cin tarihi tanimsiz."
+          move 4 to accept-control
+          move 25 to control-id
+     not invalid
+         move 1 to gec-gecme
+     end-read
+     close takvim
+     if gec-gecme <> 0 and cin-son < cin-ilk
+        display message box "Son Cin tarihi kucuk olamaz."
+        move 4 to accept-control
+        move 25 to control-id
+     end-if
+     .
+*
+ acc-1313-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec gec-gecme
+     move cout-ilk to takvim-anah
+     read takvim no lock invalid
+          display message box "Ilk Cout tarihi tanimsiz."
+          move 4  to accept-control
+          move 31 to control-id
+     end-read
+     close takvim
+     .
+*
+ acc-1316-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec gec-gecme
+     move cout-son to takvim-anah
+     read takvim no lock invalid
+          display message box "Son Cout tarihi tanimsiz."
+          move 4 to accept-control
+          move 34 to control-id
+     not invalid
+         move 1 to gec-gecme
+     end-read
+     close takvim
+     if gec-gecme <> 0 and cout-son < cout-ilk
+        display message box "Son Cout tarihi kucuk olamaz."
+        move 4 to accept-control
+        move 34 to control-id
+     end-if
+     .
+*
+ acc-1319-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec gec-gecme
+     move kayit-ilk to takvim-anah
+     read takvim no lock invalid
+          display message box "Ilk Kayit tarihi tanimsiz."
+          move 4  to accept-control
+          move 44 to control-id
+     end-read
+     close takvim
+     .
+*
+ acc-1322-Aft-Procedure.
+     open i-o takvim
+     initialize takvim-rec gec-gecme
+     move kayit-son to takvim-anah
+     read takvim no lock invalid
+          display message box "Son Kayit tarihi tanimsiz."
+          move 4 to accept-control
+          move 47 to control-id
+     not invalid
+          move 1 to gec-gecme
+     end-read
+     close takvim
+     if gec-gecme <> 0 and kayit-son < kayit-ilk
+        display message box "Son Kayit tarihi kucuk olamaz."
+        move 4 to accept-control
+        move 47 to control-id
+     end-if
+     .
+*
+ Form1-Mn-1-MI-KolbandiMusteriNoDuzenle-Link.
+    initialize xiii
+    inquire form1-gd-1,
+            cursor-y in xiii
+    inquire form1-gd-1(xiii,1),
+            hidden-data in yedek-anah
+    open i-o kolbant
+    initialize kolbant-rec 
+    move yedek-anah to kolbant-anah
+    read kolbant no lock invalid
+         continue
+    end-read
+    close kolbant
+    if kolbant-durumu <> 1 
+       display message box "Pasif kol bandi seri no degistirilemez.."
+       exit paragraph   
+    end-if
+    perform Acu-Form4-Routine
+    perform Baslik-Yukle
+    perform Grid-Yukle
+    .
+*
+ Form1-Mn-1-MI-KolbandiSeriNoDuzenle-Link.
+    initialize xiii
+    inquire form1-gd-1,
+            cursor-y in xiii
+    inquire form1-gd-1(xiii,1),
+            hidden-data in yedek-anah
+    open i-o kolbant
+    initialize kolbant-rec 
+    move yedek-anah to kolbant-anah
+    read kolbant no lock invalid
+         continue
+    end-read
+    close kolbant
+    if kolbant-durumu <> 1 
+       display message box "Pasif kol bandi seri no degistirilemez.."
+       exit paragraph   
+    end-if
+    perform Acu-Form2-Routine
+    perform Baslik-Yukle
+    perform Grid-Yukle.
+*
+ Form2-Aft-Initdata.
+     if yedek-anah = spaces 
+        set exit-pushed to true
+     end-if
+     move yedek-seri to yeni-bant-seri
+     display acc-0201
+     .
+*
+ Form4-Aft-Initdata.    
+     if yedek-anah = spaces 
+        set exit-pushed to true
+     end-if
+     open input kolbant
+     initialize kolbant-rec 
+     move yedek-anah to kolbant-anah
+     read kolbant no lock invalid
+          continue
+     not invalid
+         move kolbant-mus-sirket to yeni-bant-sirket
+         move kolbant-mus-profil to yeni-bant-musteri
+         display acc-0401  acc-0402
+     end-read
+     close kolbant
+     .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+         when msg-begin-entry     
+              move event-action-fail to event-action
+              inquire form1-gd-1(event-data-2,1), 
+                      hidden-data in yedek-anah
+         
+     end-evaluate
+     .
+*
+ pb-0201-Link.
+     open i-o kolbant musteri
+        if genel2-kolbandi-algo-stok-yok = 1
+           move 0 to stok-var
+        end-if 
+     if stok-var = 1
+        move bant-seri(1:6) to bant-kont
+        move bant-seri      to fullbant-kont
+        perform stok-seri-kontrol
+
+        if kolbant-seri-buldum = 0 
+           display message box "Secilen Kolbandi Serisi Tanimlanmamis.."
+                         title "Uyari"
+                          icon 1  
+           exit paragraph
+     end-if
+     if bant-seri(7:1) <> space 
+        move bant-seri(1:6) to bant-kont
+        move bant-seri      to fullbant-kont
+        perform kolbant-algo-kont
+        if genel2-kolbandi-algo-stok-yok = 1
+           move 0 to hatali-bant
+        end-if 
+        if hatali-bant = 1 
+           display message box "Girilen bant serisi Algoritmaya uymuyor." new-line
+                               "Bant yazma islemi iptal edilmistir.."
+           exit paragraph
+        end-if
+      else
+         display message box "Girilen bant serisi 7 haneden az olamaz.." new-line
+                            "Bant yazma islemi iptal edilmistir.."
+         exit paragraph
+      end-if
+     end-if
+     perform mukerrer-kontrol
+     if bant-bos = 0
+        close kolbant musteri
+        exit paragraph
+     end-if
+     initialize kolbant-rec musteri-rec 
+     move yedek-anah to kolbant-anah
+     read kolbant no lock invalid
+          continue
+     end-read
+     delete kolbant end-delete
+     move yeni-bant-seri to kolbant-seri-no 
+     move "D"            to kolbant-duzeltme
+     write kolbant-rec invalid
+           stop " " 
+     end-write 
+     move kolbant-mus-anah to m-profil
+     read musteri no lock invalid
+          continue
+     end-read
+     move yeni-bant-seri to musteri-kol-bandi
+     rewrite musteri-rec invalid
+             stop " "
+     end-rewrite 
+     close kolbant musteri
+     set exit-pushed to true.
+*
+ pb-0401-Link.
+     open i-o kolbant musteri
+     initialize kolbant-rec musteri-rec 
+     move yedek-anah to kolbant-anah
+     read kolbant no lock invalid
+          continue
+     end-read
+*     delete kolbant end-delete
+     move yeni-bant-sirket  to kolbant-mus-sirket 
+     move yeni-bant-musteri to kolbant-mus-profil
+     write kolbant-rec invalid
+           rewrite kolbant-rec end-rewrite
+     end-write 
+     move kolbant-mus-anah to m-profil
+     read musteri no lock invalid
+          continue
+     end-read
+     move kolbant-seri-no to musteri-kol-bandi
+     rewrite musteri-rec invalid
+             display message box "Verilen bilgilere bagli profil bulunamadi." new-line
+                                 "Islemleri kontrol ederek yeniden yapiniz."
+     end-rewrite 
+     close kolbant musteri
+     set exit-pushed to true
+     .
+*
+ Form1-Mn-1-MI-Aktif-Link.
+    if k-kodu-tasi = "ASYA" stop " " end-if
+    open i-o kolbant takvim rez
+    initialize xiii
+    inquire form1-gd-1,
+            cursor-y in xiii
+    inquire form1-gd-1(xiii,1),
+            hidden-data in yedek-anah
+    initialize rez-rec 
+    move yedek-rez to rez-no 
+    read rez no lock invalid
+         continue
+    end-read
+    perform bant-kisi-kontrol
+    initialize tmp-ex-pax
+    if bant-fazla = 1 
+       display message box "Aktif kolbandi sayisi rezervasyon toplam kisi sayisindan fazla olamaz." new-line
+                           "Daha fazla kolbandi tanimlamasi sisteme EXTRA PAX olarak islenecektir." new-line
+                           "Devam edecek misiniz...?"
+                     title "[Bildirim]"
+                      type 2
+                      icon 2
+                 returning return-code
+       if return-code = 2
+          exit paragraph
+       end-if
+       move 1 to tmp-ex-pax
+    end-if
+    initialize kolbant-rec 
+    move yedek-anah to kolbant-anah
+    read kolbant no lock invalid
+         continue
+    end-read
+    if kolbant-durumu = 4 
+       initialize takvim-rec degistirme
+       move kolbant-deg-tar to takvim-anah
+       start takvim key not < takvim-anah invalid
+             continue
+       not invalid
+       perform with test after until fs-takvim = "10" 
+       read takvim next no lock end move "10" to fs-takvim
+       not at end 
+           if takvim-anah > tarih-tasi
+              exit perform 
+           end-if
+           if degistirme < 4
+              add 1 to degistirme
+           else
+              add 1 to degistirme
+              exit perform 
+           end-if
+       end-read
+       end-perform 
+       end-start
+       if degistirme < 4
+          display message box "Pasif kolbandi aktif edilecektir?"
+                          title "[Uyari]"
+                          type 2
+                          icon 2
+                          returning return-code
+          if return-code = 2
+             close kolbant takvim
+             exit paragraph
+          end-if
+          move 1           to kolbant-durumu
+          move tarih-tasi  to kolbant-deg-tar
+          move k-kodu-tasi to kolbant-deg-staff 
+          move 1           to kolbant-uzatma
+          move tmp-ex-pax  to kolbant-ex-pax
+          rewrite kolbant-rec invalid
+                  stop " "
+          not invalid
+              move 0 to olmadi
+          end-rewrite      
+       else 
+          display message box "Pasif kolbandi aktif gun sinirini gecmis durumda tekrar aktif edilemez.."
+          move 1 to olmadi
+       end-if
+    else 
+       display message box "C-out olmayan kolbandi tekrar aktif edilemez.."
+       move 1 to olmadi
+    end-if
+    close takvim kolbant rez
+    if olmadi = 0
+       perform Baslik-Yukle
+       perform Grid-Yukle
+    end-if   .
+*
+ Form1-Mn-1-MI-Zaiyat-Link.
+    
+    open i-o kolbant musteri
+    initialize xiii olmadi
+    inquire form1-gd-1,
+            cursor-y in xiii
+    inquire form1-gd-1(xiii,1),
+            hidden-data in yedek-anah
+    
+    initialize kolbant-rec 
+    move yedek-anah to kolbant-anah
+    read kolbant no lock invalid
+         continue
+    end-read
+    perform Acu-Form3-Routine
+    if pasif-neden = spaces 
+       display message box "Aciklama girilmeden kolbandi pasife alinamaz"
+       exit paragraph
+    end-if
+    if kolbant-durumu = 1 
+       display message box "Aktif kolbandi zaiyat a alinacaktir.." new-line 
+                           "Emin misiniz?."
+                     title "[Uyari]"
+                      type 2
+                      icon 2
+                 returning return-code
+       if return-code = 2  
+          close kolbant
+          exit paragraph
+       end-if
+       move 2           to kolbant-durumu
+       move tarih-tasi  to kolbant-deg-tar
+       move pasif-neden to kolbant-p-aciklama
+       move k-kodu-tasi to kolbant-deg-staff
+       initialize kolbant-mus-anah   
+       rewrite kolbant-rec invalid
+               stop " "
+       not invalid
+           initialize musteri-rec 
+           move kolbant-mus-anah to m-profil 
+           read musteri no lock invalid
+                continue
+           not invalid
+               if musteri-kol-bandi <> spaces
+                  initialize musteri-kol-bandi 
+                  rewrite musteri-rec invalid
+                          continue
+                  end-rewrite 
+               end-if
+           end-read
+           move 0 to olmadi
+       end-rewrite  
+    else 
+       display message box "Yalnizca Aktif kolbandi Zaiyat yapilabilir.." new-line 
+                           "Islem iptal edilmistir.."
+                     title "[Uyari]"
+       move 1 to olmadi
+    end-if
+    close kolbant
+    if olmadi = 0
+       perform Baslik-Yukle
+       perform Grid-Yukle
+    end-if   .
+*
+ Form3-Aft-Initdata.
+     initialize pasif-neden
+     display acc-0301
+     if yedek-anah = spaces 
+        set exit-pushed to true
+     end-if
+     .
+*
+ pb-0301-Link.
+     set exit-pushed to true.
+*
+ Form1-Mn-1-MI-Kayip-Link.
+    open i-o kolbant
+    initialize xiii olmadi
+    inquire form1-gd-1,
+            cursor-y in xiii
+    inquire form1-gd-1(xiii,1),
+            hidden-data in yedek-anah
+    initialize kolbant-rec 
+    move yedek-anah to kolbant-anah
+    read kolbant no lock invalid
+         continue
+    end-read
+    perform Acu-Form3-Routine
+    if pasif-neden = spaces 
+       display message box "Aciklama girilmeden kolbandi pasife alinamaz"
+       exit paragraph
+    end-if
+    if kolbant-durumu = 1 
+       display message box "Aktif kolbandi kayip tipine alinacaktir.." new-line 
+                           "Emin misiniz?."
+                     title "[Uyari]"
+                      type 2
+                      icon 2
+                 returning return-code
+       if return-code = 2
+          close kolbant
+          exit paragraph
+       end-if
+       move 3           to kolbant-durumu
+       move tarih-tasi  to kolbant-deg-tar
+       move pasif-neden to kolbant-p-aciklama
+       initialize kolbant-mus-anah
+       rewrite kolbant-rec invalid
+               stop " "
+       not invalid
+           initialize musteri-rec 
+           move kolbant-mus-anah to m-profil 
+           read musteri no lock invalid
+                continue
+           not invalid
+               if musteri-kol-bandi <> spaces
+                  initialize musteri-kol-bandi 
+                  rewrite musteri-rec invalid
+                          continue
+                  end-rewrite 
+               end-if
+           end-read
+           move 0 to olmadi
+       end-rewrite  
+    else 
+       display message box "Yalnizca aktif kolbandi kayip yapilabilir.." new-line 
+                           "Islem iptal edilmistir.."
+                     title "[Uyari]"
+       move 1 to olmadi
+    end-if
+    close kolbant
+    if olmadi = 0
+       perform Baslik-Yukle
+       perform Grid-Yukle
+    end-if   .
+*
+ Form1-Mn-1-MI-Cout-Link.
+    open i-o kolbant
+    initialize xiii olmadi
+    inquire form1-gd-1,
+            cursor-y in xiii
+    inquire form1-gd-1(xiii,1),
+            hidden-data in yedek-anah
+    initialize kolbant-rec 
+    move yedek-anah to kolbant-anah
+    read kolbant no lock invalid
+         continue
+    end-read
+    if kolbant-durumu = 1 
+       display message box "Aktif kolbandi c-out edilecektir.." new-line 
+                           "Emin misiniz?."
+                     title "[Uyari]"
+                      type 2
+                      icon 2
+                 returning return-code
+       if return-code = 2
+          close kolbant
+          exit paragraph
+       end-if
+       move 4          to kolbant-durumu
+       move tarih-tasi to kolbant-deg-tar
+       rewrite kolbant-rec invalid
+               stop " "
+       not invalid
+           move 0 to olmadi
+       end-rewrite  
+    else 
+       display message box "Yalnizca aktif kolbandi c-out edilebilir.." new-line 
+                           "Islem iptal edilmistir.."
+                     title "[Uyari]"
+       move 1 to olmadi
+    end-if
+    close kolbant
+    if olmadi = 0
+       perform Baslik-Yukle
+       perform Grid-Yukle
+    end-if   .
+*
+ cb-0101-Ev-Cmd-Clicked.
+     if cin-pasif = 0
+        modify acc-1305, ENABLED = 0
+        modify acc-1306, ENABLED = 0
+        modify acc-1307, ENABLED = 0
+        modify acc-1308, ENABLED = 0
+        modify acc-1309, ENABLED = 0
+        modify acc-1310, ENABLED = 0
+     else
+        modify acc-1305, ENABLED = 1
+        modify acc-1306, ENABLED = 1
+        modify acc-1307, ENABLED = 1
+        modify acc-1308, ENABLED = 1
+        modify acc-1309, ENABLED = 1
+        modify acc-1310, ENABLED = 1
+     end-if
+     .
+*
+ cb-0102-Ev-Cmd-Clicked.
+     if cout-pasif = 0
+        modify acc-1311, ENABLED = 0
+        modify acc-1312, ENABLED = 0
+        modify acc-1313, ENABLED = 0
+        modify acc-1314, ENABLED = 0
+        modify acc-1315, ENABLED = 0
+        modify acc-1316, ENABLED = 0
+     else
+        modify acc-1311, ENABLED = 1
+        modify acc-1312, ENABLED = 1
+        modify acc-1313, ENABLED = 1
+        modify acc-1314, ENABLED = 1
+        modify acc-1315, ENABLED = 1
+        modify acc-1316, ENABLED = 1
+     end-if
+     .
+*
+ cb-0103-Ev-Cmd-Clicked.
+     if kayit-pasif = 0
+        modify acc-1317, ENABLED = 0
+        modify acc-1318, ENABLED = 0
+        modify acc-1319, ENABLED = 0
+        modify acc-1320, ENABLED = 0
+        modify acc-1321, ENABLED = 0
+        modify acc-1322, ENABLED = 0
+     else
+        modify acc-1317, ENABLED = 1
+        modify acc-1318, ENABLED = 1
+        modify acc-1319, ENABLED = 1
+        modify acc-1320, ENABLED = 1
+        modify acc-1321, ENABLED = 1
+        modify acc-1322, ENABLED = 1
+     end-if
+     .
+*
+ cb-0104-ev-Cmd-Clicked.
+     if degisiklik-pasif = 0
+        modify acc-1324, ENABLED = 0
+        modify acc-1325, ENABLED = 0
+        modify acc-1326, ENABLED = 0
+        modify acc-1327, ENABLED = 0
+        modify acc-1328, ENABLED = 0
+        modify acc-1329, ENABLED = 0
+     else
+        modify acc-1324, ENABLED = 1
+        modify acc-1325, ENABLED = 1
+        modify acc-1326, ENABLED = 1
+        modify acc-1327, ENABLED = 1
+        modify acc-1328, ENABLED = 1
+        modify acc-1329, ENABLED = 1
+     end-if
+     .
+
+
+ 

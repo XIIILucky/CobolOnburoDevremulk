@@ -1,0 +1,392 @@
+* takariza.evt
+* takariza.evt is generated from D:\asya\acugt.ytl\otel\takariza.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ combo-durum-tipi-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM Label-Tazele
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Lb-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Cmd-Dblclick
+           PERFORM listbox-eventlar
+        WHEN Cmd-Goto
+           PERFORM Listbox-Eventlar
+        WHEN Ntf-Selchange
+           PERFORM Listbox-Eventlar
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     .
+*
+ accept-0101-Bef-Procedure.
+     modify label-0101,
+            title = "Durum kodu :".
+     modify label-0103,
+            title = "Aciklama :".
+     modify label-0104,
+            title = "Oda durumu :".
+     initialize grup-rec.
+     display accept-0102 accept-0105.
+     modify combo-oda-durumu, visible = false
+     modify button-0101,enabled = false
+     modify button-0102,enabled = false.
+     perform bef-procedure.
+     .
+*
+ accept-0101-Aft-Procedure.
+     if grup-alt = spaces 
+        modify button-0101,enabled = false
+        modify button-0102,enabled = false
+     else 
+        modify button-0101,enabled = true
+        modify button-0102,enabled = true
+     end-if.
+
+     open input grup.
+     move "R" to grup-tipi.
+     read grup no lock invalid
+          initialize grup-adi
+                     grup-aciklama
+                     grup-tipi
+          move "R" to grup-tipi
+          move "A" to combo-durum-tipi-value
+          move "B" to combo-oda-durumu-value
+          display combo-durum-tipi
+                  combo-oda-durumu
+          perform label-tazele
+     not invalid
+          move grup-turu to combo-durum-tipi-value
+          move grup-oda-durumu to combo-oda-durumu-value
+          display combo-durum-tipi
+                  combo-oda-durumu
+          perform label-tazele
+     end-read
+     display accept-0102 accept-0105.
+     close grup.
+     perform listbox-yer-bul.
+     if i > zeroes
+        modify form1-lb-1,
+               selection-index = i
+     end-if.
+     .
+*
+ exception-procedure.
+     evaluate key-status
+         when 1
+          initialize pazar-cagir
+          move "G"   to pazar-tipi-cagir
+          call "/asya/ytl/obj/otel/odatara.asy" using pazar-cagir
+               on exception perform callerr-proc
+               not on exception
+          cancel "/asya/ytl/obj/otel/odatara.asy" 
+          end-call
+          move pazar-kodu-cagir     to grup-alt
+               display accept-0101
+               move 4 to accept-control
+               move 5 to control-id
+         when 2 
+              open i-o grup
+              move "R" to grup-tipi
+              move combo-durum-tipi-value(1:1) to grup-turu
+              move combo-oda-durumu-value(1:1) to grup-oda-durumu
+              write grup-rec invalid 
+                    rewrite grup-rec 
+                    end-rewrite 
+              end-write
+                  perform log-operation-grup
+              close grup
+              perform listbox-yer-bul
+              if i > zeroes
+                   initialize form1-lb-1-value
+                   modify form1-lb-1,
+                          item-to-delete(i)
+                   move grup-alt  to lb-1-col-1
+                   move grup-turu to lb-1-col-2
+                   move grup-adi  to lb-1-col-3
+                   modify form1-lb-1,
+                          item-to-add(form1-lb-1-value)
+              else
+                 initialize form1-lb-1-value
+                 move grup-alt to lb-1-col-1
+                 move grup-turu to lb-1-col-2
+                 move grup-adi  to lb-1-col-3
+                 modify form1-lb-1,
+                        item-to-add(form1-lb-1-value)
+              end-if
+              move 4 to accept-control
+              move 5 to control-id
+         when 3
+              open i-o grup
+              move "R" to grup-tipi
+              delete grup invalid continue 
+              end-delete
+                  perform log-operation-grup
+              close grup
+              perform listbox-yer-bul
+              if i > zeroes
+                 modify form1-lb-1,
+                        item-to-delete(i)
+              end-if
+              move 4 to accept-control
+              move 5 to control-id
+        when 4
+              open input grup 
+              initialize grup-rec
+              move "R" to grup-tipi
+              start grup key not < grup-anah invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close grup kodlar02
+                    exit paragraph
+              end-start
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "H/K & Teknik Servis Durum Kodlari Tanimlari Raporu " to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "H/K & Teknik Servis Durum Kodlari Tanimlari Raporu " to det-filler
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  s
+     initialize dokumer-rec detay
+     move "D1"         to det-dokumer-20(1:2)
+     move "1"          to det-dokumer-20(10:1)
+     move "Kodu"       to det-1
+     move "Tipi"       to det-2
+     move "Aciklama-1" to det-3
+     move "Aciklama-2" to det-4
+     move "Aciklama-3" to det-5
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"  to det-1 det-2 det-3 det-4 det-5
+     write dokumer-rec from detay
+**************************
+
+              initialize fs-grup
+              perform with test after until fs-grup = "10"
+                    read grup next no lock end move "10" to fs-grup
+                    not at end
+                     if grup-tipi = "R"
+                         initialize dokumer-rec detay
+                         move grup-alt      to det-1
+                         move grup-adi       to det-3
+                         move grup-aciklama  to det-4
+                         evaluate grup-turu
+                         when "H"
+                              move "H-H/K Oda durumu" to det-2
+                              evaluate grup-oda-durumu
+                              when "B" move "B-Bos temiz" to det-5
+                              when "D" move "D-Dolu temiz" to det-5
+                              when "O" move "O-Out of Order" to det-5
+                              when "T" move "T-Odaya giris" to det-5
+                              end-evaluate
+                         when "A"
+                              move "A-T/S ariza durum kodu" to det-2
+                         when "M"
+                              move "M-Maid kodu"        to det-2
+                         end-evaluate
+                         move "|" to fil-1 fil-2 fil-3 fil-4 fil-5
+                         write dokumer-rec from detay
+                     end-if
+                    end-read
+              end-perform
+                  initialize dokumer-rec detay
+                  move "-"            to det-dokumer-20(5:1)
+                  move all "-"  to det-1 det-2 det-3 det-4 det-5
+                  write dokumer-rec from detay
+
+              close dokumer
+              close grup 
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer
+     end-evaluate.
+ bef-procedure.
+     initialize mesaj.
+
+ Form1-Aft-Initdata.
+     modify form1-lb-1,
+            reset-list  = 1
+            mass-update = 1
+     open input grup
+     initialize grup-rec
+     move "R" to grup-tipi
+     start grup key not < grup-anah invalid
+           continue
+     not invalid
+     move zeroes to fs-grup
+     perform with test after until fs-grup = "10"
+          read grup next no lock end move "10" to fs-grup
+          not at end
+              if grup-tipi = "R"
+               initialize form1-lb-1-value
+               move grup-alt to lb-1-col-1
+               move grup-turu to lb-1-col-2
+               move grup-adi  to lb-1-col-3
+               modify form1-lb-1,
+                      item-to-add(form1-lb-1-value)
+              else 
+               move "10" to fs-grup
+              end-if
+          end-read
+     end-perform
+     end-start
+     close grup.
+     initialize grup-rec
+     modify form1-lb-1,
+            mass-update = 0
+            selection-index = 1
+            thumb-position = 1.
+     .
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ listbox-eventlar.
+     evaluate event-type
+          when cmd-dblclick
+               inquire form1-lb-1,value in form1-lb-1-value
+               move lb-1-col-1 to grup-alt
+               perform accept-0101-Aft-Procedure
+               move 4 to accept-control
+               move 8 to control-id
+               exit paragraph
+          when ntf-selchange
+          when cmd-goto
+               inquire form1-lb-1,value in form1-lb-1-value
+               move lb-1-col-1 to grup-alt
+               display accept-0101,
+               perform accept-0101-Aft-Procedure
+     end-evaluate.
+     
+     .
+ listbox-yer-bul.
+     initialize durum tekrar
+     perform varying i from 1 by 1 until (durum = "E" or "H")
+             initialize egrup-alt
+             modify form1-lb-1,
+                    query-index = i
+             inquire form1-lb-1,
+                    item-value in egrup-alt
+             if egrup-alt <> spaces
+                if egrup-alt = tekrar
+                   move "E" to durum
+                   exit perform
+                else
+                   move egrup-alt to tekrar
+                end-if
+             end-if
+             if egrup-alt = spaces
+                move "H" to durum
+                initialize i 
+                exit perform
+             else
+                if egrup-alt = grup-alt
+                   move "E" to durum
+                   exit perform
+                end-if
+             end-if
+    end-perform
+    .
+
+*
+ label-tazele.
+    evaluate combo-durum-tipi-value(1:1)
+    when "A"
+         modify label-0101,
+                title "T/S ariza Kodu :"
+         modify label-0103,
+                title "Aciklama :"
+         modify label-0104,
+                title " "
+         modify combo-oda-durumu,
+                visible = false
+
+    when "H"
+         modify label-0101,
+                title "Oda Durum Kodu :"
+         modify label-0103,
+                title "Oda Durum Adi :"
+         modify label-0104,
+                title "H/K Oda kodu :"
+         modify combo-oda-durumu,
+                visible = true
+    when "M"
+         modify label-0101,
+                title "Maid Kodu :",
+         modify label-0103,
+                title "Maid Adi/Soyadi"
+         modify label-0104,
+                title " "
+         modify combo-oda-durumu,
+                visible = false
+    end-evaluate.
+*
+
+
+ 

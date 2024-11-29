@@ -1,0 +1,1520 @@
+* odeontr.evt
+* odeontr.evt is generated from F:\asya\acugt.kaya\otel\odeontr.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM exception-procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create. 
+      set environment "extra-keys-ok" to 1.
+*       set enviroment "Flush-count" to 2048    
+       perform adresleri-tasi .        
+*
+ before-procedure. 
+    
+             .
+
+ Form1-Aft-Initdata.     
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid
+          initialize mesaj-link
+          move 03 to mesaj-no
+          perform mesaj-ver
+    not invalid
+        continue
+    end-read
+    close genel.
+
+*      
+ exception-procedure. 
+     evaluate key-status
+          when 2 
+               open output trnot
+                  perform islem-yap 
+               close trnot
+               display  message box "Islem Bitti"  
+         end-evaluate. 
+*
+ islem-yap.         
+        if tanim-value  = 1 then           
+              perform okonum-al
+              perform ooda-al
+              perform adep-al
+              perform ulke-ac
+               perform pazar-al
+               perform acenta-al
+*             perform depkod-al
+             
+************   perform pans-al
+             
+        end-if
+        if rez-value  = 1 then 
+            open output rez konuk ozluk  polisxml yanrez frez fextra froom   fpans
+            close rez konuk ozluk polisxml  yanrez frez fextra froom  fpans                                                  
+                 perform cast-al     
+                 perform arez-al
+                     
+************   perform pans-al                                     
+          
+        end-if
+        
+        
+        
+        
+         if fih-value = 1
+            perform fih-al
+         end-if
+         if tel-kod-al = 1
+           perform telkod-al
+         end-if
+        
+          if hrk-value = 1 then 
+*              move 1000000 to uuasya-sira
+        open output romhrk exthrk
+         close romhrk exthrk
+          open i-o romhrk exthrk
+          open input konuk
+              perform hrk-al
+         close romhrk exthrk konuk
+         
+        end-if
+          if xml-kayit = 1
+           perform yan-al
+         end-if
+          if cin-value = 1 then 
+            
+              perform odeme-al
+          
+         end-if
+         if kur-value = 1 then 
+            perform balansla
+         end-if
+           .
+*
+ balansla.
+       initialize frez-rec
+       move 14000000 to islem-sira
+       open i-o konuk rez romhrk frez
+        start frez key >  frez-rez-kodu  invalid 
+           continue
+           not invalid
+           perform until fs-frez = "10"
+               read frez next no lock
+                 end move "10" to fs-frez
+                 not end
+                   if frez-fide-city = 1 then
+                     
+                     move frez-asya-rfolio to konuk-folio
+                     read konuk no lock invalid stop " "
+                     not invalid
+                        if konuk-durumu = "H" and KONUK-TOP-BORC > KONUK-TOP-alac  then 
+                        add 1 to islem-sira 
+                            move konuk-folio to romhrk-folio
+                            move konuk-git-tar to romhrk-tarih 
+                            move 901 to romhrk-depkod
+                            move "A" to romhrk-ba
+                            compute romhrk-tl-tutar = KONUK-TOP-BORC - KONUK-TOP-alac
+                            move islem-sira to romhrk-islem
+                            write romhrk-rec invalid stop " " end-write
+                        end-if
+                     end-read
+
+         
+
+                   end-if
+
+             end-read  
+           end-perform
+         end-start
+       close konuk rez romhrk frez
+       .
+
+*
+ odeme-al.
+    
+    move "odeme.txt"  to fidetext-adi
+    move "odeme2.txt" to amontext-adi
+    open input fidetext
+    
+     open i-o frez  exthrk
+     
+     read fidetext next no lock
+    end continue
+    end-read
+     
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+   
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 25
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+       if function numval (amontext-det(3)) not = 0
+          
+       
+        move amontext-det(5)(1:4)  to exthrk-yil
+        move amontext-det(5)(6:2)  to exthrk-ay
+        move amontext-det(5)(9:2) to  exthrk-gun
+        move amontext-det(8)(1:2)  to exthrk-saat
+        move amontext-det(8)(4:2)  to exthrk-dakika
+        move function numval(amontext-det(1)) to exthrk-islem 
+        move function numval(amontext-det(7)) to  eksitut2 
+        compute eksitut rounded = eksitut2
+        if exthrk-tarih > tarih-tasi
+            exit perform cycle
+        end-if
+
+        move 0 to rez-bulundu
+         move function numval(amontext-det(4)) to frez-fide-rfolio
+           start frez key =frez-fide-rfolio invalid continue
+           not invalid 
+            read frez next end continue
+              not end
+               if  frez-fide-rfolio   = function numval(amontext-det(4))
+                   move 1 to  rez-bulundu 
+               end-if
+            end-read
+           end-start
+           if rez-bulundu = 0 then
+
+          move function numval(amontext-det(4)) to frez-fide-efolio
+           start frez key =  frez-fide-efolio invalid continue
+           not invalid 
+            read frez next end continue
+              not end
+               if  frez-fide-efolio   = function numval(amontext-det(4))
+                   move 1 to  rez-bulundu 
+               end-if
+            end-read
+           end-start
+          end-if
+
+
+         if rez-bulundu = 0 then
+
+         move function numval(amontext-det(3)) to frez-rez-kodu 
+        read frez no lock invalid 
+            stop " "
+           
+        end-read
+        end-if
+        if eksitut < 0 then
+          move  function numval(amontext-det(2)) to ROMHRK-CORR-DEPKOD exthrk-CORR-DEPKOD 
+          compute eksitut = eksitut * (-1)
+          move "B" to romhrk-ba exthrk-ba
+          move eksitut to romhrk-tl-tutar exthrk-tl-tutar
+          move "961" to romhrk-depkod exthrk-depkod
+          else
+           move  function numval(amontext-det(2)) to ROMHRK-DEPKOD exthrk-DEPKOD 
+         
+          move "A" to romhrk-ba exthrk-ba
+           move eksitut to romhrk-tl-tutar exthrk-tl-tutar
+        end-if
+          move frez-asya-efolio to exthrk-folio
+           if eksitut > 0 then 
+               write exthrk-rec invalid stop " " end-write
+
+           end-if
+         
+          
+
+
+         
+         end-if
+     end-read
+    end-perform
+      close frez exthrk fidetext.
+*
+ hrk-al.
+    move "post.txt"  to fidetext-adi
+    move "post2.txt" to amontext-adi
+    open input fidetext
+    
+     open i-o frez
+     
+     read fidetext next no lock
+    end continue
+    end-read
+     
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+   
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 25
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+       if amontext-det(2) not = spaces
+           move function numval(amontext-det(3)) to frez-rez-kodu 
+             
+        move amontext-det(4)(1:4) to romhrk-yil  exthrk-yil
+        move amontext-det(4)(6:2) to romhrk-ay   exthrk-ay
+        move amontext-det(4)(9:2) to romhrk-gun  exthrk-gun
+        move amontext-det(6)(1:2) to romhrk-saat  exthrk-saat
+        move amontext-det(6)(4:2) to romhrk-dakika  exthrk-dakika
+        move function numval(amontext-det(1)) to exthrk-islem romhrk-islem
+        move function numval(amontext-det(8)) to eksitut2 
+        compute eksitut rounded = eksitut2
+        if romhrk-tarih > tarih-tasi
+            exit perform cycle
+        end-if
+        if eksitut < 0 then
+          move  function numval(amontext-det(5)) to ROMHRK-CORR-DEPKOD exthrk-CORR-DEPKOD 
+          compute eksitut = eksitut * (-1)
+          move "A" to romhrk-ba exthrk-ba
+          move eksitut to romhrk-tl-tutar exthrk-tl-tutar
+          move "960" to romhrk-depkod exthrk-depkod
+          else
+           move  function numval(amontext-det(5)) to ROMHRK-DEPKOD exthrk-DEPKOD 
+         
+          move "B" to romhrk-ba exthrk-ba
+           move eksitut to romhrk-tl-tutar exthrk-tl-tutar
+        end-if
+        move 0 to rez-bulundu
+         move function numval(amontext-det(2)) to frez-fide-rfolio
+           start frez key =frez-fide-rfolio invalid continue
+           not invalid 
+            read frez next end continue
+              not end
+               if  frez-fide-rfolio   = function numval(amontext-det(2))
+                   move 1 to  rez-bulundu 
+               end-if
+            end-read
+           end-start
+           if rez-bulundu = 0 then
+
+          move function numval(amontext-det(2)) to frez-fide-efolio
+           start frez key =  frez-fide-efolio invalid continue
+           not invalid 
+            read frez next end continue
+              not end
+               if  frez-fide-efolio   = function numval(amontext-det(2))
+                   move 1 to  rez-bulundu 
+               end-if
+            end-read
+           end-start
+          end-if
+         if rez-bulundu = 0 or  function numval(amontext-det(5))  = 100  then
+         move  function numval(amontext-det(3)) to frez-rez-kodu
+         read frez no lock invalid 
+            move  function numval(amontext-det(2)) to frez-fide-rfolio
+            start frez key >= frez-fide-rfolio
+               invalid 
+                 stop " "
+               not invalid 
+                read frez next end stop " " 
+                  not end
+                   if frez-fide-rfolio  not = function numval(amontext-det(2))
+ 
+                      stop " "
+                      else
+                       display message box frez-asya-rfolio "-bulundu"
+                   end-if
+                   end-read
+           end-start
+         end-read
+         end-if
+          if function numval(amontext-det(5))  = 100 then
+            if frez-asya-rfolio > 0 then 
+              move frez-asya-rfolio to romhrk-folio
+              write romhrk-rec end-write
+              else
+               if frez-asya-efolio > 0 then
+              move frez-asya-efolio to exthrk-folio
+              write exthrk-rec end-write
+              else
+               if debug = 1 then stop " "  end-if
+              end-if
+            end-if
+            else
+            if frez-asya-efolio > 0 then 
+              move frez-asya-efolio to exthrk-folio
+              write exthrk-rec end-write
+              else
+               if frez-asya-rfolio > 0 then
+              move frez-asya-rfolio to romhrk-folio
+              write romhrk-rec end-write
+              else
+               if debug = 1 then stop " "  end-if
+              end-if
+            end-if
+
+
+         end-if 
+         end-if
+     end-read
+    end-perform
+      close frez fidetext.
+*
+
+ yan-al.
+     move "polisxml.txt"  to fidetext-adi
+     move "polisxml2.txt" to amontext-adi
+    
+    open input fidetext
+     open output yanrez close yanrez
+     open i-o rez konuk yanrez ozluk
+     
+     read fidetext next no lock
+        end continue
+    end-read
+     
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    
+      move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 25
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+       if amontext-det(1) not = spaces
+            if son-rez = 0 then move  function numval(amontext-det(1)) to son-rez  end-if
+               if  son-rez =  function numval(amontext-det(1))
+                 add 1 to ksira
+                 else
+                 move 1 to ksira
+                  move  function numval(amontext-det(1)) to son-rez  
+               end-if
+           
+           move function numval(amontext-det(1)) to rez-no 
+           
+            read rez no lock invalid
+              continue
+              not invalid
+                move ksira to yanrez-sirano
+                move rez-no to yanrez-rezno
+                move amontext-det(3)         to yanrez-adi
+                move amontext-det(4)         to yanrez-soyadi
+                move amontext-det(5)(1:4)    to yanrez-dog-yil
+                move amontext-det(5)(6:2)    to yanrez-dog-ay
+                move amontext-det(5)(9:2)    to yanrez-dog-gun
+                write yanrez-rec invalid stop " " end-write
+                if rez-folio > 0 then 
+                  move rez-folio to konuk-folio  ozluk-folio
+                  read konuk no lock invalid stop " "
+                    not invalid
+                      move konuk-durumu to ozluk-durumu
+                      read ozluk no lock invalid continue end-read
+                       evaluate ksira 
+                         when 1
+                           move yanrez-adi    to konuk-adi
+                           move yanrez-soyadi to konuk-soyadi
+                           move amontext-det(5)(1:4)    to ozluk-dogum-yil
+                           move amontext-det(5)(6:2)    to ozluk-dogum-ay
+                           move amontext-det(5)(9:2)    to ozluk-dogum-gun
+                           rewrite konuk-rec end-rewrite
+                           write ozluk-rec invalid rewrite ozluk-rec end-write
+                         when 2
+                          move yanrez-adi    to OZLUK-YANI-ADI1
+                          move yanrez-soyadi to OZLUK-YANI-SOY1
+                         write ozluk-rec invalid rewrite ozluk-rec end-write
+                          when 3
+
+                             move yanrez-adi          to        OZLUK-YANI-ADI2
+                             move yanrez-soyadi       to        OZLUK-YANI-SOY2
+                           write ozluk-rec invalid rewrite ozluk-rec end-write
+
+
+
+                       end-evaluate
+                  end-read
+                end-if
+                write rez-rec invalid continue end-write
+
+            end-read
+        
+        
+         
+       end-if
+       end-read
+     end-perform
+    close fidetext 
+    close rez konuk yanrez ozluk
+     .
+*
+ cast-al.
+     move "cast.txt"  to fidetext-adi
+     move "cast2.txt" to amontext-adi
+      
+    open input fidetext
+      open output fcast close fcast
+     open i-o fcast
+     
+     read fidetext next no lock
+        end continue
+    end-read
+     
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    
+      move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 25
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+       if amontext-det(1) not = spaces
+           move function numval(amontext-det(1)) to fcast-rez-no
+           move function numval(amontext-det(7)) to fcast-tutar
+           move function numval(amontext-det(8)) to fcast-kur
+           evaluate   amontext-det(9)(1:3)
+         when "EUR"
+             move "01" to fcast-doviz   
+        when "USD"
+             move "02" to fcast-doviz 
+       when "TL "
+             move "10" to fcast-doviz 
+         when other
+             move "01" to fcast-doviz 
+               
+       end-evaluate       
+        
+          write fcast-rec invalid continue end-write
+       end-if
+       end-read
+     end-perform
+    close fidetext 
+    close fcast
+     .
+*
+ arez-al.
+    move 10000 to grez-sira 
+    move "rez.txt"  to fidetext-adi
+    move "rez2.txt" to amontext-adi
+    open input fidetext
+    open output amontext rez  
+    close rez   
+    open i-o rez  facenta   fcast fkonum odalar  konuk ozluk frez    
+    
+    read fidetext next no lock
+    end continue
+    end-read
+    move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 100
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform 
+    write amontext-rec end-write 
+    
+    perform until fs-fidetext = "10"
+    initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 100
+    unstring  fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+    initialize rez-rec 
+     if amontext-det(2) not = spaces
+         initialize frez-rec
+        move function numval(amontext-det(1)) to rez-no fcast-rez-no
+        read fcast no lock invalid 
+          if function numval(amontext-det(2)) = -1
+            move "01" to fcast-doviz
+            else
+        stop " " 
+        end-if
+        end-read
+        move function numval(amontext-det(3)) to ydk-odano
+        if ydk-odano > 10 then 
+          if ydk-odano < 1000 then 
+            add 9000 to ydk-odano 
+            perform h-oda-kont
+          end-if 
+          
+        move ydk-odano to rez-odano  
+          
+          
+          
+          end-if
+       
+        move amontext-det(14)(9:2) to rez-gir-gun
+        move amontext-det(14)(6:2) to rez-gir-ay
+        move amontext-det(14)(1:4) to rez-gir-yil
+        move amontext-det(16)(9:2) to rez-cik-gun
+        move amontext-det(16)(6:2) to rez-cik-ay
+        move amontext-det(16)(1:4) to rez-cik-yil
+        
+        move function numval(amontext-det(5)) to ydk-grup-no
+        if ydk-grup-no > 0 then 
+             move ydk-grup-no to rez-grup-no
+             evaluate ydk-grup-no 
+               when 4
+                move"MERMERLER OTOMOTIV        " to rez-grup-adi
+               when 5
+                  move"WHO        " to rez-grup-adi
+               when 6
+                 move"RAY TUR1          " to rez-grup-adi
+               when 7
+                 move"RAY TUR2          " to rez-grup-adi
+             end-evaluate
+        end-if
+        initialize  facenta-rec
+        move amontext-det(4)      to facenta-fide-kodu
+        if facenta-fide-kodu = spaces then
+          move "0900"  to facenta-asya-kodu
+        else
+        read facenta no lock invalid
+             move "0900"  to facenta-asya-kodu
+            
+        end-read
+        end-if
+        move facenta-asya-kodu   to rez-acenta
+
+        move amontext-det(7)    to rez-adi
+        move amontext-det(8)    to rez-soyadi
+        move amontext-det(7)    to rez-adi
+        move amontext-det(8)    to rez-soyadi
+        move amontext-det(15)(1:2) to REZ-GEL-SAAT  
+        move amontext-det(15)(4:2) to REZ-GEL-dak 
+        move amontext-det(17)(1:2) to REZ-git-SAAT  
+        move amontext-det(17)(4:2) to REZ-git-dak 
+        move 1                   to rez-tipi
+        if  function numval(amontext-det(2)) = -1
+        move "S" to rez-durumu
+        else
+        move "I"                 to rez-durumu
+        end-if
+        move amontext-det(25)     to rez-voucher
+        EVALUATE amontext-det(12)(1:3)
+              WHEN "UAI" MOVE "UA" TO REZ-PAN-tipi
+              when other
+                move amontext-det(12) to rez-pan-tipi
+        END-EVALUATE
+       
+
+           move amontext-det(13)    to fkonum-fide-kodu
+           read fkonum no lock invalid 
+              
+                move "01" to fkonum-asya-kodu
+           end-read
+           move fkonum-asya-kodu   to rez-fiyat-konumu
+           initialize fkonum-rec
+           move amontext-det(21)    to fkonum-fide-kodu
+           read fkonum no lock invalid 
+               
+                move "01" to fkonum-asya-kodu
+           end-read
+           move fkonum-asya-kodu   to rez-oda-konumu
+           add function numval (amontext-det(22))   
+               function numval (amontext-det(23)) 
+               function numval (amontext-det(24)) 
+           
+           to rez-buyuk
+           if function numval (amontext-det(25)) > 0 then
+             add 1 to rez-free
+            end-if
+           if function numval (amontext-det(26)) > 0 then
+             add 1 to rez-free
+            end-if
+            if function numval (amontext-det(27)) > 0 then
+             add 1 to rez-free
+            end-if
+           move amontext-det(31)      to rez-voucher
+           move amontext-det(18)(9:2) to rez-al-gun
+           move amontext-det(18)(6:2) to rez-al-ay
+           move amontext-det(18)(1:4) to rez-al-yil
+           move amontext-det(42)(9:2) to rez-isl-gun
+           move amontext-det(42)(6:2) to rez-isl-ay
+           move amontext-det(42)(1:4) to rez-isl-yil
+           move 01                    to rez-banka
+           move "K"                   to rez-k-g-b
+           move amontext-det(20)      to rez-ulke
+          
+           move amontext-det(36)      to rez-pazar
+           move "G" to REZ-KUR-AYGUN
+           move 01                    to rez-anlasma
+           evaluate amontext-det(44) 
+             when 2 
+               move 01                    to rez-odeme-tipi
+             when 0 
+               move 02                    to rez-odeme-tipi
+             when 3 
+               move 30                    to rez-odeme-tipi
+           end-evaluate
+          
+              MOVE "01" TO REZ-BANKa 
+               move fcast-doviz  to rez-doviz
+               move fcast-tutar to rez-fiyati
+           STRING   amontext-det(6)  DELIMITED BY "  "
+                    amontext-det(9)  DELIMITED BY "  "
+                    INTO REZ-TITLE
+           move "G" to REZ-KUR-AYGUN
+           move rez-buyuk to rez-s-d-t-g
+           if rez-buyuk > 4 then move 4 to rez-s-d-t-g end-if
+           move "I"                 to rez-durumu
+            move   function numval(amontext-det(2))  to ode-status
+            MOVE   function numval (amontext-det(29)) TO ODA-ADET
+          
+           evaluate function numval(amontext-det(2)) 
+              when -1
+                 move "S" to rez-durumu
+              when 3
+                continue
+              when 19  
+              when 20
+              when 60
+                  if oda-adet > 1 then 
+                    stop " "
+                  end-if
+                  move "E" to rez-c-in 
+                   perform cin-yap2
+              when other
+                stop " "
+           end-evaluate
+             
+           if function numval (amontext-det(29)) > 0 then
+             MOVE   function numval (amontext-det(29)) TO ODA-ADET
+             if oda-adet > 1 then 
+                if rez-grup-no not = spaces and zeroes
+                  move rez-no to rez-grup-no
+                end-if
+             end-if
+             write rez-rec invalid if debug = 1 then stop " " end-if end-write
+             
+             if oda-adet > 1 then 
+                 perform varying i from 2 by 1 until i > oda-adet
+                    add 1 to grez-sira
+                    move grez-sira to rez-no 
+                    write rez-rec invalid if debug = 1 then stop " " end-if end-write
+
+                 end-perform
+             end-if
+           end-if
+     end-if    
+    end-read
+    end-perform             
+    close fidetext 
+    close amontext rez facenta fcast odalar fkonum konuk ozluk frez.
+*
+ cin-yap2.
+            initialize frez-anah
+           move rez-anah to frez-rez-kodu
+           move function numval(amontext-det(40))  to frez-fide-city
+          if  function numval (amontext-det(29)) > 0 then
+           move function numval(amontext-det(41))  to frez-fide-rfolio
+           add 1 to fol-sira
+            initialize konuk-rec
+           move fol-sira to frez-asya-rfolio konuk-folio ozluk-folio rez-folio
+            move fcast-kur to konuk-kur-degeri
+           move "R" to konuk-fol-kodu
+           perform cin-yap
+          end-if
+
+          
+           add 1 to fol-sira
+            initialize konuk-rec
+           move fol-sira to frez-asya-efolio  konuk-folio ozluk-folio 
+           move "E" to konuk-fol-kodu
+           
+           perform cin-yap
+           initialize konuk-kur-degeri konuk-oda-tutar
+           move function numval(amontext-det(39))  to frez-fide-efolio
+           if function numval(amontext-det(41)) > 0 then
+           move function numval(amontext-det(41))  to frez-fide-rfolio
+           move function numval(amontext-det(39))  to frez-fide-efolio
+           end-if
+           write frez-rec invalid stop " " end-write
+
+           .
+*
+ cin-yap.
+    
+    if konuk-fol-kodu = "R"
+        move rez-no              to konuk-rez-no ozluk-rez-no
+        move rez-adi             to konuk-adi ozluk-adi 
+        move rez-odeme-tipi      to konuk-odeme-tipi 
+         move rez-pan-tipi        to konuk-pan-tipi
+          move rez-banka           to konuk-banka
+          move rez-fiyati to KONUK-DV-DEGERI
+   
+    compute KONUK-ODA-TUTAR rounded = konuk-kur-degeri * rez-fiyati
+      else
+        move rez-no to konuk-extra-rez-no
+        move "E=>"                    to konuk-adi ozluk-adi 
+        move rez-adi            to konuk-adi(4:) ozluk-adi(4:) 
+        move "01"              to konuk-odeme-tipi 
+         move rez-pan-tipi        to konuk-pan-tipi
+          move rez-banka           to konuk-banka
+    end-if
+    
+    move rez-soyadi          to konuk-soyadi ozluk-soyadi
+    move rez-s-d-t-g         to konuk-s-d-t-g 
+    move rez-oda-konumu      to konuk-oda-konumu 
+    if rez-fiyat-konumu = 0 then 
+       move rez-oda-konumu   to rez-fiyat-konumu
+    end-if
+    move rez-fiyat-konumu    to konuk-fiyat-konumu 
+    
+   
+    move rez-odano           to konuk-odano  
+    move rez-ulke            to konuk-ulke 
+    move rez-buyuk           to konuk-buyuk  
+    move rez-kucuk           to konuk-kucuk  
+    move rez-free            to konuk-free   
+
+    move rez-bebek           to konuk-bebek 
+    move rez-acenta          to konuk-acenta 
+    move rez-grup-no         to konuk-grup-no 
+    move rez-voucher         to konuk-voucher 
+    move rez-fiyat-konumu    to konuk-fiyat-konumu 
+    move rez-nor-indirim     to konuk-nor-indirim 
+   
+    move rez-tipi            to konuk-rez-tipi 
+   
+    move rez-doviz           to konuk-doviz 
+    move rez-anlasma         to konuk-anlasma
+    move rez-pazar           to konuk-pazar
+    move rez-share           to konuk-share
+    move rez-eb              to konuk-eb
+    move rez-ug-ind          to konuk-ug-indirimi
+    move rez-fiyat-fix       to konuk-fiyat-fix
+    move rez-kur-aygun       to konuk-kur-aygun
+    
+    move rez-bilbord-eh      to konuk-bilbord-eh
+    move REZ-AKSIYON-EH      to konuk-AKSIYON-EH  
+    move REZ-share           to konuk-share
+    move rez-vip             to konuk-vip
+    move rez-gir-tar         to konuk-gel-tar 
+    move rez-cik-tar         to konuk-git-tar 
+    move rez-not1            to konuk-acik-1 
+    move rez-not2            to konuk-acik-2
+    move rez-gel-saat        to konuk-gel-saat
+    move rez-gel-dak         to konuk-gel-dakika
+    move rez-late-zaman      to konuk-late-zaman
+
+    move rez-git-saat        to konuk-git-saat
+    move rez-git-dak         to konuk-git-dakika
+
+    move "I"                 to konuk-durumu
+     if ode-status = 60
+         move "H"                 to konuk-durumu
+     end-if
+   
+   
+                                . 
+****>Ozluk Bilgileri ataniyor.....
+    move rez-adres1          to ozluk-adres1.
+    move rez-adres2          to ozluk-adres2.
+    move rez-e-mail          to ozluk-e-mail.
+    move rez-telno           to ozluk-telno.
+   
+              
+    
+   
+         
+    write konuk-rec  invalid if debug = 1 then stop " " end-if end-write
+    write ozluk-rec  invalid if debug = 1 then stop " " end-if end-write
+
+
+
+
+
+
+       .
+*
+ acenta-al.
+      
+    move "acenta.txt"  to fidetext-adi
+    move "acenta2.txt" to amontext-adi
+    open input fidetext
+    open output amontext acenta  facenta
+     close acenta facenta
+     open i-o acenta facenta nt
+     initialize acenta-rec
+     read fidetext next no lock
+    end continue
+    end-read
+     move 1000 to acenta-sira
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+   
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 25
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+     if amontext-det(2) not = spaces
+       initialize facenta-rec
+       add 10 to acenta-sira
+        move acenta-sira to acenta-kodu
+        move acenta-kodu to facenta-asya-kodu
+       move amontext-det(2) to acenta-adi facenta-fide-kodu
+       move "136-2-01-01-002"  to acenta-muhno
+       move amontext-det(9) to acenta-muhno2
+       move amontext-det(9)(6:) to acenta-muhno2(5:)
+                   initialize not-rec 
+           move "01" to        acen-dft-banka        
+       move 1 to  acen-dft-banka-sabit  acen-dft-doviz-sabit         
+       evaluate   amontext-det(7)(1:3)
+         when "EUR"
+             move "01" to acen-dft-doviz   
+        when "USD"
+             move "02" to acen-dft-doviz 
+       when "TL "
+             move "10" to acen-dft-doviz
+         when other
+             move "01" to acen-dft-doviz 
+               move 0 to   acen-dft-doviz-sabit    
+       end-evaluate       
+       move   amontext-det(8) to acen-dft-pan-tipi              
+       
+       move   "02" to acen-dft-odeme-tipi            
+               
+       move   "01" to acen-dft-anlasma               
+            
+       move   amontext-det(5) to acen-dft-pazar                 
+            
+       move   amontext-det(6) to acen-dft-ulke                  
+
+
+
+                  move "ACE"       to not-dos
+                  move "Default"   to not-dos-anah
+                  move acenta-kodu to not-dos-anah(8:)
+                  move acen-dft to not1
+                 write not-rec invalid 
+                       rewrite not-rec invalid continue
+                       end-rewrite 
+                 end-write
+       write acenta-rec end-write 
+       write facenta-rec end-write
+     end-if
+    write amontext-rec end-write
+    end-read
+    end-perform
+    close fidetext close amontext acenta facenta nt.
+* 
+pazar-al.
+     
+     move "pazar.txt"  to fidetext-adi
+    move "pazar2.txt" to amontext-adi
+    open input fidetext
+    open output amontext 
+     
+     open i-o kodlar02  fpazar
+
+     initialize kodlar02-rec
+     move "E" to kodlar02-tipi
+     start kodlar02 key > kodlar02-anah invalid continue
+            not invalid 
+          perform until fs-kodlar02 = "10"
+             read kodlar02 next no lock 
+               end move "10" to fs-kodlar02
+               not end
+                  if kodlar02-tipi not = "E" then 
+                    move "10" to fs-kodlar02
+                    else
+                     delete kodlar02 invalid stop " " end-delete
+                  end-if
+             end-read
+          end-perform
+     end-start
+     read fidetext next no lock
+    end continue
+    end-read
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 100
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+     if amontext-det(2) not = spaces
+       move amontext-det(1) to kodlar02-kodu
+       move amontext-det(2) to kodlar02-adi
+      
+       move "E" to kodlar02-tipi
+       write kodlar02-rec invalid stop " " end-write 
+     end-if
+    write amontext-rec end-write
+    end-read
+    end-perform
+    close fidetext close amontext kodlar02 fpazar.
+      .
+*
+* 
+ ulke-ac.
+     
+     move "ulke.txt"  to fidetext-adi
+    move "ulke2.txt" to amontext-adi
+    open input fidetext
+    open output amontext ulke
+     close ulke 
+     open i-o ulke  fulke
+     initialize ulke-rec
+     read fidetext next no lock
+    end continue
+    end-read
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 100
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+     if amontext-det(2) not = spaces
+       move amontext-det(1) to ulke-anah
+       move amontext-det(2) to ulke-adi
+       move amontext-det(4) to ulke-akbs
+       write ulke-rec end-write 
+     end-if
+    write amontext-rec end-write
+    end-read
+    end-perform
+    close fidetext close amontext ulke fulke.
+      .
+*
+    .
+*
+ ooda-al.
+    move "odalar.txt"  to fidetext-adi
+    move "odalar2.txt" to amontext-adi
+    open input fidetext
+    open output amontext odalar
+     close odalar 
+     open i-o odalar  fkonum
+     initialize odalar-rec
+     read fidetext next no lock
+    end continue
+    end-read
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 100
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+     if amontext-det(2) not = spaces
+       move amontext-det(1) to odalar-anah
+       if odalar-anah(1:1) = "9" then 
+         move "H" to odalar-hayali
+         move "P.M." to fkonum-fide-kodu
+         else
+        move " " to odalar-hayali
+       move amontext-det(3) to fkonum-fide-kodu
+       end-if
+       read fkonum no lock invalid 
+            if debug = 1 then stop " " end-if
+       end-read
+       move fkonum-asya-kodu to odalar-konumu
+       if amontext-det(7)(1:4) not = "NULL" and spaces then
+         evaluate amontext-det(7)(1:3) 
+             when "SEA" move "01" to odalar-tipi
+             when "GRD" move "02" to odalar-tipi
+             when other stop " "
+         end-evaluate
+       end-if
+       if amontext-det(7)(5:11) not = "NULL" and spaces then
+         evaluate amontext-det(7)(5:11) 
+             when "TWN,SOF    " move "01" to odalar-tipi2
+             when "FRC,SOF    " move "02" to odalar-tipi2
+             when "TWN,FRC    " move "03" to odalar-tipi2
+             when "TWN,KLT    " move "04" to odalar-tipi2
+             when "FRC,KLT    " move "05" to odalar-tipi2
+             when "TWN,FRC,KLT" move "06" to odalar-tipi2
+             when "TWN,FRC,SOF" move "07" to odalar-tipi2
+             when "TWN        " move "08" to odalar-tipi2
+             when "FRC        " move "09" to odalar-tipi2
+             when other stop " "
+         end-evaluate
+       end-if
+       
+
+       move "VR"             to house-durumu odalar-durumu
+       move function numval(amontext-det(6)(1:1)) to ydk-kat
+       move ydk-kat    to odalar-kat
+       if ydk-kat = 0
+          move 10 to odalar-kat
+       end-if
+       write odalar-rec end-write 
+     end-if
+    write amontext-rec end-write
+    end-read
+    end-perform
+    close fidetext close amontext odalar fkonum.
+*
+*
+ okonum-al.
+    move "odatip.txt" to fidetext-adi
+    move "odatip2.txt" to amontext-adi
+    open input fidetext
+    open output amontext konum fkonum
+     close konum fkonum
+     open i-o konum   fkonum
+     initialize konum-rec
+     read fidetext next no lock
+    end continue
+    end-read
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end
+      move "10" to fs-fidetext
+      move 1 to sayac
+    
+     initialize fkonum-rec
+    move "P.M."  to Fkonum-FIDE-KODU        
+    move "P.M.      "  to konum-adi
+    move 0 to  KONUM-TOP-ODA konum-hazir-oda 
+    
+            add 1 to konum-anahtar
+            
+            move konum-anahtar   to fkonum-asya-kodu
+            write konum-rec end-write 
+            write fkonum-rec invalid if debug = 1 then stop " " end-if end-write
+        
+    
+    not end
+    move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 100
+         unstring    fidetext-rec delimited by x"09"
+              into amontext-det(k)   pointer sayac
+    end-perform
+    move amontext-det(1)      to Fkonum-FIDE-KODU        
+    move amontext-det(1)(1:6) to konum-adi
+    move function numval(amontext-det(3)) to  KONUM-TOP-ODA konum-hazir-oda 
+    if amontext-det(2) not = spaces then 
+            add 1 to konum-anahtar
+            move amontext-det(1) to Fkonum-FIDE-KODU
+            move konum-anahtar   to fkonum-asya-kodu
+            write konum-rec end-write 
+            write fkonum-rec invalid if debug = 1 then stop " " end-if end-write
+        
+    end-if
+
+    write amontext-rec end-write
+    end-read
+    end-perform
+      
+   
+    close fidetext close amontext konum fkonum.
+*
+ kur-al.
+     move "kame2009" to  tkur-dosya-adres
+     open input tkur
+     open output kur close kur open i-o kur
+     initialize tkur-rec
+     start tkur key > tkur-kodu 
+        invalid continue
+        not invalid
+        perform until fs-tkur ="10"
+              read tkur next end move "10" to fs-tkur
+              not end
+              if tkur-banka = 01 then
+                move tkur-rec to kur-rec
+                evaluate tkur-doviz
+                      when 1   move 2 to kur-doviz write kur-rec end-write
+                      when 2   move 1 to kur-doviz  write kur-rec end-write
+                      when 7   move 4 to kur-doviz  write kur-rec end-write
+                      when 11  move 3 to kur-doviz  write kur-rec end-write
+                      when 99  move 10 to kur-doviz write kur-rec end-write 
+                end-evaluate
+              end-if
+              end-read
+         end-perform
+     end-start
+     close kur tkur.
+
+ adep-al.
+    move "depart.txt"  to fidetext-adi
+    move "depart2.txt" to amontext-adi
+    open input fidetext
+    open output amontext depkod
+     close depkod 
+     open i-o depkod 
+     initialize depkod-rec
+     read fidetext next no lock
+    end continue
+    end-read
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 20
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform                      
+     if amontext-det(2) not = spaces
+       move amontext-det(1)  to depkod-anah
+       move amontext-det(4)  to depkod-adi
+       move function numval(amontext-det(6))  to depkod-kdv
+       if function numval(amontext-det(2)) = 2 then 
+       move "A" to depkod-ba
+       move "B" to DEPKOD-MATRAH-BA
+      move "H" to DEPKOD-FATURA-TAKIP
+       else
+       move "B"              to depkod-ba
+       move "A" to DEPKOD-MATRAH-BA
+       move "E" to DEPKOD-FATURA-TAKIP
+       end-if
+       move 1 to depkod-turu depkod-tipi
+
+       inspect depkod-adi converting x"FDD0DCDEDDD6C7E7FEF0FCFDF6"
+       to x"8DA69A9E989980879FA7818D94"
+              call "c$toupper" using depkod-adi value 30
+       write depkod-rec end-write 
+     end-if
+    write amontext-rec end-write
+    end-read
+    end-perform
+          move 960 to depkod-kodu
+          move "A" to depkod-ba
+          move 2 to depkod-turu
+          move 1 to depkod-tipi
+          move "CORRECTION (-)  " to depkod-adi
+          move "E" to DEPKOD-FATURA-TAKIP
+          write depkod-rec invalid stop " " end-write
+          
+          move "H" to DEPKOD-FATURA-TAKIP
+          move 961 to depkod-kodu
+          move "B" to depkod-ba
+          move 2 to depkod-turu
+          move 1 to depkod-tipi
+          move "CORRECTION (+)  " to depkod-adi
+          write depkod-rec invalid stop " " end-write
+
+           move 962 to depkod-kodu
+          move "B" to depkod-ba
+          move 3 to depkod-turu
+          move 1 to depkod-tipi
+          move "GUEST REFUND  " to depkod-adi
+          write depkod-rec invalid stop " " end-write
+
+
+
+    close fidetext close amontext depkod .
+*
+ h-oda-kont.
+       move ydk-odano to odalar-anah
+       read odalar no lock invalid
+       
+        
+       
+         move "H" to odalar-hayali
+         move "P.M." to fkonum-fide-kodu
+         move "VR"             to house-durumu odalar-durumu
+         move 10 to odalar-kat
+      
+          write odalar-rec end-write 
+       end-read
+
+      .
+
+* 
+ fih-al.
+     move "fihrist.txt"  to fidetext-adi
+    move "fihrist2.txt" to amontext-adi
+    open input fidetext
+    open output amontext fihrist
+     close fihrist 
+     open i-o fihrist  
+     read fidetext next no lock
+    end continue
+    end-read
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 100
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform      
+     initialize fihrist-rec            
+     if amontext-det(2) not = spaces
+       move function numval(amontext-det(1)) to fihrist-no
+       if amontext-det(6)(1:4) not = "NULL"
+          move amontext-det(6) to fihrist-adi
+       end-if
+       if amontext-det(7)(1:4) not = "NULL"
+          move amontext-det(7) to fihrist-soyadi
+       end-if
+       if amontext-det(8)(1:4) not = "NULL"
+          move amontext-det(8) to FIHRIST-TELEFON
+       end-if
+       if amontext-det(9)(1:4) not = "NULL"
+          move amontext-det(9) to FIHRIST-mobil-tel
+       end-if
+       if amontext-det(12)(1:4) not = "NULL"
+          move amontext-det(12) to FIHRIST-mobil-tel          
+       end-if  
+       if amontext-det(14)(1:4) not = "NULL"
+          move amontext-det(14) to FIHRIST-fax          
+       end-if  
+*       inspect fihrist-adi converting x"C3FDD0DCDEDDD6C7E7FEF0FCFDF6"
+*       to x"498DA69A9E989980879FA7818D94"
+*              call "c$toupper" using fihrist-adi value 30     
+       
+*              call "c$toupper" using fihrist-adi value 30     
+
+       write fihrist-rec end-write 
+     end-if
+    write amontext-rec end-write
+    end-read
+    end-perform
+    close fidetext close amontext fihrist .
+*
+ telkod-al.
+     move "telno.txt"  to fidetext-adi
+    move "telno22.txt" to amontext-adi
+    open input fidetext
+    open output amontext telkod
+     close telkod
+     open i-o telkod  
+     read fidetext next no lock
+    end continue
+    end-read
+    perform until fs-fidetext = "10"
+     initialize fidetext-rec    
+    read fidetext next no lock
+    end 
+    not end
+    move 1 to sayac
+    initialize amontext-rec
+    perform varying k from 1 by 1 until k > 100
+    unstring    fidetext-rec delimited by x"09"
+         into amontext-det(k)   pointer sayac
+    end-perform      
+     initialize telkod-rec            
+     if amontext-det(2) not = spaces
+        if amontext-det(2)(1:1) = "?"
+           move amontext-det(3)  to TEL-ADI
+           move "P"     to TEL-TIPI
+        else
+           move "M"     to tel-tipi
+           move amontext-det(2)  to TEL-ONB-ODA
+        end-if
+        move amontext-det(1)  to TEL-ODA
+
+         
+       write telkod-rec end-write 
+     end-if
+    write amontext-rec end-write
+    end-read
+    end-perform
+    close fidetext close amontext telkod .
+      .
+
+
+*
+ oda-cin.
+    move rez-no              to konuk-rez-no ozluk-rez-no
+    move rez-adi             to konuk-adi ozluk-adi 
+    move rez-soyadi          to konuk-soyadi ozluk-soyadi
+    move rez-s-d-t-g         to konuk-s-d-t-g 
+    move rez-oda-konumu      to konuk-oda-konumu 
+    if rez-fiyat-konumu = 0 then 
+       move rez-oda-konumu   to rez-fiyat-konumu
+    end-if
+    move rez-fiyat-konumu    to konuk-fiyat-konumu 
+    move rez-odeme-tipi      to konuk-odeme-tipi 
+    move rez-odano           to konuk-odano  
+    move rez-ulke            to konuk-ulke 
+    move rez-buyuk           to konuk-buyuk  
+    move rez-kucuk           to konuk-kucuk  
+    move rez-free            to konuk-free   
+
+    move rez-bebek           to konuk-bebek 
+    move rez-acenta          to konuk-acenta 
+    move rez-grup-no         to konuk-grup-no 
+    move rez-voucher         to konuk-voucher 
+    move rez-fiyat-konumu    to konuk-fiyat-konumu 
+    move rez-nor-indirim     to konuk-nor-indirim 
+    move rez-pan-tipi        to konuk-pan-tipi
+    move rez-tipi            to konuk-rez-tipi 
+    move rez-banka           to konuk-banka
+    move rez-doviz           to konuk-doviz 
+    move rez-anlasma         to konuk-anlasma
+    move rez-pazar           to konuk-pazar
+    move rez-share           to konuk-share
+    move rez-eb              to konuk-eb
+    move rez-ug-ind          to konuk-ug-indirimi
+    move rez-fiyat-fix       to konuk-fiyat-fix
+    move rez-kur-aygun       to konuk-kur-aygun
+    
+    move rez-bilbord-eh      to konuk-bilbord-eh
+    move REZ-AKSIYON-EH      to konuk-AKSIYON-EH  
+    move REZ-share           to konuk-share
+    move rez-vip             to konuk-vip
+    move rez-gir-tar         to konuk-gel-tar 
+    move rez-cik-tar         to konuk-git-tar 
+    move rez-not1            to konuk-acik-1 
+    move rez-not2            to konuk-acik-2
+    move rez-gel-saat        to konuk-gel-saat
+    move rez-gel-dak         to konuk-gel-dakika
+    move rez-late-zaman      to konuk-late-zaman
+
+    move rez-git-saat        to konuk-git-saat
+    move rez-git-dak         to konuk-git-dakika
+
+    move "I"                 to konuk-durumu
+     if konuk-git-tar <= tarih-tasi
+         move "H"                 to konuk-durumu
+     end-if
+    move "R"                 to konuk-fol-kodu. 
+         initialize rez-ucreti tl-toplam dv-toplam. 
+    move rez-fiyati          to rez-ucreti dv-toplam konuk-dv-degeri
+                                . 
+****>Ozluk Bilgileri ataniyor.....
+    move rez-adres1          to ozluk-adres1.
+    move rez-adres2          to ozluk-adres2.
+    move rez-e-mail          to ozluk-e-mail.
+    move rez-telno           to ozluk-telno.
+    move konuk-folio to rez-folio
+              
+    move "E" to rez-c-in
+    rewrite rez-rec invalid if debug = 1 then stop " " end-if  end-rewrite
+    compute  konuk-oda-tutar  rounded = REZ-FIYATI * konuk-kur-degeri          
+    write konuk-rec  invalid if debug = 1 then stop " " end-if end-write
+    write ozluk-rec  invalid if debug = 1 then stop " " end-if end-write
+
+      .
+
+
+ depkod-al.
+        
+         move "depart.txt" to fidetext-adi
+         open input fidetext
+        
+         open output fdepkod
+      
+         read fidetext next no lock
+                end move "10" to fs-fidetext
+         end-read
+         perform until fs-fidetext = "10"
+            read fidetext next no lock
+                end move "10" to fs-fidetext
+                not end
+             
+                initialize fdepkod-rec  depkod-rec
+                move  fidetext-rec(1:10) to Fdepkod-FIDE-KODU
+                move function upper-case (fidetext-rec(32:25)) to Fdepkod-adi  depkod-adi 
+                move function numval (fidetext-rec(63:3)) to depkod-kodu, Fdepkod-asya-KODU 
+                move  fidetext-rec(71:1) to ba
+                move  fidetext-rec(80:1) to pay
+                 move 1 to depkod-tipi
+                evaluate ba 
+                  when "1" 
+                    move "B" to  depkod-ba
+                      move 1 to depkod-turu
+                  when "5" 
+                    move "A" to  depkod-ba
+                    evaluate pay
+                        when "1" 
+                        when "0"
+                        when "4"
+                           move 3 to depkod-turu
+                        when "2" 
+                           move 4 to depkod-turu
+                        when "3"
+                           move 5 to depkod-turu
+                         when other 
+                            move 1 to depkod-turu
+                    end-evaluate
+                  when other 
+                    if debug = 1 then stop " " end-if
+                end-evaluate
+
+                write depkod-rec invalid if debug = 1 then stop " " end-if end-write
+                write fdepkod-rec invalid stop "dgfd " end-write
+        
+            end-read
+         end-perform 
+          move 802 to depkod-kodu
+          move "A" to depkod-ba
+          move 2 to depkod-turu
+          move 1 to depkod-tipi
+          move "CORRECTION (-)  " to depkod-adi
+          write depkod-rec invalid if debug = 1 then stop " " end-if end-write
+
+
+          move 801 to depkod-kodu
+          move "B" to depkod-ba
+          move 2 to depkod-turu
+          move 1 to depkod-tipi
+          move "CORRECTION (+)  " to depkod-adi
+          write depkod-rec invalid if debug = 1 then stop " " end-if end-write
+
+           move 808 to depkod-kodu
+          move "B" to depkod-ba
+          move 3 to depkod-turu
+          move 1 to depkod-tipi
+          move "GUEST REFUND  " to depkod-adi
+          write depkod-rec invalid if debug = 1 then stop " " end-if end-write
+
+
+         close fidetext fdepkod
+
+         .    
+*****************************************   
+*****************************************
+*
+
+             
+*
+ hata-goster.
+    call "c$rerr" using extend-stat text-message 1.
+    move extend-stat       to fileerr-linkage-hata-no.
+    move Secondary-Error   to fileerr-linkage-secondary-hata-no.
+    call "c$rerrname" using fileerr-linkage-dosya-adi.
+    display message box "DOSYA : ",fileerr-linkage-dosya-adi,
+    x"0a0d","errrrror :",fileerr-linkage-hata-no,x"0ad0",
+    "error2 :",fileerr-linkage-secondary-hata-no.
+    set exit-pushed to true
+    if debug = 1 then stop " " end-if
+    .       
+
+         .
+
+
+
+
+
+ 

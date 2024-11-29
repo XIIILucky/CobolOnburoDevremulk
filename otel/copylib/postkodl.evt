@@ -1,0 +1,183 @@
+* postkodl.evt
+* postkodl.evt is generated from D:\asya\acugt.ytl\otel\postkodl.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ accept-depkodu-Bef-Procedure.
+    modify button-depara enabled = true.
+     .
+*
+ Aft-Procedure.
+    initialize depkod-rec.
+    open input depkod.
+    move dep-kod to depkod-kodu
+    read depkod no lock invalid 
+         display message box "Tanimsiz departman kodu..."
+         move 4    to accept-control
+         move 1001 to control-id
+         close depkod
+         exit paragraph
+    end-read.
+    modify lb-depadi-e, title = depkod-adi of depkod
+    modify button-depara enabled = false.
+    close depkod.
+     .
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 2
+              open input postkod kllnc depkod
+              initialize postkod-rec
+              move dep-kod to postkod-kodu
+              start postkod key not < postkod-anah invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close postkod kllnc depkod
+                    exit paragraph
+              end-start
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Extra Posting Kodlari Raporu"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"            to det-dokumer-20(10:1)
+     move "B"            to det-dokumer-20(1:1)
+     move "Extra Posting Kodlari Raporu"   to det-filler
+     move "Departman.:"           to det-filler(40:15)
+     move dep-kod                 to det-filler(55:04)
+     move "<->"                   to det-filler(60:03)
+     if dep-kod       = zeroes
+        move "Tum Departmanlar"    to det-filler(65:20)
+     else
+        initialize depkod-rec  
+        move dep-kod        to depkod-kodu
+        read depkod no lock invalid 
+             move all "*" to depkod-adi  
+                        not invalid continue
+        end-read
+        move depkod-adi           to det-filler(65:20)
+     end-if
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "RLRLRRRLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"         to det-dokumer-20(1:2)
+     move "D.K"                            to det-1
+     move "Departman Adi  "                to det-2
+     move "No. "                           to det-3
+     move "Adi            "                to det-4
+     move "D/B"                            to det-5
+     move "TL. tutar      "                to det-6
+     move "DV. tutar     "                 to det-7
+     move "Staf      "                     to det-8
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8
+     write dokumer-rec from detay
+*********************************
+
+              initialize fs-postkod  
+              perform with test after until fs-postkod = "10"
+                    read postkod next no lock end move "10" to fs-postkod
+                    not at end
+                      if dep-kod not = zeroes and postkod-kodu > dep-kod
+                         move "10" to fs-postkod
+                       else
+                         perform detay-ata    
+                         write dokumer-rec from detay
+                      end-if
+                    end-read
+              end-perform
+                  initialize dokumer-rec detay
+                  move "-"            to det-dokumer-20(5:1)
+                  move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8
+                  write dokumer-rec from detay
+
+              close dokumer
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer
+              close postkod kllnc depkod
+              set exit-pushed  to true
+    end-evaluate.
+     .
+ detay-ata.
+    initialize dokumer-rec detay.
+    move postkod-kodu                         to det-1 depkod-kodu.
+    read depkod no lock invalid move spaces to depkod-adi.
+    move depkod-adi                           to det-2.
+    move postkod-no                           to det-3.
+    read postkod no lock invalid move spaces to postkod-adi.
+    move postkod-adi                          to det-4.
+    move postkod-dolu-bos                     to det-5.
+    move postkod-tl-tutar                     to z-1.
+    move z-1                                  to det-6.
+    move postkod-dv-tutar                     to z-2.
+    move z-2                                  to det-7.
+    move postkod-staf                         to k-kodu.
+    read kllnc no lock invalid move spaces to k-soyadi.
+    move k-soyadi                             to det-8.
+    move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8.
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+ 

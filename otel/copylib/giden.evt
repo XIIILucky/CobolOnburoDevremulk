@@ -1,0 +1,341 @@
+* giden.evt
+* giden.evt is generated from D:\asya\acugt.ytl\otel\giden.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Acu-Screen1-Event-Extra.
+     EVALUATE Event-Type
+     WHEN Msg-Close
+        PERFORM Acu-Screen1-Msg-Close
+     END-EVALUATE
+     .
+
+ Acu-Screen1-Msg-Close.
+     ACCEPT Quit-Mode-Flag FROM ENVIRONMENT "QUIT_MODE"
+     IF Quit-Mode-Flag = ZERO
+        PERFORM Acu-Screen1-Exit
+        PERFORM Acu-Exit-Rtn
+     END-IF
+     .
+
+ Screen1-Event-Proc.
+* 
+     PERFORM Acu-Screen1-Event-Extra
+     .
+
+ Screen1-Exception-Proc.
+     PERFORM Screen1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Screen1-Ex-Other.
+     evaluate key-status
+     when 2
+     end-evaluate
+     
+     .
+*
+ takvim-log-kontrol.
+     open input takvim
+     open i-o prolog
+     initialize prolog-rec takvim-rec
+     accept takvim-anah from century-date
+     start takvim key not > takvim-anah invalid
+        continue
+     not invalid
+
+     read takvim backward no lock end move "10"  to fs-takvim
+     not at end
+         continue
+     end-read
+ 
+     perform varying i from 1 by 1 until i > gun + 1 or fs-takvim = "10"
+         read takvim backward no lock end move "10" to fs-takvim
+         not at end
+                 
+               move takvim-anah to prolog-tarih giden-filename-1(3:8)
+               move sube        to prolog-sube  giden-filename-1(1:2)
+               read prolog no lock invalid
+                  continue
+               not invalid
+               perform varying xsube from 1 by 1 until xsube > 15 
+                       move xsube        to giden-filename-1(1:2)
+        
+                       move "*"                to  giden-filename-1(19:1)
+                       if prolog-alma-tarihi(1,xsube) > "20100101"
+                            move "tmusteri"    to giden-filename-1(11:8) 
+                            perform log-kontrol
+                       end-if
+                       if prolog-alma-tarihi(2,xsube) > "20100101"
+                            move "tgprohrk"    to giden-filename-1(11:8) 
+                            perform log-kontrol
+                       end-if
+                       if prolog-alma-tarihi(3,xsube) > "20100101"
+                            move "tsprohrk"    to giden-filename-1(11:8) 
+                            perform log-kontrol
+                       end-if
+                end-perform
+               end-read
+         end-read
+     end-perform
+     end-start
+     close takvim prolog.  
+*
+ send-to-center.
+     perform merkez-sirket-bul
+        accept system-information from system-info
+        accept terminal-abilities from terminal-info
+        move all low-values to yip-no
+        string 
+                "@" delimited by size
+                merkez-ip-adresi delimited by spaces
+                ":" delimited by size
+        into yip-no
+        if operating-system = "Unix" and
+           ybaglanti-merkezi = 0
+           string yip-no delimited by low-values
+             "/asya/ytl/prof/log/prolog" delimited by size 
+           into prolog-dosya
+        else
+           string 
+             "/asya/ytl/prof/log/prolog" delimited by size 
+           into prolog-dosya
+        end-if
+     open input takvim
+     open i-o prolog
+     initialize prolog-rec takvim-rec
+     accept takvim-anah from century-date
+     start takvim key not > takvim-anah invalid
+        continue
+     not invalid
+
+     read takvim backward no lock end move "10"  to fs-takvim
+     not at end
+         continue
+     end-read
+
+     perform varying i from 1 by 1 until i > gun or fs-takvim = "10"
+         read takvim backward no lock end move "10" to fs-takvim
+         not at end
+               move takvim-anah to prolog-tarih giden-filename-1(3:8) ekran-deg
+               move sube        to prolog-sube  giden-filename-1(1:2)
+               read prolog no lock invalid
+                  continue
+               not invalid
+               move "*"             to  giden-filename-1(19:1)
+               if prolog-olusturma-tarih(1) > "20100101" and 
+                  prolog-merkeze-gonderme-tarih(1) < "20100101"
+                    move "tmusteri"    to giden-filename-1(11:8) 
+                    perform giden-klasor-tara
+               end-if
+               if prolog-olusturma-tarih(2) > "20100101" and 
+                  prolog-merkeze-gonderme-tarih(2) < "20100101"
+                    move "tgprohrk"    to giden-filename-1(11:8) 
+                    perform giden-klasor-tara
+               end-if
+               if prolog-olusturma-tarih(3) > "20100101" and 
+                  prolog-merkeze-gonderme-tarih(3) < "20100101"
+                    move "tsprohrk"    to giden-filename-1(11:8) 
+                    perform giden-klasor-tara
+               end-if
+               end-read
+               display Screen1-La-1
+         end-read
+     end-perform
+     end-start
+     close takvim prolog
+
+        .
+
+*
+ Screen1-Bef-Create.
+    accept arg from command-line
+    UNSTRING arg
+               delimited by  "--"  
+               into par1
+                par2
+                par3
+                   
+              end-unstring
+    move par1 to isyeri-adres-tasi
+    move function numval(par2) to gun
+    perform adresleri-tasi. 
+     .
+*
+ merkez-sirket-bul.
+      open input baglanti 
+      initialize baglanti-rec
+      start baglanti key not < baglanti-kodu invalid
+          continue
+      not invalid
+      perform with test after until fs-baglanti = "10"
+      read baglanti next no lock end move "10" to fs-baglanti
+      not at end
+              if baglanti-merkezi = 1
+                   move baglanti-aciklama-1 to merkez-ip-adresi
+                   move baglanti-ana        to merkez-sube
+                    move 1 to ybaglanti-merkezi
+              end-if
+              if baglanti-adi = isyeri-adres-tasi
+                 move baglanti-ana    to sube
+                  move 0 to ybaglanti-merkezi
+                  if baglanti-merkezi = 1
+                     move 1 to ybaglanti-merkezi
+                  end-if 
+              end-if
+      end-read
+      end-perform
+      end-start
+      close baglanti
+       .
+*
+ giden-klasor-tara.
+     call "c$list-directory" using 
+                             listdir-open, 
+                             giden-adres,
+                             giden-filename-1. 
+    move return-code to giden-handle.
+    if giden-handle = 0
+      exit paragraph
+    end-if.
+
+    perform with test after until giden-adres = spaces 
+            call "c$list-directory" using 
+                                    listdir-next, 
+                                    giden-handle, 
+                                    giden-filename,
+                                    listdir-file-information            
+            if giden-filename = spaces or 
+               giden-filename(1:18) not = giden-filename-1(1:18)  
+                  exit perform            
+            end-if
+
+            if giden-filename <> spaces and 
+               listdir-file-type-regular-file             
+***************************************************************************************
+                    string "/asya/ytl/prof/giden/" delimited by low-values            |
+                          giden-filename   delimited by spaces                        |
+                    into merkez-filename                                              |
+***************************************************************************************
+                    string "/asya/ytl/prof/merkez/" delimited by low-values           |
+                          giden-filename   delimited by spaces                        |
+                    into remove-filename                                              |
+***************************************************************************************
+                    if sube not = merkez-sube
+
+                            move remove-filename   to parametre5
+                            string yip-no delimited by low-values
+                                   parametre5 delimited by low-values
+                            into parametre
+                            
+                            call "c$copy"using merkez-filename  parametre
+
+*                            move "scp "            to parametre1
+*                            move merkez-filename   to parametre2
+*        
+*                            move merkez-ip-adresi  to parametre3
+*                            move ":"               to parametre4
+*                            move remove-filename   to parametre5
+*
+*                            string parametre1 delimited by low-values
+*                                   parametre2 delimited by low-values
+*                                   " "        delimited by low-values
+*                                   parametre3 delimited by spaces
+*                                   parametre4 delimited by low-values
+*                                   parametre5 delimited by low-values
+*                            into parametre
+                    end-if
+
+                    if sube = merkez-sube
+                           call "c$copy" using merkez-filename  remove-filename
+*                            move "scp "            to parametre1
+*                            move merkez-filename   to parametre2
+        
+*                            move remove-filename   to parametre5
+*                            string parametre1 delimited by low-values
+*                                   parametre2 delimited by low-values
+*                                   " "        delimited by low-values
+*                                   parametre5 delimited by low-values
+*                            into parametre
+                    end-if
+
+**                    call "c$system" using parametre 
+                    if giden-filename(11:8) = "tmusteri"
+                         accept prolog-merkeze-gonderme-tarih(1) from century-date
+                         accept prolog-merkeze-gonderme-zamani(1) from time
+                           rewrite prolog-rec end-rewrite 
+                    end-if
+                    if giden-filename(11:8) = "tgprohrk"
+                         accept prolog-merkeze-gonderme-tarih(2) from century-date
+                         accept prolog-merkeze-gonderme-zamani(2) from time
+                           rewrite prolog-rec end-rewrite 
+                    end-if
+                    if giden-filename(11:8) = "tsprohrk"
+                         accept prolog-merkeze-gonderme-tarih(3) from century-date
+                         accept prolog-merkeze-gonderme-zamani(3) from time
+                           rewrite prolog-rec end-rewrite 
+                    end-if
+            end-if
+    end-perform.
+
+    call "c$list-directory" using 
+                            listdir-close,
+                            giden-handle. 
+
+*
+ Screen1-Aft-Initdata.
+        perform send-to-center
+        perform takvim-log-kontrol
+        set exit-pushed to true
+        .
+
+*
+ log-kontrol.
+     move "/asya/ytl/prof/gelen"  to giden-adres
+     call "c$list-directory" using 
+                             listdir-open, 
+                             giden-adres,
+                             giden-filename-1. 
+    move return-code to giden-handle.
+    if giden-handle = 0
+      exit paragraph
+    end-if.
+
+*    perform with test after until giden-adres = spaces 
+            call "c$list-directory" using 
+                                    listdir-next, 
+                                    giden-handle, 
+                                    giden-filename,
+                                    listdir-file-information            
+            if giden-filename = spaces or 
+               giden-filename not = giden-filename-1(1:18)                   
+            
+                    if giden-filename-1(11:8) = "tmusteri"
+                         initialize  prolog-alma-tarihi(1,xsube) 
+                         initialize  prolog-alma-zamani(1,xsube) 
+                           rewrite prolog-rec end-rewrite 
+                    end-if
+                    if giden-filename-1(11:8) = "tgprohrk"
+                         initialize  prolog-alma-tarihi(2,xsube) 
+                         initialize  prolog-alma-zamani(2,xsube) 
+                           rewrite prolog-rec end-rewrite 
+                    end-if
+                    if giden-filename-1(11:8) = "tsprohrk"
+                         initialize  prolog-alma-tarihi(3,xsube) 
+                         initialize  prolog-alma-zamani(3,xsube) 
+                           rewrite prolog-rec end-rewrite 
+                    end-if
+            end-if
+*    end-perform.
+
+    call "c$list-directory" using 
+                            listdir-close,
+                            giden-handle.
+        .    
+     .
+
+
+ 
+
+
+ 

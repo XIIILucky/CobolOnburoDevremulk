@@ -1,0 +1,605 @@
+* devmkbz.evt
+* devmkbz.evt is generated from D:\asya\acugt.ytl\otel\devmkbz.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ combo-fis-tipi-Exception-Proc.
+     .
+***   start event editor code   ***
+*
+ stok-rapor.
+    perform adresleri-tasi
+
+    open input sgenel
+    move 1 to sgenel-anahtar
+    read sgenel no lock
+      invalid 
+        display message box 
+        "Genel Parametre Tanimsiz Islem Yapilamaz.."
+        close sgenel
+        goback
+    end-read
+    close sgenel
+
+    open i-o genelfis
+    move 1 to genelfis-anahtar
+    read genelfis no lock
+      invalid
+        accept print-no from time
+      not invalid
+        add 1 to print-no
+        rewrite genelfis-rec end-rewrite
+    end-read
+    close genelfis
+
+   
+    move print-no         to ara-no rapor-no
+    open output ara close ara open i-o ara with mass-update
+    
+    move smuha-sirketi to cari-dosya-adres
+    move smuha-sirketi to referans-dosya-adres
+    open input stok  depart satcari isyeri stokkdv envanter kllnc
+    open i-o siphrk
+
+    move isyeri-no-tasi to isyeri-no
+    read isyeri no lock
+      invalid key
+        move space to isyeri-unvan
+    end-read
+    close isyeri
+*///////// OLAYIN ZIPLADIÐI YER
+*/  report FOOTER'DA PRINT-AFTER-PAGE-FOOTER = FALSE OLACAK YOKSA 1 SAYFA BOÞ VERÝR
+    
+
+    initialize winprint-selection
+    call "Win$printer" using winprint-setup-old
+         returning return-code
+    end-call
+
+
+    call "win$printer" using winprint-get-current-info-ex
+                             winprint-selection
+    end-call
+
+    perform acu-report1-print-tofile
+    if is-remote
+       set environment "dll_convention" to "1" 
+*/ rapor dosyaya gonderildi
+       call "@[DISPLAY]:kernel32.dll" on exception
+                       display message box 
+                               "kernel32.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+                       close ara 
+                       delete file ara
+                       goback
+       end-call
+       move all low-values to win-temp
+       call "@[DISPLAY]:GetEnvironmentVariableA" using by reference env-name
+                                                       by reference win-temp
+                                                       by value 255
+            on exception
+                       display message box 
+                               "kernel32.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+                       close ara 
+                       delete file ara
+                       goback
+       end-call
+
+
+       inspect win-temp replacing trailing spaces by low-values
+       move all low-values to html-rapor
+       string html-rapor
+              "@[DISPLAY]:"     delimited by low-values
+              win-temp          delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into html-rapor
+       call "c$copy" using rapor-dosya html-rapor
+       perform acu-report1-print-para 
+       move all low-values to prt-fullfilename
+       string prt-fullfilename
+              win-temp delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into prt-fullfilename
+
+       call "@[DISPLAY]:AcuBenchPrintDummy" 
+              on exception 
+                 call "@[display]:acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+                       close ara 
+                       delete file ara
+                       goback
+                 end-call 
+       end-call
+       move winprint-name                to acu-printer-name
+       call "@[DISPLAY]:AcuBenchPrintExecWBPrint" using by content prt-fullfilename,
+                                                     omitted,
+                                                     by content print-browser-para,
+                                                     by content acu-paper-header, 
+                                                     by content acu-paper-footer, 
+                                                     by content acu-paper-size, 
+                                                     by value acu-paper-orientationint,
+                                                     by value acu-paper-copies,
+                                                     by content acu-printer-name
+       end-call
+       delete file printf
+       move 0 to acu-setupprint
+    else
+*/ LOCAL ISE
+       perform acu-report1-print-para 
+       move rapor-dosya         to prt-fullfilename
+       inspect prt-fullfilename replacing trailing spaces by low-values
+       inspect prt-fullfilename replacing all "/" by "\"
+   
+       set environment "dll_convention" to "1"
+       call "AcuBenchPrintDummy" 
+              on exception 
+                 call "acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+                       close ara 
+                       delete file ara
+                       goback
+                 end-call 
+       end-call
+       move winprint-name                to acu-printer-name
+       call "AcuBenchPrintExecWBPrint" USING by content prt-fullfilename,
+                                                omitted,
+                                                by content print-browser-para,
+                                                by content acu-paper-header, 
+                                                by content acu-paper-footer, 
+                                                by content acu-paper-size, 
+                                                by value acu-paper-orientationint,
+                                                by value acu-paper-copies,
+                                                by content acu-printer-name
+      end-call
+      move 0 to acu-setupprint
+      delete file printf
+    end-if.
+
+    close ara
+    delete file ara.
+    goback.
+    .
+*
+ rapor-baslik-yaz.
+    evaluate ana-cagir
+    when "S"
+         move "Siparis Formu     "      to html-fis-adi
+         evaluate alt-cagir
+         when "D"
+              move "Siparis Formu  " to html-fis-adi
+    end-evaluate
+
+    move yil-cagir                  to html-fis-yil
+    move ay-cagir                   to html-fis-ay
+    move gun-cagir                  to html-fis-gun
+    move fis-no-cagir               to html-fis-no 
+    move siphrk-ambar               to html-ambar
+*    move siphrk-fatura             to html-fatura-no
+    move siphrk-cari                to html-cari-kodu
+    move siphrk-depart              to depart-1 html-depart
+    perform ambar-al.
+    perform cari-al
+    evaluate ana-cagir
+
+    when "S"
+        evaluate alt-cagir
+        when "D"
+            continue
+        end-evaluate
+    end-evaluate.
+*
+ belge-tipi.
+         .
+
+  
+*
+ ambar-al.
+    move rapor-ambar to depart-ana
+    move spaces      to depart-alt
+    read depart no lock
+      invalid
+        move all "*" to depart-adi
+    end-read
+    move depart-adi  to html-ambar-adi.
+
+ ambar-2-al.
+    move all low-values to html-not
+    move rapor-ambar-2 to depart-ana
+    move spaces        to depart-alt
+    read depart no lock
+      invalid
+        move all "*"   to depart-adi
+    end-read
+    inspect depart-adi replacing trailing spaces by low-values
+    string html-not,
+           rapor-ambar-2 delimited by low-values
+           "-"           delimited by low-values
+           depart-adi    delimited by low-values
+           "  No'lu Ambar'a Transfer " delimited by low-values
+           into html-not.
+    inspect html-not replacing all low-values by spaces.
+    .
+*
+ depart-al.
+    move rapor-ambar to depart-ana
+    move depart-1    to depart-alt
+    read depart no lock
+      invalid
+        move all "*" to depart-adi
+    end-read
+    move depart-adi  to html-depart-adi.
+    .
+*
+ trans-al.
+    move rapor-ambar to depart-ana
+    move depart-2    to depart-alt
+    read depart no lock
+      invalid
+        move all "*" to depart-adi
+    end-read
+    move depart-adi  to depart-adi-2
+
+    move rapor-ambar to depart-ana
+    move r-trans     to depart-alt
+    read depart no lock
+      invalid
+        move all "*" to depart-adi
+    end-read
+    move depart-adi  to trans-adi
+    .
+*
+ cari-al.
+    move rapor-cari to satcari-hesap-kodu cari-x
+    read satcari no lock
+      invalid
+        move all "*" to satcari-hesap-unvan
+    end-read
+    move satcari-hesap-unvan to html-cari-adi
+******    move satcari-hesa to html-cari-yetkili
+    move satcari-tel1        to html-cari-tel
+    move satcari-fax1        to html-cari-fax
+    .
+*
+ detay-ata.
+    initialize html-detay html-marka
+    initialize ara-rec
+    move siphrk-kodu   to html-stk-kodu stk-kodu ara-anah envanter-kodu
+    read stok no lock invalid
+        move "Tanimsiz Stok" to stk-adi
+    end-read
+
+    move stk-adi                  to html-stk-adi
+    move stk-birimi               to html-stk-birimi
+    if stk-birimi = "AD"
+       move siphrk-siparis-miktar to mik-12
+       move mik-12                to html-stk-miktar       
+    else
+       move siphrk-siparis-miktar to mik-11
+       move mik-11                to html-stk-miktar
+    end-if
+
+    move siphrk-siparis-tutar to tut-11
+    move tut-11               to html-stk-tutar
+    initialize satref-rec 
+    move siphrk-satir-ref     to satref-kodu
+    read satref no lock invalid 
+        move "     "          to satref-adi
+    end-read 
+        move satref-adi       to html-satir-ref
+        move satref-otel-adi  to html-otel-adi
+***    move siphrk-marka         to html-marka
+
+    add siphrk-siparis-tutar  to yedek-fis-toplam
+    move yedek-fis-toplam     to tut-11
+    move tut-11               to html-fis-toplam
+
+    compute birim-hesapla = siphrk-siparis-tutar / siphrk-siparis-miktar
+    move birim-hesapla        to tut-11
+    move tut-11               to html-stk-b-fiyat
+    move siphrk-talep-staf    to k-kodu
+    move siphrk-mlz-acikla    to html-stk-aciklama
+    read kllnc no lock invalid
+         move "Tanimsiz...."     to html-fis-talep-eden
+    not invalid
+         inspect k-adi replacing
+                         trailing spaces by low-values
+         string html-fis-talep-eden
+         k-adi delimited by low-values
+         " "      delimited by low-values
+         k-soyadi delimited by low-values
+         into html-fis-talep-eden
+    end-read
+      perform satici-detay-yaz
+    move "E"         to rapor-detay1-yazdir
+    perform print-acubench.
+*
+ satici-detay-yaz.
+    open input satsec
+    initialize satsec-rec
+    move siphrk-tarih         to satsec-tarih
+    move siphrk-fis-no        to satsec-fis-no
+    move siphrk-fis-sira      to satsec-fis-sira
+    move rapor-cari           to satsec-sat-cari
+    start satsec key not < satsec-anahtar invalid
+          continue
+    not invalid
+    perform with test after until fs-satsec = "10"
+    read satsec next no lock end move "10"  to fs-satsec
+    not at end 
+            if satsec-tarih <> siphrk-tarih or
+               satsec-fis-no <> satsec-fis-no or
+               satsec-fis-sira <> satsec-fis-sira or
+               rapor-cari <> satsec-sat-cari
+                   exit perform 
+            end-if
+          
+            move satsec-marka                 to html-marka
+            move satsec-teklif-teslim-gun     to egun
+            move satsec-teklif-teslim-ay      to eay
+            move satsec-teklif-teslim-yil     to eyil
+            move etarih                       to html-teslim-tarih
+            evaluate satsec-odeme-sekli           
+            when "V"
+                move "Vadeli"                 to html-odeme-sekli
+            when "P"
+                move "Pesin"                  to html-odeme-sekli
+            when "S"
+                move "Senet"                  to html-odeme-sekli
+            when "C"
+                move "Cek"                    to html-odeme-sekli
+            when "K"
+                move "K.Kartý"                to html-odeme-sekli
+            end-evaluate
+            move satsec-odeme-tipi            to html-vade-gun
+    end-read
+    end-perform
+    end-start
+    close satsec
+
+     .
+
+
+*
+ lazer-rapor.
+    initialize detay-yazdir-deg kdv-dizi
+    move "E"            to rapor-detay1-yazdir.
+
+    perform print-page-footer.
+    if fs-siphrk = "10"
+       exit paragraph.
+
+    perform print-page-detail.
+    perform print-kdv-detail.
+    perform print-envanter-detail.
+    if yuvarlama > 0 
+       perform print-yuvarlama-detail
+    end-if.
+
+*
+ print-page-footer.
+    initialize tutar-toplam tutar-toplam-kdvli satir tutar-toplam-kdv
+               tevkifat-toplam yuvarlama
+
+    initialize siphrk-rec fs-siphrk 
+    move ana-cagir            to ana-tip
+    move alt-cagir            to alt-tip
+    move tarih-cagir          to siphrk-tarih
+    move fis-no-cagir         to siphrk-fis-no
+    move sip-cari-cagir           to siphrk-cari
+    start siphrk key not < siphrk-anahtar invalid
+          initialize mesaj-link
+          move 04 to mesaj-no
+          perform mesaj-ver
+          close stok siphrk depart satcari stokkdv envanter
+          move "10" to fs-siphrk
+    not invalid
+    perform with test after until fs-siphrk = "10"
+    read siphrk next no lock end
+         move "10" to fs-siphrk
+    not end
+    if siphrk-tarih > tarih-cagir
+       move "10" to fs-siphrk
+    else
+       if siphrk-tarih  = tarih-cagir  and
+          siphrk-fis-no = fis-no-cagir and
+          ana-tip        = ana-cagir    and
+          alt-tip        = alt-cagir    and
+          sip-cari-cagir     = siphrk-cari
+          move siphrk-ambar            to rapor-ambar
+*          move siphrk-trans-ambar      to rapor-ambar-2
+          move siphrk-depart           to depart-1
+*          move siphrk-trans-depart     to depart-2
+          move siphrk-cari             to rapor-cari
+
+          perform rapor-baslik-yaz
+          exit perform
+       end-if
+    end-if
+    end-read
+    end-perform
+    end-start.
+
+*
+ print-page-detail.
+    open input satref 
+    initialize siphrk-rec fs-siphrk 
+    move ana-cagir            to ana-tip
+    move alt-cagir            to alt-tip
+    move tarih-cagir          to siphrk-tarih
+    move fis-no-cagir         to siphrk-fis-no
+    move sip-cari-cagir           to siphrk-cari
+    start siphrk key not < siphrk-anahtar invalid
+          initialize mesaj-link
+          move 04 to mesaj-no
+          perform mesaj-ver
+          close stok siphrk depart satcari stokkdv envanter
+          move "10" to fs-siphrk
+    not invalid
+    perform with test after until fs-siphrk = "10"
+    read siphrk next no lock end
+         move "10" to fs-siphrk
+    not end
+    if siphrk-tarih > tarih-cagir
+       move "10" to fs-siphrk
+    else
+       if siphrk-tarih  = tarih-cagir  and
+          siphrk-fis-no = fis-no-cagir and
+          ana-tip        = ana-cagir    and
+          alt-tip        = alt-cagir    and
+          sip-cari-cagir     = siphrk-cari
+
+*/ TEVKIFAT TOPLAMI
+          if siphrk-kdv <> zeroes and 
+             siphrk-tarih > 20080200 | subattan itibaren devreye girdi
+             and (siphrk-tipi = "BA" or siphrk-tipi = "CC")
+             initialize stokkdv-rec
+             set stokkdv-kdv-tesellum  to true
+             move siphrk-yil          to stokkdv-yil
+             move siphrk-kdv          to stokkdv-oran
+             read stokkdv no lock invalid
+                  continue
+             not invalid
+                  if stokkdv-tevkifat-oran > zeroes
+                     compute uyari-duzelt-tevkifat rounded =
+                             (siphrk-tutar * siphrk-kdv) / 100
+                     compute uyari-duzelt-tevkifat rounded = 
+                             (uyari-duzelt-tevkifat * stokkdv-tevkifat-oran) / 100
+                     compute tevkifat-toplam = tevkifat-toplam + uyari-duzelt-tevkifat
+                  end-if
+             end-read
+          end-if
+
+          if stokhrk-yuvarlamami = "E"
+             add stokhrk-yuvarlama-tutar         to yuvarlama
+          end-if
+
+          perform detay-ata
+
+*          compute tutar-toplam       = tutar-toplam + siphrk-tutar
+*          compute tutar-toplam-kdvli rounded = tutar-toplam-kdvli + tutar-kdvli
+*          compute tutar-toplam-kdv   = tutar-toplam-kdv + tutar-kdv
+*          move "E"                              to siphrk-print-edildimi
+****          rewrite siphrk-rec end-rewrite
+       end-if
+    end-if
+    end-read
+    end-perform
+
+    close stok siphrk depart satcari  satref stokkdv envanter kllnc
+
+    end-start.
+
+*
+ Report1-RF-1-BeforePrint.
+    move "H"                      to tevkifat-detay-goster
+    move tutar-toplam             to tut-11
+    move tut-11                   to html-toplam-tutar
+    move tutar-toplam-kdvli       to tut-11
+    move tut-11                   to html-toplam-tutar-kdvli.
+    move tutar-toplam-kdv         to tut-11
+    move tut-11                   to html-toplam-tutar-kdv.
+
+    if (ana-cagir = "B" and alt-cagir = "A") or 
+       (ana-cagir = "C" and alt-cagir = "C")
+       move "E"                     to tevkifat-detay-goster
+       move tevkifat-toplam         to tut-11
+       move tut-11                  to html-tevkifat-tutar
+       compute temp-tutar = tutar-toplam-kdvli - tevkifat-toplam
+       move temp-tutar              to tut-11
+       move tut-11                  to html-fatura-tutar
+    end-if.
+
+*
+ print-kdv-detail.
+    if (ana-cagir = "B" and alt-cagir = "A") or
+       (ana-cagir = "C" and alt-cagir = "C")
+           continue
+    else
+       exit paragraph
+    end-if.
+    move "H"    to rapor-detay1-yazdir
+    move "H"    to envanter-detay-yazdir.
+    move "E"    to kdv-detay-yazdir.
+*%1 kdv
+    move kdv-matrah-toplam(1)    to tut-11
+    move tut-11                  to html-kdv-matrah-1
+    move kdv-toplam(1)           to tut-11
+    move tut-11                  to html-kdv-kdv-1
+    move kdv-toplam-toplam(1)    to tut-11
+    move tut-11                  to html-kdv-toplam-1
+*%8 kdv
+    move kdv-matrah-toplam(2)    to tut-11
+    move tut-11                  to html-kdv-matrah-8
+    move kdv-toplam(2)           to tut-11
+    move tut-11                  to html-kdv-kdv-8
+    move kdv-toplam-toplam(2)    to tut-11
+    move tut-11                  to html-kdv-toplam-8
+*%18 kdv
+    move kdv-matrah-toplam(3)    to tut-11
+    move tut-11                  to html-kdv-matrah-18
+    move kdv-toplam(3)           to tut-11
+    move tut-11                  to html-kdv-kdv-18
+    move kdv-toplam-toplam(3)    to tut-11
+    move tut-11                  to html-kdv-toplam-18
+    perform print-acubench.    
+
+*
+ print-envanter-detail.
+    move "H"    to rapor-detay1-yazdir
+    move "E"    to envanter-detay-yazdir.
+    move "H"    to kdv-detay-yazdir.
+    move "E"    to envanter-detay-baslik-yazdir
+    initialize ara-rec  satir
+    start ara key not < ara-anah invalid
+          continue
+    not invalid
+    initialize fs-ara
+    perform with test after until fs-ara = "10"
+    read ara next no lock end move "10" to fs-ara
+    not at end
+         move ara-anah           to html-envanter-kodu
+         move ara-adi            to html-envanter-adi
+         move ara-tutar          to tut-11
+         move tut-11             to html-envanter-tutar
+         perform  print-acubench
+         add 1                   to satir
+         if satir = 1
+            move "H"             to envanter-detay-baslik-yazdir
+         end-if
+    end-read
+    end-perform
+    end-start.
+    move "H"                     to envanter-detay-yazdir.
+*
+ print-yuvarlama-detail.
+    move "E"            to yuvarlama-detay-goster
+    move yuvarlama      to tut-11
+    move tut-11         to html-yuvarlama-tutar.
+    perform  print-acubench.
+*
+ print-acubench.
+*/ karakter cevir
+    perform karakter-degistir
+    perform Acu-RPT-Report1-DO-PRINT-RTN  .
+
+*
+ karakter-degistir.
+    inspect html-deg converting  x"989E999A80A6A78D81879F94" to
+                                 x"49534F55434767697563736F".
+
+
+ 

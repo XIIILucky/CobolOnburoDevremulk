@@ -1,0 +1,2184 @@
+* aksiyon.evt
+* aksiyon.evt is generated from D:\asya\acugt.ytl\otel\aksiyon.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM Form1-Gd-1-Ev-Msg-Begin-Entry
+     WHEN Msg-Bitmap-Clicked
+        PERFORM Form1-Gd-1-Ev-Msg-Bitmap-Clicked
+     END-EVALUATE
+     .
+
+ Form1-Gd-2-Event-Proc.
+     PERFORM gd-konum-Ev-Other
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ fil-acenta-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Ntf-Changed
+        PERFORM fil-acenta-Ev-Ntf-Changed
+     END-EVALUATE
+     .
+
+ Form2-Gd-1-Event-Proc.
+     PERFORM Form2-Gd-1-Ev-Other
+     .
+
+ Form2-Gd-1-Exception-Proc.
+     PERFORM Form2-Gd-1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     open input acenta kodlar02 takvim konum grup.
+     open i-o aksiyon aksiyon2.
+     initialize gec-gecme kayit-var-yok.
+     call "c$narg" using link-var.
+      open i-o kllnc
+               
+               move k-kodu-tasi to k-kodu
+               read kllnc no lock invalid continue
+                  not invalid 
+                    if k-tfiyat-bas-tar < "19000000"
+                          move "20050101" to k-tfiyat-bas-tar
+                     end-if
+                     if k-tfiyat-bit-tar < "19000000"
+                          move "20151231" to k-tfiyat-bit-tar
+                     end-if
+                end-read 
+        close kllnc.
+        move  k-tfiyat-bas-tar to filt-bas
+        move  k-tfiyat-bit-tar to filt-bit
+
+        .                             
+*
+ Form1-Aft-Initdata. 
+     initialize secili-ref     
+     if link-var = 1
+        if gelen-acenta not = spaces
+         
+         initialize acenta-rec
+         move gelen-acenta to acenta-kodu
+         read acenta no lock invalid 
+              continue
+         not invalid 
+             if acenta-ref > 0
+                 move acenta-ref   to secili-ref
+             end-if 
+         end-read 
+          
+        end-if
+     end-if 
+
+     perform grid-konum-yukle
+     modify combo-aks-stop,
+            reset-list  = 1
+            mass-update = 1
+     modify combo-aks-cal-tipi,
+            reset-list  = 1
+            mass-update = 1
+
+     
+
+     modify combo-aks-stop,
+            item-to-add("A->Aksiyon","B-Aksiyon2", "S->Stop Sale",
+            "K->Komisyon" "O->Special Offer", "P-Spec. Off. 2" ).
+     modify combo-aks-cal-tipi,
+            item-to-add("G->Rez.Giris Tarihi" ,"I->Rez.Islenme Tarihi").
+
+     move "A->Aksiyon"  to combo-aks-stop-value.
+     modify combo-aks-stop,
+            value       = "A"
+            mass-update = 0
+
+     modify combo-aks-cal-tipi,
+            value       = "G"
+            mass-update = 0.
+
+ 
+            if link-var not > 0 then 
+               perform grid-yukle thru grid-yukle-exit
+            end-if  .
+            if link-var = 1 then 
+               if combo-aks-stop-value(1:1) = "O" or "P" then
+                 move 1 to vis-hes
+               else
+                 move 0 to vis-hes
+               end-if
+               perform displayler
+               move gelen-acenta to rapor-acenta
+               display accept-acenta
+               move 1002 to control-id
+            
+               perform Aft-Procedure
+               move 1003 to control-id
+               move 4 to accept-control
+            end-if.
+           if link-var = 2 then 
+           move lAKSIYHRK-TIPI to  combo-aks-stop-value
+           display combo-aks-stop
+            move gelen-acenta to rapor-acenta
+            display accept-acenta
+            move 1002 to control-id
+            
+            perform Aft-Procedure
+            move 1003 to control-id
+            move 4 to accept-control
+
+            
+            end-if.
+           
+*
+ debug.
+    exit paragraph
+           display message box hgunler
+           if hgunler = spaces or zeroes 
+                 display message box "Zeroes"
+                 else
+                 display message box "Degil  -------------"
+           end-if .
+            
+
+
+*
+ combo-aks-stop-Bef-Procedure.
+*       initialize rapor-acenta bas-tarih bit-tarih
+*                  rapor-pansiyon rapor-gecele rapor-tahsil
+*                  kayit-var-yok
+       modify button-acenara enabled = false.
+       modify button-pansiyonara enabled = false.
+       modify accept-tahsil enabled = false.
+*       modify button-kaydet enabled = false.
+*       modify button-sil    enabled = false.
+       display form1.
+       modify lb-acenta-e   title = spaces
+       modify lb-pansiyon-e   title = spaces
+       perform bef-procedure.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+     .
+*                                  
+ bef-procedure.
+*     if control-id not = 1008
+*        initialize grid-islemno
+*     end-if
+     move control-value    to sonraki-kontrol
+     move control-id       to sonraki-id
+     perform kullandi.
+    
+*     display message box "o-k->" onceki-kontrol, new-line
+*                         "S-k->" sonraki-kontrol, new-line
+*                         "O-id->" onceki-id, new-line
+*                         "S-Id->" sonraki-id, new-line
+*                         "key-->" key-status new-line
+*                         "gec-gecme-->" gec-gecme.
+***>Onceki Kontrole gidebildin ama sonrakine gidemesin....
+     if gecmez
+        if sonraki-kontrol not = 4
+           if sonraki-kontrol > onceki-kontrol
+              move 4         to accept-control
+              move onceki-id to control-id
+              initialize gec-gecme
+              exit paragraph
+           end-if
+        end-if
+     end-if
+
+     if control-id = 1002
+        modify button-acenara enabled = true
+     end-if 
+     if control-id = 1011
+        modify button-pansiyonara enabled = true
+     end-if 
+
+     initialize mesaj.
+     evaluate control-id
+          when 1001
+              evaluate true
+                  when turkce
+                       move "Tip Seciniz   [ Aksiyon & Stop Sale ]" to mesaj
+                  when almanca
+                       move "Tip Seciniz   [ Aksiyon & Stop Sale ]" to mesaj
+                  when ingilizce
+                       move "Tip Seciniz   [ Aksiyon & Stop Sale ]" to mesaj
+              end-evaluate
+          when 1002
+              evaluate true
+                  when turkce
+                       move "Acenta Kodu Giriniz F1->Acenta Kodu Ara..." to mesaj
+                  when almanca
+                       move "Acenta Kodu Giriniz F1->Acenta Kodu Ara..." to mesaj
+                  when ingilizce
+                       move "Acenta Kodu Giriniz F1->Acenta Kodu Ara..." to mesaj
+              end-evaluate
+          when 1003 
+          when 1004
+          when 1005 
+              evaluate true
+                  when turkce
+                       move "Baslangic Tarihi Giriniz... " to mesaj
+                  when ingilizce
+                       move "Baslangic Tarihi Giriniz... " to mesaj
+                  when almanca
+                       move "Baslangic Tarihi Giriniz... " to mesaj
+              end-evaluate
+          when 1006
+          when 1007
+          when 1008
+              evaluate true
+                  when turkce
+                       move "Bitis     Tarihi Giriniz... " to mesaj
+                  when ingilizce
+                       move "Bitis     Tarihi Giriniz... " to mesaj
+                  when almanca
+                       move "Bitis     Tarihi Giriniz... " to mesaj
+              end-evaluate
+          when 1011
+              evaluate true
+                  when turkce
+                       move "Pansiyon Tipi Giriniz F1->Pansiyon Kodu Ara... " to mesaj
+                  when ingilizce
+                       move "Pansiyon Tipi Giriniz F1->Pansiyon Kodu Ara... " to mesaj
+                  when almanca
+                       move "Pansiyon Tipi Giriniz F1->Pansiyon Kodu Ara... " to mesaj
+              end-evaluate
+          when 1013
+              evaluate true
+                  when turkce
+                       move "Aksiyon Calisma Tipi..; G->Rez.Giris Tarihine Gore I->Rez.Islenme Tarihine Gore" to mesaj
+                  when ingilizce
+                       move "Aksiyon Calisma Tipi..; G->Rez.Giris Tarihine Gore I->Rez.Islenme Tarihine Gore" to mesaj
+                  when almanca
+                       move "Aksiyon Calisma Tipi..; G->Rez.Giris Tarihine Gore I->Rez.Islenme Tarihine Gore" to mesaj
+              end-evaluate
+          when 1014
+              evaluate true
+                  when turkce
+                       move "Aksiyonlu Musteri Geceleme Sayisi" to mesaj
+                  when ingilizce
+                       move "Aksiyonlu Musteri Geceleme Sayisi" to mesaj
+                  when almanca
+                       move "Aksiyonlu Musteri Geceleme Sayisi" to mesaj
+              end-evaluate
+          when 1015
+              evaluate true
+                  when turkce
+                       move "Aksiyonlu Musteri Tahsilat Gunu [14/10,7/5 gibi]" to mesaj
+                  when ingilizce
+                       move "Aksiyonlu Musteri Tahsilat Gunu [14/10,7/5 gibi]" to mesaj
+                  when almanca
+                       move "Aksiyonlu Musteri Tahsilat Gunu [14/10,7/5 gibi]" to mesaj
+              end-evaluate
+          when 1016
+              evaluate true
+                  when turkce
+                       move "Girilen Bilgileri Kaydet " to mesaj
+                  when ingilizce
+                       move "Girilen Bilgileri Kaydet " to mesaj
+                  when almanca
+                       move "Girilen Bilgileri Kaydet " to mesaj
+              end-evaluate
+          when 1017
+              evaluate true
+                  when turkce
+                       move "Kaydi Sil " to mesaj
+                  when ingilizce
+                       move "Kaydi Sil " to mesaj
+                  when almanca
+                       move "Kaydi Sil " to mesaj
+              end-evaluate
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 2 
+            panel-text = mesaj.
+*
+ Form1-Ex-Other.
+     move control-id to gidis-id
+     perform kullandi.
+     evaluate key-status
+         when 3001
+             display message box "Secili kayitlar Silinecektir." new-line
+                                 "Emin Misiniz?"
+                             title "Uyari"
+                             icon 1
+                             type 2
+                             default 2
+                             returning return-code 
+             if return-code = 2
+                 exit paragraph 
+             end-if 
+             perform secili-kayitlari-sil
+             display message box "Kayitlar Silindi."
+                             title "Uyari"
+                             icon 1
+         when 3002
+             initialize toplu-kopyala-grid
+             move 1   to toplu-kopyala-grid
+             perform toplu-sag-grid-kopyala
+         when 5001
+             perform tumunu-sec-sag-grid
+         when 5002
+             perform tumunu-kaldir-sag-grid
+         when 1 
+            evaluate control-id
+              when  1002 
+               perform acenta-ara
+              when  1011
+         
+                 if aksiyon-tipi = "S"
+                    perform konum-ara
+                 else
+                   perform pansiyon-ara
+                 end-if
+            end-evaluate
+
+         when 2 
+              
+
+
+
+              perform kontroller
+              if gecmez
+                 initialize gec-gecme
+                 move 4        to accept-control
+                 move gidis-id to control-id
+                 exit paragraph
+              end-if
+                perform cakisma-kontrol
+              if gecmez
+                 initialize gec-gecme
+                 display message box "Girmis Oldugunuz aksiyon tarihlerinde kayit bulundu." new-line
+                                     "Oncelik Kodu vermeniz gerekmektedir."
+                                 title "Uyari"
+                                 icon 1
+                 exit paragraph
+              end-if
+
+              if rapor-gecele2 > 0 then 
+                   perform toplu-kaydet
+              else
+                   if combo-aks-stop-value(1:1) = "S" 
+                      if rapor-pansiyon = spaces   
+                        initialize t secim-yok 
+                        perform varying t 
+                              from 2 
+                              by 1 
+                              until t > 40
+                               inquire gd-konum(t,1),
+                                     hidden-data in secim-durumu  
+                               if secim-durumu = spaces or secim-durumu = "H"
+                                   exit perform cycle 
+                               end-if 
+                               initialize grid-secili-konum
+                               inquire gd-konum(t,2),
+                                     hidden-data in grid-secili-konum  
+                               move grid-secili-konum to rapor-pansiyon
+                               display accept-pansiyon
+                               perform pans-after
+                               perform kaydet
+                               move 1 to secim-yok
+                        end-perform
+                        if secim-yok = 0 and 
+                          rapor-pansiyon = spaces and 
+                          combo-aks-stop-value(1:1) = "S"
+                             perform kaydet
+                        end-if
+                      else
+                        perform kaydet
+                      end-if
+                   else
+                      perform kaydet
+                   end-if                    
+             end-if
+         when 3
+               if kayit-var
+                  perform kayit-sil
+                  initialize kayit-var-yok
+                  perform grid-yukle thru grid-yukle-exit
+                           move 4    to accept-control
+                           move 1014 to control-id
+               end-if 
+         when 4
+              perform grid-yukle thru grid-yukle-exit
+         when 5
+              perform grid-d-yukle thru grid-d-yukle-exit
+         when 6
+****           perform debug
+              perform kopyala-basla
+         when 17 
+             move aksiyon-dosya         to link-logview-dosya-adi
+             set link-logview-pointer  to address of aksiyon-rec
+             set link-logview-rec-size to size of aksiyon-rec
+             perform logview-call
+             initialize key-status
+
+     end-evaluate.
+*
+ once-after.
+         evaluate rapor-bos 
+         when "    "
+         when "1   "
+         when "2   "
+         when "3   "
+         when "4   "
+         when "5   "
+         when "6   "
+         when "7   "
+         when "8   "
+         when "9   "
+           continue
+           when other
+            display message box 
+                      "Oncelik (bos) veya 1 veya 2 veya 3 veya 4 veya 5 veya 6 - 7 - 8 -9 olabilir "
+                      new-line,
+*                      "Lutfen Rakam Giriniz" 
+                       title = " [ Oncelik Hatali ] "
+               move 1         to gec-gecme
+               move 4     to accept-control
+               move 37 to control-id
+               exit paragraph
+             
+       end-evaluate
+                      .
+
+
+
+
+*
+ pans-after.
+          if combo-aks-stop-value(01:01) = "S" then
+           initialize gec-gecme
+            if rapor-pansiyon = spaces or  rapor-pansiyon = zeroes
+               move "Tum Konumlarda"   to konum-adi
+               else 
+            move rapor-pansiyon to konum-anahtar
+            read konum no lock invalid 
+               move "Tanimsiz Pansiyon Kodu"   to konum-adi
+               move 1 to gec-gecme
+               exit paragraph
+              not invalid continue 
+             end-read
+             end-if
+             display accept-pansiyon
+               modify lb-pansiyon-e, title = konum-adi of konum-rec
+               modify button-pansiyonara enabled = false
+         else
+         initialize gec-gecme
+         move "A"            to kodlar02-tipi
+         move rapor-pansiyon to kodlar02-kodu
+         read kodlar02 no lock invalid 
+               move "Tanimsiz Pansiyon Kodu"   to kodlar02-adi
+               move 1 to gec-gecme
+               exit paragraph
+              not invalid continue 
+         end-read
+         display accept-pansiyon
+               modify lb-pansiyon-e, title = kodlar02-adi of kodlar02
+               modify button-pansiyonara enabled = false
+         end-if   .
+              
+*
+ acn-after.
+         move rapor-acenta to acenta-kodu
+         read acenta no lock invalid 
+            if combo-aks-stop-value(1:1) = "S" then
+              if acenta-kodu = spaces then
+                  move "Tum Acentalar" to acenta-adi
+              else
+                initialize grup-rec
+                set grup-acenta to true
+                move acenta-kodu    to grup-kodu
+                read grup no lock invalid
+                    move "Tanimsiz Acenta " to acenta-adi
+                    move 1 to gec-gecme
+                    initialize rapor-acenta
+                   display accept-acenta
+                   exit paragraph
+                end-read
+                   move grup-adi to acenta-adi
+              end-if
+            else    
+              move "Tanimsiz Acenta " to acenta-adi
+              move 1 to gec-gecme
+              initialize rapor-acenta
+              display accept-acenta
+              exit paragraph
+            end-if
+         not invalid 
+            continue 
+         end-read
+            modify lb-acenta-e title = acenta-adi of acenta
+            modify button-acenara enabled = false.
+displayler.
+     display hes1 hes2 hes3 hes4 hes5 hes6 hes7 hes8 ekl  fr-hes-tipi cb-sonaa   Form1-Cb-1 cb-sonaaa cb-bil-oto
+      fg fg1 fg2 fg3 fg4 fg5 fg6 fg7
+      cb-uzun-gece cb-eb-secenek.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Aft-Procedure.
+      move control-value    to onceki-kontrol
+      move control-id       to onceki-id
+      move control-id to gidis-id.
+      evaluate control-id
+       when 1001
+             
+
+            perform grid-konum-yukle
+            perform grid-yukle thru grid-yukle-exit
+*****************************************             
+            initialize rapor-yuzde-hesapla
+            if not (combo-aks-stop-value = "O" or combo-aks-stop-value = "P")
+                modify Form1-Cb-1,visible = false
+            else
+                modify Form1-Cb-1,visible = true
+            end-if
+************************************
+            initialize rapor-bil-dus
+            if combo-aks-stop-value = "S"
+               modify cb-bil-oto,visible = true
+            else
+               modify cb-bil-oto,visible = false
+            end-if
+
+
+            if  combo-aks-stop-value(1:1) = "O" or "P"  then
+              move 1 to vis-hes
+            else
+              move 0 to vis-hes
+            end-if
+            if combo-aks-stop-value(1:1) = "A"
+               modify lb-dus-kac,visible = true 
+               modify ac-dus-kac,visible = true 
+            else 
+               modify lb-dus-kac,visible = false
+               modify ac-dus-kac,visible = false            
+            end-if 
+             perform displayler
+           
+             if combo-aks-stop-value(1:1) = "S"
+                modify Form1-Fr-3,visible = true 
+                modify gd-konum,visible = true 
+                modify fr-stop-aciklama ,visible = true 
+                modify acc-stop-aciklama,visible = true 
+             else 
+                modify Form1-Fr-3,visible = true 
+                modify gd-konum,visible = true                 
+                modify fr-stop-aciklama ,visible = false  
+                modify acc-stop-aciklama,visible = false 
+             end-if 
+
+       when 1002
+         initialize gec-gecme
+         perform acn-after
+         perform grid-yukle thru grid-yukle-exit
+        
+       when 1011
+         perform pans-after
+
+       when 1014
+         initialize aksiyon-rec 
+         move combo-aks-stop-value to aksiyon-tipi
+         move rapor-acenta         to aksiyon-acenta
+         move rapor-bos            to aksiyon-bos
+         move rapor-pansiyon       to aksiyon-pan-tipi
+         move rapor-konum          to aksiyon-konum
+         move bas-yil              to aksiyon-g-yil
+         move bas-ay               to aksiyon-g-ay 
+         move bas-gun              to aksiyon-g-gun
+         move bit-yil              to aksiyon-c-yil
+         move bit-ay               to aksiyon-c-ay 
+         move bit-gun              to aksiyon-c-gun
+         move rapor-gecele         to aksiyon-gecele
+         if aksiyon-tipi = "A" or "O" or "P" 
+**              and aksiyon-gecele = 7 then 
+            move 1  to bit-vis
+            display ac-bit lb-bit
+            else
+            move 0 to bit-vis
+            display ac-bit lb-bit
+         end-if
+         read aksiyon no lock invalid 
+              continue
+         not invalid 
+              move aksiyon-rec         to xaksiyon-rec 
+              move aksiyon-ode-yuz     to zz
+              move function numval(zz) to ss
+              move ss                  to rapor-tahsil(1:2)
+              move aksiyon-ode         to zz
+              move function numval(zz) to ss
+              move ss                  to rapor-tahsil(3:2)
+              if aksiyon-ode-kusur = spaces then 
+                 move "00" to rapor-tahsil(5:2)
+              else
+                 move aksiyon-ode-kusur to zz
+                 move function numval(zz) to ss
+                 move ss to rapor-tahsil(5:2)
+              end-if
+              move aksiyon-sondan        to rapor-sondan 
+              move aksiyon-ebharic       to rapor-ebharic(1:1)
+              move aksiyon-hafta-gunleri to hgunler
+              move aksiyon-k-bazli       to rapor-konaklama 
+              move aksiyon-ug-uygulama   to rapor-ugdeyok(1:1) 
+              move aksiyon-parca-uygula  to rapor-parca
+              move aksiyon-so-yuzde-hes  to rapor-yuzde-hesapla 
+              move aksiyon-oto-bil-dus   to rapor-bil-dus
+              move aksiyon-hes-tipi      to rapor-hes-tipi
+              move aksiyon-ekle          to rapor-ekle
+              move 1                     to kayit-var-yok
+         end-read
+         initialize aksiyon2-rec 
+
+         move aksiyon-anah to aksiyon2-anah
+         read aksiyon2 no lock invalid
+               continue
+         end-read
+         move AKSIYON2-rezal-tar1 to sat-bas-tarih
+         move AKSIYON2-rezal-tar2 to sat-bit-tarih
+         display accept-bas-guna
+                 accept-bas-aya
+                 accept-bas-yila
+                 accept-bit-guna
+                 accept-bit-aya
+                 accept-bit-yila
+               modify accept-tahsil enabled = true
+               display accept-tahsil cb-son   fg fg1 fg2 fg3 fg4 fg5 fg6 fg7  cb-uzun-gece cb-eb-secenek
+               perform displayler
+        when 1015
+               modify accept-tahsil enabled = false
+      end-evaluate
+     .
+*
+ kontroller.
+         initialize gec-gecme.
+         move rapor-acenta to acenta-kodu aksiyon-acenta
+        
+         read acenta no lock invalid 
+                if combo-aks-stop-value(01:01) = "S" then
+                  if acenta-kodu = spaces then
+                      move "Tum Acentalar" to acenta-adi
+                    else
+                     initialize grup-rec
+                    set grup-acenta to true
+                      move acenta-kodu    to grup-kodu
+                       read grup no lock invalid
+                        move 1         to gec-gecme
+                        move 1002      to gidis-id
+                        exit paragraph
+                         end-read
+                         move grup-adi to acenta-adi
+
+                    end-if
+                 else    
+               move 1         to gec-gecme
+               move 1002      to gidis-id
+               exit paragraph
+               end-if
+              not invalid continue 
+         end-read
+               modify lb-acenta-e, title = acenta-adi of acenta
+         if combo-aks-stop-value(01:01) = "S" then
+           initialize gec-gecme
+             if rapor-pansiyon = spaces or  rapor-pansiyon = zeroes
+               move "Tum Konumlarda"   to konum-adi
+               else 
+            move rapor-pansiyon to konum-anahtar
+            read konum no lock invalid 
+               move "Tanimsiz Pansiyon Kodu"   to konum-adi
+               move 1 to gec-gecme
+               exit paragraph
+              not invalid continue 
+             end-read
+             end-if
+         else
+         move rapor-pansiyon to aksiyon-pan-tipi kodlar02-kodu
+         move "A"            to kodlar02-tipi
+         read kodlar02 no lock invalid 
+              move 1011  to gidis-id
+              move 1     to gec-gecme
+              exit paragraph
+              not invalid continue 
+         end-read
+        end-if
+       evaluate rapor-bos 
+         when "    "
+         when "1   "
+         when "2   "
+         when "3   "
+         when "4   "
+         when "5   "
+         when "6   "
+         when "7   "
+         when "8   "
+         when "9   "
+         
+          continue
+           when other
+            display message box 
+                      "Oncelik (bos) veya 1 veya 2 veya 3 olabilir "
+                      new-line,
+*                      "Lutfen Rakam Giriniz" 
+                       title = " [ Oncelik Hatali ] "
+               move 1         to gec-gecme
+               move 4     to accept-control
+               move 37 to control-id
+               exit paragraph
+             
+       end-evaluate
+         move bas-tarih to takvim-anah
+         read takvim no lock invalid 
+              display message box 
+                      "Baslangic Tarihi Tanimsiz"
+                      new-line,
+*                      "Lutfen Rakam Giriniz" 
+                       title = " [ Baslangic Tarihi Hatali ] "
+               move 1         to gec-gecme
+               move 1003      to gidis-id
+               exit paragraph
+              not invalid continue 
+         end-read
+         move bit-tarih to takvim-anah
+         read takvim no lock invalid 
+              display message box 
+                      "Bitis Tarihi Tanimsiz"
+                      new-line,
+                       title = " [ Bitis Tarihi Hatali ] "
+               move 1         to gec-gecme
+               move 1006      to gidis-id
+               exit paragraph
+              not invalid continue 
+         end-read
+       if bit-tarih < bas-tarih
+          display message box 
+                  "Baslangic Tarihi Bitis Tarihinden Buyuk Olamaz"
+                  new-line,
+                   title = " [ Tarih Hatali ] "
+           move 1         to gec-gecme
+           move 1006      to gidis-id
+           exit paragraph
+       end-if.
+
+        .
+*
+*
+ toplu-kaydet.  
+       open i-o aksiyhrk nt
+  
+       perform varying mam from rapor-gecele  by 1 until mam > rapor-gecele2
+
+       move rapor-hes-tipi to aksiyon-hes-tipi
+       move rapor-ekle     to aksiyon-ekle
+       move combo-aks-stop-value to aksiyon-tipi
+       move rapor-acenta   to aksiyon-acenta
+       move rapor-bos      to aksiyon-bos
+       move rapor-konum to aksiyon-konum
+       move rapor-pansiyon to aksiyon-pan-tipi
+       move rapor-sondan   to aksiyon-sondan
+       move rapor-ebharic(1:1)  to aksiyon-ebharic
+          move  hgunler to     aksiyon-hafta-gunleri  
+       move   rapor-ugdeyok(1:1) to aksiyon-ug-uygulama 
+       move rapor-konaklama to aksiyon-k-bazli
+       move rapor-parca         to aksiyon-parca-uygula
+       move rapor-yuzde-hesapla to aksiyon-so-yuzde-hes
+       move rapor-bil-dus         to aksiyon-oto-bil-dus   
+       move bas-yil        to aksiyon-g-yil
+       move bas-ay         to aksiyon-g-ay 
+       move bas-gun        to aksiyon-g-gun
+       move bit-yil        to aksiyon-c-yil
+       move bit-ay         to aksiyon-c-ay 
+       move bit-gun        to aksiyon-c-gun
+       move mam            to aksiyon-gecele
+
+       move rapor-min-gece to aksiyon-min-gece
+       move rapor-max-gece to aksiyon-max-gece
+       if aksiyon-tipi = "A"  
+          if rapor-dus-kac > 0  
+             compute aksiyon-ode = mam - rapor-dus-kac
+          else 
+            evaluate mam                 
+            when 7   move 6   to aksiyon-ode
+            when 8   move 7   to aksiyon-ode
+            when 9   move 8   to aksiyon-ode
+            when 10  move 9   to aksiyon-ode
+            when 11  move 10  to aksiyon-ode
+            when 12  move 11  to aksiyon-ode
+            when 13  move 12  to aksiyon-ode
+            when 14  move 12  to aksiyon-ode
+            when 15  move 13  to aksiyon-ode
+            when 16  move 14  to aksiyon-ode
+            when 17  move 15  to aksiyon-ode
+            when 18  move 16  to aksiyon-ode
+            when 19  move 17  to aksiyon-ode
+            when 20  move 18  to aksiyon-ode
+            when 21  move 18  to aksiyon-ode
+            when 22  move 19  to aksiyon-ode
+            when 23  move 20  to aksiyon-ode
+            when 24  move 21  to aksiyon-ode
+            when 25  move 22  to aksiyon-ode
+            when 26  move 23  to aksiyon-ode
+            when 27  move 24  to aksiyon-ode
+            when 28  move 24  to aksiyon-ode
+            when 29  move 25  to aksiyon-ode
+            when 30  move 26  to aksiyon-ode
+            when 31  move 27  to aksiyon-ode
+            when 32  move 28  to aksiyon-ode
+            when 33  move 29  to aksiyon-ode
+            when 34  move 30  to aksiyon-ode
+            when 35  move 30  to aksiyon-ode
+            when other exit perform cycle
+            end-evaluate
+
+          end-if 
+       else
+          move rapor-tahsil(1:2)  to aksiyon-ode-yuz(1:2)
+          move rapor-tahsil(3:2)  to aksiyon-ode(1:2) 
+          move rapor-tahsil(5:2)  to aksiyon-ode-kusur
+       end-if
+       if aksiyon-tipi = "S"
+          initialize aksiyon-gecele aksiyon-ode aksiyon-ode-kusur aksiyon-sondan aksiyon-ebharic
+       end-if 
+         move k-kodu-tasi     to aksiyon-staf
+         move aksiyon-anah    to aksiyon2-anah
+         move aksiyon-gecele  to aksiyon2-gecele
+       if sat-bas-ay not = zeroes and sat-bas-gun not = zeroes and sat-bas-yil not = zeroes
+          and sat-bit-ay not = zeroes and sat-bit-gun not = zeroes and sat-bit-yil not = zeroes
+          and sat-bas-tarih > "10000000" and sat-bit-tarih > "10000000" 
+            move sat-bas-tarih to AKSIYON2-rezal-tar1
+            move sat-bit-tarih to AKSIYON2-rezal-tar2
+            write aksiyon2-rec invalid rewrite aksiyon2-rec end-write 
+       else
+            delete aksiyon2 invalid continue end-delete
+       end-if
+
+       initialize t gercek-kayit
+       perform varying t 
+               from 2 
+               by 1 
+               until t > 40
+                   inquire gd-konum(t,1),
+                           hidden-data in secim-durumu
+                     if secim-durumu = spaces
+                         exit perform cycle 
+                     end-if     
+                     add 1 to gercek-kayit  
+                      move secim-durumu       to aksiyon-konum-ind(gercek-kayit)                      
+       end-perform
+
+
+       write aksiyon-rec invalid 
+          rewrite aksiyon-rec end-rewrite 
+       not invalid
+          move tarih-tasi to aksiyon-kayit-tarihi 
+          rewrite aksiyon-rec end-rewrite 
+       end-write
+
+       perform log-operation-aksiyon
+
+       perform stop-sale-not-yaz
+      
+       initialize takvim-rec
+       move aksiyon-g-tarih   to takvim-anah
+       start takvim key not < takvim-anah invalid
+               close aksiyhrk
+               exit paragraph
+         not invalid
+               move zeroes to fs-takvim
+          perform with test after until fs-takvim = "10"
+           read takvim next no lock end move "10" to fs-takvim
+           not at end
+               if takvim-anah > aksiyon-c-tarih
+                  move "10" to fs-takvim
+                  exit perform cycle
+               end-if
+
+           move aksiyon-tipi     to aksiyhrk-tipi
+           move aksiyon-acenta   to aksiyhrk-acenta
+           move aksiyon-bos to aksiyhrk-bos
+           move aksiyon-pan-tipi to aksiyhrk-pan-tipi
+           move aksiyon-hes-tipi to aksiyhrk-hes-tipi
+           move aksiyon-ekle     to aksiyhrk-ekle
+           move takvim-anah      to aksiyhrk-tarih
+           move aksiyon-gecele   to aksiyhrk-gecele
+           move aksiyon-ebharic to aksiyhrk-ebharic
+              move aksiyon-hafta-gunleri  to aksiyhrk-hafta-gunleri 
+           move aksiyon-k-bazli to aksiyhrk-k-bazli
+
+           move aksiyon-parca-uygula to aksiyhrk-parca-uygula
+          move aksiyon-so-yuzde-hes to aksiyhrk-so-yuzde-hes
+          move aksiyon-oto-bil-dus  to aksiyhrk-oto-bil-dus
+             move aksiyon-min-gece to aksiyhrk-minimum of aksiyhrk-rec 
+            move aksiyon-max-gece to aksiyhrk-maximum of aksiyhrk-rec 
+
+
+
+           move AKSIYon-BOS to AKSIYHRK-BOS
+           compute  aksiyhrk-ode rounded =  aksiyon-ode +
+                     ( aksiyon-ode-kusur / 100 )     
+            if aksiyon-ode-yuz > 0 and aksiyon-ode-yuz < 99
+             continue
+             else
+             move 0 to  aksiyon-ode-yuz
+          end-if
+           move  aksiyon-ode-yuz to aksiyhrk-ode-yuz of aksiyhrk-rec
+           compute aksiyhrk-ode-yeni of aksiyhrk-rec rounded = aksiyhrk-ode of aksiyhrk-rec +    
+                          ( aksiyhrk-ode-yuz of aksiyhrk-rec * 100 )
+           move aksiyon-sondan   to aksiyhrk-sondan
+           move aksiyon-ebharic  to aksiyhrk-ebharic
+           move aksiyon-hafta-gunleri to aksiyhrk-hafta-gunleri 
+ 
+           if aksiyon-tipi = "S"
+              initialize aksiyhrk-gecele aksiyhrk-ode aksiyhrk-ebharic 
+           end-if 
+           move AKSIYON2-rezal-tar1 to  aksiyhrk-rezal-tar1
+           move AKSIYON2-rezal-tar2 to  aksiyhrk-rezal-tar2
+            move AKSIYON-G-TARIH to aksiyhrk-bas-tar of aksiyhrk-rec
+            move AKSIYON-C-TARIH to aksiyhrk-bit-tar of aksiyhrk-rec
+            move aksiyon-konumlar to aksiyhrk-konumlar of aksiyhrk-rec
+            move aksiyon-ug-uygulama to aksiyhrk-ug-uygulama  of aksiyhrk-rec
+
+
+ 
+           write aksiyhrk-rec invalid 
+                 rewrite aksiyhrk-rec
+                end-rewrite continue
+           end-write
+           end-read
+*               modify Form1-Gd-1, record-to-add (form1-gd-1-record)
+          end-perform
+         end-start
+         end-perform
+         close aksiyhrk nt.
+         display message box   "Toplu islem Tamamlandi..!"
+                         title "Bilginize"
+                         icon mb-warning-icon.
+
+         initialize bit-vis rapor-gecele2  
+         display ac-bit   lb-bit
+         move 4    to accept-control
+         move 1014 to control-id.
+*
+ kaydet.
+       initialize aksiyon-rec.       
+       move rapor-hes-tipi       to aksiyon-hes-tipi
+       move rapor-ekle           to aksiyon-ekle
+       move combo-aks-stop-value to aksiyon-tipi
+       move rapor-acenta         to aksiyon-acenta
+       move rapor-bos            to aksiyon-bos
+       move rapor-konum          to aksiyon-konum
+       move rapor-pansiyon       to aksiyon-pan-tipi
+       move rapor-sondan         to aksiyon-sondan
+       move rapor-ebharic(1:1)   to aksiyon-ebharic
+       move hgunler              to aksiyon-hafta-gunleri 
+       move rapor-ugdeyok(1:1)   to aksiyon-ug-uygulama 
+       move rapor-konaklama      to aksiyon-k-bazli
+       move rapor-parca          to aksiyon-parca-uygula
+       move rapor-yuzde-hesapla  to aksiyon-so-yuzde-hes 
+       move rapor-bil-dus        to aksiyon-oto-bil-dus
+       move rapor-ugdeyok(1:1)   to aksiyon-ug-uygulama
+       move bas-yil              to aksiyon-g-yil
+       move bas-ay               to aksiyon-g-ay 
+       move bas-gun              to aksiyon-g-gun
+       move bit-yil              to aksiyon-c-yil
+       move bit-ay               to aksiyon-c-ay 
+       move bit-gun              to aksiyon-c-gun
+       move rapor-gecele         to aksiyon-gecele      
+       move rapor-min-gece       to aksiyon-min-gece
+       move rapor-max-gece       to aksiyon-max-gece
+       move rapor-tahsil(1:2)    to aksiyon-ode-yuz(1:2)
+       move rapor-tahsil(3:2)    to aksiyon-ode(1:2)
+       move rapor-tahsil(5:2)    to aksiyon-ode-kusur
+       if aksiyon-tipi = "S"
+          initialize aksiyon-gecele aksiyon-ode aksiyon-ode-kusur aksiyon-ode-yuz aksiyon-sondan aksiyon-ebharic
+       end-if 
+       move k-kodu-tasi          to aksiyon-staf
+       move aksiyon-anah         to aksiyon2-anah
+       move aksiyon-gecele       to aksiyon2-gecele
+       
+       if sat-bas-ay not  = zeroes   and sat-bas-gun not = zeroes and 
+          sat-bas-yil not = zeroes   and sat-bit-ay not  = zeroes and 
+          sat-bit-gun not = zeroes   and sat-bit-yil not = zeroes and 
+          sat-bas-tarih > "10000000" and sat-bit-tarih > "10000000" 
+            move sat-bas-tarih to AKSIYON2-rezal-tar1
+            move sat-bit-tarih to AKSIYON2-rezal-tar2
+            write aksiyon2-rec invalid rewrite aksiyon2-rec end-write 
+       else
+            delete aksiyon2 invalid continue end-delete
+       end-if    
+       if combo-aks-stop-value(1:1) not = "S"
+          initialize t gercek-kayit
+          perform varying t 
+                  from 1 
+                  by 1 
+                  until t > 40
+                      inquire gd-konum(t,1),
+                              hidden-data in secim-durumu 
+                      if secim-durumu = spaces
+                         exit perform cycle 
+                      end-if 
+                      add 1 to gercek-kayit   
+                         move secim-durumu       to aksiyon-konum-ind(gercek-kayit)                       
+          end-perform
+       end-if
+       
+
+
+       if xaksiyon-rec <> aksiyon-rec and spaces        
+           if toplu-kopyala-grid not = 1||firat 12/11/2019
+            display message box "Aksiyonda degisiklik yapilmistir."              ||aksiyonda deðisiklik varsa sor...
+          end-if
+       end-if 
+       if toplu-kopyala-grid not = 1 
+       perform kaydet-soru
+       if soru-donus = 2
+          exit paragraph
+       end-if
+       end-if
+
+
+
+
+       write aksiyon-rec invalid 
+             rewrite aksiyon-rec end-rewrite 
+       not invalid
+           move tarih-tasi to aksiyon-kayit-tarihi 
+           rewrite aksiyon-rec end-rewrite 
+       end-write.
+
+       move aksiyon-rec        to xaksiyon-rec 
+
+       perform log-operation-aksiyon.
+
+       open i-o nt
+       perform stop-sale-not-yaz
+       close nt 
+
+       open i-o aksiyhrk
+       initialize takvim-rec
+       move aksiyon-g-tarih   to takvim-anah
+       start takvim key not < takvim-anah invalid
+               close aksiyhrk
+               exit paragraph
+         not invalid
+               move zeroes to fs-takvim
+          perform with test after until fs-takvim = "10"
+           read takvim next no lock end move "10" to fs-takvim
+           not at end
+               if takvim-anah > aksiyon-c-tarih
+                  close aksiyhrk
+                  exit paragraph
+               end-if
+
+           move aksiyon-tipi      to aksiyhrk-tipi
+           move aksiyon-acenta    to aksiyhrk-acenta
+           move aksiyon-bos       to aksiyhrk-bos
+           move aksiyon-pan-tipi  to aksiyhrk-pan-tipi
+           move aksiyon-hes-tipi  to aksiyhrk-hes-tipi
+           move aksiyon-ekle      to aksiyhrk-ekle
+           move takvim-anah       to aksiyhrk-tarih
+           move aksiyon-gecele    to aksiyhrk-gecele
+           move aksiyon-ebharic   to aksiyhrk-ebharic
+           move aksiyon-hafta-gunleri to aksiyhrk-hafta-gunleri 
+           move AKSIYon-BOS       to AKSIYHRK-BOS
+           move aksiyon-k-bazli   to aksiyhrk-k-bazli
+           compute  aksiyhrk-ode rounded =  aksiyon-ode +
+                     ( aksiyon-ode-kusur / 100 )     
+             if aksiyon-ode-yuz > 0 and aksiyon-ode-yuz < 99
+             continue
+             else
+             move 0 to  aksiyon-ode-yuz
+          end-if
+           move  aksiyon-ode-yuz to aksiyhrk-ode-yuz of aksiyhrk-rec
+           compute aksiyhrk-ode-yeni of aksiyhrk-rec rounded = aksiyhrk-ode of aksiyhrk-rec +    
+                          ( aksiyhrk-ode-yuz of aksiyhrk-rec * 100 )
+           move aksiyon-sondan   to aksiyhrk-sondan
+           move aksiyon-ebharic  to aksiyhrk-ebharic
+           move aksiyon-hafta-gunleri to aksiyhrk-hafta-gunleri 
+ 
+           if aksiyon-tipi = "S"
+              initialize aksiyhrk-gecele aksiyhrk-ode aksiyhrk-ebharic 
+           end-if
+            move AKSIYON2-rezal-tar1 to  aksiyhrk-rezal-tar1
+           move AKSIYON2-rezal-tar2 to  aksiyhrk-rezal-tar2
+            move AKSIYON-G-TARIH to aksiyhrk-bas-tar of aksiyhrk-rec
+            move AKSIYON-C-TARIH to aksiyhrk-bit-tar of aksiyhrk-rec
+            move aksiyon-konumlar to aksiyhrk-konumlar of aksiyhrk-rec
+            move aksiyon-min-gece to aksiyhrk-minimum of aksiyhrk-rec 
+            move aksiyon-max-gece to aksiyhrk-maximum of aksiyhrk-rec 
+            move aksiyon-parca-uygula to aksiyhrk-parca-uygula
+            move aksiyon-so-yuzde-hes to aksiyhrk-so-yuzde-hes
+            move aksiyon-ug-uygulama to aksiyhrk-ug-uygulama
+            move aksiyon-oto-bil-dus to aksiyhrk-oto-bil-dus
+
+           write aksiyhrk-rec invalid 
+                 rewrite aksiyhrk-rec
+                end-rewrite continue
+           end-write
+           end-read
+*               modify Form1-Gd-1, record-to-add (form1-gd-1-record)
+          end-perform
+         end-start.
+         close aksiyhrk.
+         display message box   "islem Tamamlandi..!"
+                         title "Bilginize"
+                         icon mb-warning-icon.
+         move 4    to accept-control
+         move 1014 to control-id.
+*
+ kayit-sil.
+       initialize aksiyon-rec.
+       move combo-aks-stop-value to aksiyon-tipi
+       move rapor-acenta   to aksiyon-acenta
+       move rapor-bos      to aksiyon-bos
+       move rapor-konum    to aksiyon-konum
+       move rapor-pansiyon to aksiyon-pan-tipi
+       move bas-yil        to aksiyon-g-yil
+       move bas-ay         to aksiyon-g-ay 
+       move bas-gun        to aksiyon-g-gun
+       move bit-yil        to aksiyon-c-yil
+       move bit-ay         to aksiyon-c-ay 
+       move bit-gun        to aksiyon-c-gun
+       move rapor-gecele   to aksiyon-gecele
+        
+       if aksiyon-tipi = "S"
+          initialize aksiyon-gecele
+       end-if 
+       read aksiyon no lock invalid 
+            exit paragraph
+            not invalid continue
+       end-read
+       delete aksiyon invalid 
+            exit paragraph
+            not invalid continue
+       end-delete.
+       perform log-operation-aksiyon.
+
+
+       open i-o aksiyhrk
+       initialize takvim-rec
+       move aksiyon-g-tarih   to takvim-anah
+       start takvim key not < takvim-anah invalid
+               close aksiyhrk
+               exit paragraph
+         not invalid
+               move zeroes to fs-takvim
+          perform with test after until fs-takvim = "10"
+           read takvim next no lock end move "10" to fs-takvim
+           not at end
+               if takvim-anah > aksiyon-c-tarih
+                  close aksiyhrk
+                  exit paragraph
+               end-if
+
+           move aksiyon-tipi     to aksiyhrk-tipi
+           move aksiyon-acenta   to aksiyhrk-acenta
+            move aksiyon-bos   to aksiyhrk-bos
+
+           move aksiyon-pan-tipi to aksiyhrk-pan-tipi
+           move takvim-anah      to aksiyhrk-tarih
+           move aksiyon-gecele   to aksiyhrk-gecele
+           if aksiyon-tipi = "S"
+              initialize aksiyhrk-gecele
+           end-if 
+                read aksiyhrk no lock invalid 
+                     exit perform cycle
+                     not invalid continue
+                end-read
+                delete aksiyhrk invalid 
+                       exit perform cycle
+                       not invalid continue
+                end-delete                         
+           end-read
+*               modify Form1-Gd-1, record-to-add (form1-gd-1-record)
+          end-perform
+         end-start.
+         close aksiyhrk.
+
+
+*
+ acenta-ara.
+      initialize acenta-cagir.
+      call "/asya/ytl/obj/otel/acenara.asy" using acenta-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/acenara.asy" 
+       end-call
+       move acenta-cagir  to rapor-acenta acenta-kodu
+       read acenta no lock invalid
+
+            move 4        to accept-control
+            move 1002     to control-id
+            exit paragraph
+            not invalid continue 
+       end-read
+       modify lb-acenta-e, title = acenta-adi of acenta
+       display accept-acenta.
+*
+ pansiyon-ara.
+      initialize pansiyon-cagir.
+      call "/asya/ytl/obj/otel/panara.asy" using pansiyon-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/panara.asy" 
+       end-call
+       move pansiyon-kodu-cagir to rapor-pansiyon kodlar02-kodu
+       move "A"            to kodlar02-tipi
+       read kodlar02 no lock invalid 
+            move 4        to accept-control
+            move 1011     to control-id
+            exit paragraph
+            not invalid continue 
+       end-read
+       modify lb-pansiyon-e, title = kodlar02-adi of kodlar02
+       display accept-pansiyon.
+
+
+     .
+*
+
+ konum-ara.
+      initialize pansiyon-cagir.
+      call "/asya/ytl/obj/otel/konumara.asy" using konum-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/konumara.asy" 
+       end-call
+
+   
+       move konum-cagir to rapor-pansiyon konum-anahtar
+       read konum no lock invalid 
+            move 4        to accept-control
+            move 1011     to control-id
+            exit paragraph
+            not invalid continue 
+       end-read
+       modify lb-pansiyon-e, title = konum-adi of konum-rec
+       display accept-pansiyon.
+     .
+*
+ grid-yukle.
+ grid-baslik-at.
+      modify Form1-Gd-1, reset-grid  = 1
+                         mass-update = 1.
+      initialize form1-gd-1-record kay-say
+      move "Acenta "       to gd-1-col-1
+      move "Bas.Tarih "    to gd-1-col-2
+      move "Bit.Tarih "    to gd-1-col-3
+      move "PK "           to gd-1-col-4
+      move "Pansiyon Adi"  to gd-1-col-5
+      move "GEC"           to gd-1-col-6
+
+      move "TAH"           to gd-1-col-7
+      move "T"             to gd-1-col-8
+      move "Staf "         to gd-1-col-10
+      move "Acenta Adi  "  to gd-1-col-9
+      add 1 to kay-say
+      modify Form1-Gd-1, record-to-add (form1-gd-1-record) 
+                         mass-update = 0.
+ grid-baslik-at-exit.
+      exit.
+
+ grid-detay-yukle.
+         modify Form1-Gd-1, mass-update = 1.
+         
+         open input kllnc
+         initialize aksiyon-rec
+         move combo-aks-stop-value to aksiyon-tipi
+         if aksiyon-tipi(1:1) = "A" then 
+             move 1 to vis-son
+            else
+            initialize rapor-ebharic(1:1) rapor-sondan    rapor-ugdeyok(1:1)  hgunler
+            move 0 to vis-son
+         end-if
+         display cb-son  cb-sonaa cb-uzun-gece cb-eb-secenek fg fg1 fg2 fg3 fg4 fg5 fg6 fg7
+         move rapor-acenta         to aksiyon-acenta
+         start aksiyon key not < aksiyon-anah invalid
+               continue
+         not invalid
+               move zeroes to fs-aksiyon
+          perform with test after until fs-aksiyon = "10"
+           read aksiyon next no lock end move "10" to fs-aksiyon
+           not at end
+               if fs-aksiyon = "10"
+                  exit perform 
+               end-if
+               if aksiyon-tipi <> combo-aks-stop-value(01:01)
+                  exit perform 
+               end-if
+               
+               if filt-bit < AKSIYON-G-TARIH or  
+               filt-bas > AKSIYON-C-TARIH
+                      exit perform cycle
+               end-if
+               if rapor-acenta not = spaces and
+                  aksiyon-acenta <> rapor-acenta
+                  exit perform 
+               end-if
+               
+               initialize form1-gd-1-record
+
+               move aksiyon-acenta     to gd-1-col-1
+               move aksiyon-g-gun      to gd-1-col-2(01:02)
+               move "/"                to gd-1-col-2(03:01)
+               move aksiyon-g-ay       to gd-1-col-2(04:02)
+               move "/"                to gd-1-col-2(06:01)
+               move aksiyon-g-yil      to gd-1-col-2(07:04)
+               move aksiyon-c-gun      to gd-1-col-3(01:02)
+               move "/"                to gd-1-col-3(03:01)
+               move aksiyon-c-ay       to gd-1-col-3(04:02)
+               move "/"                to gd-1-col-3(06:01)
+               move aksiyon-c-yil      to gd-1-col-3(07:04)
+
+               if aksiyon-tipi = "S" then
+                    move aksiyon-pan-tipi   to gd-1-col-4 konum-anahtar
+                    if konum-anahtar = zeroes or konum-anahtar = spaces
+                      move "Tum Konumlar" to konum-adi
+                    else
+                    read konum no lock invalid
+                         move "Tanimsiz konum"  to konum-adi
+                    end-read
+                    end-if
+                    move konum-adi to gd-1-col-5
+                      else
+
+                    move "A"  to kodlar02-tipi
+                    move aksiyon-pan-tipi   to gd-1-col-4 kodlar02-kodu
+                    read kodlar02 no lock invalid 
+                         move "Tanimsiz Pansiyon"  to kodlar02-adi
+                    end-read
+                         move kodlar02-adi to gd-1-col-5
+               end-if
+               move aksiyon-gecele    to gd-1-col-6
+               move aksiyon-ode       to  z-5 (1:2)
+               move aksiyon-ode-kusur       to  z-5 (4:2)
+               move z-5               to gd-1-col-7
+               if aksiyon-sondan = 1
+                  move "S"            to gd-1-col-8
+               else 
+                  move "O"            to gd-1-col-8
+               end-if
+                    move aksiyon-staf       to k-kodu
+                    read kllnc no lock invalid 
+                         move "Tanimsiz Kullanici"  to k-soyadi
+                    end-read
+               move k-soyadi to gd-1-col-10
+               move aksiyon-acenta   to acenta-kodu
+                    read acenta no lock invalid 
+                          if combo-aks-stop-value(01:01) = "S" then
+                           if acenta-kodu = spaces then
+                             move "Tum Acentalar" to acenta-adi
+                                else
+                                initialize grup-rec
+                                set grup-acenta to true
+                                move acenta-kodu   to grup-kodu
+                                read grup no lock invalid
+                                move "Tanimsiz Acenta"  to acenta-unvani acenta-adi
+                                end-read
+                              move grup-adi to acenta-adi
+
+                           end-if
+                         else        
+                          move "Tanimsiz Acenta"  to acenta-unvani acenta-adi
+                          end-if
+                     end-read
+               move acenta-adi    to gd-1-col-9
+                add 1 to kay-say
+               modify Form1-Gd-1, record-to-add (form1-gd-1-record)
+                modify Form1-Gd-1(kay-say,1) hidden-data = aksiyon-anah
+
+                 modify form1-gd-1(kay-say,11),
+                        bitmap = check-bmp
+                        bitmap-width = 16
+                        bitmap-number = 1
+                        hidden-data = "H"
+
+                if link-var = 2 then 
+                  if laksiyhrk-acenta = aksiyon-acenta and 
+                     lAKSIYHRK-PAN-TIPI = aksiyon-pan-tipi and 
+                     laksiyhrk-tarih >= AKSIYON-G-TARIH and
+                     laksiyhrk-tarih <= AKSIYON-C-TARIH and 
+                     laksiyhrk-gecele = AKSIYON-GECELE and  
+                     laksiyhrk-bos   = aksiyon-bos
+                     
+                    then 
+                       modify Form1-Gd-1(kay-say) row-color = 176 
+                          cursor-y kay-say
+                       perform aksiyon-getir
+
+                   end-if
+                end-if      
+           end-read
+          end-perform
+         end-start
+      modify Form1-Gd-1, mass-update = 0.
+      close  kllnc.
+ grid-detay-yukle-exit.
+      exit.
+ grid-yukle-exit.
+      exit.
+     .
+*
+ grid-d-yukle.
+ grid-d-baslik-at.
+      modify Form1-Gd-1, reset-grid  = 1
+                         mass-update = 1.
+      initialize form1-gd-1-record  kay-say
+      move "Acenta "       to gd-1-col-1
+      move "Tarih.... "    to gd-1-col-2
+      move "Tarih.... "    to gd-1-col-3
+      move "PK "           to gd-1-col-4
+      move "Pansiyon Adi"  to gd-1-col-5
+      move "GEC"           to gd-1-col-6
+      move "TAH"           to gd-1-col-7
+      move "T"             to gd-1-col-8
+      move "Staf "         to gd-1-col-10
+      move "Acenta Adi  "  to gd-1-col-9
+      move "Sec"           to gd-1-col-11
+      add 1 to kay-say
+      modify Form1-Gd-1, record-to-add (form1-gd-1-record) 
+                         mass-update = 0.
+ grid-d-baslik-at-exit.
+      exit.
+
+ grid-d-detay-yukle.
+         modify Form1-Gd-1, mass-update = 1.
+
+         open input kllnc aksiyhrk
+         initialize aksiyhrk-rec
+         move combo-aks-stop-value to aksiyhrk-tipi
+         move rapor-acenta         to aksiyhrk-acenta
+         start aksiyhrk key not < aksiyhrk-anah invalid
+               continue
+         not invalid
+               move zeroes to fs-aksiyhrk
+          perform with test after until fs-aksiyhrk = "10"
+           read aksiyhrk next no lock end move "10" to fs-aksiyhrk
+           not at end
+               if fs-aksiyhrk = "10"
+                  exit perform 
+               end-if
+               if aksiyhrk-tipi <> combo-aks-stop-value(01:01)
+                  exit perform 
+               end-if
+               if rapor-acenta not = spaces and
+                  aksiyhrk-acenta <> rapor-acenta
+                  exit perform cycle
+               end-if
+               initialize form1-gd-1-record
+
+               move aksiyhrk-acenta     to gd-1-col-1
+               move aksiyhrk-gun       to gd-1-col-2(01:02)
+               move "/"                to gd-1-col-2(03:01)
+               move aksiyhrk-ay        to gd-1-col-2(04:02)
+               move "/"                to gd-1-col-2(06:01)
+               move aksiyhrk-yil       to gd-1-col-2(07:04)
+               move aksiyhrk-gun       to gd-1-col-3(01:02)
+               move "/"                to gd-1-col-3(03:01)
+               move aksiyhrk-ay        to gd-1-col-3(04:02)
+               move "/"                to gd-1-col-3(06:01)
+               move aksiyhrk-yil       to gd-1-col-3(07:04)
+
+               move "A"  to kodlar02-tipi
+               move aksiyhrk-pan-tipi   to gd-1-col-4 kodlar02-kodu
+                    read kodlar02 no lock invalid 
+                         move "Tanimsiz Pansiyon"  to kodlar02-adi
+                    end-read
+                         move kodlar02-adi to gd-1-col-5
+               move aksiyhrk-gecele      to gd-1-col-6
+               move aksiyhrk-ode         to z-5     
+               move z-5                  to gd-1-col-7
+               if aksiyhrk-sondan = 1
+                  move "S"            to gd-1-col-8
+               else 
+                  move "O"            to gd-1-col-8
+               end-if
+
+               move aksiyhrk-acenta   to acenta-kodu
+                    read acenta no lock invalid 
+                       if combo-aks-stop-value(01:01) = "S" then
+                          if acenta-kodu = spaces then
+                            move "Tum Acentalar" to acenta-adi
+                         else
+                          initialize grup-rec
+                          set grup-acenta to true
+                          move acenta-kodu    to grup-kodu
+                         read grup no lock invalid
+                           move "Tanimsiz Acenta"  to acenta-unvani acenta-adi
+                        
+                         end-read
+                         move grup-adi to acenta-adi
+
+                        end-if
+                      else    
+                         move "Tanimsiz Acenta"  to acenta-unvani acenta-adi
+                       end-if
+                    end-read
+               move acenta-adi    to gd-1-col-9
+               add 1 to kay-say
+               modify Form1-Gd-1, record-to-add (form1-gd-1-record)
+
+           end-read
+          end-perform
+         end-start
+      modify Form1-Gd-1, mass-update = 0.
+      close  kllnc aksiyhrk.
+ grid-d-detay-yukle-exit.
+      exit.
+ grid-d-yukle-exit.
+      exit.
+     .
+*
+ Form1-Gd-1-Ev-Msg-Begin-Entry.
+        
+     move event-action-fail to event-action.
+             initialize aksiyon-rec 
+             inquire form1-gd-1 cursor-y in bu-sat
+             inquire form1-gd-1(bu-sat,1)
+                     hidden-data in aksiyon-anah
+             read aksiyon no lock invalid continue end-read 
+             perform aksiyon-getir.
+
+
+*
+ Form1-Aft-Routine.
+     close acenta kodlar02 takvim konum grup. 
+     close aksiyon aksiyon2.
+     .
+ aksiyon-getir.
+         open input nt
+         move aksiyon-rec        to xaksiyon-rec 
+         move aksiyon-tipi       to     combo-aks-stop-value 
+         move aksiyon-acenta     to     rapor-acenta   
+         move aksiyon-bos        to      rapor-bos
+         move aksiyon-konum      to rapor-konum
+         move aksiyon-pan-tipi   to     rapor-pansiyon       
+         move aksiyon-g-yil      to     bas-yil              
+         move aksiyon-g-ay       to     bas-ay               
+         move aksiyon-g-gun      to     bas-gun              
+         move aksiyon-c-yil      to     bit-yil              
+         move aksiyon-c-ay       to     bit-ay               
+         move aksiyon-c-gun      to     bit-gun              
+         move aksiyon-gecele      to     rapor-gecele 
+
+         move aksiyon-min-gece    to rapor-min-gece
+         move aksiyon-max-gece    to rapor-max-gece
+         move  aksiyon-ug-uygulama to rapor-ugdeyok 
+
+         move aksiyon-hes-tipi    to rapor-hes-tipi
+         move aksiyon-ekle        to rapor-ekle 
+         move AKSIYON2-rezal-tar1 to sat-bas-tarih
+         move AKSIYON2-rezal-tar2 to sat-bit-tarih
+         move aksiyon-anah to aksiyon2-anah
+         move AKSIYON-ebharic  to  rapor-ebharic 
+
+
+         read aksiyon2 no lock invalid
+             continue
+         end-read
+
+         move aksiyon2-rezal-tar1 to sat-bas-tarih
+         move aksiyon2-rezal-tar2 to sat-bit-tarih
+
+         initialize not-rec
+         move aksiyon-anah  to not-dos-anah
+         move "STP"         to not-dos
+         read nt no lock invalid
+              initialize not1
+         end-read 
+            move not1   to stop-aciklama
+
+         display accept-bas-guna
+                 accept-bas-aya
+                 accept-bas-yila
+                 accept-bit-guna
+                 accept-bit-aya
+                 accept-bit-yila
+                 acc-stop-aciklama
+                 cb-uzun-gece
+                 cb-eb-secenek
+         display accept-acenta
+                 accept-bas-gun
+                 accept-bas-ay
+                 accept-bas-yil
+                 accept-pansiyon
+                 accept-pansiyona
+                 accept-pansiyonb
+                 accept-gecele
+                 accept-bit-gun
+                 accept-bit-ay
+                 accept-bit-yil
+                 accept-min-gece
+                 accept-max-gece
+               perform   displayler
+         perform pans-after
+         perform acn-after
+         move 1014 to control-id 
+         perform aft-procedure                                           
+         move 1015 to control-id 
+         move 4 to accept-control
+         
+         perform grid-konum-yukle
+         if combo-aks-stop-value(1:1) not = "S" 
+         initialize t  gercek-kayit
+         perform varying t
+                 from 1
+                 by 1
+                 until t > 40                        
+                    if t = 1
+                       exit perform cycle 
+                    end-if 
+                    add 1 to gercek-kayit 
+                    if aksiyon-konum-ind(gercek-kayit) not = "H"  
+                       initialize gd-konum-rec
+                       modify gd-konum(t,1),
+                              bitmap = yes-bmp
+                              bitmap-width = 16
+                              bitmap-number = 1
+                              hidden-data = "E"
+                    else
+                       initialize gd-konum-rec
+                       modify gd-konum(t,1),
+                              bitmap = no-bmp
+                              bitmap-width = 16
+                              bitmap-number = 1
+                              hidden-data = "H"
+
+                    end-if 
+         end-perform
+         end-if 
+         close nt.
+*
+ cakisma-kontrol.
+      if  combo-aks-stop-value(1:1)  = "S" then exit paragraph end-if
+      open input aksiyhrk  
+      initialize takvim-rec
+      move bas-tarih           to takvim-anah
+      start takvim key not < takvim-anah invalid
+          continue 
+      not invalid 
+      perform with test after until fs-takvim = "10"
+      read takvim next no lock end move "10" to fs-takvim
+      not at end 
+             if takvim-anah > bit-tarih
+                exit perform 
+             end-if   
+          
+             initialize aksiyon-rec kontrol-var
+             move combo-aks-stop-value to aksiyon-tipi
+             move rapor-acenta         to aksiyon-acenta
+             move rapor-bos            to aksiyon-bos
+             move rapor-pansiyon to aksiyon-pan-tipi
+             move rapor-konum    to aksiyon-konum
+             move bas-yil        to aksiyon-g-yil
+             move bas-ay         to aksiyon-g-ay 
+             move bas-gun        to aksiyon-g-gun
+             move bit-yil        to aksiyon-c-yil
+             move bit-ay         to aksiyon-c-ay 
+             move bit-gun        to aksiyon-c-gun
+             move rapor-gecele   to aksiyon-gecele             
+             read aksiyon no lock invalid 
+                 move 1  to kontrol-var  
+             not invalid 
+                 move 0  to kontrol-var
+             end-read
+
+            if kontrol-var = 1
+              initialize aksiyhrk-rec gec-gecme
+              move combo-aks-stop-value(1:1)     to AKSIYHRK-TIPI
+              move rapor-acenta                  to AKSIYHRK-ACENTA
+              start aksiyhrk key not < aksiyhrk-anah invalid
+                 continue 
+              not invalid 
+              perform with test after until fs-aksiyhrk = "10"
+              read aksiyhrk next no lock end move "10" to fs-aksiyhrk
+              not at end 
+                     if AKSIYHRK-TIPI <> combo-aks-stop-value(1:1)
+                        exit perform 
+                     end-if 
+                     if AKSIYHRK-ACENTA <> rapor-acenta
+                        exit perform 
+                     end-if 
+                     if AKSIYHRK-TARIH = takvim-anah and 
+                        AKSIYHRK-PAN-TIPI = rapor-pansiyon and 
+                        AKSIYHRK-BOS = rapor-bos and
+                        AKSIYHRK-GECELE = rapor-gecele 
+                        move 1         to gec-gecme
+                        move "10"      to fs-takvim
+                        move "10"      to fs-aksiyhrk
+                        exit perform 
+                     end-if 
+              end-read 
+              end-perform
+              end-start
+            end-if 
+      end-read 
+      end-perform
+      end-start
+      close aksiyhrk .
+*
+ grid-konum-yukle.
+      perform grid-konum-baslik-yukle
+      perform grid-konum-yukleniyor.
+*
+ grid-konum-baslik-yukle.
+      modify gd-konum,reset-grid = 1
+                      mass-update = 1
+      initialize gd-konum-rec
+      move "Sec"          to gd-2-col-1
+      move "Adi"          to gd-2-col-2
+      modify gd-konum,record-to-add(gd-konum-rec) .
+
+*
+ grid-konum-yukleniyor.       
+      initialize konum-rec
+      move 1            to ekle-satir
+      start konum key not < konum-anahtar invalid  
+           continue 
+
+      not invalid 
+      perform with test after until fs-konum = "10"
+      read konum next no lock end move "10"  to fs-konum
+      not at end 
+*            if secili-ref > 0
+*                if konum-ref <> secili-ref
+*                    exit perform cycle 
+*                end-if 
+*            end-if 
+               initialize gd-konum-rec
+               move konum-adi          to gd-2-col-2
+               modify gd-konum,record-to-add(gd-konum-rec)
+               add 1           to ekle-satir
+               modify gd-konum(ekle-satir,2),
+                      hidden-data konum-anahtar
+               if combo-aks-stop-value not = "S"
+               modify gd-konum(ekle-satir,1),
+                      bitmap = yes-bmp
+                      bitmap-width = 16
+                      bitmap-number = 1
+                      hidden-data = "E"        
+               else
+               modify gd-konum(ekle-satir,1),
+                      bitmap = no-bmp
+                      bitmap-width = 16
+                      bitmap-number = 1
+                      hidden-data = "H"        
+               end-if    
+      end-read 
+      end-perform
+      end-start        
+      modify gd-konum,mass-update = 0.
+*
+ gd-konum-Ev-Other.
+      evaluate event-type
+      when msg-begin-entry
+         move event-action-fail to event-action
+         initialize secim-durumu                     
+         inquire gd-konum(event-data-2,1),
+                 hidden-data = secim-durumu
+         if secim-durumu = "H"
+               modify gd-konum(event-data-2,1),
+                      bitmap = yes-bmp
+                      bitmap-width = 16
+                      bitmap-number = 1
+                      hidden-data = "E"
+         else
+               modify gd-konum(event-data-2,1),
+                      bitmap = no-bmp
+                      bitmap-width = 16
+                      bitmap-number = 1
+                      hidden-data = "H"
+         end-if                     
+      end-evaluate.
+*
+ kopyala-basla.    
+      perform Acu-Form2-Routine
+      .
+*
+ Form2-Aft-Initdata.
+      perform form2-grid-baslik-yukle
+      perform form2-grid-yukle.
+*
+ form2-grid-baslik-yukle.
+      modify form2-gd-1,reset-grid = 1
+                        mass-update = 1
+      initialize form2-gd-1-record
+      move "Sec"        to gd-3-col-1
+      move "Kodu"       to gd-3-col-2
+      move "Adi"        to gd-3-col-3
+      modify form2-gd-1,record-to-add(form2-gd-1-record).
+*
+ form2-grid-yukle.       
+      initialize acenta-rec  
+      move 1                to kayit-sayi
+      start acenta key not < acenta-anahtar invalid 
+          continue 
+      not invalid 
+      perform with test after until fs-acenta = "10"
+      read acenta next no lock end move "10"  to fs-acenta
+      not at end  
+            if acenta-kodu = rapor-acenta
+               exit perform cycle 
+            end-if 
+            add 1 to kayit-sayi
+            initialize form2-gd-1-record
+
+            modify form2-gd-1(kayit-sayi,1),
+                   bitmap = no-bmp
+                   bitmap-width = 16
+                   bitmap-number = 1
+                   hidden-data = "H"
+
+            move acenta-kodu   to gd-3-col-2
+            move acenta-adi    to gd-3-col-3
+            modify form2-gd-1,record-to-add(form2-gd-1-record)       
+            modify form2-gd-1(kayit-sayi,2),hidden-data = acenta-kodu
+      end-read 
+      end-perform
+      end-start
+    
+      modify form2-gd-1,mass-update = 0.
+*
+ Form2-Gd-1-Ev-Other.
+      evaluate event-type
+        when msg-heading-dblclick
+         evaluate event-data-1
+         when 1
+             initialize secim-durumu son-satir kopya-kac-adet
+             inquire form2-gd-1,last-row in son-satir 
+             compute son-satir = son-satir - 1
+             initialize k i  
+             perform varying i 
+                        from 1
+                        by 1
+                        until i > son-satir    
+                            compute k = i + 1
+                            inquire form2-gd-1(k ,1),hidden-data secim-durumu
+                            
+                            if secim-durumu = "H"
+                                  modify form2-gd-1(k,1),
+                                         bitmap = yes-bmp
+                                         bitmap-width = 16
+                                         bitmap-number = 1
+                                         hidden-data = "E"
+                                         compute kopya-kac-adet = kopya-kac-adet + 1
+                            else
+                                  modify form2-gd-1(k,1),
+                                         bitmap = no-bmp
+                                         bitmap-width = 16
+                                         bitmap-number = 1
+                                         hidden-data = "H"
+                                         compute kopya-kac-adet = kopya-kac-adet - 1
+                            end-if 
+             end-perform
+         end-evaluate
+
+      when msg-begin-entry
+         move event-action-fail to event-action
+         initialize Zsecim-durumu secim-var                    
+         inquire form2-gd-1(event-data-2,1),
+                 hidden-data = Zsecim-durumu
+         if Zsecim-durumu = "H"
+               modify form2-gd-1(event-data-2,1),
+                      bitmap = yes-bmp
+                      bitmap-width = 16
+                      bitmap-number = 1
+                      hidden-data = "E"
+               move 1 to secim-var 
+               compute kopya-kac-adet = kopya-kac-adet + 1 
+         else
+
+               modify form2-gd-1(event-data-2,1),
+                      bitmap = no-bmp
+                      bitmap-width = 16
+                      bitmap-number = 1
+                      hidden-data = "H"
+               move 0 to secim-var
+               compute kopya-kac-adet = kopya-kac-adet - 1
+
+         end-if                     
+      end-evaluate.     
+     .
+*
+ Form2-Ex-Other.
+     evaluate key-status
+     when 2           
+        if kopya-kac-adet = 0
+           display message box "Kopyalama islemi icin secim yapiniz.."
+                           title "Uyari"
+                           icon 1
+              exit paragraph
+        end-if 
+        move kopya-kac-adet to z4
+        display message box  "Kopyalanacak Acenta Sayisi : " z4  new-line
+                             "Kopyalama islemi baslayacaktir." new-line
+                            "Emin misiniz?"
+                        title "Uyari"
+                        icon 1
+                        type 2
+                        default 2
+                        returning return-code 
+        if return-code = 2
+           exit paragraph 
+        end-if 
+        if toplu-kopyala-grid = 1
+             inquire Form1-Gd-1,last-row in son-satir
+             perform varying v from 1 by 1 until v > son-satir
+                   initialize aksiyon-rec
+                   inquire form1-gd-1(v,1),hidden-data in aksiyon-anah
+                   if aksiyon-anah = spaces or aksiyon-anah = zeroes 
+                        exit perform cycle 
+                   end-if 
+                   initialize secili-kayit secim-var                    
+                   inquire form1-gd-1(v,11),
+                           hidden-data = secili-kayit
+                   if secili-kayit = "E" 
+                     read aksiyon no lock invalid 
+                         exit perform cycle 
+                     end-read 
+                     perform aksiyon-getir
+                     perform toplu-kopyala       
+                   end-if 
+             end-perform   
+             initialize toplu-kopyala-grid
+        else
+           initialize toplu-kopyala-grid
+           perform toplu-kopyala
+        end-if 
+        display message box "Kopyalama islemi tamamlandi.." new-line
+                            "Kontrol Ediniz.."
+                        title "Uyari"
+                        icon 1
+             perform grid-yukle thru grid-yukle-exit
+             move 4    to accept-control
+             move 1014 to control-id 
+     end-evaluate.
+*
+ toplu-kopyala.
+     inquire form2-gd-1,last-row in son-satir
+     perform varying k from 1 by 1 until k > son-satir
+          inquire form2-gd-1(k,1),hidden-data xsecim-durumu
+          if xsecim-durumu = "H" or xsecim-durumu = " "
+              exit perform cycle
+          end-if
+          inquire form2-gd-1(k,2),hidden-data rapor-acenta
+
+              perform kontroller
+              if gecmez
+                 initialize gec-gecme         
+                 exit perform cycle
+              end-if
+                perform cakisma-kontrol
+              if gecmez
+                 initialize gec-gecme
+                 display message box "Girmis Oldugunuz aksiyon tarihlerinde kayit bulundu." new-line
+                                     "Oncelik Kodu vermeniz gerekmektedir."
+                                 title "Uyari"
+                                 icon 1
+                 exit perform cycle
+              end-if      
+                 perform kaydet             
+     end-perform.
+*
+ tumunu-sec-sag-grid.
+     inquire Form1-Gd-1,last-row in son-satir
+     perform varying p from 1 by 1 until p > son-satir
+           initialize aksiyon-rec
+           inquire form1-gd-1(p,1),hidden-data in aksiyon-anah
+           if aksiyon-anah = spaces or aksiyon-anah = zeroes 
+                exit perform cycle 
+           end-if            
+                 modify form1-gd-1(p,11),
+                        bitmap = check-bmp
+                        bitmap-width = 16
+                        bitmap-number = 2
+                        hidden-data = "E"                   
+     end-perform.
+*
+ tumunu-kaldir-sag-grid.
+     inquire Form1-Gd-1,last-row in son-satir
+     perform varying p from 1 by 1 until p > son-satir
+           initialize aksiyon-rec
+           inquire form1-gd-1(p,1),hidden-data in aksiyon-anah
+           if aksiyon-anah = spaces or aksiyon-anah = zeroes 
+                exit perform cycle 
+           end-if 
+            modify form1-gd-1(p,11),
+                   bitmap = check-bmp
+                   bitmap-width = 16
+                   bitmap-number = 1
+                   hidden-data = "H"
+     end-perform.
+*
+ secili-kayitlari-sil.
+     inquire Form1-Gd-1,last-row in son-satir
+     perform varying v from 1 by 1 until v > son-satir
+           initialize aksiyon-rec
+           inquire form1-gd-1(v,1),hidden-data in aksiyon-anah
+           if aksiyon-anah = spaces or aksiyon-anah = zeroes 
+                exit perform cycle 
+           end-if 
+           initialize secili-kayit secim-var                    
+           inquire form1-gd-1(v,11),
+                   hidden-data = secili-kayit
+           if secili-kayit = "E" 
+             read aksiyon no lock invalid 
+                 exit perform cycle 
+             end-read 
+             perform aksiyon-getir
+               if kayit-var
+                  perform kayit-sil
+                  initialize kayit-var-yok
+               end-if               
+           end-if 
+     end-perform
+     perform grid-yukle thru grid-yukle-exit
+     move 4    to accept-control
+     move 1014 to control-id.
+*
+ Form1-Gd-1-Ev-Msg-Bitmap-Clicked.
+     evaluate event-data-1
+     when 11
+         move event-action-fail to event-action
+         initialize secim-durumu                      
+         inquire form1-gd-1(event-data-2,11),
+                 hidden-data = secili-kayit
+         if secili-kayit = "H"
+               modify form1-gd-1(event-data-2,11),
+                      bitmap = check-bmp
+                      bitmap-width = 16
+                      bitmap-number = 2
+                      hidden-data = "E"
+               
+         else
+               modify form1-gd-1(event-data-2,11),
+                      bitmap = check-bmp
+                      bitmap-width = 16
+                      bitmap-number = 1
+                      hidden-data = "H"                
+         end-if                     
+     end-evaluate.
+*
+ toplu-sag-grid-kopyala.
+      perform Acu-Form2-Routine.
+*
+ stop-sale-not-yaz.
+     initialize not-rec
+     move "STP"         to NOT-DOS
+     move aksiyon-anah  to NOT-DOS-ANAH
+     read nt no lock invalid 
+         continue 
+     end-read 
+         delete nt invalid continue end-delete 
+     initialize not-rec
+     move "STP"         to NOT-DOS
+     move aksiyon-anah  to NOT-DOS-ANAH
+     read nt no lock invalid 
+         continue 
+     end-read 
+     move stop-aciklama to not1
+     write not-rec invalid
+         continue 
+     end-write .
+*
+ Form2-Bef-Create.
+     initialize filtre-acenta kopya-kac-adet.
+*
+ fil-acenta-Ev-Ntf-Changed.
+         .
+*
+ fil-acenta-Aft-Procedure.
+    initialize acenta-rec secilen-acenta-kodu secilen-kayit-sayi
+    move 1                to kayit-sayi
+    move 0 to sonraki-ara-aktif
+    perform acenta-filtrele.
+*   
+ acenta-filtrele .
+    if filtre-acenta <> spaces
+
+      start acenta key not < acenta-anahtar invalid 
+          continue 
+      not invalid 
+      perform with test after until fs-acenta = "10"
+      read acenta next no lock end move "10"  to fs-acenta
+      not at end  
+            if acenta-kodu = rapor-acenta
+               exit perform cycle 
+            end-if 
+            if sonraki-ara-aktif = 1
+                compute secilen-kayit-sayi = secilen-kayit-sayi + 1
+            else 
+                add 1         to kayit-sayi
+            end-if 
+            
+            if filtre-acenta <> spaces         
+                 move acenta-adi      to kelime
+                 move filtre-acenta   to aranan-kelime
+                 move 0 to aranan-i aranan-kelime-boy
+                 inspect aranan-kelime tallying aranan-kelime-boy
+                         for trailing spaces 
+                 compute aranan-kelime-boy = function length(aranan-kelime) -
+                                             aranan-kelime-boy
+        
+                 inspect kelime tallying aranan-i 
+                         for all aranan-kelime(1:aranan-kelime-boy)
+                 if aranan-i = 0                            
+                    exit perform cycle
+                 end-if
+                    if sonraki-ara-aktif = 1
+                       if acenta-kodu = secilen-acenta-kodu
+                            compute secilen-kayit-sayi = secilen-kayit-sayi - 1 
+                           exit perform cycle
+                       end-if                        
+                    end-if 
+                    move 4 to accept-control
+                    move 4 to control-id
+                    if sonraki-ara-aktif = 1
+                      move secilen-kayit-sayi to kayit-sayi
+                    end-if 
+                    modify form2-gd-1,cursor-x 2
+                                      cursor-y kayit-sayi
+
+                    move acenta-kodu         to secilen-acenta-kodu
+                    move kayit-sayi          to secilen-kayit-sayi
+                    exit perform  
+            end-if
+             
+      end-read 
+      end-perform
+      end-start 
+     end-if.
+*
+ Form2-Gd-1-Ex-Other.
+     evaluate key-status
+     when 3
+         initialize acenta-rec 
+         move secilen-acenta-kodu to acenta-kodu
+         move 1 to sonraki-ara-aktif         
+         perform acenta-filtrele
+     end-evaluate.
+
+ 

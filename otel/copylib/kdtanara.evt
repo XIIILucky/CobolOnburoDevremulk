@@ -1,0 +1,839 @@
+* kodesle.evt
+* kodesle.evt is generated from D:\asya\acugt.ytl\otel\kodesle.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+
+ cm-1301-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cm-1301-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+*/
+     open input genel.
+     move 1 to genel-anahtar
+     read genel no lock invalid
+          initialize mesaj-link
+          move 17 to mesaj-no
+          perform mesaj-ver
+          goback
+     end-read
+     close genel.
+     .
+*
+ exception-procedure.
+     evaluate key-status
+         when 2 
+              perform kaydet-kontrol
+              if kayit-hata-var = 1 
+                 exit paragraph
+              end-if
+              open i-o merkod
+              initialize merkod-rec 
+              move esleme-tipi(1:2) to merkod-tipi
+              evaluate merkod-tipi
+                  when "AC"                       
+                       move esleme-kodu-4 to merkod-ace-anah-kodu
+
+                       read merkod no lock invalid continue end-read 
+                       
+                       move esleme-adi    to merkod-ace-dig-adi
+
+                       write merkod-rec invalid
+                             rewrite merkod-rec end-rewrite 
+                       end-write 
+                  when "SK"
+                       move esleme-sira   to merkod-sir-anah-sira
+                       move esleme-kodu-8 to merkod-sir-anah-kodu
+
+                       read merkod no lock invalid continue end-read 
+                       
+                       move esleme-adi    to merkod-sir-dig-adi
+                       move ip-adr        to merkod-sir-dig-ip
+                       move local-sirket  to merkod-sir-dig-local
+                       write merkod-rec invalid
+                             rewrite merkod-rec end-rewrite 
+                       end-write 
+                 when "DP"
+                       move esleme-kodu-3 to merkod-dep-anah-kodu
+
+                       read merkod no lock invalid continue end-read 
+                       
+                       move esleme-adi    to merkod-dep-dig-adi
+
+                       write merkod-rec invalid
+                             rewrite merkod-rec end-rewrite 
+                       end-write 
+              end-evaluate
+              close merkod
+              display message box "Kayit islemi tamamlandi.."
+              perform cm-1301-Ex-Ntf-Selchange
+
+         when 3 
+              perform sil-kontrol
+              if sil-hata-var = 1 
+                 exit paragraph
+              end-if
+              display message box "Kayit Silinecektir.." new-line
+                                  "Emin Misiniz?"
+                              title "Uyari"
+                              icon 1
+                              type 2 
+                              default 2
+                              returning return-code 
+              if return-code = 2
+                  exit paragraph 
+              end-if 
+              open i-o merkod 
+              initialize merkod-rec 
+              move esleme-tipi(1:2) to merkod-tipi
+              evaluate esleme-tipi(1:2)
+                  when "AC"
+                       move esleme-kodu-4 to merkod-ace-anah-kodu
+                       start merkod key not < merkod-anah invalid
+                             continue
+                       not invalid
+                       perform with test after until fs-merkod = "10"
+                       read merkod next no lock end move "10" to fs-merkod
+                       not at end 
+                           if merkod-tipi <> "AC" or merkod-ace-anah-kodu <> esleme-kodu-4 
+                              exit perform 
+                           end-if
+                           delete merkod end-delete 
+                       end-read 
+                       end-perform 
+                       end-start
+                  when "SK" 
+                       move esleme-sira   to merkod-sir-anah-sira
+                       move esleme-kodu-8 to merkod-sir-anah-kodu
+                       read merkod no lock invalid
+                            continue
+                       not invalid
+                           delete merkod end-delete 
+                       end-read 
+                  when "DP"
+                       move esleme-kodu-3 to merkod-dep-anah-kodu
+                       start merkod key not < merkod-anah invalid
+                             continue
+                       not invalid
+                       perform with test after until fs-merkod = "10"
+                       read merkod next no lock end move "10" to fs-merkod
+                       not at end 
+                           if merkod-tipi <> "DP" or merkod-dep-anah-kodu <> esleme-kodu-3 
+                              exit perform 
+                           end-if
+                           delete merkod end-delete 
+                       end-read 
+                       end-perform 
+                       end-start
+              end-evaluate 
+              close merkod 
+              display message box "Silme islemi tamamlandi.."
+              perform cm-1301-Ex-Ntf-Selchange
+         when 4
+              initialize detay-yok
+              if esleme-tipi(1:2) <> "AC" 
+                 display message box "Rapor yalnizca acenta kodlamalarini verecektir."
+                               title "Bilgi.."
+              end-if
+              display message box "Raporda acenta detayi gosterilsin mi?" new-line
+                            title "Rapor Detay"
+                             icon 1
+                             type 2 
+                          default 2
+                        returning return-code 
+              if return-code = 2
+                 move 1 to detay-yok 
+              end-if 
+              perform raporla
+     end-evaluate.
+*
+ Form1-Aft-Initdata.
+     perform cm-1301-Ex-Ntf-Selchange
+     .
+*
+ Raporla.
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                    to det-dokumer-20(1:)
+     move "Tanimli Acenta Eslesme Raporu" to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                    to det-dokumer-20(1:)
+     move "Tanimli Acenta Eslesme Raporu" to det-filler
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+     move "B"                    to det-dokumer-20(1:)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O"                    to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLLLLLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR 
+     initialize dokumer-rec detay
+     move "D1"                to det-dokumer-20(1:) 
+     move "AnaK"              to det-1
+     move "Ana Acenta Adi"    to det-2
+     move "Sirket K"          to det-3
+     move "Sirket Adi"        to det-4
+     move "AceK"              to det-5
+     move "Sirket Acenta Adi" to det-6
+
+     move all "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"         to det-dokumer-20(1:)     
+     move "-"          to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+     write dokumer-rec from detay
+     open i-o merkod mer2 
+
+     initialize merkod-rec 
+     move "AC" to merkod-tipi
+     start merkod key not < merkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-merkod = "10"
+     read merkod next no lock end move "10" to fs-merkod
+     not at end
+ 
+         if "AC" <> merkod-tipi
+            exit perform 
+         end-if
+         if detay-yok = 1 and 
+            merkod-ace-anah-sirket <> spaces
+            exit perform cycle
+         end-if
+         initialize dokumer-rec detay 
+         if merkod-ace-anah-sirket = spaces 
+            move merkod-ace-anah-kodu to det-1
+            move merkod-ace-dig-adi   to det-2
+         else
+            move merkod-anah to xmerkod-anah
+            initialize mer2-rec 
+            move "SK"              to mer2-tipi
+            start mer2 key not < mer2-anah invalid
+                  continue
+            not invalid
+            perform with test after until fs-mer2 = "10"
+            read mer2 next no lock end move "10" to fs-mer2
+            not at end 
+                if mer2-tipi <> "SK"
+                   exit perform 
+                end-if
+                if mer2-sir-anah-kodu <> xmerkod-anah(7:8)
+                   move all "*" to mer2-sir-dig-adi
+                   exit perform cycle
+                else
+                   exit perform 
+                end-if
+            end-read 
+            end-perform 
+            end-start
+
+            move merkod-ace-anah-sira to z-3
+            move z-3                  to det-1
+            move mer2-sir-anah-kodu   to det-3
+            move mer2-sir-dig-adi     to det-4
+
+            initialize mer2-rec 
+            move xmerkod-anah to mer2-anah
+            read mer2 no lock invalid
+                 continue
+            end-read 
+
+            move mer2-ace-dig-kodu to det-5
+            move mer2-ace-dig-adi  to det-6
+
+         end-if
+         write dokumer-rec from detay
+
+
+     end-read 
+     end-perform 
+     end-start
+
+     initialize dokumer-rec detay
+     move "-"          to det-dokumer-20(5:1)
+     move all "-"      to det-1 det-2 det-3 det-4 det-5 det-6
+     write dokumer-rec from detay
+
+     close dokumer merkod mer2
+     call dokumer-prog on exception
+          perform callerr-proc
+     not on exception
+          cancel dokumer-prog
+     end-call
+     delete file dokumer.
+
+*
+ cm-1301-Ex-Ntf-Selchange.
+     initialize esleme-kodu-4 esleme-kodu-8 esleme-sira esleme-adi
+     display acc-1301-4 acc-1301-8 acc-1302
+     evaluate esleme-tipi(1:2)
+         when "AC"
+              modify acc-1301-8, visible = 0
+              modify acc-1301-8, enabled = 0
+              modify acc-1301-4, visible = 1
+              modify acc-1301-4, enabled = 1
+              modify acc-1301-3, visible = 0
+              modify acc-1301-3, enabled = 0
+              modify acc-1303, visible = 0
+              modify acc-1303, enabled = 0
+              modify acc-1304, visible = 0
+              modify acc-1304, enabled = 0
+              modify lb-1304, visible = 0
+              modify lb-1305, visible = 0
+              modify lb-1302, title = "Kodu :"
+              modify lb-1303, title = "Acenta Adi :"
+              modify cb-1301, visible = 0
+              modify cb-1301, enabled = 0
+              initialize esleme-kodu-4 esleme-adi
+              display acc-1301-4 acc-1302
+              perform acenta-grid-yukle
+              move 4 to accept-control
+              move 5 to control-id
+
+         when "SK"
+              modify acc-1301-8, visible = 1
+              modify acc-1301-8, enabled = 1
+              modify acc-1301-4, visible = 0
+              modify acc-1301-4, enabled = 0
+              modify acc-1301-3, visible = 0
+              modify acc-1301-3, enabled = 0
+              modify acc-1303, visible = 1
+              modify acc-1303, enabled = 1
+              modify acc-1304, visible = 1
+              modify acc-1304, enabled = 1
+              modify lb-1304, visible = 1
+              modify lb-1305, visible = 1
+              modify cb-1301, visible = 1
+              modify cb-1301, enabled = 1
+              modify lb-1302, title = "Sira :"
+              modify lb-1303, title = "Sirket Adi :"
+              modify lb-1304, title = "Kutuphane :"
+              initialize esleme-kodu-8 esleme-adi esleme-sira ip-adr local-sirket
+              display acc-1301-8 acc-1302 acc-1303 acc-1304 cb-1301
+              perform sirket-grid-yukle
+              perform sirket-sira-al
+              move 4  to accept-control
+              move 13 to control-id
+
+         when "DP"
+              modify acc-1301-8, visible = 0
+              modify acc-1301-8, enabled = 0
+              modify acc-1301-4, visible = 0
+              modify acc-1301-4, enabled = 0
+              modify acc-1301-3, visible = 1
+              modify acc-1301-3, enabled = 1
+              modify acc-1303, visible = 0
+              modify acc-1303, enabled = 0
+              modify acc-1304, visible = 0
+              modify acc-1304, enabled = 0
+              modify lb-1304, visible = 0
+              modify lb-1305, visible = 0
+              modify lb-1302, title = "Kodu :"
+              modify lb-1303, title = "Departman Adi :"
+              modify cb-1301, visible = 0
+              modify cb-1301, enabled = 0
+              initialize esleme-kodu-3 esleme-adi
+              display acc-1301-3 acc-1302
+              perform departman-grid-yukle
+              move 4 to accept-control
+              move 25 to control-id
+
+     end-evaluate 
+     .
+*
+ sirket-grid-yukle. 
+     open i-o merkod 
+     modify form1-gd-1, reset-grid  = 1 
+                        mass-update = 1
+     initialize form1-gd-1-record
+     move "Kutuphane"      to gd-1-col-1
+     move "Kutuphane Adi"  to gd-1-col-2
+     modify form1-gd-1, record-to-add(form1-gd-1-record)
+     initialize merkod-rec 
+     move 2 to i
+     move "SK" to merkod-tipi 
+     start merkod key not < merkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-merkod = "10"
+     read merkod next no lock end move "10" to fs-merkod
+     not at end 
+         if merkod-tipi <> "SK"
+            exit perform 
+         end-if
+         initialize form1-gd-1-record
+         move merkod-sir-anah-kodu to gd-1-col-1
+         move merkod-sir-dig-adi       to gd-1-col-2
+         modify form1-gd-1, record-to-add (form1-gd-1-record)
+         modify form1-gd-1(i,1), hidden-data = merkod-anah
+         add 1 to i
+     end-read 
+     end-perform 
+     end-start
+     modify form1-gd-1, mass-update = 0
+     close merkod.
+
+*
+ acenta-grid-yukle. 
+     open i-o merkod 
+     modify form1-gd-1, reset-grid  = 1 
+                        mass-update = 1
+     initialize form1-gd-1-record
+     move "Acenta Kodu" to gd-1-col-1
+     move "Acenta Adi"  to gd-1-col-2
+     modify form1-gd-1, record-to-add(form1-gd-1-record)
+     initialize merkod-rec 
+     move 2 to i
+     move "AC" to merkod-tipi 
+     start merkod key not < merkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-merkod = "10"
+     read merkod next no lock end move "10" to fs-merkod
+     not at end 
+         if merkod-tipi <> "AC"
+            exit perform 
+         end-if
+         initialize form1-gd-1-record
+         move merkod-ace-anah-kodu to gd-1-col-1
+         if merkod-ace-anah-sirket <> spaces 
+            move "/"                    to gd-1-col-1(5:1)
+            move merkod-ace-dig-kodu    to gd-1-col-1(6:4)
+            move "/"                    to gd-1-col-1(10:1)
+            move merkod-ace-anah-sirket to gd-1-col-1(11:)
+         end-if
+         move merkod-ace-dig-adi   to gd-1-col-2
+         modify form1-gd-1, record-to-add(form1-gd-1-record)
+         modify form1-gd-1(i,1), hidden-data = merkod-anah
+         add 1 to i
+     end-read 
+     end-perform 
+     end-start
+     modify form1-gd-1, mass-update = 0
+     close merkod.
+
+*
+ departman-grid-yukle. 
+     open i-o merkod 
+     modify form1-gd-1, reset-grid  = 1 
+                        mass-update = 1
+     initialize form1-gd-1-record
+     move "Departman Kodu" to gd-1-col-1
+     move "Departman Adi"  to gd-1-col-2
+     modify form1-gd-1, record-to-add(form1-gd-1-record)
+     initialize merkod-rec 
+     move 2 to i
+     move "DP" to merkod-tipi 
+     start merkod key not < merkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-merkod = "10"
+     read merkod next no lock end move "10" to fs-merkod
+     not at end 
+         if merkod-tipi <> "DP"
+            exit perform 
+         end-if
+         initialize form1-gd-1-record
+         move merkod-dep-anah-kodu to gd-1-col-1
+         if merkod-dep-anah-sirket <> spaces 
+            move "/"                    to gd-1-col-1(5:1)
+            move merkod-dep-dig-kodu    to gd-1-col-1(6:4)
+            move "/"                    to gd-1-col-1(10:1)
+            move merkod-dep-anah-sirket to gd-1-col-1(11:)
+         end-if
+         move merkod-dep-dig-adi   to gd-1-col-2
+         modify form1-gd-1, record-to-add(form1-gd-1-record)
+         modify form1-gd-1(i,1), hidden-data = merkod-anah
+         add 1 to i
+     end-read 
+     end-perform 
+     end-start
+     modify form1-gd-1, mass-update = 0
+     close merkod.
+
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+       when msg-begin-entry
+         move event-action-fail  to event-action
+         open i-o merkod
+         initialize merkod-rec 
+         inquire form1-gd-1(event-data-2,1),
+                 hidden-data in merkod-anah
+         if merkod-tipi = "AC" or "DP"
+            initialize merkod-ace-anah-sirket
+                       merkod-dep-anah-sirket
+         end-if
+         read merkod no lock invalid continue end-read
+         evaluate merkod-tipi
+             when "AC"
+                  move "AC"                   to esleme-tipi
+                  move merkod-ace-anah-kodu   to esleme-kodu-4
+                  read merkod no lock invalid continue end-read 
+                  move merkod-ace-dig-adi     to esleme-adi
+                  
+             when "SK"
+                  move "SK"                   to esleme-tipi
+                  move merkod-sirket-anah(1:2)   to esleme-sira
+                  move merkod-sirket-anah(3:8)   to esleme-kodu-8
+                  read merkod no lock invalid continue end-read 
+                  move merkod-sir-dig-adi        to esleme-adi
+                  move merkod-sir-dig-ip         to ip-adr
+                  move merkod-sir-dig-local      to local-sirket
+                  
+             when "DP"
+                  move "DP"                   to esleme-tipi
+                  move merkod-dep-anah-kodu   to esleme-kodu-3
+                  read merkod no lock invalid continue end-read 
+                  move merkod-dep-dig-adi     to esleme-adi
+                  
+         end-evaluate
+         display cm-1301 acc-1301-3 acc-1301-4 acc-1301-8 acc-1302 acc-1303 acc-1304 cb-1301
+         close merkod
+     end-evaluate
+     .
+*
+ acc-1301-3-Aft-Procedure.
+     open i-o merkod                                                     
+     initialize merkod-rec 
+     move "DP"                to merkod-tipi 
+     move esleme-kodu-3       to merkod-ace-anah-kodu
+     read merkod no lock invalid continue end-read 
+     move merkod-dep-dig-adi  to esleme-adi 
+     display acc-1302
+     close merkod.
+*
+ acc-1301-4-Aft-Procedure.
+     open i-o merkod                                                     
+     initialize merkod-rec 
+     move "AC"                to merkod-tipi 
+     move esleme-kodu-4       to merkod-ace-anah-kodu
+     read merkod no lock invalid continue end-read 
+     move merkod-ace-dig-adi   to esleme-adi 
+     display acc-1302
+     close merkod
+     .
+*
+ acc-1301-8-Aft-Procedure.
+     open i-o merkod
+     initialize merkod-rec 
+     move "SK" to merkod-tipi 
+     start merkod key not < merkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-merkod = "10"
+     read merkod next no lock end move "10" to fs-merkod
+     not at end 
+         if merkod-tipi <> "SK" 
+            exit perform 
+         end-if
+         if merkod-sir-anah-kodu = esleme-kodu-8 and
+            merkod-sir-anah-sira <> esleme-sira
+            display message box "Kutuphane farkli bir sira ile kaydedilmistir." new-line
+                                "Lutfen kontrol ediniz."
+                            title "Uyari"
+            move merkod-sir-anah-sira to esleme-sira 
+         end-if
+
+     end-read 
+     end-perform
+     end-start
+
+     initialize merkod-rec 
+     move "SK"                to merkod-tipi
+     move esleme-sira         to merkod-sir-anah-sira
+     move esleme-kodu-8       to merkod-sir-anah-kodu
+     read merkod no lock invalid continue end-read 
+     move merkod-sir-dig-adi   to esleme-adi 
+     move merkod-sir-dig-ip    to ip-adr 
+     move merkod-sir-dig-local to local-sirket 
+     display acc-1302 acc-1303 acc-1304 cb-1301    
+     close merkod
+     
+     .
+*
+ kaydet-kontrol.
+     initialize kayit-hata-var
+     evaluate esleme-tipi(1:2)
+         when "AC"
+              if esleme-kodu-4 = spaces 
+                 display message box 
+                         "Acenta kodu bos gecilemez.."
+                 move 1 to kayit-hata-var
+                 exit paragraph
+              end-if
+         when "SK"
+              if esleme-kodu-8 = spaces or 
+                 esleme-sira   = zeroes 
+                 display message box 
+                         "Sirket kutuphanesi yada sirasi bos gecilemez.."
+                 move 1 to kayit-hata-var
+                 exit paragraph
+              end-if
+         when "DP"
+              if esleme-kodu-3 = spaces 
+                 display message box 
+                         "Departman kodu bos gecilemez.."
+                 move 1 to kayit-hata-var
+                 exit paragraph
+              end-if
+     end-evaluate
+     .
+*
+ sil-kontrol.
+     initialize sil-hata-var
+     
+     evaluate esleme-tipi(1:2)
+         when "AC"
+              if esleme-kodu-4 = spaces 
+                 display message box 
+                         "Kayit bulunamadi silme islemi yapilmayacaktir.."
+                 move 1 to kayit-hata-var
+                 exit paragraph
+              end-if
+              open i-o merkod
+              initialize merkod-rec 
+              move "AC"          to merkod-tipi
+              move esleme-kodu-4 to merkod-ace-anah-kodu
+              start merkod key not < merkod-anah invalid
+                    continue
+              not invalid
+              perform with test after until fs-merkod = "10"
+              read merkod next no lock end move "10" to fs-merkod
+              not at end 
+                  if merkod-tipi <> "AC" or 
+                     merkod-ace-anah-kodu <> esleme-kodu-4  
+                     exit perform
+                  end-if
+                  if merkod-ace-anah-sirket <> spaces 
+                     display message box "Silmek istenen tanimlamada eslesmeler mevcut." new-line
+                                         "Devam edilsin mi?"
+                                     title "Uyari"
+                                     icon 1
+                                     type 2 
+                                     default 2
+                                     returning return-code 
+                     if return-code = 2
+                        move 1 to sil-hata-var 
+                     end-if 
+                     exit perform
+                  end-if
+
+
+              end-read
+              end-perform 
+              end-start
+              close merkod 
+         when "SK"
+              if esleme-kodu-8 = spaces or esleme-sira = zeroes
+                 display message box   
+                         "Kayit bulunamadi silme islemi yapilmayacaktir.."
+                 move 1 to kayit-hata-var
+                 exit paragraph
+              end-if
+         when "DP"
+              if esleme-kodu-3 = spaces 
+                 display message box 
+                         "Kayit bulunamadi silme islemi yapilmayacaktir.."
+                 move 1 to kayit-hata-var
+                 exit paragraph
+              end-if
+              open i-o merkod
+              initialize merkod-rec 
+              move "DP"          to merkod-tipi
+              move esleme-kodu-3 to merkod-dep-anah-kodu
+              start merkod key not < merkod-anah invalid
+                    continue
+              not invalid
+              perform with test after until fs-merkod = "10"
+              read merkod next no lock end move "10" to fs-merkod
+              not at end 
+                  if merkod-tipi <> "DP" or 
+                     merkod-dep-anah-kodu <> esleme-kodu-3  
+                     exit perform
+                  end-if
+                  if merkod-dep-anah-sirket <> spaces 
+                     display message box "Silmek istenen tanimlamada eslesmeler mevcut." new-line
+                                         "Devam edilsin mi?"
+                                     title "Uyari"
+                                     icon 1
+                                     type 2 
+                                     default 2
+                                     returning return-code 
+                     if return-code = 2
+                        move 1 to sil-hata-var 
+                     end-if 
+                     exit perform
+                  end-if
+
+
+              end-read
+              end-perform 
+              end-start
+              close merkod 
+     end-evaluate
+     .
+*
+ sirket-sira-al.
+     open i-o merkod
+     initialize merkod-rec 
+     move "SK"    to merkod-tipi
+     start merkod key not < merkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-merkod = "10"
+     read merkod next no lock end move "10" to fs-merkod 
+     not at end
+         if merkod-tipi <> "SK"
+            exit perform 
+         end-if
+
+         move merkod-sir-anah-sira to esleme-sira 
+
+     end-read 
+     end-perform 
+     end-start
+     add 1 to esleme-sira
+     close merkod.
+*
+ acc-1303-Aft-Procedure.
+     open i-o merkod
+     initialize merkod-rec 
+     move "SK"        to merkod-tipi
+     move esleme-sira to merkod-sir-anah-sira
+     start merkod key not < merkod-anah invalid
+           initialize esleme-kodu-8 esleme-adi
+     not invalid
+     perform with test after until fs-merkod = "10"
+     read merkod next no lock end move "10" to fs-merkod
+     not at end 
+         if merkod-tipi <> "SK" or 
+            (merkod-tipi = "SK" and merkod-sir-anah-sira <> esleme-sira)
+            exit perform 
+         end-if         
+         if merkod-sir-anah-kodu <> spaces              
+            move merkod-sir-anah-kodu    to esleme-kodu-8
+            move merkod-sir-dig-adi      to esleme-adi
+            move merkod-sir-dig-ip       to ip-adr
+            move merkod-sir-dig-local    to local-sirket
+         else 
+           initialize esleme-kodu-8 esleme-adi ip-adr local-sirket
+         end-if
+
+     end-read 
+     end-perform 
+     end-start
+     close merkod
+     display acc-1301-8 acc-1302 acc-1304
+     .
+*
+ cm-1301-Aft-Procedure.
+     evaluate esleme-tipi(1:2)
+         when "SK"
+              open i-o merkod
+              initialize merkod-rec esleme-sira 
+              move "SK" to merkod-tipi 
+              start merkod key not < merkod-anah invalid
+                    continue
+              not invalid
+              perform with test after until fs-merkod = "10"
+              read merkod next no lock end move "10" to fs-merkod
+              not at end 
+                  if "SK" <> merkod-tipi 
+                     exit perform 
+                  end-if
+                  move merkod-sir-anah-sira to esleme-sira
+              end-read 
+              end-perform 
+              end-start
+              close merkod 
+              add 1 to esleme-sira 
+              initialize esleme-kodu-8 esleme-adi ip-adr local-sirket
+              display acc-1301-8 acc-1302 acc-1303 acc-1304 cb-1301
+     end-evaluate
+     .
+*
+ button-0103a-Link.
+     stop " "
+     open i-o merkod
+     initialize merkod-rec 
+     move "AC" to merkod-tipi
+     start merkod key not < merkod-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-merkod = "10"
+     read merkod next no lock end move "10" to fs-merkod
+     not at end
+         if "AC" <> merkod-tipi
+            exit perform
+         end-if
+         if merkod-ace-anah-sirket <> spaces and "aelite15"
+            delete merkod invalid continue end-delete
+         end-if
+
+     end-read 
+     end-perform 
+     end-start
+     close merkod
+*     initialize wrk-rap 
+*     move 20190501            to wrk-rap-ilk-tar
+*     move 20190501            to wrk-rap-son-tar
+*     move "sirrap02"          to wrk-rap-temp
+*     move "aocean15"          to wrk-rap-sirket
+*     move "I"                 to wrk-rap-durum
+*     move "K"                 to wrk-rap-tip
+*     call "/asya/ytl/obj/otel/sirrap02.asy" 
+**                                  using wrk-rap on exception 
+*          perform callerr-proc
+*     not on exception
+*         cancel "/asya/ytl/obj/otel/sirrap02.asy" 
+*     end-call
+      .
+
+ 

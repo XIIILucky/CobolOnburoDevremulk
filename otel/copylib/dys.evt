@@ -1,0 +1,1408 @@
+* dys.evt
+* dys.evt is generated from D:\asya\acugt.ytl\otel\dys.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Screen1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Screen1-Gd-1-Event-Proc.
+     PERFORM gd-1-Ev-Other
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ Form4-Exception-Proc.
+     PERFORM Form4-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     perform create_dys_dirs.
+
+     if link-dys-ekle-unix2unix
+        perform link-dys-dosya-ekle
+        goback
+     end-if.
+
+     if link-dys-yazdir
+        perform link-dys-yazdir
+        goback
+     end-if.
+     
+     if link-dys-farkli-kaydet
+        perform link-dys-farkli-kaydet
+        goback
+     end-if.
+
+     if link-dys-moduller-arasi-kopya
+        perform link-dys-moduller-arasi-kopya
+        goback
+     end-if.
+
+*     if link-dys-goster
+*        perform dosya-goster
+*     end-if.
+
+*
+ Form1-Aft-Initdata.
+     perform load-grid.
+*
+ create_dys_dirs.
+     move program-modul        to dys-modul
+*/ log klasörü
+     move all low-values to makedir-param
+     string makedir-param,
+            "/asya/ytl/dys/"  delimited by low-values 
+            into makedir-param
+     perform create_dir.
+     string makedir-param,
+            dys-modul         delimited by low-values 
+            into makedir-param
+     perform create_dir.
+
+     string makedir-param,
+            "/"               delimited by low-values
+            dys-dosya-adres   delimited by low-values 
+            into makedir-param
+     perform create_dir.
+
+*
+ create_dir.
+     call "C$MAKEDIR" using makedir-param 
+           giving return-code
+     end-call.
+*
+ load-grid.
+*     if k-kodu-tasi = "ASYA" or k-kodu-tasi = "x   " or k-kodu-tasi = "X   " stop " " end-if
+     
+     open i-o dys.
+     modify gd-1, 
+            reset-grid = 1
+            mass-update = 1
+    initialize form1-gd-1-record
+    move "Sira"             to gd-1-col-1
+    move "Etiket"           to gd-1-col-2
+    move "Tip"              to gd-1-col-3
+    move "Dosya"            to gd-1-col-4
+    modify gd-1,
+           record-to-add(form1-gd-1-record).
+    move 1                         to i
+    initialize dys-rec
+    move link-dys-anah-tip1        to dys-anah-tip1
+    move link-dys-anah-tip2        to dys-anah-tip2
+    move link-dys-fis              to dys-fis
+    start dys key not < dys-anahtar invalid
+          continue
+    not invalid
+    initialize fs-dys
+    perform with test after until fs-dys = "10"
+    read dys next no lock end move "10" to fs-dys
+    not at end 
+         
+         if dys-fis <> link-dys-fis or 
+            dys-anah-tip1 <> link-dys-anah-tip1 or 
+            dys-anah-tip2 <> link-dys-anah-tip2
+            move "10" to fs-dys
+            exit perform
+         end-if
+
+         initialize form1-gd-1-record
+         move dys-sira                     to gd-1-col-1
+         move dys-etiket                   to gd-1-col-2
+
+         evaluate true
+         when dys-dosya-efatura-pdf
+              move "PDF"                   to gd-1-col-3
+         when dys-dosya-efatura-ubl
+              move "XML"                   to gd-1-col-3
+         when dys-dosya-efatura-jpg
+              move "JPG"                   to gd-1-col-3
+         end-evaluate
+
+         move dys-dosya-adi                to gd-1-col-4
+         modify gd-1,
+                record-to-add(form1-gd-1-record)
+         add 1                             to i
+         modify gd-1(i,1)
+                hidden-data = dys-fis
+                
+    end-read
+    end-perform
+    end-start.
+    modify gd-1,
+           mass-update = 0.
+
+    close dys.
+
+    if i = 1 
+       perform genelfis-oku
+       move genelfis-log-no          to link-dys-fis | eðer kayit yoksa bu fiþe yazsin
+       modify lb-yildiz,
+              title = "*"
+    end-if.
+    move link-dys-fis                to edys-fis
+    display lb-fis.
+*
+ Form2-Ex-Other.
+    evaluate key-status
+    when 2001
+         perform dosyalar-sec
+    when 2002
+         perform tarayici
+    when 2
+         perform kaydet
+         
+    end-evaluate.
+     
+     .
+
+*
+ tarayici.
+    initialize resim-handle tmp-resim-zaman tmp-resim-kullanici 
+    modify resim,
+           visible = 0
+           bitmap-handle = resim-handle
+
+    initialize son-islem-deg
+    modify form2-dosya,
+           value = " "
+
+    accept autoscan-tarih from century-date
+    accept autoscan-zaman from time
+
+    initialize autoscan-uzanti
+    call "c$system" using autoscan, csys-desktop giving donus.                               
+    if donus <> 0
+       display message box 
+               "Tarama dosyasi : ",autoscan-dosya,x"0a0d",
+               "Donus kodu : ", donus x"0a0d"
+        exit paragraph
+    end-if.
+
+    move ".jpeg"                        to autoscan-uzanti         
+
+    move k-kodu-tasi                    to tmp-resim-kullanici
+    inspect tmp-resim-kullanici replacing all spaces by "Q"
+    accept tmp-resim-zaman from time
+
+    set client                          to true
+    set acucorp                         to true
+    move autoscan-dosya-ismi            to dosyaci-dosyam
+
+    call "c$copy" using dosyaci tmp-resim giving dosyaci-status
+    if dosyaci-status <> 0
+       display message box
+               "Dosyasi Server'a Kopyalanamadi !!!",x"0a0d",
+               "Lutfen tekrar deneyiniz ",x"0a0d",
+               "From : ",dosyaci,x"0a0d"
+               "To :" ,tmp-resim,
+               icon mb_error_icon
+               title "Hata"
+       exit paragraph
+    end-if. 
+
+    call "w$bitmap" using wbitmap-load 
+                          tmp-resim 
+                    giving  resim-handle.
+
+    modify resim,
+           bitmap-handle = resim-handle
+           bitmap-number = 1
+           bitmap-scale = 1.
+
+    modify resim,
+           visible = 1
+
+*    modify img-1,
+*           @SelectSource()
+*           returning donus-deger
+*    if donus-deger = 0 
+*       display message box 
+*               "Islem Iptal Edildi !"
+*               icon mb_warning-icon
+*               title "Bilginize ..."
+*       exit paragraph
+*    end-if.
+
+*    modify img-1,
+*           @Acquire(1) returning donus-deger.
+      
+*    if donus-deger = 0 
+*       display message box 
+*               "Islem Iptal Edildi !"
+*               icon mb_warning-icon
+*               title "Bilginize ..."
+*       exit paragraph
+*    end-if.
+
+    move "T"                to son-islem.
+    move autoscan-dosya     to son-islem-dosya.
+    move "jpg"              to son-islem-ext.
+    modify form2-dosya,
+           value = son-islem-dosya.
+
+*
+ dosyalar-sec.
+    initialize opensave-data opensave-status son-islem-dosya
+    string 
+    "Tum dosya turleri (*.*;*.*)|" delimited by size
+              into opnsav-filters
+    move "*.*"           to opnsav-default-ext
+    call "c$opensavebox" using opensave-open-box
+                               opensave-data
+                         giving opensave-status
+    end-call.
+    if opensave-status <> 1 
+       exit paragraph.
+
+
+    move "D"                to son-islem.
+    move opnsav-filename    to son-islem-dosya.
+    modify form2-dosya, 
+           value = son-islem-dosya.
+*
+ Form2-Bef-Create.
+    initialize son-islem-deg form2-deg resim-handle.
+    move "A-Genel"           to form2-erisim-combo-value.
+    move link-dys-etiket                  to form2-etiket-value.
+
+*
+ kaydet.
+    initialize kaydet-durum.
+    if form2-etiket-value = Spaces or son-islem = spaces
+       move 4 to accept-control
+       move 8 to control-id
+       exit paragraph
+    end-if.
+
+    accept tarih from century-date
+    accept zaman from time
+    move all low-values to dosyaci
+
+
+    evaluate son-islem
+    when "T"
+          set client                 to true
+          set acucorp                to true
+          move autoscan-dosya-ismi   to dosyaci-dosyam
+
+*         modify img-1,
+*                @Save(dosyaci) returning donus-deger
+*         if donus-deger <> 1
+*            display message box 
+*                   "Dosya kaydedilemedi :", dosyaci
+*                   icon mb_error_icon
+*                   title "Hata"
+*            exit paragraph
+*         end-if
+         
+    when "D"
+*/ windows'tan linux'a kopyalanamýyordu DISPLAY sonradan eklendi
+         move "@[DISPLAY]:"             to dosyaci
+         move son-islem-dosya           to dosyaci(12:)
+    when other
+         exit paragraph
+    end-evaluate.
+
+    perform dys-son-sira-al
+ 
+    move all low-values to to-dosya
+    string to-dosya
+           dys-adresi      delimited by low-values 
+           dys-modul       delimited by low-values
+           "/"             delimited by low-values
+           dys-dosya-adres delimited by low-values 
+           "/"             delimited by low-values
+           link-dys-fis    delimited by low-values
+           "-"             delimited by low-values
+           dys-son-sira    delimited by low-values
+           ".dys"          delimited by low-values
+           into to-dosya
+
+           
+
+    inspect dosyaci replacing trailing spaces by low-values
+    inspect to-dosya replacing trailing spaces by low-values
+
+    call "c$copy" using dosyaci to-dosya giving dosyaci-status
+    if dosyaci-status <> 0
+       display message box
+               "Dosyasi Server'a Kopyalanamadi !!!",x"0a0d",
+               "Lutfen tekrar deneyiniz ",x"0a0d",
+               "From : ",dosyaci,x"0a0d"
+               "To :" ,to-dosya
+               icon mb_error_icon
+               title "Hata"
+       exit paragraph
+    end-if.
+
+    call "c$fileinfo" using to-dosya,
+                            file-info,
+    end-call
+
+    move 0 to ii
+    perform varying i
+            from function length(son-islem-dosya)
+            by -1
+            until i = 1
+            evaluate son-islem-dosya(i:1)
+            when "."
+                 exit perform
+            when space
+                 exit perform cycle
+            when other
+                 add 1 to ii
+                 move son-islem-dosya(i:1) to son-islem-ext(ii:1)
+            end-evaluate
+    end-perform
+    move function reverse(son-islem-ext) to son-islem-ext
+    call "c$justify" using son-islem-ext "L"
+    inspect son-islem-ext replacing trailing spaces by low-values
+
+    move "E"                 to kaydet-durum.
+    move "J"                 to link-dys-dosya-tip.
+    set exit-pushed to true.
+
+*
+ genelfis-oku.
+    open i-o genelfis
+    move 1 to genelfis-anahtar 
+    read genelfis no lock invalid
+         continue
+    end-read
+    add 1 to genelfis-log-no
+    rewrite genelfis-rec end-rewrite
+    close genelfis.
+
+*
+ dys-son-sira-al.
+    open i-o dys
+
+    initialize dys-rec dys-son-sira
+    move link-dys-anah-tip1        to dys-anah-tip1
+    move link-dys-anah-tip2        to dys-anah-tip2
+    move link-dys-fis              to dys-fis
+    start dys key not < dys-anahtar invalid
+          continue
+    not invalid
+    initialize fs-dys
+    perform with test after until fs-dys = "10"
+    read dys next no lock end move "10" to fs-dys
+    not at end
+         if dys-fis <> link-dys-fis or 
+            dys-anah-tip1 <> link-dys-anah-tip1 or 
+            dys-anah-tip2 <> link-dys-anah-tip2
+            move "10" to fs-dys
+            exit perform
+         end-if
+         move dys-sira            to dys-son-sira
+    end-read
+    end-perform
+    end-start.
+    close dys.
+    add 1                         to dys-son-sira.
+   
+*
+ writingeneska.
+    open i-o dys
+    open input kllnc.
+    initialize dys-rec
+    move link-dys-anah-tip1                 to dys-anah-tip1
+    move link-dys-anah-tip2                 to dys-anah-tip2
+    move link-dys-fis                       to dys-fis
+    move dys-son-sira                       to dys-sira
+    move link-dys-dosya-tip                 to dys-dosya-tip
+    accept dys-ekle-tarih from century-date
+    accept dys-ekle-zaman from time
+    initialize kllnc-rec
+    move k-kodu-tasi                        to k-kodu dys-ekle-staf
+    read kllnc no lock invalid
+         initialize kllnc-rec
+    end-read
+    inspect k-adi replacing trailing spaces by low-values
+    inspect k-soyadi replacing trailing spaces by low-values
+    move all low-values to dys-ekle-staf-adi
+    string dys-ekle-staf-adi
+           k-adi delimited by low-values
+           " "   delimited by low-values
+           k-soyadi delimited by low-values
+           into dys-ekle-staf-adi
+    inspect dys-ekle-staf-adi replacing all low-values by spaces
+    move form2-etiket-value               to dys-etiket
+    if son-islem = "D" | dosya ise
+       move opnsav-filename               to dys-dosya-adi
+    end-if
+    move son-islem-ext                    to dys-dosya-ext
+    move file-info-size                   to dys-dosya-boy
+    move form2-sifre-goruntu-value        to dys-erisim-gor-sifre 
+    move form2-sifre-duzeltme-value       to dys-erisim-edit-sifre
+    move form2-sifre-silme-value          to dys-erisim-sil-sifre
+ 
+
+    move form2-arama1-value               to dys-arama-1
+    move form2-arama2-value               to dys-arama-2
+    move form2-arama3-value               to dys-arama-3
+    move form2-arama4-value               to dys-arama-4
+    move link-dys-from-anahtar            to dys-anahtar-saha
+    move link-dys-anahtar-tarih           to dys-anahtar-tarih
+
+    move link-dys-from-modul              to dys-from-modul 
+    move link-dys-from-prog               to dys-from-prog  
+    move link-dys-from-dosya              to dys-from-dosya 
+    move k-kodu-tasi                      to dys-staf
+    write dys-rec invalid
+          display message box 
+                  "Kayit eklenemedi !!!"
+    not invalid
+          perform log-operation-dys
+    end-write .
+
+    close kllnc dys.
+
+
+
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+          if link-dys-goster
+             perform goster-uyari
+             exit paragraph
+          end-if
+
+          perform acu-form2-routine
+          if kaydet-durum = "E"
+             perform writingeneska
+             perform load-grid
+             move 4 to accept-control
+             move 10 to control-id
+          end-if
+     when 3
+          if link-dys-goster
+             perform goster-uyari
+             exit paragraph
+          end-if
+          perform sil
+     when 4
+          perform goster
+     when 5
+          perform link-dys-farkli-kaydet
+     when 17 
+          perform log-goster
+     end-evaluate.
+     
+     .
+*
+ sil.
+    inquire gd-1,
+            cursor-y in event-data-2
+            cursor-x in event-data-1
+    open i-o dys
+    initialize dys-rec
+    move link-dys-anah-tip1        to dys-anah-tip1
+    move link-dys-anah-tip2        to dys-anah-tip2
+    move link-dys-fis              to dys-fis
+    inquire gd-1(event-data-2,1)
+            cell-data 5x          
+    move function numval-c(5x)     to dys-sira,
+    read dys no lock invalid
+         display message box 
+                 "Kayit bulunamadi !!!"
+                 icon mb_error_icon
+                 title "Hata"
+         close dys
+         exit paragraph
+    end-read
+
+
+    move dys-erisim-sil-sifre          to form4-sifre.
+*    perform yetki-kontrol
+    if hata 
+       close dys
+       exit paragraph
+    end-if.
+
+
+    display message box
+            dys-sira," numarali satir silinsin mi ?"
+            icon mb_warning_icon
+            type mb_yes_no
+            default 2
+            title "Uyari"
+    returning return-code.
+    if return-code = 1
+       delete dys end-delete
+       perform log-operation-dys
+    end-if
+    close dys.
+    perform load-grid
+    move 4 to accept-control
+    move 10 to control-id.
+
+*
+ goster.  
+    inquire gd-1,
+            cursor-y in event-data-2
+            cursor-x in event-data-1
+    open i-o dys
+    initialize dys-rec
+    move link-dys-anah-tip1        to dys-anah-tip1
+    move link-dys-anah-tip2        to dys-anah-tip2
+    move link-dys-fis              to dys-fis
+    inquire gd-1(event-data-2,1)
+            cell-data 5x          
+    move function numval-c(5x)     to dys-sira,
+    read dys no lock invalid
+         display message box 
+                 "Kayit bulunamadi !!!"
+                 icon mb_error_icon
+                 title "Hata"
+         close dys
+         exit paragraph
+    end-read
+    close dys.
+
+    move dys-erisim-gor-sifre          to form4-sifre.
+***    perform yetki-kontrol
+    if hata 
+       exit paragraph
+    end-if.
+
+    perform unix2win
+
+**********************OPEN WITH
+
+    set shell32-dll-uzak to true
+    set shell-execute-uzak to true
+
+    call shell32-dll on exception 
+         display message box
+                "shell32.dll dosyasi bulunamiyor ....",x"0a0d",
+                "Excel dosyaniz otomatik olarak acilmayacaktir",x"0a0d",
+                "Kaydettiginiz dosyaya cift tiklayarak acabilirsiniz ... !"
+                icon mb_error_icon 
+                title "Hata"
+         exit paragraph.
+
+
+    call shell-execute using by value 0,
+                             by reference ac-komut
+                             by reference dosyaci(12:),
+                             null
+                             null
+                             by value SW_SHOW
+     on exception
+         display message box
+                "ShellExecute Proseduru bulunamiyor ....",x"0a0d",
+                "Excel dosyaniz otomatik olarak acilmayacaktir",x"0a0d",
+                "Kaydettiginiz dosyaya cift tiklayarak acabilirsiniz ... !"
+                icon mb_error_icon 
+                title "Hata"
+         cancel shell32-dll
+         exit paragraph
+    end-call.
+    cancel shell-execute.
+    cancel shell32-dll.  
+
+*
+ unix2win.
+    initialize dosyaci 
+    move all low-values to dosyaci-dosyam.
+    set acucorp         to true
+    set client          to true
+    accept zaman from time
+    accept tarih from century-date
+    string dosyaci-dosyam,
+           tarih         delimited by low-values
+           "_"           delimited by low-values
+           zaman         delimited by low-values
+           "__."         delimited by low-values
+           dys-dosya-ext delimited by low-values
+           into dosyaci-dosyam
+
+    move all low-values to to-dosya
+    string to-dosya
+           dys-adresi      delimited by low-values 
+           dys-modul       delimited by low-values
+           "/"             delimited by low-values
+           dys-dosya-adres delimited by low-values 
+           "/"             delimited by low-values
+           dys-fis         delimited by low-values
+           "-"             delimited by low-values
+           dys-sira        delimited by low-values
+           ".dys"          delimited by low-values
+           into to-dosya.
+
+
+    call "c$copy" using to-dosya dosyaci  giving dosyaci-status
+    if dosyaci-status <> 0
+       display message box
+               "Dosyasi Server'dan Alinamadi !!!",x"0a0d",
+               "Lutfen tekrar deneyiniz ",x"0a0d",
+               "From : ",to-dosya,x"0a0d"
+               "To :" ,dosyaci
+               icon mb_error_icon
+               title "Hata"
+       exit paragraph
+    end-if.
+
+
+    inspect dosyaci replacing trailing spaces by low-values.
+
+*
+ unix2win-farkli-kaydet. 
+    initialize dosyaci 
+    move all low-values to dosyaci-dosyam.
+    set acucorp         to true
+    set client          to true
+    accept zaman from time
+    accept tarih from century-date
+    string dosyaci-dosyam,
+           tarih         delimited by low-values
+           "_"           delimited by low-values
+           zaman         delimited by low-values
+           "__."         delimited by low-values
+           dys-dosya-ext delimited by low-values
+           into dosyaci-dosyam
+
+    move all low-values to to-dosya
+    string to-dosya
+           dys-adresi      delimited by low-values 
+           dys-modul       delimited by low-values
+           "/"             delimited by low-values
+           dys-dosya-adres delimited by low-values 
+           "/"             delimited by low-values
+           dys-fis         delimited by low-values
+           "-"             delimited by low-values
+           dys-sira        delimited by low-values
+           ".dys"          delimited by low-values
+           into to-dosya.
+
+
+    call "c$copy" using to-dosya dosyaci  giving dosyaci-status
+    if dosyaci-status <> 0
+       display message box
+               "Dosyasi Server'dan Alinamadi !!!",x"0a0d",
+               "Lutfen tekrar deneyiniz ",x"0a0d",
+               "From : ",to-dosya,x"0a0d"
+               "To :" ,dosyaci
+               icon mb_error_icon
+               title "Hata"
+       exit paragraph
+    end-if.
+
+
+    inspect dosyaci replacing trailing spaces by low-values.
+
+     
+*
+ log-goster.
+    inquire gd-1,
+            cursor-y in event-data-2
+            cursor-x in event-data-1
+    open input dys
+    initialize dys-rec
+    move link-dys-anah-tip1        to dys-anah-tip1
+    move link-dys-anah-tip2        to dys-anah-tip2
+    move link-dys-fis              to dys-fis
+    inquire gd-1(event-data-2,1)
+            cell-data 5x          
+    move function numval-c(5x)     to dys-sira,
+    read dys no lock invalid
+         initialize dys-rec
+    end-read
+    close dys.
+
+    move dys-dosya             to link-logview-dosya-adi
+    set link-logview-pointer  to address of dys-rec
+    set link-logview-rec-size to size of dys-rec
+    perform logview-call
+    initialize key-status.
+
+*
+ gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry 
+          move event-action-fail         to event-action
+          perform form1-sag-goster
+     when msg-goto-cell
+     when msg-goto-cell-mouse
+          perform form1-sag-goster
+     end-evaluate.
+     .
+*
+ form1-sag-goster.
+    open input dys
+    initialize dys-rec
+    move link-dys-anah-tip1        to dys-anah-tip1
+    move link-dys-anah-tip2        to dys-anah-tip2
+    move link-dys-fis              to dys-fis
+    inquire gd-1(event-data-2,1)
+            cell-data 5x          
+    move function numval-c(5x)     to dys-sira,
+    read dys no lock invalid
+         initialize dys-rec
+    end-read
+    close dys.
+    move dys-dosya-boy             to eboy
+    modify acc-dosya-boy, value = eboy.
+    display acc-ekle-gun, acc-ekle-ay, acc-ekle-yil,
+            acc-ekle-saat, acc-ekle-dakika
+            acc-dosya-adi, acc-etiket,acc-ekleyen
+            acc-arama-1, acc-arama-2, acc-arama-3, acc-arama-4,
+            acc-erisim-tipi, acc-sifre-gor, acc-sifre-duz, acc-sifre-sil.
+
+*
+ goster-uyari.
+    display message box
+            "Kayit uzerinde degisiklik yapmak icin muhasebe fisine veya fatura girisine girmeniz gerekmektedir"
+            icon mb_warning_icon
+            title "Dikkat".
+
+*
+ link-dys-dosya-ekle.
+    initialize durum 
+               son-islem-dosya link-dys-donus
+               form2-sifre-goruntu-value  dys-rec
+               form2-sifre-duzeltme-value 
+               form2-sifre-silme-value    
+               form2-arama1-value         
+               form2-arama2-value         
+               form2-arama3-value         
+               form2-arama4-value         
+
+    if link-dys-fis = zeroes
+       perform genelfis-oku
+       move genelfis-log-no          to link-dys-fis
+       move 1 to dys-son-sira
+    else
+       perform dys-son-sira-al
+    end-if.
+
+    move all low-values to to-dosya
+    string to-dosya
+           dys-adresi      delimited by low-values 
+           dys-modul       delimited by low-values
+           "/"             delimited by low-values
+           dys-dosya-adres delimited by low-values 
+           "/"             delimited by low-values
+           link-dys-fis    delimited by low-values
+           "-"             delimited by low-values
+           dys-son-sira    delimited by low-values
+           ".dys"          delimited by low-values
+           into to-dosya
+
+    call "c$copy" using link-dys-dosya to-dosya giving dosyaci-status
+    if dosyaci-status <> 0
+       display message box
+               "Dosyasi Server'a Kopyalanamadi !!!",x"0a0d",
+               "Lutfen tekrar deneyiniz ",x"0a0d",
+               "From : ",link-dys-dosya,x"0a0d"
+               "To :" ,to-dosya
+               icon mb_error_icon
+               title "Hata"
+       exit paragraph
+    end-if.
+
+    call "c$fileinfo" using to-dosya,
+                            file-info,
+    end-call
+
+    move "D"                to son-islem.
+*/ 
+    move 0 to ii
+    perform varying i
+            from function length(link-dys-dosya)
+            by -1
+            until i = 1
+            evaluate link-dys-dosya(i:1) 
+            when "/"
+                 move link-dys-dosya(i + 1:)     to son-islem-dosya | dosya adi ayiklandi
+                 exit perform
+            end-evaluate
+    end-perform
+
+
+    move 0 to ii
+    perform varying i
+            from function length(son-islem-dosya)
+            by -1
+            until i = 1
+            evaluate son-islem-dosya(i:1)
+            when "."
+                 exit perform
+            when space
+                 exit perform cycle
+            when other
+                 add 1 to ii
+                 move son-islem-dosya(i:1) to son-islem-ext(ii:1)
+            end-evaluate
+    end-perform
+
+    move function reverse(son-islem-ext) to son-islem-ext
+    call "c$justify" using son-islem-ext "L"
+    inspect son-islem-ext replacing trailing spaces by low-values.
+
+    move link-dys-etiket                  to form2-etiket-value
+
+    perform writingeneska. 
+
+    set link-dys-donus-ok                 to true.
+
+
+*
+ link-dys-yazdir.
+*/
+    if link-dys-printto = spaces
+       initialize winprint-selection
+       call "Win$printer" using winprint-setup-old
+            returning return-code
+       end-call
+
+       initialize winprint-no-of-printers winprint-selection. 
+       call "win$printer"  using winprint-get-current-info, 
+                                  winprint-selection 
+                           giving winprint-donus
+
+       if winprint-donus < 1
+          exit paragraph
+       end-if
+
+    perform shell-load-dll.
+*
+    open i-o dys.
+    initialize dys-rec
+    move link-dys-anah-tip1          to dys-anah-tip1
+    move link-dys-anah-tip2          to dys-anah-tip2
+    move link-dys-fis                to dys-fis
+    start dys key not < dys-anahtar invalid
+          continue
+    not invalid
+    initialize fs-dys
+    perform with test after until fs-dys = "10"
+    read dys next no lock end exit perform 
+    not at end
+         if link-dys-anah-tip1 <> dys-anah-tip1 or
+            link-dys-anah-tip2 <> dys-anah-tip2 or
+            link-dys-fis <> dys-fis
+                exit perform
+         end-if
+
+         perform unix2win
+         if dosyaci-status <> 0
+            exit perform cycle
+         end-if
+         perform shell-yazdir
+
+    end-read
+    end-perform
+    end-start
+    close dys.
+*
+    perform shell-unload-dll.
+    call "c$sleep" using 1.
+*
+ link-dys-farkli-kaydet.  
+*/
+*/  link-dys-printto - kaydedilecek dosyanin clienttaki adi
+*/  @[DISPLAY]:c:\DENEME\A.pdf
+*/
+*/  deger bos gelirse opensave ile klasör sorup oraya kopyalar !!!
+*/
+    if link-dys-printto = spaces
+       initialize opensave-data opensave-status son-islem-dosya
+       string 
+       "Tum dosya turleri (*.*;*.*)|" delimited by size
+                 into opnsav-filters
+       move "*.*"                   to opnsav-default-ext
+       call "c$opensavebox" using opensave-browse-folder
+                                  opensave-data
+                         giving opensave-status
+       end-call
+       if opensave-status <> 1 
+          exit paragraph
+       end-if
+
+       inspect opnsav-filename replacing trailing spaces by low-values
+    end-if
+*                    
+    open i-o dys.
+    initialize dys-rec
+    move link-dys-anah-tip1          to dys-anah-tip1
+    move link-dys-anah-tip2          to dys-anah-tip2
+    move link-dys-fis                to dys-fis
+    start dys key not < dys-anahtar invalid
+          continue
+    not invalid
+    initialize fs-dys
+    perform with test after until fs-dys = "10"
+    read dys next no lock end exit perform 
+    not at end
+         if link-dys-anah-tip1 <> dys-anah-tip1 or
+            link-dys-anah-tip2 <> dys-anah-tip2 or
+            link-dys-fis <> dys-fis
+                exit perform
+         end-if
+
+         perform unix2win
+         if dosyaci-status <> 0
+            exit perform cycle
+         end-if
+
+    end-read
+    end-perform
+    end-start
+    close dys.
+
+    display message box
+            "Dosya : ",to-dosya,x"0a0d",
+            "Dosyaci : ",dosyaci,"konumuna kopyalandi",x"0a0d"
+            icon mb_error_icon
+            title "Hata".
+
+*
+ shell-load-dll.
+    set shell32-dll-uzak to true
+    set shell-execute-uzak to true
+
+    call shell32-dll on exception 
+         display message box
+                "shell32.dll dosyasi bulunamiyor ....",x"0a0d",
+                "Dosyaniz otomatik olarak acilmayacaktir",x"0a0d",
+                "Kaydettiginiz dosyaya cift tiklayarak acabilirsiniz ... !"
+                icon mb_error_icon 
+                title "Hata"
+         exit paragraph.
+
+*
+ shell-yazdir.
+    inspect yerel-dosya replacing trailing spaces by low-values
+*ShellExecute(Handle, 'print', PChar('c:\document.doc'), nil, nil, SW_HIDE) ;
+
+    inspect winprint-name replacing trailing spaces by low-values
+    inspect winprint-driver replacing trailing spaces by low-values
+    inspect winprint-port replacing trailing spaces by low-values
+    move all low-values to link-dys-printto
+    string link-dys-printto
+           '"' delimited by low-values
+           winprint-name delimited by low-values
+           '" "'  delimited by low-values
+           winprint-driver delimited by spaces
+           '" "' delimited by low-values
+           winprint-port delimited by spaces
+           '"'  delimited by low-values
+           into link-dys-printto.
+
+    call shell-execute using by value 0,
+                             by reference yazdir-komut
+                             by reference yerel-dosya,
+                             by reference link-dys-printto, | ('"%s" "%s" "%s"', [Device, Driver, Port]);
+                             null
+                             by value SW_HIDE
+     on exception
+         display message box
+                "ShellExecute Proseduru bulunamiyor ....",x"0a0d",
+                "Excel dosyaniz otomatik olarak acilmayacaktir",x"0a0d",
+                "Kaydettiginiz dosyaya cift tiklayarak acabilirsiniz ... !"
+                icon mb_error_icon 
+                title "Hata"
+         cancel shell32-dll
+         exit paragraph
+    end-call.
+
+
+*
+ shell-unload-dll.
+    cancel shell-execute.
+    cancel shell32-dll.
+
+*
+ Form4-Bef-Create.
+    initialize form4-girilen-sifre.
+
+     
+     .
+*
+ Form4-Ex-Other.
+
+     evaluate key-status
+         when 27
+              move 0 to form4-donus
+         when 5001
+              if form4-sifre = form4-girilen-sifre
+
+                 move 1 to form4-donus
+                 set exit-pushed to true
+                 exit paragraph
+              end-if
+              add 1 to form4-kere
+              if form4-kere > 3
+                 display message box 
+                         "Gecersiz Sifre Girdiniz !!!",
+                         icon mb_error_icon
+                         title "Hata"
+              set exit-pushed to true
+              end-if
+     end-evaluate.
+
+
+*
+ read-kllnc.
+    read kllnc no lock invalid
+         initialize kllnc-rec
+    end-read.
+    
+*
+ yetki-kontrol.
+*/
+    exit paragraph.
+
+*    open input kllnc
+*    move dys-staf                      to k-kodu
+*    perform read-kllnc
+*    move kllnc-rec                     to xkllnc-rec
+*    move k-kodu-tasi                   to k-kodu
+*    perform read-kllnc
+*    close kllnc
+
+*/xkllnc'de dys'yi olusturan var 
+*/kllnc'de simdiki user var
+*    evaluate true
+*    when dys-erisim-genel
+*         continue
+*    when dys-erisim-kisisel
+*         if k-kodu <> xk-kodu
+*            if k-dys-seviye <= xk-dys-seviye
+*               display message box
+*                       "Kisisel erisime mahsus dokuman",x"0a0d","Dokumani inceleme yetkiniz yoktur !!!"
+*                       icon mb_error_icon
+*                       title "Hata"
+*               set hata to true
+*               exit paragraph
+
+
+
+
+
+*            end-if
+*         end-if
+*    when dys-erisim-yetki-seviyesi
+*            if k-dys-seviye < xk-dys-seviye
+*               display message box
+*                       "Erisim Yetki Seviyeniz dokumani incelemek icin yetersiz !!!",
+*                       icon mb_error_icon
+*                       title "Hata"
+*               set hata to true
+*               exit paragraph
+*            end-if
+*         
+*    end-evaluate.
+*
+*    if form4-sifre = spaces
+*       exit paragraph
+*    end-if.
+*
+*    if k-dys-seviye = 5
+*       exit paragraph
+*    end-if.
+*
+*    initialize form4-kere form4-donus durum.
+*    perform acu-form4-routine.
+*    if form4-donus <> 1 
+*       set hata to true
+*    end-if.  
+
+*
+link-dys-moduller-arasi-kopya.
+*  CAGIRIRKEN DOLU OLMASI GEREKEN ALANLAR
+* ----------------------------------------------------------------
+*  initialize link-dys
+*  set link-dys-moduller-arasi-kopya            to true
+*  set link-dys-anah-tip1-efatura               to true yada  set link-dys-anah-tip1-earsiv to true
+*  move konuk-dys-no                            to link-dys-fis (hangi dys kaydini diger module yazacaksan onun dys fis no'sý)
+
+*  move linkledigin_anahtar                     to link-dys-from-anahtar (yani mahsuba yaziyorsan amhsup-anahtar konuka yaziyorsan konuk-folio gibi ..)
+*  move "otel"                                  to link-dys-from-modul (otel dys'sinden muhasebe dys'sine bilgi gonderirlen)
+*  move "efat2onb"                              to link-dys-from-prog ( islemin yaðýldýgý programýn isöi)
+*  move "mahsup"                                to link-dys-from-dosya (otel'den mahsuyp dosyasýna kayit atilirken)
+*  move mahsup_tarih                            to link-dys-anahtar-tarih
+*  move "192.168.1.105"                         to link-dys-to-ip (eger farkli bir ip'ye kopyalanacaksa)
+*  move "muha"                                  to link-dys-to-modul ( hangi moduldeki dys'ye yazacak)
+*  move "muha2012"                              to link-dys-to-sirket (hangi muhasebe sirketine yazacak)
+*  move "otel2012" yada move isyeri-adres-tasi  to link-dys-from-sirket (otel'de hangi asirketten alincak bilgiler)
+*
+*// !! eger diger tarafta islenmesini istedigin fisin numarasi belli ise  !!
+*// yada birden fazla ek var ise mecbur fis nosunu gondermen gerekiyor, çunku ana datanda sadece 1 tabe dys-fis-no alanýn var 
+*   move yedek_fis-no                           to link-dys-to-fis 
+*
+*  call "......zart zurt dys" using link-dys
+*
+*  if link-dys-donus-ok
+*     display message box "islem tamamdir ..."
+*  else
+*     program zaten burada hata verece3k ....
+*  end-if
+*
+*
+    inspect link-dys-to-ip replacing trailing spaces by low-values
+    if link-dys-to-ip = spaces or 
+       link-dys-to-ip = low-values
+       perform create_obur-dys_dirs
+    end-if
+
+    move link-dys-to-modul                   to obur-dys-modul
+    move link-dys-to-sirket                  to obur-dys-dosya-adres.
+*/ eger uzak ip obur-dys-acilacaksa
+    if link-dys-to-ip <> spaces
+       move all low-values to obur-dys-dosya
+       string obur-dys-dosya,
+              "@"                            delimited by low-values
+              link-dys-to-ip                 delimited by low-values
+              ":"                            delimited by low-values
+              obur-dys-dosya-yerel           delimited by low-values 
+       into obur-dys-dosya
+       inspect obur-dys-dosya replacing all low-values by spaces
+    else
+       move obur-dys-dosya-yerel             to obur-dys-dosya
+    end-if.
+
+    move link-dys-from-modul                 to dys-modul
+    move link-dys-from-sirket                to dys-dosya-adres
+
+*/ obur-dys'den son sira almasi icin dys adresine obur-dys'nin acdresini veriyorum
+    if link-dys-to-fis = zeroes
+       perform genelfis-oku
+       move genelfis-log-no                  to dys-son-fis link-dys-to-fis
+       move 1                                to dys-son-sira
+    else
+       initialize fr-dys-anah
+       move link-dys-anah-tip1               to fr-dys-anah-tip1
+       move link-dys-anah-tip2               to fr-dys-anah-tip2
+       move link-dys-to-fis                  to fr-dys-fis
+       perform oburdys-son-sira-al
+    end-if
+
+    perform dys2oburdys.
+
+
+*
+dys2oburdys.   
+    initialize donus
+    open i-o dys obur-dys
+    open input kllnc.
+    initialize dys-rec
+    move link-dys-anahtar                    to dys-anahtar
+    start dys key not < dys-anahtar invalid
+          set hata                           to true
+          display message box
+                  "Dosya eki bulunamadi !!!",x"0a0d",
+                  "Dosya no :",link-dys-anahtar,x"0a0d"
+                  icon mb_error_icon
+    not invalid
+    perform until 1 = 0
+    read dys next no lock end exit perform 
+    not at end
+         if link-dys-anah-tip1 <> dys-anah-tip1 or 
+            link-dys-anah-tip2 <> dys-anah-tip2 or 
+            link-dys-fis <> dys-fis
+                 exit perform
+         end-if
+
+
+
+*/ once dosya kopyala
+         move all low-values to to-dosya dosyaci
+         
+         string dosyaci
+                dys-adresi           delimited by low-values 
+                dys-modul            delimited by low-values
+                "/"                  delimited by low-values
+                dys-dosya-adres      delimited by low-values 
+                "/"                  delimited by low-values
+                dys-fis              delimited by low-values
+                "-"                  delimited by low-values
+                dys-sira             delimited by low-values
+                ".dys"               delimited by low-values
+                into dosyaci
+
+*/ eger uzak ip'ye kopyalancaksa
+         if link-dys-to-ip <> spaces
+            string to-dosya,
+                   link-dys-to-ip        delimited by low-values
+                   ":"                   delimited by low-values 
+                   into to-dosya
+         end-if
+
+         string to-dosya
+                obur-dys-adresi      delimited by low-values 
+                obur-dys-modul       delimited by low-values
+                "/"                  delimited by low-values
+                obur-dys-dosya-adres delimited by low-values 
+                "/"                  delimited by low-values
+                link-dys-to-fis      delimited by low-values
+                "-"                  delimited by low-values
+                dys-son-sira         delimited by low-values
+                ".dys"               delimited by low-values
+                into to-dosya
+
+         inspect dosyaci replacing trailing spaces by low-values
+         inspect to-dosya replacing trailing spaces by low-values
+
+*/ uzaða kopyalanacak ise 
+         if link-dys-to-ip <> spaces
+            perform kopyaci-file-copy
+            if hata
+               exit perform
+            end-if
+         else
+            call "c$copy" using dosyaci to-dosya giving dosyaci-status
+            if dosyaci-status <> 0 
+               set hata          to true
+               display message box
+                       "Dosyasi Server'a Kopyalanamadi !!!",x"0a0d",
+                       "Dosya ekleri kopyalanamadi, kopyalama islemi iptal edildi ",x"0a0d",
+                       "From : ",dosyaci,x"0a0d"
+                       "To :" ,to-dosya
+                       icon mb_error_icon
+                       title "Hata"
+               exit perform
+            end-if
+         end-if
+
+*/ dys'ye yaz...
+         initialize obur-dys-rec
+         move dys-rec                         to obur-dys-rec
+         move link-dys-to-fis                 to obur-dys-fis
+         move dys-son-sira                    to obur-dys-sira
+         accept obur-dys-ekle-tarih from century-date
+         accept obur-dys-ekle-zaman from time
+         initialize kllnc-rec
+         move k-kodu-tasi                        to k-kodu obur-dys-ekle-staf
+         read kllnc no lock invalid
+              initialize kllnc-rec
+         end-read
+         inspect k-adi replacing trailing spaces by low-values
+         inspect k-soyadi replacing trailing spaces by low-values
+         move all low-values to obur-dys-ekle-staf-adi
+         string obur-dys-ekle-staf-adi
+                k-adi delimited by low-values
+                " "   delimited by low-values
+                k-soyadi delimited by low-values
+                into obur-dys-ekle-staf-adi
+         inspect obur-dys-ekle-staf-adi replacing all low-values by spaces
+         move link-dys-from-anahtar            to obur-dys-anahtar-saha
+         move link-dys-anahtar-tarih           to obur-dys-anahtar-tarih
+
+         move link-dys-from-modul              to obur-dys-from-modul 
+         move link-dys-from-prog               to obur-dys-from-prog  
+         move link-dys-from-dosya              to obur-dys-from-dosya 
+         move k-kodu-tasi                      to obur-dys-staf
+         write obur-dys-rec invalid
+               display message box 
+                       "Kayit eklenemedi !!!",x"0a0d",
+                       "Islem iptal edildi "
+               set hata to true
+               exit perform
+         not invalid
+               perform log-operation-dys
+         end-write
+
+         add 1                                 to dys-son-sira
+    end-read
+    end-perform
+    end-start.
+    close dys obur-dys kllnc.
+    if not hata  
+       set link-dys-donus-ok                   to true
+    end-if.
+
+
+*
+create_obur-dys_dirs.
+*/ log klasörü
+     move all low-values to makedir-param
+     string makedir-param,
+            "/asya/ytl/dys/"          delimited by low-values 
+            into makedir-param
+     perform create_dir.
+
+     inspect link-dys-to-modul replacing trailing spaces by low-values
+
+     string makedir-param,
+            link-dys-to-modul         delimited by low-values 
+            into makedir-param
+     perform create_dir.
+
+     string makedir-param,
+            "/"                       delimited by low-values
+            link-dys-to-sirket        delimited by low-values 
+            into makedir-param
+     perform create_dir.
+
+*
+oburdys-son-sira-al.
+    open i-o obur-dys
+
+    initialize obur-dys-rec dys-son-sira
+    move fr-dys-anah-tip1        to obur-dys-anah-tip1
+    move fr-dys-anah-tip2        to obur-dys-anah-tip2
+    move fr-dys-fis              to obur-dys-fis
+    start obur-dys key not < obur-dys-anahtar invalid
+          continue
+    not invalid
+    initialize fs-obur-dys
+    perform with test after until fs-obur-dys = "10"
+    read obur-dys next no lock end move "10" to fs-obur-dys
+    not at end
+         if obur-dys-fis <> fr-dys-fis or 
+            obur-dys-anah-tip1 <> fr-dys-anah-tip1 or 
+            obur-dys-anah-tip2 <> fr-dys-anah-tip2
+            move "10" to fs-obur-dys
+            exit perform
+         end-if
+         move obur-dys-sira            to dys-son-sira
+    end-read
+    end-perform
+    end-start.
+    close obur-dys.
+    add 1                         to dys-son-sira.
+   
+
+
+*
+kopyaci-file-copy.
+    initialize filecopy-link
+*/    set filecopy-zip                                   to true
+    move dosyaci                                         to filecopy-from
+    move to-dosya                                        to filecopy-to
+    call "/asya/ytl/obj/muha/filecopy.asy" using filecopy-link
+         on exception  
+            perform callerr-proc
+         not on exception
+    cancel "/asya/ytl/obj/muha/filecopy.asy"
+    end-call.
+
+    if not filecopy-ok 
+       display message box
+               "from : ", filecopy-from,x"0a0d"
+               "to : ", filecopy-to,x"0a0d"
+               "Efatura kayitli musteri listesi uzak onburo sirketlerine kopyalanamadi !!!",x"0a0d"
+               "Lutfen tekrar deneyiniz !!!!"
+               icon mb_error_icon
+               title "Hata"
+       set hata to true
+    end-if.
+
+
+ 

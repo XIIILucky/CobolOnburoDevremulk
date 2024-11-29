@@ -1,0 +1,511 @@
+* astelak.evt
+* astelak.evt is generated from D:\asya\acugt.ytl\otel\astelak.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+***   start event editor code   ***
+*
+***************************
+ santral-aktar.
+    initialize num-param.
+    call "C$NARG" using num-param.
+     set size-of-santral-rec to size of santral-rec.
+     perform adresleri-tasi.
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid
+          close genel,
+          initialize mesaj-degiskenler
+          move "Genel Parametreler Tanimsiz      "  to mmesaj-1
+          move "Tanimladiktan Sonra Islem Yapiniz"  to mmesaj-1
+          move " [ Hata ] " to mmesaj-title
+          move 1           to mmesaj-type
+          move 1           to mmesaj-icon
+          move 1           to mmesaj-default
+          perform mmesaj-ver
+          goback
+     end-read
+     close  genel
+
+     open i-o genelfis
+     move 1 to genelfis-anahtar,
+     read genelfis no lock invalid
+          close genelfis,
+          initialize mesaj-degiskenler
+          move "Genelfis Parametreleri Tanimsiz  "  to mmesaj-1
+          move "Tanimladiktan Sonra Islem Yapiniz"  to mmesaj-1
+          move " [ Hata ] " to mmesaj-title
+          move 1           to mmesaj-type
+          move 1           to mmesaj-icon
+          move 1           to mmesaj-default
+          perform mmesaj-ver
+          goback
+     end-read,
+     close      genelfis
+
+     open input depkod
+     move telpara-depkod   to depkod-anah
+     read depkod no lock invalid
+          close depkod
+          initialize mesaj-degiskenler
+          move " [ Hata ] " to mmesaj-title
+          move " Telefon departman kodu        "  to mmesaj-1
+          move " Tanimsiz  islem iptal edildi.."  to mmesaj-1
+          move 1           to mmesaj-type
+          move 1           to mmesaj-icon
+          move 1           to mmesaj-default
+          perform mmesaj-ver
+          goback
+     end-read,
+     close depkod,
+
+     if depkod-ba not = "B"
+          initialize mesaj-degiskenler
+          move " [ Hata ] " to mmesaj-title
+          move " Telefon departmaninin B-A kodu" to mmesaj-1
+          move "       -B-(Borc) olmali        " to mmesaj-2
+          move 1           to mmesaj-type
+          move 1           to mmesaj-icon
+          move 1           to mmesaj-default
+          perform mmesaj-ver
+        goback,
+     end-if,
+
+     if telpara-fol-tipi not = "R" and
+        telpara-fol-tipi not = "E" and
+        telpara-fol-tipi not = "T"
+          initialize mesaj-degiskenler
+          move " [ Hata ] " to mmesaj-title
+          move " Telefonlarin hangi Folioya ..." to mmesaj-1
+          move " Islenecegi belli degil........" to mmesaj-2
+          move 1           to mmesaj-type
+          move 1           to mmesaj-icon
+          move 1           to mmesaj-default
+          perform mmesaj-ver
+        goback
+     end-if,
+
+     initialize gecer-gecmez
+     open input kur
+     move calisma-tarihi  to kur-tarih
+     move onkpara-banka   to kur-banka
+     move onkpara-doviz   to kur-doviz
+     read kur no lock invalid
+          move 1 to gecer-gecmez,
+     end-read
+     close kur
+
+     initialize islem-kuru
+     if onkpara-d-e = "D" and
+        onkpara-a-s = "A"
+        move doviz-alis    to islem-kuru
+     end-if,
+     if onkpara-d-e = "D" and
+        onkpara-a-s = "S"
+        move doviz-satis   to islem-kuru
+     end-if,
+     if onkpara-d-e = "E" and
+        onkpara-a-s = "A"
+        move efektif-alis  to islem-kuru
+     end-if,
+     if onkpara-d-e = "E" and
+        onkpara-a-s = "S"
+        move efektif-satis to islem-kuru
+     end-if,
+
+     if islem-kuru = zeroes or
+        gecmez
+        open input kur
+        initialize gecer-gecmez,
+        move all High-value  to kur-tarih
+        move onkpara-banka   to kur-banka
+        move onkpara-doviz   to kur-doviz
+        start kur key > kur-kodu invalid continue move 1 to gecer-gecmez
+              not invalid
+        perform with test after until sonuc or gecmez
+        read kur backward no lock end move 1 to gecer-gecmez
+             not end
+              if onkpara-banka = kur-banka and
+                 onkpara-doviz = kur-doviz
+
+                 initialize islem-kuru
+                 if onkpara-d-e = "D" and
+                    onkpara-a-s = "A" and
+                    doviz-alis not = zeroes,
+                    move doviz-alis    to islem-kuru
+                    move 2 to gecer-gecmez,
+                 end-if,
+                 if onkpara-d-e = "D" and
+                    onkpara-a-s = "S" and
+                    doviz-satis not = zeroes
+                    move doviz-satis   to islem-kuru
+                    move 2 to gecer-gecmez,
+                 end-if,
+                 if onkpara-d-e = "E" and
+                    onkpara-a-s = "A" and
+                    efektif-alis not = zeroes
+                    move efektif-alis  to islem-kuru
+                    move 2 to gecer-gecmez,
+                 end-if,
+                 if onkpara-d-e = "E" and
+                    onkpara-a-s = "S" and
+                    efektif-satis not = zeroes,
+                    move efektif-satis to islem-kuru
+                    move 2 to gecer-gecmez,
+                 end-if,
+              end-if,
+        end-read
+        end-perform,
+        end-start,
+        close kur,
+
+        if gecmez or
+           islem-kuru = zeroes,
+           perform kur-uyari,
+           goback
+        end-if,
+     end-if
+*******>
+     if num-param <> 0
+        initialize sant-al-adres num-args-size
+        move low-values to sant-al-adres
+        inspect num-args
+                tallying num-args-size
+                for trailing spaces
+        compute num-args-size = function length(num-args) - num-args-size
+        string 
+             "@[DISPLAY]:" delimited by size,
+             num-args(1:num-args-size) delimited by low-values
+             genel-printer-filtre delimited by low-values
+             into sant-al-adres
+      else
+        initialize sant-al-adres
+        string 
+             "@[DISPLAY]:" delimited by size,
+             "C:\ASYA\ytl\data\sant\tellog" delimited by low-values
+             genel-printer-filtre delimited by low-values
+             into sant-al-adres
+      end-if.
+
+
+     move santral-dosya        to sant-git-adres
+
+     CALL "C$COPY" using sant-al-adres, sant-git-adres.
+     CALL "C$COPY" using sant-git-adres-1, sant-al-adres.
+*******>
+
+
+     accept system-information   from system-info
+     accept terminal-abilities   from terminal-info
+     initialize dsk-app
+     add csys-desktop to dsk-app
+
+     if is-remote
+*        if operating-system not = "MS-DOS"
+        if operating-system = "Unix"
+           call "C$system" using aktar-unix 
+        else 
+           call "C$system" using aktarx dsk-app
+        end-if,
+     else 
+        if operating-system not = "MS-DOS"
+           call "C$system" using aktarc
+        end-if
+     end-if
+
+
+     initialize gecer-gecmez,
+     open input santral telkod kodlar02
+     open i-o teldata konuk romhrk exthrk onkasa
+     open extend tel-err
+
+*->
+     perform with test after until fs-santral = "10"
+     initialize santral-rec degiskenler,gecer-gecmez,
+     read santral next no lock end move "10" to fs-santral
+       not end
+           initialize degiskenler,gecer-gecmez,
+*          display message box "Gorusmeler-->", santral-rec(1:79) 
+
+           move santral-rec(telpara-oda-bas:telpara-oda-hane) to santral-oda
+           move santral-rec(telpara-kon-bas:telpara-kon-hane) to santral-kontur
+           move santral-rec(telpara-tel-bas:telpara-tel-hane) to santral-telno
+*-> zero g
+           move santral-kontur to kontur-z initialize santral-kontur
+           move kontur-z       to santral-kontur
+*->
+           move santral-oda   to tel-oda
+           read telkod no lock invalid
+                move 1 to gecer-gecmez
+                      initialize  tel-indirim,
+           end-read,
+
+           compute tl-tutar   = santral-kontur * telpara-c-satis
+           compute tl-maliyet = santral-kontur * telpara-c-maliyet
+           if tel-indirim > 0
+              compute tl-tutar = tl-tutar - ((tl-tutar*tel-indirim)/100)
+           end-if
+           compute dv-tutar   = tl-tutar/islem-kuru
+
+           if gecer         and
+              santral-kontur not = zeroes and tl-tutar > zeroes
+*->
+                 open i-o genelfis,
+                 move 1 to genelfis-anahtar,
+                 read genelfis no lock invalid
+                      initialize genelfis-rec
+                      move 1 to genelfis-anahtar tel-fis-oto
+                      not invalid
+                         add 1 to tel-fis-oto
+                 end-read
+                 rewrite genelfis-rec invalid
+                 write genelfis-rec end-write
+                 end-rewrite
+                 close genelfis,
+*->
+                 initialize gecer-gecmez,
+                 move calis-yil      to teldata-yil
+                 move calis-ay       to teldata-ay
+                 move calis-gun      to teldata-gun
+                 move santral-oda    to teldata-odano,
+                 move tel-fis-oto    to teldata-islemno
+                 move tel-tipi       to teldata-tipi
+                 move santral-telno  to teldata-numara,
+                 move santral-kontur to teldata-kontur
+                 move tl-tutar       to teldata-satis
+                 move tl-maliyet     to teldata-maliyet
+                 move folio-no       to teldata-folio
+                 if telpara-ger-saat-bas > zeroes 
+                    and telpara-ger-saat-bas < 999
+                    and telpara-ger-saat-bas numeric
+                    and telpara-ger-saat-hane > zeroes 
+                    and telpara-ger-saat-hane < 99
+                    and telpara-ger-saat-hane numeric
+                    and (telpara-ger-saat-bas + telpara-ger-saat-hane < size-of-santral-rec) 
+                    move santral-rec(telpara-ger-saat-bas:telpara-ger-saat-hane)
+                         to teldata-sant-zaman
+                 else 
+                    accept teldata-sant-zaman from time
+                 end-if
+                 write teldata-rec invalid
+                       move santral-rec to tel-err-rec
+                       move "Gorusme Datasina Yazilamadi" to tel-err-rec(100:)
+                       write tel-err-rec end-write,
+                 end-write
+*->
+            if musteri
+               initialize konuk-rec,gecer-gecmez
+               move "I"           to konuk-durumu,
+               move tel-onb-oda   to konuk-odano
+               start konuk key = konuk-oda invalid
+                     move santral-rec to tel-err-rec
+                     move "Iceride Oda Bulunamadi"  to tel-err-rec(100:)
+                     write tel-err-rec,
+                     move 5 to gecer-gecmez,
+                   not invalid
+               perform with test after until (konuk-odano not = tel-onb-oda)
+                         or evet
+               read konuk next no lock end move all high-value to konuk-odano
+                    not end
+                           move 6 to gecer-gecmez
+                     if konuk-durumu  = "I" and
+                        konuk-odano = tel-onb-oda
+                        if telpara-fol-tipi = konuk-fol-kodu,
+                           move konuk-folio to folio-no ,
+                           move 3   to gecer-gecmez
+                        end-if
+                     end-if
+              end-read,
+              end-perform,
+              end-start,
+
+              if evet
+                 move "B"               to kodlar02-tipi
+                 move konuk-odeme-tipi  to kodlar02-kodu
+                 read kodlar02 no lock invalid
+                      move santral-rec to tel-err-rec
+                      move "Odeme Kodu Tanimsiz"  to tel-err-rec(100:)
+                      write tel-err-rec end-write
+                      move "H"   to ode-posting
+                      move 7     to gecer-gecmez
+                 end-read,
+              end-if,
+*->
+              if evet and
+                 ode-posting not = "H"
+              if konuk-nor-indirim not = 0
+                 compute tl-tutar   =
+                         tl-tutar - (tl-tutar * konuk-nor-indirim) / 100
+                 compute dv-tutar   = tl-tutar/islem-kuru
+              end-if
+
+*-> musteri ise folio'su teldata ya yaziliyor.
+                 move tl-tutar       to teldata-satis
+                 move tl-maliyet     to teldata-maliyet
+                 move folio-no       to teldata-folio
+                 rewrite teldata-rec end-rewrite
+*->
+                 move folio-no      to konuk-folio
+                 read konuk no lock invalid
+                  not invalid
+                      compute konuk-top-borc = konuk-top-borc + tl-tutar
+                      rewrite konuk-rec end-rewrite
+                 end-read,
+*->
+                 move calis-yil      to onk-yil
+                 move calis-ay       to onk-ay
+                 move calis-gun      to onk-gun
+                 move telpara-depkod to onkasa-dep
+                 read onkasa no lock invalid
+                      initialize onkasa-tutar-tl onkasa-tutar-dv
+                 end-read
+                 compute onkasa-tutar-tl = onkasa-tutar-tl + tl-tutar
+                 compute onkasa-tutar-dv = onkasa-tutar-dv + dv-tutar
+
+                 rewrite onkasa-rec invalid
+                 write onkasa-rec end-write
+                 end-rewrite,
+*->
+                 open i-o genelfis
+                 move 1 to genelfis-anahtar,
+                 read genelfis no lock invalid
+                      move 1 to cekgir-oto
+                    not invalid
+                      add 1 to cekgir-oto
+                 end-read
+                 rewrite genelfis-rec invalid
+                 write genelfis-rec end-write
+                 end-rewrite,
+                 close genelfis
+
+                 move folio-no          to exthrk-folio,
+                 move cekgir-oto        to exthrk-islem,
+                 move "S"               to exthrk-islem-tipi
+                 move teldata-islemno   to exthrk-cekno
+                 move calis-yil         to exthrk-yil
+                 move calis-ay          to exthrk-ay
+                 move calis-gun         to exthrk-gun,
+                 move telpara-depkod    to exthrk-depkod
+                 move "B"               to exthrk-ba
+                 move tl-tutar          to exthrk-tl-tutar
+                 move dv-tutar          to exthrk-dv-tutar
+                 accept exthrk-zaman from time,
+                 move spaces            to exthrk-kart-no exthrk-pos-kodu
+                 move k-kodu-tasi       to exthrk-staf,
+
+                 if konuk-fol-kodu = "R"
+                    move exthrk-rec to romhrk-rec,
+                    write romhrk-rec invalid
+                       move santral-rec to tel-err-rec
+                       move "Romhrk'ye Islenemedi...." to tel-err-rec(100:)
+                       write tel-err-rec end-write
+                    end-write
+                  else
+                    write exthrk-rec invalid
+                       move santral-rec to tel-err-rec
+                       move "Exthrk'ye Islenemedi...." to tel-err-rec(100:)
+                       move fs-exthrk                  to tel-err-rec(125:)
+                       move exthrk-islem               to tel-err-rec(130:)
+                       write tel-err-rec end-write
+                    end-write,
+                 end-if,
+
+                 if telpara-fis = "E"
+                    perform sant-fis-ver
+                 end-if
+             else
+                 if odeme-tanimsiz
+                    move santral-rec to tel-err-rec
+                    move "Odeme Tipi Tanimsiz" to tel-err-rec(100:)
+                    write tel-err-rec
+                 end-if
+                 if odasiz
+                    move santral-rec to tel-err-rec
+                    move "Iceride         Nolu Oda Yok" to tel-err-rec(100:)
+                    move tel-onb-oda                    to tel-err-rec(110:04)
+                    write tel-err-rec
+                 end-if
+                 if foliosuz
+                    move santral-rec to tel-err-rec
+                    move "      Nolu Odada Gerekli Folio Yok"
+                              to tel-err-rec(100:)
+                    move tel-onb-oda                    to tel-err-rec(100:04)
+                    write tel-err-rec
+                 end-if
+              end-if
+            end-if
+           else
+              if musteri and gecmez and
+                 santral-kontur not = zeroes
+                 move santral-rec to tel-err-rec
+                 move "Santral Oda Parametresi Tanimsiz" to tel-err-rec(100:)
+                 move tel-onb-oda                        to tel-err-rec(135:04)
+                 write tel-err-rec,
+              end-if
+           end-if
+     end-read,
+     end-perform,
+
+     close santral telkod kodlar02 teldata konuk romhrk exthrk onkasa
+     goback
+     .
+ santral-aktar-exit.
+    exit.
+  sant-fis-ver.
+     open output liste
+     move all "=" to liste-rec(1:30)
+     write liste-rec
+
+     move calis-gun              to liste-det1-2
+     move calis-ay               to liste-det1-3
+     move calis-yil              to liste-det1-4,
+     initialize liste-rec write liste-rec from liste-det1,
+
+     move tel-oda                to liste-det2-2
+     move tel-onb-oda            to liste-det2-4
+     initialize liste-rec write liste-rec from liste-det2,
+
+     move cekgir-oto             to liste-det3-2,
+     initialize liste-rec write liste-rec from liste-det3,
+     initialize liste-rec write liste-rec from liste-det4,
+
+     move all "=" to liste-rec(1:30) write liste-rec,
+     move santral-telno          to liste-det5-1
+     move santral-kontur         to liste-det5-2
+     move tl-tutar               to liste-det5-3
+     initialize liste-rec write liste-rec from liste-det5,
+     move all "=" to liste-rec(1:30) write liste-rec,
+
+     move exthrk-saat            to liste-det6-21,
+     move exthrk-dakika          to liste-det6-22,
+     move exthrk-saniye          to liste-det6-23,
+     initialize liste-rec write liste-rec from liste-det6,
+     initialize liste-rec write liste-rec from liste-det7
+     move all "=" to liste-rec(1:30) write liste-rec.
+    close liste.
+
+
+ kur-uyari.
+     initialize mesaj-degiskenler
+     move " [ Hata ] " to mmesaj-title
+     move calis-gun       to mmesaj-1(1:2)
+     move "/"             to mmesaj-1(3:1)
+     move calis-ay        to mmesaj-1(4:2)
+     move "/"             to mmesaj-1(6:1)
+     move calis-yil       to mmesaj-1(7:4)
+     move "Tarihli Gunluk Kur Kaydi bulunamadi" to mmesaj-2
+     move 1           to mmesaj-type
+     move 1           to mmesaj-icon
+     move 1           to mmesaj-default
+     perform mmesaj-ver.
+*
+ mmesaj-ver.
+      inspect mmesaj-1 replacing trailing spaces by low-values
+      inspect mmesaj-2 replacing trailing spaces by low-values
+      inspect mmesaj-3 replacing trailing spaces by low-values
+      display message box mmesaj-1, new-line, mmesaj-2, new-line, mmesaj-3
+              title   = mmesaj-title
+              type    = mmesaj-type
+              icon    = mmesaj-icon
+              default = mmesaj-default
+              returning donus-kodu.
+ 

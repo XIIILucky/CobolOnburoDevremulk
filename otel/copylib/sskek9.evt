@@ -1,0 +1,1729 @@
+* foliolzr.evt
+* foliolzr.evt is generated from D:\asya\acugt.ytl\otel\foliolzr.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+* foliolst.Evt
+* foliolst.Evt is generated from C:\Asya\acugt.ytl\otel\foliolst.Psf
+* This is a generated file. DO NOT modify this file directly.
+*{Bench}evt
+*{Bench}end
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi  
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel
+    
+    open i-o genelfis     
+    move 1 to genelfis-anahtar
+    read genelfis no lock
+      invalid
+        accept print-no from time
+      not invalid
+        add 1 to print-no
+        rewrite genelfis-rec end-rewrite
+    end-read
+    close genelfis
+
+    move print-no         to dokumer-dosya-adi
+                             dep-toplam-no
+                             rapor-no kdv-toplam-no  mami-kllnc  
+        move k-kodu-tasi to  mami-kllnc
+*/////////////// 
+    initialize html-deg.
+    open input kllnc
+    initialize kllnc-rec 
+    move k-kodu-tasi          to k-kodu
+    read kllnc no lock invalid 
+         continue 
+    end-read 
+    close kllnc
+    
+*       perform lazer-rapor
+*       set exit-pushed to true
+   
+    
+
+    .
+     
+
+*
+ Form1-Aft-Create.
+    move calis-gun      to rapor-gunu 
+    move calis-ay       to rapor-ayi 
+    move calis-yil      to rapor-yili
+    accept sis-zaman from time
+    move sis-saat      to raporun-saat
+    move sis-dakika     to raporun-daki
+    move sis-saniye     to raporun-sani
+    
+    move depart-cagir   to rapor-depkod
+    move folio-no-cagir to rapor-folio
+                           konuk-folio
+    move tldv-cagir     to rapor-tldv
+    move foliolst-kuru-cagir to rapor-folio-kuru
+    move foliolst-banka-cagir to rapor-banka
+    move foliolst-doviz-cagir to rapor-doviz 
+    move foliolst-kaynak-kuru to rapor-kaynak-kuru
+    
+    if  rapor-tldv = "T" 
+          move "TL" to baslik-kuru
+    else 
+          if rapor-folio-kuru = 1 then 
+              move "Folio Kuru" to baslik-kuru
+              else 
+              move rapor-banka to banka-kodu
+              move rapor-doviz to doviz-kodu
+              open input banka doviz
+              read banka no lock 
+                  invalid move banka-kodu to banka-adi
+              end-read     
+              read doviz no lock 
+                  invalid move doviz-kodu to d-adi-1
+              end-read     
+              close banka doviz
+              move banka-adi to baslik-kuru(1:7)
+              move "-"       to baslik-kuru(8:1)
+              move d-adi-1   to baslik-kuru(9:)
+          end-if
+    end-if
+    
+    
+    if rapor-depkod = spaces or 
+             rapor-depkod = zeroes then
+        move "Tum Departmanlar" to baslik-departman 
+        else
+    open input depkod 
+       move rapor-depkod to depkod-kodu
+       read depkod no lock
+           invalid 
+             move depkod-kodu to depkod-adi
+           
+              
+       end-read
+       move depkod-adi to baslik-departman 
+    close depkod
+    end-if        
+    open input konuk kllnc depkod nt  konu2
+    read konuk no lock
+      invalid
+        close konuk nt 
+        display message box "Folio kodu bulunamadi........!!!!!!"
+      not invalid
+        close konuk 
+        perform raporla
+        close nt 
+        
+    end-read
+     close kllnc depkod  konu2
+    .
+*
+ raporla.
+    initialize rapor-vis-0 rapor-vis-1 rapor-vis-2 rapor-vis-3 rapor-vis-4
+    move 1 to rapor-vis-1 rapor-vis-0
+    perform baslik-ayarla
+ 
+ 
+
+    |||
+    perform rom-ext-hrk-start
+ 
+    .
+*
+ baslik-ayarla.
+    move konuk-acik-1       to not-title-1
+    move konuk-acik-2       to not-title-2
+    if konuk-fol-kodu = "R"
+       move "R" to rapor-rom-ext
+    else
+       move "E" to rapor-rom-ext
+    end-if
+    
+    move konuk-odano      to rapor-oda  html-odano
+    move rapor-oda        to r-oda
+    move rapor-folio      to r-folio    html-folio
+    move konuk-adi        to r-adi      html-adi
+    move konuk-soyadi     to r-soyadi   html-soyadi
+    move konuk-gel-gun    to r-cin-gun  egun
+    move konuk-gel-ay     to r-cin-ay   eay
+    move konuk-gel-yil    to r-cin-yil  eyil
+    move etarih           to            html-cin-tarih
+    move konuk-git-gun    to r-cot-gun  egun
+    move konuk-git-ay     to r-cot-ay   eay
+    move konuk-git-yil    to r-cot-yil  eyil
+    move etarih           to            html-cout-tarih
+    
+    move konuk-voucher    to html-voucher
+    initialize acenta-rec
+    move konuk-acenta     to r-acenta acenta-kodu
+    open input acenta
+    read acenta no lock
+      invalid
+        move spaces to acenta-adi
+    end-read
+    close acenta
+    move acenta-adi       to r-acenta(06:15) html-acenta
+   
+
+    open input kodlar02
+    initialize kodlar02-rec html-op
+    move "O" to kodlar02-tipi
+    move konuk-operator to kodlar02-kodu
+    read kodlar02 no lock
+      invalid
+        initialize kodlar02-rec
+    not invalid
+        move kodlar02-adi to html-op
+    end-read
+    close kodlar02
+
+ 
+    initialize kodlar02-rec 
+    move "B"              to kodlar02-tipi
+    move konuk-odeme-tipi to r-odeme kodlar02-kodu
+    open input kodlar02
+    read kodlar02 no lock
+      invalid
+        move spaces to kodlar02-adi
+    end-read
+    close kodlar02
+    move kodlar02-adi     to r-odeme(04:15)   html-odeme
+    
+    initialize kodlar02-rec
+    move "A"              to kodlar02-tipi
+    move konuk-pan-tipi   to r-pan kodlar02-kodu
+    open input kodlar02
+    read kodlar02 no lock
+      invalid
+        move spaces to kodlar02-adi
+    end-read
+    close kodlar02
+    move kodlar02-adi     to r-pan(04:15)     html-pansiyon
+    
+    move konuk-buyuk      to r-p             
+    move r-p to html-pax
+    move konuk-kucuk      to r-c             
+    move r-c to html-child
+    move konuk-free       to r-f       
+    move r-f to html-free
+    
+    open input rez
+    initialize rez-rec
+    MOVE KONUK-REZ-NO TO rez-no
+    read rez no lock invalid
+            initialize html-s-tar
+    not invalid
+            move rez-al-gun to egun
+            move rez-al-ay  to eay
+            move rez-al-yil to eyil
+            move etarih     to html-s-tar
+            move rez-no     to html-rez-no
+    end-read
+    close rez
+
+    initialize doviz-rec
+    open input doviz
+    move konuk-doviz to doviz-kodu
+    read doviz no lock
+      invalid
+        initialize d-adi-1
+    end-read
+    move d-adi-1 to r-doviz                   html-doviz
+    close doviz
+    
+    move konuk-kur-degeri to r-kur
+          if fiyat-cikma not = 1
+              move konuk-dv-degeri  to r-oda-fiyat
+              move r-oda-fiyat to html-fiyat            
+          end-if    
+
+      move r-kur     to  html-cin-kuru
+      open input cast 
+      move konuk-fiyat-konumu to konum-anahtar
+      open input konum
+      read konum no lock invalid
+            continue
+        not invalid
+            move konum-adi to acc-fkonum      html-konum
+            
+      end-read
+      close konum
+      move "D" to kodlar02-tipi
+      move KONUK-ANLASMA to kodlar02-kodu
+      open input kodlar02
+
+      read kodlar02 no lock invalid
+            continue
+        not invalid
+            move kodlar02-adi to acc-anlasma  html-anlasma
+            
+      end-read
+      close kodlar02
+
+      if foliolst-pencere = 0
+         move "0-Tum Pencereler"             to html-pencere
+      else
+        open i-o musteri folref
+        move foliolst-pencere to folref-ref
+        move folio-no-cagir to folref-folio
+        read folref no lock invalid 
+         move foliolst-pencere                to html-pencere
+         move ".Pencere"                      to html-pencere(2:)
+         not invalid
+           move  folref-profil-anah to m-profil
+           read musteri no lock invalid continue
+           end-read
+           string 
+            musteri-adi   delimited by "  "
+            " " delimited by size
+            musteri-soyadi delimited by "  "
+            into html-pencere(2:)
+           end-string
+
+       end-read
+       close musteri folref
+      end-if .
+     
+      open input isyeri
+          initialize isyeri-rec
+          move isyeri-no-tasi to isyeri-no
+          read isyeri no lock invalid
+                  continue
+          end-read
+          move ISYERI-UNVAN to html-sirket
+      close isyeri
+     initialize gece-sayi gece-say html-geceleme
+    perform gece-bul.
+      
+     move gece-sayi to gece-say     
+     move gece-say to html-geceleme
+    close cast .
+
+
+    .
+*
+ gece-bul.
+     
+     initialize cast-rec gece-sayi
+     move konuk-gel-tar to cast-tarih
+     move konuk-rez-no to cast-rez-no 
+     start cast key >= cast-anah1 invalid continue
+       not invalid
+     perform with test after until fs-cast = "10"  
+          read cast next no lock end move "10" to fs-cast
+          not end
+             if cast-rez-no not = konuk-rez-no or 
+               cast-tarih >= konuk-git-tar
+                  move "10" to fs-cast
+               else
+                  add 1 to gece-sayi
+
+             end-if   
+          end-read 
+     end-perform, 
+     end-start, 
+
+
+
+           .
+ 
+*********************************
+
+*
+ rom-ext-hrk-start.
+      
+*     if onkpara-folio-dep-toplam = "E"
+        perform dep-toplam-yarat
+*     end-if
+       if onkpara-folio-kdv-toplam = 1
+        perform kdv-toplam-yarat
+     end-if
+     initialize borc-top alac-top bakiye depkod-toplam doviz-toplamlar toplamlar
+     open input hrk2 doviz konuk dov-boz   open input yromhrk 
+     move 0 to foliolzt-kaynakmi
+     if foliolzt-kaynakmi = 1 then 
+       
+        initialize yromhrk-rec
+        move rapor-folio to yromhrk-folio
+        start yromhrk key >= yromhrk-anah1
+          invalid
+            continue
+          not invalid
+            perform yromhrk-oku
+            
+        end-start
+        close yromhrk
+
+
+     else
+     if rapor-rom-ext = "R"
+        open input romhrk 
+        initialize romhrk-rec
+        move rapor-folio to romhrk-folio
+        start romhrk key >= romhrk-anah1
+          invalid
+            continue
+          not invalid
+            perform romhrk-oku
+            
+        end-start
+        close romhrk
+     else,
+        open input exthrk 
+        initialize exthrk-rec
+        move rapor-folio to exthrk-folio
+        start exthrk key >= exthrk-anah1
+          invalid
+            continue
+          not invalid
+            perform exthrk-oku
+    
+        end-start
+        close exthrk
+     end-if 
+     close hrk2 konuk doviz dov-boz close yromhrk.
+*
+ dep-toplam-yarat.
+     open output dep-toplam
+     close dep-toplam
+     open i-o dep-toplam with mass-update
+     initialize dep-toplam-rec .
+
+ kdv-toplam-yarat.
+     open output kdv-toplam
+     close kdv-toplam
+     open i-o kdv-toplam with mass-update
+     initialize kdv-toplam-rec
+     .
+*
+ dep-toplam-hesapla.
+     move hrkgir-depkod to depkod-kodu
+     read depkod no lock
+       invalid
+         continue
+       not invalid
+         evaluate rapor-tldv
+           when "T"
+             evaluate hrkgir-ba
+               when "B"
+                 evaluate depkod-tipi
+                        
+                   when 1 
+                          add hrkgir-tl-tutar to tlgen-b-top
+                          add hrkgir-dv-tutar to gen-b-top
+                   when 2 
+                          add hrkgir-tl-tutar to tloda-b-top
+                          add hrkgir-dv-tutar to oda-b-top
+                   when 3 
+                          add hrkgir-tl-tutar to tlext-b-top
+                          add hrkgir-dv-tutar to ext-b-top
+                   when 4 
+                          add hrkgir-tl-tutar to tltel-b-top
+                          add hrkgir-dv-tutar to tel-b-top
+                   when 5 
+                          add hrkgir-tl-tutar to tldig-b-top
+                          add hrkgir-dv-tutar to dig-b-top
+                    
+                 end-evaluate
+               when "A"
+                 evaluate depkod-tipi
+                   when 1 
+                          add hrkgir-tl-tutar to tlgen-a-top
+                          add hrkgir-dv-tutar to gen-a-top
+                   when 2 
+                          add hrkgir-tl-tutar to tloda-a-top
+                          add hrkgir-dv-tutar to oda-a-top
+                   when 3 
+                          add hrkgir-tl-tutar to tlext-a-top
+                          add hrkgir-dv-tutar to ext-a-top
+                   when 4 
+                          add hrkgir-tl-tutar to tltel-a-top
+                          add hrkgir-dv-tutar to tel-a-top
+                   when 5 
+                          add hrkgir-tl-tutar to tldig-a-top
+                          add hrkgir-dv-tutar to dig-a-top
+                   
+                 end-evaluate
+             end-evaluate
+           when "D"
+             evaluate hrkgir-ba
+               when "B"
+                 evaluate depkod-tipi
+                  
+                   when 1 
+                          add hrkgir-dv-tutar to gen-b-top
+                          add hrkgir-tl-tutar to tlgen-b-top
+                   when 2 
+                          add hrkgir-dv-tutar to oda-b-top
+                          add hrkgir-tl-tutar to tloda-b-top
+                   when 3 
+                          add hrkgir-dv-tutar to ext-b-top
+                          add hrkgir-tl-tutar to tlext-b-top
+                   when 4 
+                          add hrkgir-dv-tutar to tel-b-top
+                          add hrkgir-tl-tutar to tltel-b-top
+                   when 5 
+                          add hrkgir-dv-tutar to dig-b-top
+                          add hrkgir-tl-tutar to tldig-b-top
+                  end-evaluate
+               when "A"
+                 evaluate depkod-tipi
+                   when 1 
+                          add hrkgir-dv-tutar to gen-a-top
+                          add hrkgir-tl-tutar to tlgen-a-top
+                   when 2 
+                          add hrkgir-dv-tutar to oda-a-top
+                          add hrkgir-tl-tutar to tloda-a-top
+                   when 3 
+                          add hrkgir-dv-tutar to ext-a-top
+                          add hrkgir-tl-tutar to tlext-a-top
+                   when 4 
+                          add hrkgir-dv-tutar to tel-a-top
+                          add hrkgir-tl-tutar to tltel-a-top
+                   when 5 
+                          add hrkgir-dv-tutar to dig-a-top
+                          add hrkgir-tl-tutar to tldig-a-top
+                   
+                 end-evaluate
+             end-evaluate
+         end-evaluate
+     end-read
+     .
+*
+ dep-toplam-kaydet.
+    
+      initialize dep-toplam-rec
+       
+      move hrkgir-tl-tutar    to tutar
+      if hrkgir-corr-depkod not = spaces and  not = zeroes
+             move hrkgir-corr-depkod      to dep-toplam-anah
+             read dep-toplam no lock invalid
+               initialize dep-toplam-rec
+               move hrkgir-corr-depkod  to dep-toplam-anah
+               if hrkgir-ba = "B" then
+                 move "A"     to dep-toplam-tip 
+                 else    move "B"     to dep-toplam-tip 
+               end-if
+             end-read
+             subtract tutar                from  dep-toplam-tutar
+        else  
+
+              move hrkgir-depkod       to dep-toplam-anah
+              read dep-toplam no lock invalid
+                   initialize dep-toplam-rec
+                   move hrkgir-depkod  to dep-toplam-anah
+                   move hrkgir-ba      to dep-toplam-tip
+              end-read
+              add tutar               to  dep-toplam-tutar
+      end-if
+      rewrite dep-toplam-rec invalid
+              write dep-toplam-rec invalid continue end-write
+      end-rewrite.
+     .
+*
+ kdv-toplam-al.
+
+      initialize kdv-toplam-rec
+      initialize tutar
+      move hrkgir-tl-tutar    to tutar
+      move hrkgir-depkod       to depkod-kodu
+       if hrkgir-corr-depkod not = spaces and not = zeroes
+
+             move hrkgir-corr-depkod       to depkod-kodu
+        end-if
+      
+      read depkod no lock invalid continue end-read
+      if depkod-kdv > 0 
+          
+              move depkod-kdv to kdv-toplam-anah
+              read kdv-toplam no lock invalid
+                   initialize kdv-toplam-rec
+                   move depkod-kdv to kdv-toplam-anah
+                  
+              end-read
+              if hrkgir-corr-depkod not = spaces and not = zeroes
+                 subtract  hrkgir-tl-tutar            from  kdv-toplam-tutar
+              else
+                 add  hrkgir-tl-tutar                to kdv-toplam-tutar
+              end-if
+                compute tutar rounded = ( hrkgir-tl-tutar  / (100 + depkod-kdv ) ) * 100 
+               if hrkgir-corr-depkod not = spaces and not = zeroes
+                     compute kdv-net-tutar rounded = kdv-net-tutar -  tutar
+                    else
+                   compute kdv-net-tutar rounded = kdv-net-tutar +  tutar
+              end-if
+                if hrkgir-corr-depkod not = spaces and not = zeroes
+                     compute kdv-kdv-tutar rounded =    kdv-kdv-tutar  - ( hrkgir-tl-tutar  - tutar )
+                    else
+                  compute kdv-kdv-tutar rounded =    kdv-kdv-tutar  + ( hrkgir-tl-tutar  - tutar )
+              end-if
+              rewrite kdv-toplam-rec invalid
+                      write kdv-toplam-rec invalid continue end-write
+              end-rewrite
+         end-if.
+*
+ kdv-detay.
+
+
+      if onkpara-folio-kdv-toplam = 1
+             
+            initialize det-filler
+          move "KDV Toplam"           to det-01
+          move "NET"                  to det-044
+               move "KDV"                    to det-055
+               move "TOPLAM"                     to det-066
+*            write dokumer-rec from detay,end-write
+          add 1 to satir-say
+          perform sayfa-sonu-kontrol  
+         initialize kdv-toplam-rec bakiye
+        
+         start kdv-toplam key not < kdv-toplam-anah invalid
+               continue
+         not invalid
+         perform with test after until fs-kdv-toplam = "10"
+         read kdv-toplam next no lock end move "10" to fs-kdv-toplam
+         not at end
+                 initialize det-filler
+              move kdv-toplam-anah     to  det-04(1:2)
+              move "KDV"               to  det-04(4:)
+              
+              move kdv-net-tutar                      to etutar
+              move etutar                       to det-044
+               move kdv-kdv-tutar                       to etutar
+              move etutar                       to det-055
+               move kdv-toplam-tutar                       to etutar
+              move etutar                       to det-066
+*                write dokumer-rec from detay,end-write
+               add 1 to satir-say
+               perform sayfa-sonu-kontrol  
+         end-read
+         end-perform
+         end-start
+         
+         end-if.
+         
+
+*
+ dep-toplam-oku.
+     
+     initialize fs-dep-toplam
+     perform with test after until fs-dep-toplam = "10"
+       read dep-toplam next no lock
+         end
+           move "10" to fs-dep-toplam
+         not at end
+           initialize dokumer-rec detay  html-dep-deg
+*           move "1"          to det-dokumer-20(10:1)
+*           move "T8"         to det-dokumer-20(1:2)
+*           move "A"          to det-dokumer-20(3:1)
+*           move 322          to det-renk1
+
+           initialize depkod-rec
+           move dep-toplam-anah      to depkod-anah
+           read depkod no lock
+             invalid
+               move depkod-anah to depkod-adi
+               move all "*" to depkod-adi(4:)
+           end-read
+           move depkod-anah to  det-02    
+           move depkod-adi           to det-03 html-dep-departman
+           if dep-toplam-tip = "B"
+              move dep-toplam-tutar  to z-16 etutar
+              move z-16              to det-044
+            else
+              move dep-toplam-tutar  to z-16 dep-toplam-tutar
+              move z-16              to det-055
+              compute dep-toplam-tutar = dep-toplam-tutar * -1
+              move dep-toplam-tutar  to etutar
+           end-if
+ 
+           move etutar               to html-dep-tl-tutar
+
+           move "|" to fil-01 fil-02 fil-03 fil-033 fil-04 fil-044 fil-05 fil-055
+                       fil-06 fil-066 fil-07 
+                       fil-09 fil-10
+                       fil-11
+
+           perform Acu-RPT-Report1-DO-PRINT-RTN
+
+
+
+*           write dokumer-rec from detay,end-write
+           add 1 to satir-say
+           perform sayfa-sonu-kontrol
+       end-read
+     end-perform
+     .
+*
+*
+ yromhrk-oku.
+
+     initialize fs-yromhrk
+     perform with test after until fs-yromhrk="10"
+       read yromhrk next no lock
+         end
+           move "10" to fs-yromhrk
+         not end
+         if yromhrk-folio not = rapor-folio
+            move "10" to fs-yromhrk
+         else
+           if rapor-depkod = spaces or rapor-depkod = zeroes 
+              or rapor-depkod = yromhrk-depkod then
+                   
+
+               
+
+               initialize hrkgir-rec
+               move yromhrk-rec to hrkgir-rec
+
+               if onkpara-folio-dep-toplam = "E"
+                  perform dep-toplam-kaydet
+               end-if
+
+               if onkpara-folio-kdv-toplam = 1
+                  
+                 perform  kdv-toplam-al
+              end-if
+              
+               perform dokumer-detay-yaz
+               perform dep-toplam-hesapla
+    
+            end-if
+         end-if
+       end-read
+     end-perform
+    if onkpara-folio-dep-toplam = "E"
+         perform dokumer-toplam-yaz
+     end-if
+     
+      if onkpara-folio-kdv-toplam = 1
+       perform kdv-detay
+       end-if
+     .
+*
+ romhrk-oku.
+
+     initialize fs-romhrk
+     perform with test after until fs-romhrk="10"
+       read romhrk next no lock
+         end
+           move "10" to fs-romhrk
+         not end
+         if romhrk-folio not = rapor-folio
+            move "10" to fs-romhrk
+         else
+           if rapor-depkod = spaces or rapor-depkod = zeroes 
+              or rapor-depkod = romhrk-depkod then
+                   
+
+               if foliolst-pencere <> 0
+                  if foliolst-pencere <> romhrk-ref
+                     exit perform cycle
+                  end-if
+               end-if
+
+               initialize hrkgir-rec
+               move romhrk-rec to hrkgir-rec
+
+               if onkpara-folio-dep-toplam = "E"
+                  perform dep-toplam-kaydet
+               end-if
+
+               if onkpara-folio-kdv-toplam = 1
+                  
+                 perform  kdv-toplam-al
+              end-if
+              
+               perform dokumer-detay-yaz
+               perform dep-toplam-hesapla
+    
+            end-if
+         end-if
+       end-read
+     end-perform
+    if onkpara-folio-dep-toplam = "E"
+         perform dokumer-toplam-yaz
+     end-if
+     
+      if onkpara-folio-kdv-toplam = 1
+       perform kdv-detay
+       end-if
+     .
+*
+ exthrk-oku.
+     initialize fs-exthrk
+     perform with test after until fs-exthrk="10"
+       read exthrk next no lock
+         end
+           move "10" to fs-exthrk
+         not end
+         if exthrk-folio not = rapor-folio
+            move "10" to fs-exthrk
+         else
+            if rapor-depkod = spaces or rapor-depkod = zeroes 
+              or rapor-depkod = exthrk-depkod then
+           
+               if foliolst-pencere <> 0
+                  if foliolst-pencere <> exthrk-ref
+                     exit perform cycle
+                  end-if
+               end-if
+
+               initialize hrkgir-rec
+               move exthrk-rec to hrkgir-rec
+               if onkpara-folio-dep-toplam = "E"
+                  perform dep-toplam-kaydet
+               end-if
+               if onkpara-folio-kdv-toplam = 1
+                   perform kdv-toplam-al
+               end-if
+             
+               perform dokumer-detay-yaz
+               perform dep-toplam-hesapla
+
+            end-if
+         end-if
+       end-read
+     end-perform
+      if onkpara-folio-dep-toplam = "E"
+         perform dokumer-toplam-yaz
+     end-if
+      if onkpara-folio-kdv-toplam = 1
+       perform kdv-detay
+       end-if
+     .
+*
+ dokumer-detay-yaz.
+    move foliolst-doviz-cagir    to rapor-doviz
+     initialize dokumer-rec detay html-detay-deg 
+     MOVE KONUK-KUR-DEGERI              TO EKUR
+     MOVE EKUR                          TO det-033
+     move hrkgir-gun                    to e-gun  egun
+     move hrkgir-ay                     to e-ay   eay
+     move hrkgir-yil                    to e-yil  eyil 
+     move etarih                        to html-detay-tarih  
+     move e-tarih                       to det-01
+     move hrkgir-depkod                 to det-02 depkod-kodu
+     read depkod no lock
+       invalid
+         move spaces to depkod-adi
+     end-read
+    MOVE  hrkgir-tl-tutar   TO TLTUTAR ETLTUTAR
+     move hrkgir-folio       to hrk2-folio
+     move hrkgir-islem       to hrk2-islem
+     read hrk2 no lock invalid
+          move "Self"        to html-detay-kaynak
+     end-read
+       initialize konu2-rec  
+     move hrk2-kaynak-folio    to  konu2-anah
+     read konu2 no lock invalid 
+          
+            continue
+       end-read  
+       move hrkgir-anah to yromhrk-anah
+       move   hrk2-kaynak-folio to yromhrk-folio
+       read yromhrk no lock invalid stop " "
+       end-read
+        move 0 to dtah-islem 
+      if yromhrk-dovboz-anah not = spaces       
+             move  yromhrk-dovboz-anah to  dov-boz-anah 
+             read dov-boz no lock 
+               invalid 
+                  continue
+               not invalid 
+               if dov-boz-doviz = rapor-doviz
+  
+                 move 1 to dtah-islem
+               end-if
+              end-read
+      else 
+        if yromhrk-rez-no > 0 and yromhrk-kur-degeri > 0
+          move 2  to dtah-islem
+        end-if 
+      end-if
+
+      if dtah-islem = 1 or 2 then 
+         if dtah-islem = 1
+           if DOV-BOZ-TL-TUTAR = hrkgir-tl-tutar 
+               move DOV-BOZ-dv-TUTAR to hrkgir-dv-tutar 
+                 compute    konuk-kur-degeri rounded =
+                      hrkgir-tl-tutar / hrkgir-dv-tutar
+           else
+            move DOV-BOZ-KUR-TUTAR to konuk-kur-degeri
+           end-if
+         end-if
+         if dtah-islem = 2  
+            if konu2-doviz = rapor-doviz 
+****               move yromhrk-kur-degeri to konuk-kur-degeri |likya world için yapýldý.ramazan aþkýn
+***************************************************
+              if yromhrk-doviz-tut > 0 
+                compute yromhrk-kur-degeri rounded = hrkgir-tl-tutar 
+                        / yromhrk-doviz-tut 
+                 move yromhrk-kur-degeri to konuk-kur-degeri
+              else
+                move yromhrk-kur-degeri to konuk-kur-degeri
+              end-if 
+*******************************************************************************
+            else
+              open input kur
+              move konu2-banka to  kur-banka
+              move rapor-doviz to kur-doviz            
+                  if  depkod-tipi = 2 or 4  then            
+                    move konu2-gel-tar to kur-tarih
+                  else
+                    move hrkgir-tarih to kur-tarih
+                  end-if
+               read kur no lock 
+                 invalid
+                 continue
+               not invalid                
+                    move doviz-alis    to konuk-kur-degeri                   
+              end-read            
+                 close kur       
+            end-if
+         end-if 
+      else         
+       
+      if ((konu2-fol-kodu = "R" and   depkod-tipi = 2  )  or yromhrk-cin-kur = 1) and konu2-doviz = rapor-doviz
+            move   konu2-kur-degeri to  konuk-kur-degeri
+          
+          
+         else
+         
+          if TLbakiye-pen(hrkgir-ref) > 0 and bakiye-pen(hrkgir-ref) > 0   and depkod-ba = "A"
+            compute konuk-kur-degeri rounded = TLbakiye-pen(hrkgir-ref) / bakiye-pen(hrkgir-ref)
+            else
+
+          open input kur
+          move konu2-banka to  kur-banka
+          move rapor-doviz to kur-doviz
+          if  depkod-tipi = 2 or 4  then            
+            move konu2-gel-tar to kur-tarih
+            else
+            move hrkgir-tarih to kur-tarih
+         end-if
+             read kur no lock 
+                 invalid
+                continue
+                 not invalid 
+               
+                         move doviz-alis    to konuk-kur-degeri
+                   
+              end-read            
+                 close kur       
+         end-if
+         end-if
+         end-if
+
+       
+          
+         compute   hrkgir-dv-tutar rounded =
+               hrkgir-tl-tutar / konuk-kur-degeri
+         move hrkgir-dv-tutar      to etutar tutar
+
+
+
+
+
+*******************************
+     
+
+      evaluate hrkgir-ba
+           when "A"
+                   
+                    
+                    subtract TLtutar from TLbakiye-pen(hrkgir-ref)
+                    subtract tutar from bakiye-pen(hrkgir-ref)
+
+
+           when "B" 
+                     add TLtutar   to TLbakiye-pen(hrkgir-ref)
+                     add tutar   to bakiye-pen(hrkgir-ref)
+      end-evaluate.
+     
+     move depkod-adi                    to det-03  html-detay-departman
+     if yromhrk-kk-onay-kodu not = spaces
+         move "-"                    to  html-detay-departman(19:1)
+         move yromhrk-kk-onay-kodu   to  html-detay-departman(20:)
+     end-if 
+     evaluate hrkgir-ba
+       when "B"
+*         evaluate rapor-tldv
+*           when "T"
+             add hrkgir-tl-tutar        to tlborc-top
+             move hrkgir-tl-tutar       to z-16
+             move z-16                  to det-044
+*           when "D"
+             add hrkgir-dv-tutar        to borc-top
+             move hrkgir-dv-tutar       to z-16
+             move z-16                      to det-04
+              move hrkgir-tl-tutar       to  etutar
+             move etutar                to html-detay-tl-tutar
+*         end-evaluate
+         
+       when "A"
+*         evaluate rapor-tldv
+*           when "T"
+             add hrkgir-tl-tutar        to tlalac-top
+             move hrkgir-tl-tutar       to z-16   etutar
+             move z-16                      to det-055 
+             compute eksi =   hrkgir-tl-tutar  * - 1
+              move eksi       to  etutar
+             move etutar                to html-detay-tl-tutar
+*           when "D"
+             add hrkgir-dv-tutar        to alac-top
+             move hrkgir-dv-tutar       to z-16
+*         end-evaluate
+         move z-16                      to det-05
+     end-evaluate
+     compute bakiye = borc-top - alac-top
+     compute tlbakiye = tlborc-top - tlalac-top
+     move bakiye                        to z-16
+     move z-16                          to det-06
+            
+     move tlbakiye                      to z-16 etutar
+     
+
+     move z-16                          to det-066
+     move hrkgir-saat                   to e-saat    esaat
+     move hrkgir-dakika                 to e-dakika  edakika
+     move hrkgir-saniye                 to e-saniye  esaniye
+     move ezaman                        to html-detay-zaman
+       
+     move e-zaman                       to det-07
+     if cmb-fat-cek-cik(1:2) <> "01"
+         if cmb-fat-cek-cik(1:2) = "02"
+           if HRKGIR-FATURA-NO    > 0
+                move HRKGIR-FATURA-NO                  to z8
+                move z8                                to html-detay-zaman
+                move HRKGIR-FATURA-NO                  to z8
+                move z8                                to det-07
+           else
+                move spaces                to     det-07  html-detay-zaman
+           end-if
+        end-if
+
+        if cmb-fat-cek-cik(1:2) = "03"
+           if hrkgir-cekno > 0
+              move hrkgir-cekno                  to html-detay-zaman
+              move hrkgir-cekno                  to det-07
+           else
+              move spaces                        to det-07 html-detay-zaman
+           end-if
+        end-if
+     end-if
+
+     move hrkgir-islem-tipi             to det-09
+     move hrkgir-cekno                  to det-10
+     move hrkgir-kart-no                to det-11
+     move hrkgir-staf                   to k-kodu
+
+     
+     read kllnc no lock
+       invalid key
+         move space to k-soyadi
+     end-read
+     move k-soyadi                      to det-12
+     move " " to fil-01 fil-02 fil-03 fil-033 fil-04 fil-044 fil-05 fil-055
+                 fil-06 fil-066 fil-07  fil-09 fil-10
+                 fil-11 fil-12
+*     write dokumer-rec from detay,end-write
+ 
+
+
+     move konuk-rec          to konu2-rec
+     initialize hrk2-rec konuk-rec
+     move hrkgir-folio       to hrk2-folio
+     move hrkgir-islem       to hrk2-islem
+     read hrk2 no lock invalid
+          move "Self"        to html-detay-kaynak
+     not invalid
+          move hrk2-kaynak-folio   to konuk-folio
+          read konuk no lock invalid
+               move "Tanimsiz ..." to konuk-adi konuk-soyadi
+          end-read
+
+          evaluate kaynak-cikmasin(1:1) 
+          when 0
+                  inspect konuk-adi replacing trailing spaces by low-values
+                  inspect konuk-soyadi replacing trailing spaces by low-values
+                  inspect konuk-odano replacing trailing spaces by low-values
+                  move all low-values to html-detay-kaynak
+                  string html-detay-kaynak
+                         konuk-odano delimited by low-values
+                         "-"         delimited by low-values
+                         konuk-adi delimited by low-values
+                         " " delimited by low-values
+                         konuk-soyadi delimited by low-values
+                         into html-detay-kaynak
+                  inspect html-detay-kaynak replacing all low-values by spaces
+          when 1 
+              continue 
+          when 2 
+              initialize not-rec
+              if konuk-fol-kodu = "R"
+                  move  "RHR"     to NOT-DOS
+                  move hrk2-anah to  NOT-DOS-ANAH 
+                 else
+                  move  "EHR"     to NOT-DOS
+                  move hrk2-anah to  NOT-DOS-ANAH 
+               end-if  
+                 
+                  read nt no lock invalid 
+                      initialize not1
+                  end-read
+                  move not1 to html-detay-kaynak
+               
+          end-evaluate 
+          move foliolst-doviz-cagir    to hrk2-ger-doviz
+          if hrk2-ger-DV-TUTAR not numeric 
+             move 0 to hrk2-ger-DV-TUTAR
+          end-if
+          move  hrkgir-dv-tutar  to     hrk2-ger-DV-TUTAR
+          move hrkgir-dv-tutar               to etutar
+          move etutar                          to html-detay-dov-tutar
+          initialize doviz-rec
+          move hrk2-ger-doviz                  to doviz-kodu
+          read doviz no lock invalid
+               initialize doviz-rec 
+          end-read            
+          move d-kisa-adi                      to html-detay-dov-adi
+
+          if hrk2-ger-doviz > 0
+             add  hrk2-ger-dv-tutar            to doviz-toplam(hrk2-ger-doviz)
+          else
+             add  hrk2-ger-dv-tutar            to doviz-toplam(100)
+          end-if
+
+     end-read
+     if doviz-cik = 1
+        move spaces                   to html-detay-dov-tutar  html-detay-dov-adi
+     end-if
+     move konu2-rec to konuk-rec
+ 
+     perform Acu-RPT-Report1-DO-PRINT-RTN
+
+     initialize html-detay-deg
+
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+     initialize not-rec
+     if konuk-fol-kodu = "R"
+          move  "RHR"     to NOT-DOS
+          move hrkgir-anah to  NOT-DOS-ANAH 
+         else
+          move  "EHR"     to NOT-DOS
+          move hrkgir-anah to  NOT-DOS-ANAH 
+       end-if  
+         
+          read nt no lock invalid initialize not1
+          not invalid 
+            initialize det-filler
+            move not1 to detay(50:)
+        
+*           write dokumer-rec from detay,end-write
+         add 1 to satir-say
+         perform sayfa-sonu-kontrol
+        end-read
+
+     .
+*
+ dokumer-toplam-yaz.
+     initialize dokumer-rec detay html-detay-deg
+*     move "T"          to det-dokumer-20(1:1)
+     move "-"          to det-dokumer-20(5:1)
+     move all "-" to det-01 det-02 det-03 det-033 det-04 det-044 det-05 det-055
+                     det-06 det-066 det-07  det-09 det-10
+                     det-11 det-12
+*     write dokumer-rec from detay,end-write
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+     
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+*     move "T1"         to det-dokumer-20(1:2)
+*     move "A"          to det-dokumer-20(3:1)
+*     move 432          to det-renk1
+     move "- Toplam -" to det-03
+     move borc-top     to z-16
+     move z-16         to det-04
+     move tlborc-top     to z-16
+     move z-16         to det-044
+     move alac-top     to z-16
+     move z-16         to det-05
+     move tlalac-top     to z-16
+     move z-16         to det-055
+
+     compute bakiye = tlborc-top - tlalac-top
+     move bakiye       to z-16   etutar
+     move etutar         to html-detay-tl-tutar
+
+ 
+     compute bakiye = borc-top - alac-top
+     move bakiye       to z-16   etutar
+     move etutar       to html-detay-dov-tutar
+
+
+     move z-16         to det-06
+     move tlbakiye       to z-16
+     move z-16         to det-066
+     move "|" to fil-01 fil-02 fil-03 fil-033 fil-04 fil-044 fil-05 fil-055
+                 fil-06 fil-066 fil-07  fil-09 fil-10
+                 fil-11 fil-12
+*     write dokumer-rec from detay,end-write
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+     
+     initialize dokumer-rec detay
+*     move "T"          to det-dokumer-20(1:1)
+     move "-"          to det-dokumer-20(5:1)
+     move all "-" to det-01 det-02 det-03 det-033 det-04 det-044 det-05 det-055
+                     det-06 det-066 det-07  det-09 det-10
+                     det-11 det-12
+*     write dokumer-rec from detay,end-write
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+     
+     initialize dokumer-rec detay
+*     move "T"          to det-dokumer-20(1:1)
+     move "-"          to det-dokumer-20(5:1)
+*     write dokumer-rec from detay,end-write
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+     
+     initialize dokumer-rec detay 
+*     move "T2"         to det-dokumer-20(1:2)
+*     move "A"          to det-dokumer-20(3:1)
+*     move 481          to det-renk1
+     move "Genel Top." to det-03
+     move gen-b-top    to z-16
+     move z-16         to det-04
+     move tlgen-b-top    to z-16
+     move z-16         to det-044
+     move gen-a-top    to z-16
+     move z-16         to det-05
+     move tlgen-a-top    to z-16
+     move z-16         to det-055
+     compute bakiye = gen-b-top - gen-a-top
+     move bakiye       to z-16
+     move z-16         to det-06
+     compute bakiye = tlgen-b-top - tlgen-a-top
+     move bakiye       to z-16
+     move z-16         to det-066
+     move "|" to fil-01 fil-02 fil-03 fil-033 fil-04 fil-044 fil-05 fil-055
+                 fil-06 fil-066 fil-07  fil-09 fil-10
+                 fil-11 fil-12
+*     write dokumer-rec from detay,end-write
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+     
+     initialize dokumer-rec detay 
+*     move "T3"         to det-dokumer-20(1:2)
+*     move "A"          to det-dokumer-20(3:1)
+*     move 481          to det-renk1
+     move "Oda Toplam" to det-03
+     move oda-b-top    to z-16
+     move z-16         to det-04
+     move tloda-b-top    to z-16
+
+     move z-16         to det-044
+     move oda-a-top    to z-16
+     move z-16         to det-05
+     move tloda-a-top    to z-16
+     move z-16         to det-055
+     compute bakiye = oda-b-top - oda-a-top
+     move bakiye       to z-16
+     move z-16         to det-06
+     compute bakiye = tloda-b-top - tloda-a-top
+     move bakiye       to z-16
+     move z-16         to det-066
+     move "|" to fil-01 fil-02 fil-03 fil-033 fil-04 fil-044 fil-05 fil-055
+                 fil-06 fil-066 fil-07  fil-09 fil-10
+                 fil-11 fil-12
+*     write dokumer-rec from detay,end-write
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+     
+     initialize dokumer-rec detay 
+*     move "T4"         to det-dokumer-20(1:2)
+*     move "A"          to det-dokumer-20(3:1)
+*     move 481          to det-renk1
+     move "Extra Top." to det-03
+     move ext-b-top    to z-16
+     move z-16         to det-04
+     move tlext-b-top    to z-16
+     move z-16         to det-044
+     move ext-a-top    to z-16
+     move z-16         to det-05
+     move tlext-a-top    to z-16
+     move z-16         to det-055
+     compute bakiye = ext-b-top - ext-a-top
+     move bakiye       to z-16
+     move z-16         to det-06
+     compute bakiye = tlext-b-top - tlext-a-top
+     move bakiye       to z-16
+     move z-16         to det-066
+     move "|" to fil-01 fil-02 fil-03 fil-033 fil-04 fil-044 fil-05 fil-055
+                 fil-06 fil-066 fil-07  fil-09 fil-10
+                 fil-11 fil-12
+*     write dokumer-rec from detay,end-write
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+     
+     initialize dokumer-rec detay 
+*     move "T5"         to det-dokumer-20(1:2)
+*     move "A"          to det-dokumer-20(3:1)
+*     move 481          to det-renk1
+     move "Telefon T." to det-03
+     move tel-b-top    to z-16
+     move z-16         to det-04
+     move tltel-b-top    to z-16
+     move z-16         to det-044
+     move tel-a-top    to z-16
+     move z-16         to det-05
+     move tltel-a-top    to z-16
+     move z-16         to det-055
+     compute bakiye = tel-b-top - tel-a-top
+     move bakiye       to z-16
+     move z-16         to det-06
+     compute bakiye = tltel-b-top - tltel-a-top
+     move bakiye       to z-16
+     move z-16         to det-066
+     move "|" to fil-01 fil-02 fil-03 fil-033 fil-04 fil-044 fil-05 fil-055
+                 fil-06 fil-066 fil-07  fil-09 fil-10
+                 fil-11 fil-12
+*     write dokumer-rec from detay,end-write
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+     
+     initialize dokumer-rec detay 
+*     move "T6"         to det-dokumer-20(1:2)
+*     move "A"          to det-dokumer-20(3:1)
+*     move 481          to det-renk1
+     move "Diger Top." to det-03
+     move dig-b-top    to z-16
+     move z-16         to det-04
+     move tldig-b-top    to z-16
+     move z-16         to det-044
+     move dig-a-top    to z-16
+     move z-16         to det-05
+     move tldig-a-top    to z-16
+     move z-16         to det-055
+     compute bakiye = dig-b-top - dig-a-top
+     move bakiye       to z-16
+     move z-16         to det-06
+     compute bakiye = tldig-b-top - tldig-a-top
+     move bakiye       to z-16
+     move z-16         to det-066
+     move "|" to fil-01 fil-02 fil-03 fil-033 fil-04 fil-044 fil-05 fil-055
+                 fil-06 fil-066 fil-07  fil-09 fil-10
+                 fil-11 fil-12
+*     write dokumer-rec from detay,end-write
+     add 1 to satir-say
+     perform sayfa-sonu-kontrol
+
+     move 0 to rapor-vis-3
+     move 1 to rapor-vis-2
+     move 0 to rapor-vis-1
+     
+
+     if isyeri-adres-tasi = "ramada12" 
+          move 1 to rapor-vis-5
+     else
+          move 0  to rapor-vis-5
+     end-if
+
+     perform Acu-RPT-Report1-DO-PRINT-RTN
+
+
+
+     
+*     if onkpara-folio-dep-toplam = "E"
+        perform dokumer-dep-toplam-yaz
+*     end-if
+      
+     .
+*
+ dokumer-dep-toplam-yaz.
+     
+     move 1 to rapor-vis-3
+     move 0 to rapor-vis-2
+     move 0 to rapor-vis-1
+     initialize dep-toplam-rec dep-bakiye
+     start dep-toplam key >= dep-toplam-anah
+       invalid
+         continue
+       not invalid
+         initialize dokumer-rec detay
+*         move "T7"         to det-dokumer-20(1:2)
+*         move "A"          to det-dokumer-20(3:1)
+*         move 322          to det-renk1
+         move "Dep.Top."   to det-01
+         move "|" to fil-01 fil-02 fil-03 fil-033 fil-04 fil-044 fil-05 fil-055
+                 fil-06 fil-066 fil-07  fil-09 fil-10
+                 fil-11 fil-12
+*         write dokumer-rec from detay,end-write
+         add 1 to satir-say
+         perform sayfa-sonu-kontrol
+         perform dep-toplam-oku
+     end-start
+     move 0 to rapor-vis-3 rapor-vis-2 rapor-vis-1 
+
+    if onkpara-folio-kdv-toplam = 1 
+    move 1 to rapor-vis-4
+    initialize html-kdv-deg
+    move "Kdv"          to  html-kdv-kodu                   
+    move "Matrah"       to html-kdv-matrah
+    move "Kdv Tutar"    to html-kdv-tutar
+    move "Genel Toplam" to html-kdv-genel-toplam
+    
+    perform Acu-RPT-Report1-DO-PRINT-RTN
+    add 1  to satir-say
+    perform sayfa-sonu-kontrol        
+    move 0 to rapor-vis-4
+
+     move 1 to rapor-vis-4
+     initialize kdv-toplam-rec
+     start kdv-toplam key not < kdv-toplam-anah invalid  
+          continue 
+     not invalid 
+     perform until fs-kdv-toplam = "10"
+     read kdv-toplam next no lock end move "10"  to fs-kdv-toplam
+     not at end 
+              initialize html-kdv-deg
+              move kdv-toplam-anah     to  html-kdv-kodu 
+                            
+              move kdv-net-tutar                      to etutar
+              move etutar                       to html-kdv-matrah
+               move kdv-kdv-tutar                       to etutar
+              move etutar                       to html-kdv-tutar
+               move kdv-toplam-tutar                       to etutar
+              move etutar                       to html-kdv-genel-toplam
+          
+              perform Acu-RPT-Report1-DO-PRINT-RTN
+
+              add 1 to satir-say
+              perform sayfa-sonu-kontrol        
+     end-read 
+     end-perform
+     end-start
+    end-if
+
+**     perform Acu-RPT-Report1-DO-PRINT-RTN
+     move 0 to rapor-vis-4.
+
+
+     .
+
+*
+ dokumer-goster.
+     if onkpara-folio-dep-toplam = "E"
+        close dep-toplam
+        delete file dep-toplam
+     end-if.
+     if onkpara-folio-kdv-toplam = 1
+        close kdv-toplam
+       delete file kdv-toplam
+     end-if.
+     
+     set exit-pushed  to true
+ 
+     .
+*
+ sayfa-sonu-kontrol.
+ 
+         
+
+****************************** RAPOR BURADAN BAÞLAYAZÜ
+*
+ lazer-rapor.
+    open output mami
+
+    initialize winprint-selection
+
+    call "Win$printer" using winprint-setup-old
+         returning print-donus
+    end-call
+
+   
+
+    write mami-rec from "101"
+
+    if print-donus < 0
+       close mami
+       exit paragraph.
+
+    call "win$printer" using winprint-get-current-info-ex
+                             winprint-selection
+    end-call
+
+    write mami-rec from "102"
+
+    set environment "dll_convention" to "1"   
+    if is-remote
+*/ rapor dosyaya gonderildi  
+       call "@[DISPLAY]:asyadll.dll" on exception
+                       display message box 
+                               "asyadll.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+       end-call
+       move all low-values to win-temp
+       call "@[DISPLAY]:ASYA_GetEnvVar" using by reference env-name
+                                              by reference win-temp
+                                              by value 255
+            on exception
+                       display message box 
+                               "asyadll.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+       end-call
+
+       write mami-rec from "103"
+       inspect win-temp replacing trailing spaces by low-values
+       move all low-values to html-rapor
+       string html-rapor
+              "@[DISPLAY]:"     delimited by low-values
+              win-temp          delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into html-rapor
+
+       perform acu-report1-print-para 
+
+      write mami-rec from "104"
+       move all low-values to prt-fullfilename
+       string prt-fullfilename
+              win-temp delimited by low-values
+              "\"               delimited by low-values
+              rapor-dosya-adres delimited by low-values
+              into prt-fullfilename
+
+       call "@[DISPLAY]:AcuBenchPrintDummy" 
+              on exception 
+                 call "@[display]:acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+                 end-call 
+       end-call
+
+      write mami-rec from "105"
+       string "A4", x"00" delimited by size into acu-paper-size
+       initialize acu-paper-header
+       move x"00" to acu-paper-footer
+       move "PORTRAIT" to acu-paper-orientation
+       if acu-paper-orientation = "LANDSCAPE"
+          move 2 to acu-paper-orientationint
+       else
+          move 1 to acu-paper-orientationint
+       end-if
+       string "PORTRAIT", x"00" delimited by size into acu-paper-orientation
+       move "50" to acu-margin-left
+       move "20" to acu-margin-right
+       move "50" to acu-margin-top
+       move "50" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+ 
+       move 1 to acu-paper-copies
+       move spaces to dumy-line
+       write mami-rec from "106"
+       move 1 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "@[DISPLAY]:AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+       write mami-rec from "107"
+       set print-ptr to address of acu-paper-sizeint
+       call "@[DISPLAY]:AcuBenchPrintGetPaperSize" using by value print-unit-type, print-ptr
+       move 1202 to acu-paper-height 
+       move 793 to acu-paper-width
+       compute page-height of report1-height = acu-paper-height - acu-margin-top - acu-margin-bottom
+       compute page-width of report1-height = acu-paper-width - acu-margin-left - acu-margin-right
+       write mami-rec from "108"
+       move 2 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "@[DISPLAY]:AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+       string acu-paper-margin, x"00" delimited by size into print-browser-para
+       write mami-rec from "109"
+       set print-ptr to address of acu-paper-size
+       call "@[DISPLAY]:AcuBenchPrintGetPaperName" using by value print-ptr            
+       write mami-rec from "110"
+       call "@[DISPLAY]:AcuBenchPrintGetOrientation" giving  acu-paper-orientationint  
+       call "@[DISPLAY]:AcuBenchPrintGetCopies" giving Acu-paper-copies                
+       set print-ptr to address of acu-printer-name                                    
+       write mami-rec from "111"
+       call "@[DISPLAY]:AcuBenchPrintGetPrinterName" using by value print-ptr          
+ 
+       move "50" to acu-margin-left
+       move "20" to acu-margin-right
+       move "50" to acu-margin-top
+       move "50" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+           write mami-rec from "112"
+       perform acu-report1-print-tofile
+
+       write mami-rec from "113"
+              call "c$copy" using rapor-dosya html-rapor giving return-code
+           if return-code <> 1 then 
+                display message box "ASYA-SOFT PRINT EMULATION TEST"  new-line
+                                     "LUTFEN SISTEM YONETICISINI ARAYINIZ"
+                   if k-kodu-tasi(1:4) = "ASYA" then stop " " end-if
+           end-if
+       move winprint-name                to acu-printer-name
+
+       write mami-rec from prt-fullfilename
+       write mami-rec from print-browser-para
+       write mami-rec from acu-paper-header, 
+       write mami-rec from acu-paper-footer,
+       write mami-rec from acu-paper-size,
+       write mami-rec from acu-paper-orientationint
+       write mami-rec from acu-paper-copies
+       write mami-rec from acu-printer-name 
+       inspect acu-printer-name replacing trailing spaces by low-values
+       move all low-values to  acu-paper-header acu-paper-footer
+       call "@[DISPLAY]:AcuBenchPrintExecWBPrint" using by content prt-fullfilename,
+                                                     omitted,
+                                                     by content print-browser-para,
+                                                     by content acu-paper-header, 
+                                                     by content acu-paper-footer, 
+                                                     by content acu-paper-size, 
+                                                     by value acu-paper-orientationint,
+                                                     by value acu-paper-copies,
+                                                     by content acu-printer-name
+       end-call
+
+       write mami-rec from "115"
+*       delete file printf
+       call "@[DISPLAY]:ASYA_DeleteFile" using by reference prt-fullfilename
+                                    return-code
+            on exception
+               display message box
+                       prt-fullfilename,x"0a0d",
+                       "dosyasi silinemedi !!!"
+       end-call
+       move 0 to acu-setupprint
+       write mami-rec from "116"
+       cancel "@[display]:acubenchprint.dll"
+       cancel "@[DISPLAY]:asyadll.dll"
+    else
+*/ LOCAL ISE
+       move rapor-dosya         to prt-fullfilename
+       inspect prt-fullfilename replacing trailing spaces by low-values
+       inspect prt-fullfilename replacing all "/" by "\"
+   
+       set environment "dll_convention" to "1"
+
+*////( Sayfa AyarlARI
+       call "AcuBenchPrintDummy" 
+              on exception 
+                 call "acubenchprint.dll" on exception
+                       display message box 
+                               "Print.dll bulunamadi !"
+                               icon mb_error_icon
+                               title "Hata"
+ 
+                       goback
+                 end-call 
+       end-call
+
+       string "A4", x"00" delimited by size into acu-paper-size
+       initialize acu-paper-header
+       move x"00" to acu-paper-footer
+       move "PORTRAIT" to acu-paper-orientation
+       if acu-paper-orientation = "LANDSCAPE"
+          move 2 to acu-paper-orientationint
+       else
+          move 1 to acu-paper-orientationint
+       end-if
+       string "PORTRAIT", x"00" delimited by size into acu-paper-orientation
+       move "50" to acu-margin-left
+       move "20" to acu-margin-right
+       move "50" to acu-margin-top
+       move "50" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+ 
+       move 1 to acu-paper-copies
+       move spaces to dumy-line
+ 
+       move 1 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+ 
+       set print-ptr to address of acu-paper-sizeint
+       call "AcuBenchPrintGetPaperSize" using by value print-unit-type, print-ptr
+ 
+       compute page-height of report1-height = acu-paper-height - acu-margin-top - acu-margin-bottom
+       compute page-width of report1-height = acu-paper-width - acu-margin-left - acu-margin-right
+
+       move 2 to print-unit-type
+       set print-ptr to address of acu-paper-margin
+       call "AcuBenchPrintGetMargins" using by value print-unit-type, print-ptr
+       string acu-paper-margin, x"00" delimited by size into print-browser-para
+
+       set print-ptr to address of acu-paper-size
+       call "AcuBenchPrintGetPaperName" using by value print-ptr            
+       call "AcuBenchPrintGetOrientation" giving  acu-paper-orientationint  
+       call "AcuBenchPrintGetCopies" giving Acu-paper-copies                
+       set print-ptr to address of acu-printer-name                                    
+       call "AcuBenchPrintGetPrinterName" using by value print-ptr          
+ 
+       move "50" to acu-margin-left
+       move "20" to acu-margin-right
+       move "50" to acu-margin-top
+       move "50" to acu-margin-bottom
+       string acu-paper-margin, x"00" delimited by size into 
+              print-browser-para
+       perform acu-report1-print-tofile
+*******************************************************************************
+
+       move winprint-name                to acu-printer-name
+ 
+       call "AcuBenchPrintExecWBPrint" USING by content prt-fullfilename,
+                                             omitted,
+                                             by content print-browser-para,
+                                             by content acu-paper-header, 
+                                             by content acu-paper-footer, 
+                                             by content acu-paper-size, 
+                                             by value acu-paper-orientationint,
+                                             by value acu-paper-copies,
+                                             by content acu-printer-name
+      end-call
+      move 0 to acu-setupprint
+      
+      delete file printf
+      call "c$delete" using prt-fullfilename
+    end-if.
+    goback.
+    .
+*
+ Form1-Aft-Initdata.
+     
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+       perform lazer-rapor
+       set exit-pushed to true
+     end-evaluate
+     
+     .
+
+ 

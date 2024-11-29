@@ -1,0 +1,775 @@
+* blokara.evt
+* blokara.evt is generated from D:\asya\acugt.ytl\otel\blokara.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Screen1-Event-Proc.
+     .
+
+ Screen1-Exception-Proc.
+     PERFORM Screen1-Ex-Other
+     .
+
+ Screen1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Begin-Entry
+        PERFORM Screen1-Gd-1-Ev-Msg-Begin-Entry
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+*
+ Screen1-Bef-Create.
+         
+    perform adresleri-tasi.
+        open i-o castdev close castdev
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+     initialize rez-rec
+     move blok-rez-no    to rez-no. 
+     open input rez
+    read rez no lock invalid
+      if rez-no > 0
+         move  blok-sharenum  to rez-sharenum
+      end-if 
+    end-read
+    close rez
+
+    if rez-sharenum > 0 
+       move  rez-sharenum to gelen-sharenum
+    end-if   .
+    initialize islem-durumu.
+    if blok-yapabilir = "R" 
+      move 1  to odadegisten
+      else
+      move 0 to odadegisten
+    end-if
+    open input odalar
+    move blok-oda to odalar-no 
+    read odalar no lock invalid 
+      continue 
+    end-read
+    close odalar
+    if odalar-aktif-pasif = 1
+       set exit-pushed to true
+       exit paragraph
+    end-if     
+    move odalar-konumu to blok-konumu.
+    
+    
+*
+ blok-basla.
+    
+    open input acenta konum cast rez acast.
+    if rezpara-cifte-blokaj = "E"
+       move 0 to butonlar-visible
+    else
+       move 1 to butonlar-visible
+    end-if.
+ basla.
+ cast-basla.
+    initialize blok-yapabilir.
+    initialize cast-rec fs-cast.
+    move blok-oda     to cast-oda-no.
+    move blok-bas-tar to cast-tarih.  
+    start cast key not < cast-anah3 invalid 
+          go cast-bitti. 
+ cast-oku. 
+    read cast next no lock end go cast-bitti.
+    if fs-cast = 99 go cast-oku.
+    if cast-tarih  > blok-bit-tar go cast-bitti.
+    if cast-oda-no > blok-oda go cast-bitti.
+    if cast-oda-no = blok-oda 
+       continue
+    else 
+       go cast-oku
+    end-if.
+    if cast-rez-no = blok-rez-no  go cast-oku.  
+    move cast-rez-no    to rez-no.  
+    read rez no lock invalid go cast-oku.
+  
+    if gelen-sharenum > 0 and cast-sharenum = gelen-sharenum
+       go cast-oku 
+    end-if
+* ver 9da kaldýrdým go yazdýgýmada utaniyom mami
+*    if rez-share = 1 then  go cast-oku.
+    
+    if rez-durumu not = "I" go cast-oku.
+    if rez-k-g-b  not = "K" and not = "O" go cast-oku.
+    if rez-cik-tar = cast-tarih  
+       go cast-oku.
+    if rez-gir-tar = blok-bit-tar
+       go cast-oku.
+
+    if rez-c-in = "E" 
+       move 0 to c-in-durum   blok-en
+    end-if
+    if rez-tam-blok = 1 
+       move  0 to tam-blok-durumu
+    end-if
+    if rez-blok-tip = 1 or 2 
+       move 0 to tam-blok-durumu  blok-en
+    end-if
+    if   genel-paylas-oda = 1 
+    move cast-rec to acast-rec
+    move cast-tarih to s-tarih
+    compute s2-tarih = function integer-of-date(s-tarih) + 1
+    move function date-of-integer(s2-tarih)  to  s3-tarih
+    move s3-tarih to acast-tarih
+    read acast no lock invalid 
+       continue
+      not invalid 
+        if cast-oda-no not = acast-oda-no 
+           continue
+              go cast-oku
+        end-if
+    end-read
+    end-if
+    perform grid-kayit-ekle.
+
+*******if rezpara-cifte-blokaj = "H"
+* ben kaldirdim * niieepppppp
+    move "H"   to blok-yapabilir.
+*    initialize mesaj-degiskenler
+*    move " [ Blokaj Yapilamaz ] " to mmesaj-title
+*    move "Bu Tarihte Bu Oda Blokeli           " to mmesaj-1
+*    move "Tarih:  /  /     Rez No.:           " to mmesaj-2
+*    move cast-gun   to mmesaj-2(07:02) 
+*    move cast-ay    to mmesaj-2(10:02) 
+*    move cast-yil   to mmesaj-2(13:04)
+*    move rez-no     to mmesaj-2(26:08)
+*    move 2           to mmesaj-type
+*    move 1           to mmesaj-icon
+*    move 2           to mmesaj-default
+*    perform mmesaj-ver
+*    if donus-kodu = 2 
+*       go cast-bitti
+*    end-if
+    go cast-oku.
+ aknknkaan.
+
+*
+ mmesaj-ver.
+    inspect mmesaj-1 replacing trailing spaces by low-values
+    inspect mmesaj-2 replacing trailing spaces by low-values
+    inspect mmesaj-3 replacing trailing spaces by low-values
+    display message box mmesaj-1, new-line, mmesaj-2, new-line, mmesaj-3
+            title   = mmesaj-title
+            type    = mmesaj-type
+            icon    = mmesaj-icon
+            default = mmesaj-default
+            returning donus-kodu.
+ cast-bitti. 
+    close rez cast konum acenta acast.
+     open input outof.
+     initialize outof-rec  outof-oda
+       move blok-oda to outof-odano
+       start outof  key > outof-anah
+           invalid continue
+           not invalid
+           perform until fs-outof = "10"
+              read outof next no lock end move "10" to fs-outof
+                 not end
+                   if outof-odano not = blok-oda
+                     move "10" to fs-outof
+                     exit perform
+                     else
+                     if outof-bas-tarih <  blok-bit-tar and outof-bit-tarih >= blok-bas-tar
+                       move 1 to outof-oda
+                       exit perform 
+                     end-if
+                   end-if
+              end-read
+           end-perform 
+       end-start
+      if outof-oda = 1 
+               move outof-bas-yil to  e-yil 
+               move outof-bas-ay  to  e-ay 
+               move outof-bas-gun to  e-gun 
+
+
+               move outof-bit-yil to  e2-yil 
+               move outof-bit-ay  to  e2-ay 
+               move outof-bit-gun to  e2-gun 
+               display message box blok-oda " nolu oda Konaklama tarihlerinde icinde " new-line
+                            ebas "-" ebit "tarihleri arasinda outof Ordera alinmis"    new-line
+                               "Out of Order odaya Blokaj veremessiniz."       new-line
+                               outof-aciklama
+                               title "OUTOF ORDER ODA"
+               move "H"   to blok-yapabilir
+               move 1     to islem-durumu
+               set exit-pushed to true
+      end-if
+     close outof.
+     if genel-max-blok-gun > 0 and  genel-max-blok-gun < 99
+             move tarih-tasi to s-tarih
+             compute s2-tarih = function integer-of-date(s-tarih) + genel-max-blok-gun
+            move function date-of-integer(s2-tarih)  to  s3-tarih
+            if  s3-tarih < blok-bas-tar      
+               display message box "Maximum " genel-max-blok-gun " gun sonrasina blokaj atabilirsiniz."
+                      title "Blokaj atma kisitlamasi..."
+                       move "H"   to blok-yapabilir
+                       move 1     to islem-durumu
+                       set exit-pushed to true
+            end-if
+     end-if.
+
+
+ blok-basla-exit.
+    exit.
+*
+ Screen1-Aft-Initdata.
+      open input kllnc
+        initialize kllnc-rec
+        move k-kodu-tasi to K-KODU
+        read kllnc no lock invalid
+                continue
+        end-read
+      close kllnc
+* c-in-durum = 0 ise blokajlari sil butonerellezisi
+* invisible olacak
+     initialize rez-rec
+     move blok-rez-no    to rez-no. 
+     open input rez
+    read rez no lock 
+        invalid 
+          continue
+    end-read
+    close rez
+    if rez-sharenum > 0 
+       move  rez-sharenum to gelen-sharenum
+    end-if
+************ ver 9 da kaldýrdým mami
+*    if rez-share = 1 then 
+*        
+*        set exit-pushed to true
+*    
+*       exit paragraph
+*    end-if
+
+                                             | stop " "
+******************DEVRE TATILL************************** 
+*    if k-kodu-tasi = "X   " stop " " end-if  
+****************************************************************** 27.10.2017 -Kadir
+    open input odalar
+    initialize odalar-rec
+    move blok-oda        to odalar-anah
+    read odalar no lock invalid
+         continue
+    end-read
+    close odalar
+****************************************************************** 27.10.2017 -Kadir
+    if genel-devre-tatil-aktif = 1 and blok-oda not = spaces 
+       open input castdev takvim odalar  
+         
+           initialize takvim-rec xcastdev-gecti
+           move blok-bas-tar     to takvim-anah
+           start takvim key not < takvim-anah invalid 
+                 continue 
+           not invalid 
+           perform with test after until fs-takvim = "10"
+           read takvim next no lock end move "10" to fs-takvim
+           not at end
+                  if takvim-anah >= blok-bit-tar
+                          exit perform
+                  end-if
+
+                  move 0 to xcastdev-gecti
+ 
+                  initialize castdev-rec
+                  move blok-oda     to castdev-oda
+                  move takvim-anah  to castdev-tarih
+                  read castdev no lock invalid
+                         exit perform  
+                  end-read
+
+                  move 1 to xcastdev-gecti 
+           end-read
+           end-perform 
+           end-start
+ 
+****************************************************************** 27.10.2017 -Kadir
+            if odalar-devre <> "A"
+               move 1 to xcastdev-gecti
+            end-if
+****************************************************************** 27.10.2017 -Kadir 
+           if xcastdev-gecti <> 1
+                 display message box blok-oda " Numarali Oda " new-line  new-line
+                 "######   "blok-bas-gun "/"blok-bas-ay"/"blok-bas-yil" - "  
+                  blok-bit-gun "/" blok-bit-ay"/" blok-bit-yil"   #####" new-line  new-line
+                 "Tarihleri Arasinda Satisa Uygun Degildir" new-line    new-line
+                 "Blokaj Verilemiyor..."
+                 title "Asya Soft Yazilim"
+                 icon 2
+                 close castdev takvim
+                 move "H" to blok-yapabilir
+                 if k-rezer-sup  = "1"
+                        display message box blok-oda " Numarali Oda " new-line  new-line
+                                 "######   "blok-bas-gun "/"blok-bas-ay"/"blok-bas-yil" - "  
+                                  blok-bit-gun "/" blok-bit-ay"/" blok-bit-yil"   #####" new-line  new-line
+                                 "Tarihleri Arasinda Satisa Uygun Degildir" new-line    new-line  new-line
+                        "Ozel Islem Yetkiniz Bulunmaktadir" new-line
+                        "Bu Blokaja Devam Etmek Istiyor musunuz ?"
+                        type 2
+                        default 2
+                        icon 1
+                        returning return-code 
+                        if return-code = 1
+                              move "E" to blok-yapabilir
+                        end-if
+                 end-if
+                 set exit-pushed to true
+                 exit paragraph
+           end-if
+
+          close castdev takvim odalar
+    end-if
+******************DEVRE TATIL***************************    
+    initialize kayit-sayi 
+    move 1 to c-in-durum tam-blok-durumu blok-en. 
+      if blok-oda not = spaces
+         perform grid-yukle
+         perform blok-basla thru blok-basla-exit
+    end-if
+* eger cakisan blokaj yoksa screen gostermenin
+* bi manasý yok direk cikisellezi
+  
+    
+    if kayit-sayi = zeroes
+      if gelen-sharenum > 0 then 
+           perform sharelar-kontrol
+      end-if
+       
+
+      if islem-durumu = 0
+            move "E"  to blok-yapabilir
+            else 
+              move "H"  to blok-yapabilir
+          
+      end-if 
+        set exit-pushed to true
+       exit paragraph
+      end-if.
+
+     
+
+    modify screen1-handle,
+           visible true
+
+    display screen1-pb-1
+
+    modify acc-oda,       value = blok-oda
+     if odalar-uzun-no not = spaces
+      
+         modify acc-oda,       value = odalar-uzun-no(1:5)  
+     else
+       modify acc-oda,       value = blok-oda
+       
+    end-if
+
+
+    modify acc-bas-gun,   value = blok-bas-gun
+    modify acc-bas-ay,    value = blok-bas-ay
+    modify acc-bas-yil,   value = blok-bas-yil
+    modify acc-bit-gun,   value = blok-bit-gun
+    modify acc-bit-ay,    value = blok-bit-ay
+    modify acc-bit-yil,   value = blok-bit-yil
+
+    modify Screen1-Gd-1, 
+           mass-update = 0.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+
+ grid-yukle.
+    initialize screen1-gd-1-record
+    modify screen1-gd-1,
+           reset-grid = 1
+           mass-update = 1
+    move "Rez.No"         to gd-1-col-1
+    move "Adi"            to gd-1-col-2
+    move "Soyadi"         to gd-1-col-3
+    move "Acenta Adi"     to gd-1-col-4
+    move "C/In"           to gd-1-col-5
+    move "C/Out"          to gd-1-col-6
+    move "Oda Konumu"     to gd-1-col-7
+*    move "Oda Tipi"       to gd-1-col-8
+    move "Pax"            to gd-1-col-9
+    move "Chi"            to gd-1-col-10
+    move "Beb"            to gd-1-col-11
+    move "Fre"            to gd-1-col-12
+    move "Not-1"          to gd-1-col-13
+    move "Not-2"          to gd-1-col-14.
+
+    modify screen1-gd-1,
+           record-to-add(screen1-gd-1-record).
+
+*
+ grid-kayit-ekle.
+    perform grid-kayit-yer-bul.
+    if kayit-yer = zeroes
+       add 1 to kayit-sayi
+    else
+       exit paragraph
+    end-if.
+    perform rez-to-grid.
+    modify screen1-gd-1,
+           record-to-add(screen1-gd-1-record).
+
+        
+    if rez-c-in = "E" 
+       modify Screen1-Gd-1, 
+              y = kayit-sayi + 1
+              row-color = 176
+              else
+     if rez-blok-tip = 1  or 2 
+       modify Screen1-Gd-1, 
+              y = kayit-sayi + 1
+              row-color = 208
+
+     end-if 
+     end-if.
+*
+ grid-kayit-yer-bul.
+    initialize kayit-yer yedek-rez.
+    perform varying i from 1 by 1 until i > kayit-sayi
+            inquire Screen1-Gd-1(i + 1, 1),
+                    cell-data in yedek-rez
+            if yedek-rez = rez-no
+               move i to kayit-yer
+               exit paragraph
+            end-if
+    end-perform.
+*
+ rez-to-grid.
+    initialize screen1-gd-1-record
+    move rez-no           to gd-1-col-1
+    move rez-adi          to gd-1-col-2
+    move rez-soyadi       to gd-1-col-3
+    move rez-acenta       to acenta-kodu
+    read acenta no lock invalid 
+         move rez-acenta  to acenta-adi
+         move "-"         to acenta-adi(5:)
+         move "Tanimsiz"  to acenta-adi(6:)
+    end-read
+    move acenta-adi       to gd-1-col-4
+    move rez-gir-gun      to egun
+    move rez-gir-ay       to eay
+    move rez-gir-yil      to eyil
+    move etarih           to gd-1-col-5
+    move rez-cik-gun      to egun
+    move rez-cik-ay       to eay
+    move rez-cik-yil      to eyil
+    move etarih           to gd-1-col-6
+    move rez-oda-konumu   to konum-anahtar
+    read konum no lock invalid
+         move "Tanimsiz Konum" to konum-adi
+    end-read
+    move konum-adi        to gd-1-col-7
+    move rez-buyuk        to z-3
+    move z-3              to gd-1-col-9
+    move rez-kucuk        to z-3
+    move z-3              to gd-1-col-10
+    move rez-bebek        to z-3
+    move z-3              to gd-1-col-11
+    move rez-free         to z-3
+    move z-3              to gd-1-col-12
+    move rez-not1         to gd-1-col-13
+    move rez-not2         to gd-1-col-14.
+*
+ blokajlari-sil.
+    if c-in-durum = 0
+               perform rez-cindir-uyari
+               exit paragraph
+       
+       
+       
+      else
+               if tam-blok-durumu = 0 then                                   
+                    display message box "Tam Blokajli Odayi Veremessiniz" 
+                    icon mb_warning_icon title "DIKKAT"
+                    exit paragraph
+                else
+                    display message box 
+                         "Gosterilen rezervasyonlarin blokajlarini", new-line
+                         "Iptal etmek istediginizden eminmisiniz ?"
+                         icon mb_warning_icon
+                         title "Uyari"
+                         type mb_yes_no
+                         default 2
+                         returning return_code
+                    if return_code = 2
+                         exit paragraph
+                    end-if
+                 end-if
+    end-if
+    .
+*
+ Screen1-Ex-Other.
+    if key-status <> 3 or c-in-durum = 0 or tam-blok-durumu = 0
+       exit paragraph.
+
+    if butonlar-visible = 0 
+       exit paragraph.
+     
+
+    initialize return_code.
+    perform blokajlari-sil.
+    if return_code = 2
+       exit paragraph.
+
+    initialize islem-durumu.
+
+    open i-o cast rez.
+    perform varying i from 1 by 1 until i > kayit-sayi
+            inquire screen1-gd-1(i + 1,1),
+                    cell-data in yedek-rez
+            modify Screen1-Gd-1(i + 1),
+                   row-color = 176
+            move yedek-rez    to rez-no
+            read rez no lock invalid
+                 exit perform cycle
+            end-read
+            if rez-c-in = "E"
+               perform rez-cindir-uyari
+               move 1 to islem-durumu
+               close rez cast
+               exit paragraph
+            end-if
+              if rez-blok-tip = 1 or 2
+               perform rez-tamblok-uyari
+               move 1 to islem-durumu
+               close rez cast
+               exit paragraph
+            end-if   
+            initialize rez-odano
+
+            accept rez-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+            accept rez-edit-zaman from time          |                           
+
+            rewrite rez-rec invalid
+                    move 1 to islem-durumu
+                    perform blokaj-silinemedi-uyari
+                    exit perform cycle
+            end-rewrite
+            perform log-operation-rez
+
+            perform blokaj-degisim-yaz
+
+            initialize cast-rec
+            move rez-no     to cast-rez-no
+            start cast key not < cast-anah1 invalid
+                  continue
+            not invalid
+            initialize fs-cast
+            perform with test after until fs-cast = "10"
+            read cast next no lock end move "10" to fs-cast
+            not at end
+                 if cast-rez-no <> rez-no
+                    exit perform
+                 end-if
+                 initialize cast-oda-no
+                 rewrite cast-rec invalid
+                         move 1 to islem-durumu
+                         perform blokaj-silinemedi-uyari
+                 end-rewrite
+                 perform log-operation-cast
+            end-read
+            end-perform
+            end-start
+    end-perform.
+    close cast rez.
+* eger islem-durumu = 1 ise bi madik olayi var
+* onun icin bunlara blokaj yapamaz diyoruz
+* islem-durumu = 0 ise
+* blokaj-yapabilir = "E"
+     if gelen-sharenum > 0 then 
+           perform sharelar-kontrol
+
+       end-if
+
+    if islem-durumu = 0
+       move "E"  to blok-yapabilir
+      
+       set exit-pushed to true
+      end-if    .
+*
+ sharelar-kontrol.
+        if odadegisten = 1 then 
+          exit paragraph
+        end-if
+       open i-o arez acast  .
+        initialize share-oda-var islem-durumu
+     
+       initialize arez-rec acast-rec fs-arez fs-acast
+        move "I" to arez-durumu
+      move gelen-sharenum to arez-sharenum
+      start arez key >= aREZ-anah-share invalid continue
+        not invalid 
+           perform until fs-arez = "10"
+                read arez next no lock 
+                  end move "10" to fs-arez
+                  not end 
+                   if arez-sharenum not  = gelen-sharenum
+                      move "10" to fs-arez
+                      exit perform cycle
+                   end-if
+                   if arez-no = blok-rez-no
+                         exit perform cycle
+                   end-if
+                   if arez-durumu = "S" then 
+                           exit perform cycle
+                   end-if
+                   
+                   if ( arez-c-in = "E"  or (arez-blok-tip = 1 or 2 )) and arez-odano not = blok-oda then
+                     move  arez-folio to konu2-folio
+                     open input konu2
+                       read konu2 no lock invalid 
+                          display message box "Hata 446677777"
+                        end-read
+                        close konu2
+                        if konu2-durumu = "H" then 
+                           exit perform cycle
+                        end-if
+                         move 1 to islem-durumu
+                        display message box
+                            "C/in ve Blokaj kilitli olan rezervasyon ile share ",new-line,
+                              arez-odano 
+                            "dan Farkli Blokaj verilemez !!!" new-line 
+                            " Share dan ayirip tekrar deneyebilirsiniz"
+                            icon mb_error_icon
+                            title "Farkli Blokaj verilemez !!!"
+                   end-if
+                   if arez-odano not = blok-oda
+                        move 1 to share-oda-var
+                   end-if
+                  end-read
+             end-perform
+      end-start
+      if islem-durumu = 0  and  share-oda-var = 1 
+           initialize arez-rec acast-rec fs-arez fs-acast
+               move "I" to arez-durumu
+      move gelen-sharenum to arez-sharenum
+      start arez key >= aREZ-anah-share invalid continue
+        not invalid 
+           perform until fs-arez = "10"
+                read arez next no lock 
+                  end move "10" to fs-arez
+                  not end 
+                   if arez-sharenum not  = gelen-sharenum
+                      move "10" to fs-arez
+                      exit perform cycle
+                   end-if
+                   if arez-no = blok-rez-no
+                         exit perform cycle
+                   end-if
+                   if arez-durumu = "S" then 
+                           exit perform cycle
+                   end-if
+                   if ( arez-c-in = "E"  or (arez-blok-tip = 1 or 2 )) and arez-odano not = blok-oda then
+                        open input konu2
+                       read konu2 no lock invalid 
+                          display message box "Hata 446677777"
+                        end-read
+                        close konu2
+                        if konu2-durumu = "H" then 
+                           exit perform cycle
+                        end-if
+                         move 1 to islem-durumu
+                        display message box
+                          "C/in ve blokaj kilitli olan rezervasyon ile share ",new-line,
+                           arez-odano 
+                            "dan Farkli Blokaj verilemez !!!" new-line 
+                            " Share dan ayirip tekrar deneyebilirsiniz"
+                            icon mb_error_icon
+                            title "Farkli Blokaj verilemez !!!"
+                         exit perform
+                   end-if
+                   if arez-odano not = blok-oda
+                      move blok-oda to arez-odano
+                       if arez-odano > "    " then 
+                          move blok-konumu to arez-oda-konumu
+                       end-if
+                      rewrite arez-rec invalid stop " " end-rewrite
+                      initialize acast-rec fs-acast
+                      move arez-no to acast-rez-no
+                   
+                      start acast key >= acast-anah1 invalid stop " " 
+                         not invalid
+                           perform until fs-acast = "10"
+                              read acast next no lock end move "10" to fs-acast
+                                 not end 
+                                   if acast-rez-no not = arez-no 
+                                     move "10" to fs-acast
+                                     exit perform cycle
+                                    end-if
+                                    move arez-odano to acast-oda-no
+                                    if arez-odano > "    " then 
+                                        move blok-konumu to acast-oda-konumu
+                                    end-if
+                                    rewrite acast-rec invalid stop " "  end-rewrite
+
+                                end-read
+                           end-perform
+                      end-start
+
+                  end-if
+                  end-read
+             end-perform
+      end-start
+
+
+
+
+      end-if .
+     close arez acast.
+
+*
+ rez-cindir-uyari.
+    display message box
+            "C/in olan rezervasyon oldugu icin",new-line,
+            "Blokajlari silemezsiniz !!!"
+            icon mb_error_icon
+            title "Blokajlar Silinemez".
+*
+ rez-tamblok-uyari.
+     display message box
+            "Blok Kilitli olan rezervasyon oldugu icin",new-line,
+            "Blokajlari silemezsiniz !!!"
+            icon mb_error_icon
+            title "Blokajlar Silinemez".
+*
+ blokaj-silinemedi-uyari.
+    display message box
+            rez-odano," numarali rezervasyonun blokaji silinemedi"
+            icon mb_error_icon
+            title "Uyari".
+*
+ Screen1-Gd-1-Ev-Msg-Begin-Entry.
+     move event-action-fail to event-action.
+     .
+*
+ blokaj-degisim-yaz.
+       open i-o blokd
+       initialize blokd-rec 
+       move tarih-tasi           to blokd-tarih
+       accept blokd-zaman from time
+       move rez-no          to blokd-rez-no
+       read blokd no lock invalid 
+           continue 
+       end-read 
+       move k-kodu-tasi        to blokd-k-kodu
+       move rez-odano          to blokd-odano
+       write blokd-rec invalid 
+           rewrite blokd-rec end-rewrite 
+       end-write 
+       close blokd.
+
+ 

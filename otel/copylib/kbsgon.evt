@@ -1,0 +1,445 @@
+* kbsgon.evt
+* kbsgon.evt is generated from D:\asya\acugt.ytl\otel\kbsgon.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi 
+     open input genel genel2
+     initialize genel-rec genel2-rec 
+     move 1 to genel-anahtar genel2-anah
+     read genel no lock invalid
+          display message box 
+          "Lutfen once onburo ",
+          "calisma parametrelerini giriniz"  
+     not invalid
+         if genel-tesis-kodu < "10000" then
+            display message box "Onburo calisma",
+            " parametrelerinden tesis Kodunu giriniz"
+         end-if
+     end-read 
+     read genel2 no lock invalid
+          display message box 
+          "Lutfen once onburo ",
+          "calisma parametrelerini giriniz"  
+     end-read 
+     close genel genel2
+     move calis-yil      to ryil
+     move calis-ay       to ray
+     move calis-gun      to rgun 
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status 
+         when 1301
+              modify form1-gd-1, reset-grid = 1 
+              modify form1-gd-1, mass-update = 1
+
+              perform grid-baslik-at
+              perform liste-dok
+
+              modify form1-gd-1, 
+                     mass-update = 0
+     end-evaluate 
+     .
+*
+ grid-baslik-at.
+     move 1 to sira
+     initialize form1-gd-1-record 
+     move "Oda No"        to gd-1-col-1
+     move "Adi"           to gd-1-col-2
+     move "Soyadi"        to gd-1-col-3
+     move "Kimlik No"     to gd-1-col-4
+     move "Seri No"       to gd-1-col-5
+     move "Baba Adi"      to gd-1-col-6
+     move "Ana Adi"       to gd-1-col-7
+     move "D. Tarihi"     to gd-1-col-8
+     move "Dog. Yeri"     to gd-1-col-9
+     move "Uyruk"         to gd-1-col-10
+     move "Plaka"         to gd-1-col-11  
+     move "Profil Durumu" to gd-1-col-12
+     move "Secim"         to gd-1-col-13
+     modify form1-gd-1, 
+            record-to-add(form1-gd-1-record)
+
+     .
+*
+ liste-dok.
+     open i-o konuk uyruk uyrukkbs polisxml takvim
+     initialize takvim-rec gun-say star                       |3 gun sonrayi bul
+     move rtar to takvim-anah
+     start takvim key not < takvim-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-takvim = "10"
+     read takvim next no lock end move "10"  to fs-takvim 
+     not at end 
+         if gun-say > 3
+            exit perform 
+         end-if
+         move takvim-anah to star 
+         add 1 to gun-say
+     end-read 
+     end-perform 
+     end-start 
+
+     initialize takvim-rec gun-say itar                       |3 gun onceyi bul
+     move rtar to takvim-anah                                 
+     start takvim key > takvim-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-takvim = "10"
+     read takvim backward no lock end move "10"  to fs-takvim 
+     not at end 
+         if gun-say > 3
+            exit perform 
+         end-if
+         move takvim-anah to itar 
+         add 1 to gun-say
+     end-read 
+     end-perform 
+     end-start 
+
+     if star > tarih-tasi 
+        move tarih-tasi to star
+     end-if 
+
+     initialize konuk-rec liste-top-kisi
+     move "I"  to konuk-durumu
+*     move itar to konuk-gel-tar
+     start konuk key not < konuk-oda invalid
+           continue
+     not invalid
+     perform with test after until fs-konuk = "10"
+     read konuk next no lock end move "10" to fs-konuk
+     not at end 
+*         if konuk-folio = 222
+*            stop " " 
+*         end-if
+         if konuk-fol-kodu not = "R" and                 | Konuk kontrolleri..
+            konuk-fol-kodu not = "G" 
+            exit perform cycle
+         end-if
+         if konuk-proforma = 1 
+            exit perform cycle
+         end-if  
+
+         if konuk-rez-no not > 0
+            exit perform cycle
+         end-if
+
+         move konuk-oda-konumu   to rez-oda-konumu
+         move konuk-fiyat-konumu to rez-fiyat-konumu
+         move konuk-odano        to rez-odano
+
+         if onkpara-referans-var = 1 then 
+            perform ref-filtre
+            if not ref-gecti then 
+               exit perform cycle
+            end-if
+         end-if
+
+         if itar > konuk-gel-tar
+            exit perform cycle
+         end-if
+
+         if star < konuk-gel-tar
+            exit perform
+         end-if
+
+         if konuk-durumu <> "I"
+            exit perform 
+         end-if
+
+         if genel-mali-esas = 1 then
+            if konuk-fol-kodu not = "R" and
+               konuk-fol-kodu not = "G" 
+               exit perform cycle
+            end-if
+            if konuk-cik-cikma = "H" 
+               exit perform cycle
+            end-if
+            move "B"              to kodlar02-tipi
+            move konuk-odeme-tipi to kodlar02-kodu 
+            read kodlar02 no lock invalid 
+                 move spaces to kodlar02-adi
+            end-read
+            if ode-posting = "H" 
+               exit perform cycle 
+            end-if
+         end-if
+
+         perform kimlik-bilgi-al
+
+     end-read 
+     end-perform 
+     end-start 
+
+     initialize form1-gd-1-record 
+     move "Toplam Kisi------>>>" to gd-1-col-3
+     move liste-top-kisi         to z-8
+     move z-8                    to gd-1-col-4
+     modify form1-gd-1, record-to-add(form1-gd-1-record)
+
+     close konuk uyruk uyrukkbs polisxml takvim
+     .
+*
+ kimlik-bilgi-al.
+     initialize polisxml-rec 
+     move konuk-rez-no to polisxml-rezno
+     start polisxml key not < polisxml-anah invalid
+           continue
+     not invalid
+     perform with test after until fs-polisxml = "10"
+     read polisxml next no lock end move "10" to fs-polisxml
+     not at end
+         if polisxml-rezno <> konuk-rez-no
+            exit perform                                                        |Kontrole Basla..
+         end-if
+
+         initialize polisxml-prb polisxml-prb-ack sec-secme
+
+         if polisxml-adi = spaces 
+            move 1                          to polisxml-prb
+            move "Misafir adi zorunlu alan" to polisxml-prb-ack
+         end-if
+
+         if polisxml-soyadi = spaces 
+            move 1                             to polisxml-prb
+            move "Misafir soyadi zorunlu alan" to polisxml-prb-ack
+         end-if
+
+         if polisxml-dog-gun > 31 or polisxml-dog-gun < 1 or
+            polisxml-dog-ay  > 12 or polisxml-dog-ay  < 1 or
+            polisxml-dog-yil > yil-tasi or polisxml-dog-yil < 1900
+            move 1                                  to polisxml-prb
+            move "Gecerli bir dogum tarihi giriniz" to polisxml-prb-ack
+         end-if
+
+         if polisxml-kseri = spaces or
+            polisxml-kseri = zeroes 
+            move 1                               to polisxml-prb
+            move "Lutfen Kimlik Seri No Giriniz" to polisxml-prb-ack
+         end-if                                              
+
+         if polisxml-adr = spaces  
+            move 1                      to polisxml-prb
+            move "Misafir adresi eksik" to polisxml-prb-ack
+         end-if
+
+         initialize uyruk-rec 
+         move polisxml-uyruk to uyruk-kodu
+         read uyruk no lock invalid
+              move 1 to polisxml-prb
+         end-read
+         initialize uyrukkbs-rec
+         move polisxml-uyruk to uyrukkbs-kodu
+         read uyrukkbs no lock invalid
+              continue
+         end-read
+
+         if polisxml-uyruk  = "TC   "  
+            if polisxml-tckimlikno = spaces or  
+               polisxml-tckimlikno = zeroes or
+               polisxml-tckimlikno  < 
+               0010000000
+               move 1 to polisxml-prb
+               move "Turk Musteriler icin TC Kimlik No giriniz" 
+                      to polisxml-prb-ack
+               exit perform
+            end-if 
+            if polisxml-babaadi = spaces then
+               move 1 to polisxml-prb
+               move "Turk Musteriler icin Baba adi giriniz" 
+                      to polisxml-prb-ack
+               exit perform
+            end-if
+            if polisxml-anaadi = spaces then
+               move 1 to polisxml-prb
+               move "Turk Musteriler icin Ana adi giriniz" 
+                      to polisxml-prb-ack
+               exit perform
+            end-if
+            if polisxml-nil = spaces then
+               move 1 to polisxml-prb
+               move "Nufusa kayitli oldugu Il giriniz" 
+                      to polisxml-prb-ack
+               exit perform
+            end-if
+            if polisxml-nilce = spaces then
+               move 1 to polisxml-prb
+               move "Nufusa kayitli oldugu Ilce giriniz" 
+                      to polisxml-prb-ack
+               exit perform
+            end-if
+         else
+            if polisxml-tckimlikno not = spaces and  
+               polisxml-tckimlikno not = zeroes  
+               move 1 to polisxml-prb
+            end-if 
+         end-if
+
+         if polisxml-uyruk = "KKT"  
+            move "KKTC"              to polisxml-uyruk
+         end-if
+
+         move polisxml-dog-yil       to eyil
+         move polisxml-dog-ay        to eay                   
+         move polisxml-dog-gun       to egun
+
+         if polisxml-prb = 1 
+            exit perform cycle
+         end-if
+
+
+         initialize form1-gd-1-record                             |Satirlari Dok..
+         move polisxml-odano         to gd-1-col-1  
+         if polisxml-odano = spaces 
+            move konuk-odano         to gd-1-col-1  
+         end-if                  
+         move polisxml-adi           to gd-1-col-2 
+         move polisxml-soyadi        to gd-1-col-3 
+         move polisxml-tckimlikno    to z-11
+         move z-11                   to gd-1-col-4 
+         move polisxml-kseri         to gd-1-col-5   
+         move polisxml-babaadi       to gd-1-col-6 
+         move polisxml-anaadi        to gd-1-col-7 
+         move etar                   to gd-1-col-8 
+         move polisxml-dyeri(7:2)    to gd-1-col-9(1:)
+         move "/"                    to gd-1-col-9(3:)
+         move polisxml-dyeri(5:2)    to gd-1-col-9(4:) 
+         move "/"                    to gd-1-col-9(6:)
+         move polisxml-dyeri(1:4)    to gd-1-col-9(7:) 
+         move polisxml-uyruk         to gd-1-col-10
+         move polisxml-plaka         to gd-1-col-11 
+                                
+      
+         evaluate polisxml-kbs-gonderildi
+             when 0
+                  move "Profil Yok"         to gd-1-col-12 
+                                       
+             when 1
+                  move "Profil C-in"        to gd-1-col-12
+                  move 1                    to sec-secme
+                                       
+             when 2
+                  move "Profil C-out"       to gd-1-col-12 
+                                       
+             when other 
+                  move "Yeni Profil"        to gd-1-col-12 
+                                       
+         end-evaluate 
+       
+         if uyrukkbs-kbs-kodu = 0 and                                  | Varsa Duzeltmeleri Yap..
+            genel-kbs-bolgesi = "P"
+            move "Uyruk Yok"         to gd-1-col-12
+            move 1                   to sec-secme
+         end-if 
+
+         initialize temp-anah
+         move polisxml-rezno  to temp-rezno
+         move polisxml-sirano to temp-sirano
+
+         modify form1-gd-1,                                              | Yaz Gitsin..  
+                record-to-add(form1-gd-1-record)            
+   
+         add 1 to liste-top-kisi sira                                               
+  
+         modify form1-gd-1(sira,11),
+                hidden-data = konuk-folio
+
+         if sec-secme <> 1                 
+            modify form1-gd-1(sira,13),
+                   hidden-data = "H"
+
+            modify form1-gd-1(sira,13),
+                   bitmap = check-bmp
+                   bitmap-width = 16
+                   bitmap-number = 1
+                   bitmap-trailing = 1              
+         else               
+            modify form1-gd-1(sira,13),
+                   hidden-data = "E"
+
+            modify form1-gd-1(sira,13),
+                   bitmap = check-bmp
+                   bitmap-width = 16
+                   bitmap-number = 2
+                   bitmap-trailing = 1 
+        
+            modify form1-gd-1(sira,3),hidden-data temp-anah
+            modify form1-gd-1(sira,2),hidden-data konuk-odano
+         end-if
+
+     end-read 
+     end-perform 
+     end-start 
+     .
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+         when msg-begin-entry
+              move event-action-fail   to event-action
+         when msg-bitmap-clicked
+              evaluate event-data-1
+                  when 12
+                       inquire form1-gd-1(event-data-2,12),
+                               hidden-data secim
+                       if secim = "H"
+                          modify form1-gd-1(event-data-2,12),
+                                 bitmap = check-bmp
+                                 bitmap-width = 16
+                                 bitmap-number = 2
+                                 bitmap-trailing = 1 
+                          modify form1-gd-1(event-data-2,12),
+                                 hidden-data "E" 
+                       else 
+                          modify form1-gd-1(event-data-2,12),
+                                 bitmap = check-bmp
+                                 bitmap-width = 16
+                                 bitmap-number = 1
+                                 bitmap-trailing = 1             
+                          modify form1-gd-1(event-data-2,12),
+                                 hidden-data "H" 
+                       end-if
+              end-evaluate
+         when msg-heading-dblclick
+              evaluate event-data-1
+                  when 12
+                       inquire form1-gd-1,last-row in son-satir
+                       initialize i
+                       perform varying i from 2 by 1 until i > son-satir
+                          inquire form1-gd-1(i,12),hidden-data secim
+                          if secim = "H"
+                             modify form1-gd-1(i,12),
+                                    bitmap = check-bmp
+                                    bitmap-width = 16
+                                    bitmap-number = 2
+                                    bitmap-trailing = 1 
+                             modify form1-gd-1(i,12),hidden-data "E" 
+                          else 
+                             modify form1-gd-1(i,12),
+                                    bitmap = check-bmp
+                                    bitmap-width = 16
+                                    bitmap-number = 1
+                                    bitmap-trailing = 1             
+                             modify form1-gd-1(i,12),hidden-data "H" 
+                          end-if
+                       end-perform          
+            end-evaluate 
+     end-evaluate     
+     .
+
+ 

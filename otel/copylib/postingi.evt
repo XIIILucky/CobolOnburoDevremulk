@@ -1,0 +1,572 @@
+* postingi.evt
+* postingi.evt is generated from D:\asya\acugt.ytl\otel\postingi.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM exception-procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+       perform adresleri-tasi.
+       initialize rposting-iptal-eh eposting-iptal-eh.
+     .
+*
+ before-procedure.
+     initialize mesaj.
+     evaluate control-id
+          when 4
+              evaluate true
+                  when turkce
+                       move "Room Postingi Iptal Icin Check Ediniz.. " to mesaj
+                  when ingilizce
+                       move "Room Postingi Iptal Icin Check Ediniz.. " to mesaj
+                  when almanca
+                       move "Room Postingi Iptal Icin Check Ediniz.. " to mesaj
+              end-evaluate
+          when 5
+              evaluate true
+                  when turkce
+                       move "Extra Postingi Iptal Icin Check Ediniz.. " to mesaj
+                  when ingilizce
+                       move "Extra Postingi Iptal Icin Check Ediniz.. " to mesaj
+                  when almanca
+                       move "Extra Postingi Iptal Icin Check Ediniz.. " to mesaj
+              end-evaluate
+          when 11
+              evaluate true
+                  when turkce
+                       move "Islemi Baslat...... " to mesaj
+                  when ingilizce
+                       move "Islemi Baslat...... " to mesaj
+                  when almanca
+                       move "Islemi Baslat...... " to mesaj
+              end-evaluate
+     end-evaluate.
+
+     modify form1-st-1-handle,
+            panel-index = 1 
+            panel-text = mesaj.
+
+     .
+ Form1-Aft-Initdata.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid
+          initialize mesaj-link
+          move 03 to mesaj-no
+          perform mesaj-ver
+    not invalid
+        continue
+    end-read
+    close genel.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ secim-kontrolu.
+     initialize gec-gecme.
+     if rposting-iptal-eh = 0 and eposting-iptal-eh = 0
+        move 1 to gec-gecme
+     else
+        move 0 to gec-gecme
+     end-if.
+ exception-procedure.
+     evaluate key-status
+         when 2 
+              perform secim-kontrolu
+              open i-o takvim
+              initialize takvim-rec
+              move tarih-tasi          to takvim-anah
+              read takvim no lock invalid
+                  display message box "Tarih Bulunamadi.."
+                                  title "Uyari"
+                                  icon 1
+                        close takvim
+                        exit paragraph 
+              end-read
+                  move "H"         to takvim-posting 
+                  rewrite takvim-rec end-rewrite 
+                  perform log-operation-takvim
+              close takvim
+              if gec-gecme = 0
+                 perform islem-yap thru islem-yap-exit  
+                   if onkpara-cout-kuru = 1 then 
+                         call "/asya/ytl/obj/otel/poscout.asy"
+                      using 3
+                      on exception 
+                        perform callerr-proc
+                      not on exception
+                        cancel "/asya/ytl/obj/otel/poscout.asy"
+                    end-call
+
+                    end-if
+                 move tarih-tasi to takvim-anah
+                 open i-o takvim
+                 read takvim no lock invalid 
+                  display message box " Hata No :3884583"
+                  not invalid
+                  move "H" to takvim-posting
+                  rewrite takvim-rec end-rewrite
+                  end-read
+                  close takvim
+                 perform loga-yaz
+                 display message box "Islem Bitti...Posting Iptal Edilmistir....."
+                 move 27 to key-status 
+              end-if
+     end-evaluate.
+
+ islem-yap.
+ dosya-ac.
+    open input kodlar02 depkod extpost.
+    open i-o   konuk romhrk exthrk onkasa silhrk hrk2 yromhrk.
+
+      if rposting-iptal-eh = 1 
+         continue
+      else 
+         go riptal-bitti 
+      end-if.
+ room-iptal.
+ riptal-basla.  
+    initialize konuk-rec.
+    move "I"  to konuk-durumu.  
+    start konuk key not < konuk-oda invalid 
+          go riptal-bitti. 
+ rkonuk-oku.
+    read konuk next no lock end go riptal-bitti.
+    if fs-konuk = 99 go rkonuk-oku.
+    if konuk-durumu not = "I" go riptal-bitti.
+    if konuk-fol-kodu not = "R" go rkonuk-oku.
+       move "A"             to kodlar02-tipi.
+       move konuk-pan-tipi  to kodlar02-kodu.
+      read kodlar02 no lock invalid 
+           go rkonuk-oku
+      end-read.
+ hrk-bul.       
+        initialize romhrk-rec.
+        move konuk-folio       to romhrk-folio.
+        move calisma-tarihi    to romhrk-tarih.
+        start romhrk key not < romhrk-anah1 invalid 
+              go rkonuk-oku.
+ hrk-oku.
+        read romhrk next no lock end go rkonuk-oku.
+        if fs-romhrk = 99 go hrk-oku.
+        if romhrk-folio > konuk-folio go rkonuk-oku.
+        if romhrk-tarih > calisma-tarihi go rkonuk-oku. 
+        if romhrk-folio = konuk-folio 
+           continue
+        else 
+           go hrk-oku
+        end-if.
+        if romhrk-tarih = calisma-tarihi 
+           continue
+        else 
+           go hrk-oku
+        end-if.
+        if romhrk-depkod = oda-dep      or 
+           romhrk-depkod = kahvalti-dep or 
+           romhrk-depkod = ogle-dep     or 
+           romhrk-depkod = aksam-dep    or 
+           romhrk-depkod = icecek-dep   or 
+           romhrk-depkod = extra-dep 
+           continue
+         else 
+           go hrk-oku
+         end-if. 
+           
+        if romhrk-islem-tipi  = "O" 
+           continue
+        else 
+           go hrk-oku
+        end-if. 
+        if onkpara-ipt-post-yaz = "E"
+           move   romhrk-rec     to silhrk-rec
+           move   k-kodu-tasi    to silhrk-staf
+           write silhrk-rec invalid 
+                 rewrite silhrk-rec 
+                 end-rewrite continue
+           end-write. 
+
+           delete romhrk invalid 
+               go hrk-oku.
+           perform log-operation-romhrk
+            initialize hrk2-rec
+            move romhrk-anah      to hrk2-anah
+            read hrk2 no lock invalid
+                 continue
+            not invalid
+                delete hrk2 end-delete
+            end-read
+            initialize yromhrk-rec
+            move hrk2-kaynak-folio     to yromhrk-folio
+            move romhrk-islem          to yromhrk-islem
+            read yromhrk no lock invalid
+                 stop " "
+            not invalid
+                delete yromhrk end-delete
+            end-read
+
+           perform konuk-eksilt  thru konuk-eksilt-exit.
+           perform onkasa-eksilt thru onkasa-eksilt-exit.
+                   go hrk-oku.  
+ onkasa-eksilt.
+       move romhrk-tarih    to onkasa-tarih.
+       move romhrk-depkod   to onkasa-dep.
+       read onkasa no lock invalid go onkasa-eksilt-exit. 
+       compute onkasa-tutar-tl   = onkasa-tutar-tl - romhrk-tl-tutar.
+       compute onkasa-tutar-dv   = onkasa-tutar-dv - romhrk-dv-tutar.
+       rewrite onkasa-rec invalid continue. 
+ onkasa-eksilt-exit.
+       exit.
+ konuk-eksilt. 
+           if romhrk-ba = "B" 
+              compute konuk-top-borc = konuk-top-borc - romhrk-tl-tutar.
+           if romhrk-ba = "A" 
+              compute konuk-top-alac = konuk-top-alac - romhrk-tl-tutar.
+          rewrite konuk-rec invalid continue. 
+ konuk-eksilt-exit. 
+      exit.
+ riptal-bitti.
+ room-iptal-exit.
+       exit.
+
+******************>Extralari Sil...............
+
+ extra-iptal.
+      if eposting-iptal-eh = 1 
+         continue
+      else 
+         go eiptal-bitti 
+      end-if.
+ eiptal-basla.
+       initialize extpost-rec.
+       move "I"   to extpost-durumu.
+      start extpost key not < extpost-durumu invalid 
+            go eiptal-bitti.
+ extra-oku.
+    read extpost next no lock end go eiptal-bitti.
+    if fs-extpost = 99 go extra-oku.
+    if extpost-durumu not = "I" go eiptal-bitti.
+    if extpost-p-k        = "K" 
+       continue
+    else 
+       go extra-oku
+    end-if. 
+       move extpost-folio  to konuk-folio.
+    read konuk no lock invalid go extra-oku.
+    if konuk-durumu not = "I" go extra-oku.  
+
+           initialize tl-tutar dv-tutar.
+           move extpost-dep   to depkod-kodu dep-dep.
+           read depkod no lock invalid go extra-oku. 
+           perform hrk-sil      thru hrk-sil-exit.
+
+           go extra-oku.  
+ hrk-sil.
+       if konuk-fol-kodu = "R" perform romhrk-sil  thru romhrk-sil-exit
+                         else  perform exthrk-sil  thru exthrk-sil-exit.
+ hrk-sil-exit.
+    exit.
+ romhrk-sil. 
+        initialize romhrk-rec.
+        move konuk-folio       to romhrk-folio.
+        move calisma-tarihi    to romhrk-tarih.
+        start romhrk key not < romhrk-anah1 invalid 
+              go romhrk-sil-exit. 
+ romhrk-oku.
+        read romhrk next no lock end go romhrk-sil-exit. 
+        if fs-romhrk = 99 go romhrk-oku.
+        if romhrk-folio > konuk-folio go romhrk-sil-exit.
+        if romhrk-tarih > calisma-tarihi go  romhrk-sil-exit.
+        if romhrk-folio = konuk-folio 
+           continue
+        else 
+           go romhrk-oku
+        end-if.
+        if romhrk-tarih = calisma-tarihi 
+           continue
+        else 
+           go romhrk-oku
+        end-if.
+        if romhrk-depkod = extpost-dep 
+           continue
+        else 
+           go romhrk-oku
+        end-if.
+
+        if romhrk-islem-tipi = "O" 
+           continue
+        else 
+           go romhrk-oku
+        end-if.       
+        if onkpara-ipt-post-yaz = "E"
+           move   romhrk-rec     to silhrk-rec
+           move   k-kodu-tasi    to silhrk-staf
+           write silhrk-rec invalid 
+                 rewrite silhrk-rec 
+                 end-rewrite continue
+           end-write. 
+           delete romhrk invalid 
+                   go romhrk-sil-exit.
+            perform log-operation-romhrk
+            initialize hrk2-rec
+            move romhrk-anah      to hrk2-anah
+            read hrk2 no lock invalid
+                 continue
+            not invalid
+                delete hrk2 end-delete
+            end-read
+            initialize yromhrk-rec
+            move hrk2-kaynak-folio     to yromhrk-folio
+            move romhrk-islem          to yromhrk-islem
+            read yromhrk no lock invalid
+                 stop " "
+            not invalid
+                delete yromhrk end-delete
+            end-read
+
+           move romhrk-tl-tutar    to tl-tutar.
+           move romhrk-dv-tutar    to dv-tutar.
+           perform eonkasa-eksilt thru eonkasa-eksilt-exit.
+           perform ekonuk-eksilt  thru ekonuk-eksilt-exit.
+           go romhrk-oku.
+ romhrk-sil-exit.
+       exit. 
+ exthrk-sil. 
+        initialize exthrk-rec.
+        move konuk-folio       to exthrk-folio.
+        move calisma-tarihi    to exthrk-tarih.
+        start exthrk key not < exthrk-anah1 invalid 
+              go exthrk-sil-exit. 
+ exthrk-oku.
+        read exthrk next no lock end go exthrk-sil-exit. 
+        if fs-exthrk = 99 go exthrk-oku.
+        if exthrk-folio > konuk-folio go exthrk-sil-exit.
+        if exthrk-tarih > calisma-tarihi go  exthrk-sil-exit.
+        if exthrk-folio = konuk-folio 
+           continue
+        else 
+           go exthrk-oku
+        end-if.
+        if exthrk-tarih = calisma-tarihi 
+           continue
+        else 
+           go exthrk-oku
+        end-if.
+        if exthrk-depkod = extpost-dep 
+           continue
+        else 
+           go exthrk-oku
+        end-if.
+
+        if exthrk-islem-tipi = "O" 
+           continue
+        else 
+           go exthrk-oku
+        end-if.       
+        if onkpara-ipt-post-yaz = "E"
+           move   exthrk-rec     to silhrk-rec
+           move   k-kodu-tasi    to silhrk-staf
+           write silhrk-rec invalid 
+                 rewrite silhrk-rec 
+                 end-rewrite continue
+           end-write
+         . 
+           delete exthrk invalid 
+                   go exthrk-sil-exit.
+            perform log-operation-exthrk
+            initialize hrk2-rec
+            move exthrk-anah      to hrk2-anah
+            read hrk2 no lock invalid
+                 continue
+            not invalid
+                delete hrk2 end-delete
+            end-read
+            initialize yromhrk-rec
+            move hrk2-kaynak-folio     to yromhrk-folio
+            move exthrk-islem          to yromhrk-islem
+            read yromhrk no lock invalid
+                 stop " "
+            not invalid
+                delete yromhrk end-delete
+            end-read
+
+           move exthrk-tl-tutar    to tl-tutar.
+           move exthrk-dv-tutar    to dv-tutar.
+           perform eonkasa-eksilt thru eonkasa-eksilt-exit.
+           perform ekonuk-eksilt  thru ekonuk-eksilt-exit.
+           go exthrk-oku.
+ exthrk-sil-exit.
+       exit.
+ eonkasa-eksilt. 
+       move calisma-tarihi  to onkasa-tarih.
+       move dep-dep         to onkasa-dep.
+       read onkasa no lock invalid go onkasa-eksilt-exit. 
+       compute onkasa-tutar-tl   = onkasa-tutar-tl - tl-tutar. 
+       compute onkasa-tutar-dv   = onkasa-tutar-dv - dv-tutar.
+       rewrite onkasa-rec invalid continue. 
+ eonkasa-eksilt-exit. 
+       exit.
+ ekonuk-eksilt.
+           if depkod-ba = "B" 
+              compute konuk-top-borc = konuk-top-borc - tl-tutar.
+           if depkod-ba = "A" 
+              compute konuk-top-alac = konuk-top-alac - tl-tutar.
+          rewrite konuk-rec invalid continue. 
+ ekonuk-eksilt-exit. 
+      exit.
+ eiptal-bitti.
+ extra-iptal-exit.
+       exit.
+ dosya-kapat.
+    
+    perform routlari-sil 
+    close      kodlar02 depkod extpost.
+    close      konuk romhrk exthrk onkasa silhrk yromhrk hrk2.
+ islem-yap-exit.
+       exit.
+
+*
+ routlari-sil.
+     initialize exthrk-rec
+    move calisma-tarihi    to exthrk-tarih.
+    start exthrk key > exthrk-anah2 invalid continue
+         not invalid
+          perform until fs-exthrk ="10" 
+             read exthrk next no lock end move "10" to fs-exthrk
+                 not end
+                   if exthrk-tarih = calisma-tarihi then
+                           initialize konuk-rec
+                           move exthrk-folio to konuk-folio
+                      if exthrk-islem-tipi = "O" then
+                           initialize konuk-rec
+                           move exthrk-folio to konuk-folio
+                           read konuk no lock invalid
+                                 continue
+                                 not invalid
+                               if konuk-durumu not = "I" exit perform cycle end-if
+                                  move exthrk-tl-tutar    to tl-tutar
+                                  move exthrk-dv-tutar    to dv-tutar
+                                  move exthrk-depkod   to dep-dep
+                                  perform eonkasa-eksilt thru eonkasa-eksilt-exit
+                                  perform ekonuk-eksilt  thru ekonuk-eksilt-exit
+                            end-read
+                            delete exthrk invalid  stop " "  end-delete
+                            perform log-operation-exthrk
+                             initialize hrk2-rec
+                            move exthrk-anah      to hrk2-anah
+                            read hrk2 no lock invalid
+                                                      continue
+                                   not invalid
+                                      delete hrk2 end-delete
+                              end-read
+                           initialize yromhrk-rec
+                            move hrk2-kaynak-folio     to yromhrk-folio
+                           move exthrk-islem          to yromhrk-islem
+                               read yromhrk no lock invalid
+                                          stop " "
+                                      not invalid
+                                     delete yromhrk end-delete
+                                 end-read
+                       end-if
+                   else 
+                   move "10" to fs-exthrk
+                   end-if
+             end-read
+         
+
+                
+          
+          
+          end-perform
+     end-start     
+       initialize romhrk-rec
+    move calisma-tarihi    to romhrk-tarih.
+    start romhrk key > romhrk-anah2 invalid continue
+         not invalid
+          perform until fs-romhrk ="10" 
+             read romhrk next no lock end move "10" to fs-romhrk
+                 not end
+                   if romhrk-tarih = calisma-tarihi then
+                       move romhrk-folio to konuk-folio
+                           initialize konuk-rec
+                          
+                      if romhrk-islem-tipi = "O" then
+                           initialize konuk-rec
+                           move romhrk-folio to konuk-folio
+                          
+                           read konuk no lock invalid
+                                 
+                                 continue
+                                 not invalid
+                               if konuk-durumu not = "I" exit perform cycle end-if
+                                  move romhrk-tl-tutar    to tl-tutar
+                                  move romhrk-dv-tutar    to dv-tutar
+                                  move romhrk-depkod   to dep-dep
+                                  perform eonkasa-eksilt thru eonkasa-eksilt-exit
+                                  perform ekonuk-eksilt  thru ekonuk-eksilt-exit
+                            end-read
+
+                            delete romhrk invalid  stop " "  end-delete
+                            perform log-operation-romhrk
+                             initialize hrk2-rec
+                            move romhrk-anah      to hrk2-anah
+                            read hrk2 no lock invalid
+                                                      continue
+                                   not invalid
+                                      delete hrk2 end-delete
+                              end-read
+                           initialize yromhrk-rec
+                            move hrk2-kaynak-folio     to yromhrk-folio
+                           move romhrk-islem          to yromhrk-islem
+                               read yromhrk no lock invalid
+                                          stop " "
+                                      not invalid
+                                     delete yromhrk end-delete
+                                 end-read
+                       end-if
+                   else 
+                   move "10" to fs-romhrk
+                   end-if
+             end-read
+         
+
+                
+          
+          
+          end-perform
+     end-start     
+               
+          
+          .
+   
+
+
+*
+ loga-yaz.
+********** PROGRAMA GIRIS LOGA GONDERILIYOR
+               initialize call-alan1
+                          call-alan2
+                          call-alan3
+                          call-alan4
+                          call-alan5
+                          call-alan6
+               perform log-no-al
+               move genelfis-log-no   to call-anah
+               move "Tarih: "       to call-alan1
+               move gun-tasi          to call-alan1(10:)
+               move "/"               to call-alan1(12:)
+               move ay-tasi           to call-alan1(13:)
+               move "/"               to call-alan1(15:)
+               move yil-tasi          to call-alan1(16:)
+               move "Room Posting Iptal Edildi... "    to call-alan2
+
+               perform log-operation-calling.
+
+ 

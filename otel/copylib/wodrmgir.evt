@@ -1,0 +1,146 @@
+* wodrmgir.evt
+* wodrmgir.evt is generated from D:\asya\acugt.ytl\otel\wodrmgir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.    
+     call "c$narg" using link-var.
+     perform adresleri-tasi.
+*     move tus-yetkileri to tus-kodlari.
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid continue
+          not invalid continue
+     end-read
+     close genel.
+     move CALISMA-TARIHI to tarih-tasi.
+
+      
+*
+ Form1-Aft-Initdata.   
+     if link-var >= 1 then      
+    
+ 
+          move sorgugweb-gelen-durum-oda-sorgu to sorguweb-gelen-durum-oda-sorgu
+          move sorgugweb-gelen-sorgu-oda-durumu  to sorguweb-gelen-sorgu-oda-durumu
+ 
+          perform islem 
+ 
+          move sorguweb-gelen-durum-oda-sorgu to sorgugweb-gelen-durum-oda-sorgu
+          move sorguweb-gelen-sorgu-oda-durumu to sorgugweb-gelen-sorgu-oda-durumu
+
+          set exit-pushed  to true
+     end-if .             
+*
+ Exception-Procedure.
+        evaluate key-status 
+          when 2         
+             move sorgu-odano              to sorguweb-gelen-durum-oda-sorgu         
+             move sorgu-oda-durum-gir(1:1) to sorguweb-gelen-sorgu-oda-durumu       
+             call "/asya/ytl/obj/otel/wodrmgir.asy" 
+                        using   sorguweb
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                   cancel "/asya/ytl/obj/otel/wodrmgir.asy"
+            end-call
+           
+            if sorguweb-giden-oda-bilgi-sonuc <> spaces
+               move "Basarili"      to sorgu-sonuc
+               display lb-sorgu-sonuc
+            else
+               move "Basarisiz"      to sorgu-sonuc
+               display lb-sorgu-sonuc              
+            end-if                 
+        end-evaluate.
+ 
+*
+ islem.             
+    open i-o odalar  konuk odalar2
+
+****    move sorguweb-gelen-durum-oda-sorgu   to o-kisa
+    initialize odalar2-rec
+    move sorguweb-gelen-durum-oda-sorgu to  odalar2-uzun-no  o-uzun
+    read odalar2 no lock invalid 
+         continue 
+    not invalid 
+        move  odalar2-NO to o-uzun
+    end-read 
+ 
+
+    initialize odalar-rec
+    move o-uzun     to odalar-no  
+    read odalar no lock invalid
+        move "Oda Numarasi Tanimsiz"  to  sorguweb-giden-oda-bilgi-sonuc
+    not invalid
+         perform konuk-bul
+      
+      evaluate sorguweb-gelen-sorgu-oda-durumu(1:1)  
+      when  "T"
+      
+        if kayit-var  = 0 
+            move HOUSE-BT  to ODALAR-DURUMU HOUSE-DURUMU           
+        else
+            move HOUSE-DT  to ODALAR-DURUMU HOUSE-DURUMU
+        end-if
+      when "K"
+      
+        if kayit-var  = 0 
+            move HOUSE-BK  to ODALAR-DURUMU HOUSE-DURUMU           
+        else
+            move HOUSE-DK  to ODALAR-DURUMU HOUSE-DURUMU
+        end-if
+      when other 
+          move "T ve K disinda tip gonderildi.."  to sorguweb-giden-oda-bilgi-sonuc 
+          close odalar konuk
+          exit paragraph
+      end-evaluate 
+
+      rewrite odalar-rec invalid 
+          move "Oda Datasi Olusturulmamis..."  to sorguweb-giden-oda-bilgi-sonuc
+      end-rewrite
+      perform log-operation-odalar
+      move "Basarili"                          to sorguweb-giden-oda-bilgi-sonuc
+    end-read    
+    close odalar konuk odalar2. 
+*
+ konuk-bul.
+     initialize konuk-rec kayit-var
+     move odalar-no  to konuk-odano
+     move "I"                     to konuk-durumu
+     start konuk key not < konuk-oda invalid 
+          continue 
+     not invalid 
+     perform until fs-konuk = "10"
+     read konuk next no lock end move "10"  to fs-konuk
+     not at end 
+             if konuk-odano <> odalar-no
+                 exit perform 
+             end-if 
+             if konuk-durumu <> "I"
+                exit perform 
+             end-if      
+             if konuk-fol-kodu <> "R"
+                 exit perform cycle 
+             end-if 
+             move 1 to kayit-var
+             move "10"   to fs-konuk
+             exit perform 
+     end-read 
+     end-perform
+     end-start .
+*
+ Form1-Aft-Routine.
+     .
+
+
+ 

@@ -1,0 +1,359 @@
+*
+ Form1-Bef-Create.
+     move 1 to tmp-sil.
+     perform adresleri-tasi
+     .
+*
+ before-procedure.
+     initialize mesaj
+     evaluate control-id
+       when 11
+         evaluate true
+           when turkce
+             move "Islemi Baslat  "   to mesaj
+           when ingilizce
+             move "Islemi Baslat  "   to mesaj
+           when almanca
+             move "Islemi Baslat  "   to mesaj
+         end-evaluate
+     end-evaluate
+
+     modify form1-st-1-handle,
+            panel-index = 1 
+            panel-text  = mesaj
+     .
+*
+ Form1-Aft-Initdata.
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock
+       invalid
+         initialize mesaj-link
+         move 03 to mesaj-no
+         perform mesaj-ver
+       not invalid
+         continue
+     end-read
+     close genel.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ exception-procedure.
+     evaluate key-status
+       when 7
+         move 0 to tmp-sil
+       when 2 
+*/gunluk konuk kaydi casta yaziliyorrrr
+          call "/asya/ytl/obj/otel/k2cast.asy" using 1
+               on exception
+                  perform callerr-proc
+               not on exception
+          cancel "/asya/ytl/obj/otel/k2cast.asy"
+          end-call
+
+          call "/asya/ytl/obj/otel/hisaktar.asy" using 1
+               on exception
+                  perform callerr-proc
+               not on exception
+          cancel "/asya/ytl/obj/otel/hisaktar.asy"
+          end-call
+         perform islem-yap thru islem-yap-exit
+         if onk-devir-ok = 0 
+            display message box
+              "Onkasa Devredildi....."
+              title = " Bilginize... "
+         end-if
+
+         if tarih-devir-ok = 0 
+            display message box
+              "Onboru Calisma Tarihi Yeni Gune Gecti..."
+              x"0a0d"
+              "Eski Tarih..:" ilk-gun   "/" ilk-ay   "/" ilk-yil
+              x"0a0d"
+              "Yeni Tarih..:" calis-gun "/" calis-ay "/" calis-yil
+              title = " Bilginize ... "
+              
+*/ Program ilk calistiginda F7 tusuna basilirsa 
+*/ tmp-sil programi calismaz - HER IHTIMALE KARSI :)
+              if tmp-sil = 1
+                 call "/asya/ytl/obj/otel/tmpsil.asy" 
+                      on exception
+                         perform callerr-proc
+                      not on exception
+                 cancel "/asya/ytl/obj/otel/tmpsil.asy"
+                 end-call
+              end-if
+         end-if
+         
+         if tarih-devir-ok = 1
+            initialize mesaj-link
+            move "Onburo Calisma Tarihi Degistirilemedi "   to mesaj-2
+            move "Tanimsiz Tarih !!!"         to mesaj-3
+            move " !!! Hata !!!"              to mesaj-title
+            move "Tarih Degisim Hatasi"       to mesaj-konu
+            move 1  to mesaj-buttonlar
+            move 20 to mesaj-no
+            perform mesaj-ver
+         end-if
+         
+         if onk-devir-ok = 1 
+            initialize mesaj-link
+            move "Onkasa Devri Yapilamadi "   to mesaj-2
+            move "Tanimsiz Tarih !!!"         to mesaj-3
+            move " !!! Hata !!!"              to mesaj-title
+            move "Onkasa Devir Hatasi"        to mesaj-konu
+            move 1  to mesaj-buttonlar
+            move 20 to mesaj-no
+            perform mesaj-ver
+         end-if
+         
+         perform loga-yaz
+
+         move 27 to key-status
+         perform avans-tanimla
+     end-evaluate
+     .
+***********************************ramazan****************************
+*
+ avans-tanimla.
+    open i-o onavans.
+    initialize onavans-rec
+    move ilk-tarih    to onavans-tarih
+    start onavans key not < onavans-tarih invalid
+      display message box ilk-tarih "Tarihinde avans tanimlanmamis!!!"
+                      title "...:::Uyari:::..."
+                      icon mb-warning-icon
+    not invalid
+    read onavans next no lock end
+     not at end
+       move calisma-tarihi      to onavans-tarih
+       move onavans-avans-tl    to onavans-yedek-tutar
+       move onavans-yedek-tutar to onavans-avans-tl
+         write onavans-rec invalid continue 
+         not invalid
+       display message box "On Kasa Avansi Aktarilmistir"
+                       title "Bilginize"
+      end-write
+    end-read
+    end-start
+    close onavans.
+***********************************ramazan****************************         
+*
+ islem-yap.
+********>Onkasa Devri...
+     open input depkod takvim
+     open i-o   onkasa
+
+     .
+*
+ onk-devir.
+     initialize ilk-tarih son-tarih onk-devir-ok tarih-devir-ok
+     move calisma-tarihi to ilk-tarih son-tarih
+     .
+*
+ tarih-kontrol.  
+     move ilk-tarih to takvim-anah
+     start takvim key not < takvim-anah
+       invalid 
+          move 1 to onk-devir-ok
+          go son
+     end-start
+     .
+*
+ tarih-oku.  
+     read takvim next no lock
+       end 
+         move 1 to onk-devir-ok
+         go son
+     end-read
+     if fs-takvim = 99 go tarih-oku, end-if
+     if takvim-anah = ilk-tarih go tarih-oku, end-if
+     if takvim-anah > ilk-tarih
+        continue
+     else 
+        move 1 to onk-devir-ok
+        go son
+     end-if
+     move takvim-anah to son-tarih
+     .
+*
+ tarih-kontrol-exit.
+     exit
+     .
+*
+ devir-basla. 
+     initialize onkasa-rec
+                borc-tutar-tl borc-tutar-dv alac-tutar-tl alac-tutar-dv
+                bakiye-tl bakiye-dv
+******** 888 Dunden devir departmanidir..........
+     move ilk-tarih to onkasa-tarih
+     move 888       to onkasa-dep
+     read  onkasa no lock
+       invalid
+         initialize onkasa-rec
+     end-read
+     move onkasa-tutar-tl    to borc-tutar-tl
+     move onkasa-tutar-dv    to borc-tutar-dv
+     initialize onkasa-rec
+     move ilk-tarih to onkasa-tarih
+     start onkasa key not < onkasa-anah
+       invalid 
+         move 1 to onk-devir-ok
+         go devir-bitti
+     end-start
+     .
+*
+ devir-oku.   
+     read onkasa next no lock
+       end
+         go devir-bitti
+     end-read
+     if fs-onkasa = 99 go devir-oku, end-if
+     if onkasa-tarih > ilk-tarih go devir-bitti, end-if
+     if onkasa-tarih = ilk-tarih
+        continue
+     else
+        go devir-oku
+     end-if
+     if onkasa-dep   = 888 go devir-oku, end-if
+     if onkasa-dep   = 999 go devir-oku, end-if
+     move onkasa-dep  to depkod-kodu
+     read depkod no lock
+       invalid
+         go devir-oku
+     end-read
+     if depkod-ba = "B" 
+        compute borc-tutar-tl = borc-tutar-tl + onkasa-tutar-tl
+        compute borc-tutar-dv = borc-tutar-dv + onkasa-tutar-dv
+     end-if
+     if depkod-ba = "A"
+        compute alac-tutar-tl = alac-tutar-tl + onkasa-tutar-tl
+        compute alac-tutar-dv = alac-tutar-dv + onkasa-tutar-dv
+     end-if
+     go devir-oku
+     .
+*
+ devir-bitti. 
+     compute bakiye-tl  = borc-tutar-tl - alac-tutar-tl
+     compute bakiye-dv  = borc-tutar-dv - alac-tutar-dv
+******** 999 Yarina devir departmanidir..........
+     initialize onkasa-rec
+     move ilk-tarih to onkasa-tarih
+     move 999       to onkasa-dep
+     move bakiye-tl      to onkasa-tutar-tl
+     move bakiye-dv      to onkasa-tutar-dv
+     write onkasa-rec
+       invalid
+         rewrite onkasa-rec, end-rewrite
+     end-write
+     move son-tarih to onkasa-tarih
+     move 888       to onkasa-dep
+     move bakiye-tl      to onkasa-tutar-tl
+     move bakiye-dv      to onkasa-tutar-dv
+     write onkasa-rec
+       invalid
+         rewrite onkasa-rec, end-rewrite
+     end-write
+     move 0 to onk-devir-ok
+     .
+*
+ son.
+     close onkasa takvim depkod
+     .
+*
+ onk-devir-exit.
+     exit
+     .
+*
+********>Onburo Calisma Tarihi Degisimi
+ tarih-devir.
+     .
+ takvim-basla.
+     open input takvim
+     initialize takvim-rec tarih-devir-ok
+     move calisma-tarihi    to takvim-anah
+     start takvim key not < takvim-anah
+       invalid
+         move 1 to tarih-devir-ok
+         go tarih-devir-exit
+     end-start
+     .
+*
+ takvim-oku.
+     read takvim next no lock
+       end
+         move 1 to tarih-devir-ok
+         go tarih-devir-exit
+     end-read
+     if fs-takvim = 99 go takvim-oku, end-if
+     if takvim-anah = calisma-tarihi go takvim-oku, end-if
+     .
+*
+ takvim-oku-bitti.
+     close takvim
+     .
+*
+ kayit-yaz.
+     open i-o genel
+     move 1 to genel-anahtar
+     move takvim-anah to calisma-tarihi
+     rewrite genel-rec
+       invalid
+         move 1 to tarih-devir-ok
+       not invalid
+         continue
+     end-rewrite
+     close genel
+     move calis-yil    to yil-tasi
+     move calis-ay     to ay-tasi
+     move calis-gun    to gun-tasi
+          call "/asya/ytl/obj/otel/castplan.asy" using 1
+               on exception
+                  perform callerr-proc
+               not on exception
+          cancel "/asya/ytl/obj/otel/castplan.asy"
+          end-call
+          display message box "Oda Planlamasi Otomatik Olarak Degistirildi..."
+                          title "[ Uyari ]"
+                          icon 1
+              
+     .
+*
+tarih-devir-exit.
+     exit.
+
+ islem-yap-exit.
+     exit
+     .
+*
+ loga-yaz.
+********** PROGRAMA GIRIS LOGA GONDERILIYOR
+               initialize call-alan1
+                          call-alan2
+                          call-alan3
+                          call-alan4
+                          call-alan5
+                          call-alan6
+               perform log-no-al
+               move genelfis-log-no   to call-anah
+               move "Tarih: "         to call-alan1
+               move ilk-gun           to call-alan1(10:)
+               move "/"               to call-alan1(12:)
+               move ilk-ay            to call-alan1(13:)
+               move "/"               to call-alan1(15:)
+               move ilk-yil           to call-alan1(16:)
+               move "Gunsonu Yapildi... "    to call-alan2
+               if tarih-devir-ok = 1
+                  move "Onburo Calisma Tarihi Degistirilemedi"   
+                  to call-alan3
+               end-if 
+               if onk-devir-ok = 1 
+                  move "Onkasa Devri Yapilamadi..... "   
+                  to call-alan4
+               end-if 
+
+               perform log-operation-calling               
+     .

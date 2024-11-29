@@ -1,0 +1,803 @@
+* halkrap1.evt
+* halkrap1.evt is generated from D:\asya\acugt.ytl\otel\halkrap1.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+     .
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to ilk-tarih son-tarih.
+    display acc-01 acc-02 acc-03 acc-04 acc-05 acc-06.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ accept-depkodu-Bef-Procedure.
+    modify button-depara enabled = true.
+*
+ Aft-Procedure.
+    if dep-kod <> zeroes
+    initialize depkod-rec
+    open input depkod
+    move dep-kod to depkod-kodu
+    read depkod no lock invalid 
+         display message box "Tanimsiz Departman Kodu..."
+         move 4 to accept-control
+         move 11 to control-id
+         close depkod
+         exit paragraph
+              not invalid continue
+    end-read
+    modify lb-depadi-e, title = depkod-adi of depkod
+    modify button-depara enabled = false
+    close depkod
+    end-if
+     .
+*
+ acc-07a-Bef-Procedure.
+    modify button-deparaa enabled = true.
+     .
+*
+ acc-07a-Aft-Procedure.
+    if acn-kod <> spaces
+    initialize acenta-rec
+    open input acenta
+    move acn-kod to acenta-kodu
+    read acenta no lock invalid 
+         display message box "Tanimsiz Acenta Kodu..."
+         move 4 to accept-control
+         move 15 to control-id
+         close acenta
+         exit paragraph
+              not invalid continue
+    end-read
+    modify lb-depadi-ea, title = acenta-adi of acenta
+    modify button-deparaa enabled = false
+    close acenta
+    end-if
+     .
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 2
+           open i-o genelfis
+           move 1 to genelfis-anahtar
+           read genelfis no lock invalid
+                move 1 to ekran-fis-1
+           end-read
+           rewrite genelfis-rec invalid
+                   write genelfis-rec end-write
+           end-rewrite
+           close genelfis
+           
+           move ekran-fis-1(2:)     to liste-no takas-no takas2-no takas3-no
+           move ilk-tarih to prog-bas-tarih
+           move son-tarih to prog-bit-tarih
+           move acn-kod   to prog-acenta
+           
+           move ulk-kod   to prog-ulke
+           if yeni-gor = 1
+             initialize basari-yuzde-toplam basari-dep-say   rap-detay-son
+             open output takas takas2 takas3 close  takas takas2 takas3 
+             open i-o takas takas2 takas3 mass-update
+             open input  turizm
+                  perform takas-aktar
+                  perform rapor
+             close takas takas2 takas3 turizm
+             delete file takas takas2 takas3
+           else
+                   call "/asya/ytl/obj/otel/halkrap3.asy"
+                        using prog-link
+                   on exception 
+                        perform callerr-proc
+                   not on exception
+                        cancel "/asya/ytl/obj/otel/halkrap3.asy"
+                   end-call
+                   set dokumer-asya-set    to true
+        
+                   set dokumer-ekran-text to true
+        
+                   move liste-adres to dokumer-dosya
+                   call "/asya/ytl/obj/otel/dokumer.asy" 
+                   end-call
+*           set exit-pushed  to true
+           end-if
+    end-evaluate.
+             
+
+*
+ rapor.
+    evaluate key-status
+     when 2
+    
+      open i-o genelfis halk soru  ulke
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi 
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Halkla iliskiler Raporu " to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Halkla iliskiler Raporu " to det-filler
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LCCCCCCCCCC"  to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  s
+     initialize dokumer-rec detay
+     move "D1"         to det-dokumer-20(1:2)
+     move "1"          to det-dokumer-20(10:1)
+
+     move " Soru  "              to det-1
+     move "Toplam Cevap"         to det-1-1
+     move " Cevap   "            to det-2
+     move "Yuzde %"              to det-2-2
+     move " Cevap           "    to det-3
+     move "Yuzde %"              to det-3-3
+     move "  Cevap          "    to det-4
+     move "Yuzde %"              to det-4-4 
+     move " Cevap           "    to det-5
+     move "Yuzde %"              to det-5-5
+     move " Cevap           "    to det-6
+     move "Yuzde %"              to det-6-6 
+     move "Basari %"             to det-6-7
+     move "|" to fil-1 fil-1-1 fil-2 fil-2-2 fil-3      
+                 fil-3-3 fil-4   fil-4-4 fil-5 fil-5-5 fil-6 fil-6-6 fil-6-7
+                 
+     write dokumer-rec from detay
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"  to det-1 det-1-1 det-2  det-2-2     det-6-7 det-3  
+                      det-3-3 det-4  det-4-4 det-5  det-5-5 det-6 det-6-6 
+                     
+     write dokumer-rec from detay.
+
+           perform ram1 thru ram1-ex.
+
+**************************
+      
+     initialize dokumer-rec detay
+     move "################" to det-1
+                    
+     write dokumer-rec from detay
+            perform gelen-ulke-sayisi-bul
+     initialize dokumer-rec detay
+
+
+     initialize dokumer-rec detay
+     move toplam-anket   to etoplam-anket
+     move etoplam-anket  to det-1-1
+     move "Doldurulan Anket Sayisi" to det-1
+                    
+     write dokumer-rec from detay
+            perform gelen-ulke-sayisi-bul
+     initialize dokumer-rec detay
+
+     move "ULKE DAGILIMI" to det-1
+     move "Konaklayan" to det-1-1
+     move "Cevaplayan" to det-2 
+     move "Yuzde %"    to det-2-2   
+     write dokumer-rec from detay
+
+     initialize takas3-rec  yuzde-hesapla eyuzde-hesapla
+     start takas3 key not < takas3-anahtar invalid
+           continue
+     not invalid
+     perform with test after until fs-takas3 = "10"
+     read takas3 next no lock end move "10"  to fs-takas3
+     not at end                
+             initialize dokumer-rec detay ulke-rec
+             move takas3-anahtar  to ulke-anah
+             read ulke no lock invalid
+                  move "***Ulke Girilmeyen***"  to ulke-adi
+             not invalid
+                 compute yuzde-hesapla rounded = (takas3-anket / takas3-gelen) * 100
+             end-read
+             move ulke-adi       to det-1
+             move takas3-gelen   to egelen
+             move egelen         to det-1-1
+             move takas3-anket   to eanket
+             move eanket         to det-2
+
+             if yuzde-hesapla > 0
+                     move yuzde-hesapla  to eyuzde-hesapla
+                     move eyuzde-hesapla-goster to det-2-2
+             end-if
+             
+             write dokumer-rec from detay
+
+     end-read
+     end-perform
+     end-start 
+
+     initialize dokumer-rec detay
+     move "-"            to det-dokumer-20(5:1)
+     move all "-"  to det-1 det-1-1  det-2  det-2-2 det-6-7 det-3  
+                      det-3-3 det-4  det-4-4 det-5  det-5-5 det-6 det-6-6 
+     WRITE DOKUMER-REC from DETAY
+
+     close dokumer soru   
+     call dokumer-prog on exception
+          perform callerr-proc
+     not on exception
+          cancel dokumer-prog
+     end-call
+     close halk  ulke
+     delete file dokumer 
+                       .
+*
+ gelen-ulke-sayisi-bul.
+    INITIALIZE TURIZM-REC TOPLAM-ODA
+    MOVE ILK-TARIH        TO TURIZM-TARIH
+    START TURIZM KEY NOT < TURIZM-ANAH1 INVALID 
+          CONTINUE
+    NOT INVALID
+    INITIALIZE FS-TURIZM
+    PERFORM WITH TEST AFTER UNTIL FS-TURIZM  = "10"
+          READ TURIZM NEXT NO LOCK END MOVE "10" TO FS-TURIZM
+          NOT AT END
+               IF TURIZM-TARIH > SON-TARIH
+                  MOVE "10" TO FS-TURIZM
+               ELSE 
+                  ADD GELEN-ODA     TO TOPLAM-ODA
+                  INITIALIZE TAKAS3-REC
+                  MOVE TURIZM-ULKE     TO TAKAS3-ANAHTAR
+                  READ TAKAS3 NO LOCK INVALID
+                       INITIALIZE TAKAS3-GELEN TAKAS3-ANKET
+                  END-READ
+                  ADD GELEN-ODA  TO TAKAS3-GELEN
+                  WRITE TAKAS3-REC INVALID REWRITE TAKAS3-REC END-REWRITE
+                  END-WRITE
+               END-IF
+          END-READ
+    END-PERFORM
+    END-START.
+    MOVE TOPLAM-ODA TO ETOPLAM-ODA
+    COMPUTE ETOPLAM-YUZDE = (TOPLAM-ANKET / TOPLAM-ODA) * 100.
+
+  
+*
+  takas-aktar.
+
+    OPEN i-o CEVAP1 CEVAP2 halk.
+    INITIALIZE CEVAP1-REC CEVAP2-REC  toplam-anket soru-adedi ortalama-basari
+    MOVE ILK-TARIH TO CEVAP1-TARIH
+    START CEVAP1 KEY NOT < CEVAP1-ANAHTAR INVALID
+          CONTINUE
+    NOT INVALID
+    INITIALIZE FS-CEVAP1
+                 
+    PERFORM WITH TEST AFTER UNTIL FS-CEVAP1 = "10"
+          READ CEVAP1 NEXT NO LOCK END MOVE "10" TO FS-CEVAP1
+          NOT AT END
+               IF CEVAP1-TARIH > SON-TARIH
+                  MOVE "10" TO FS-CEVAP1
+               ELSE
+                
+               IF CEVAP1-ULKE  = PROG-ULKE OR 
+                  PROG-ULKE = SPACES  
+                  INITIALIZE CEVAP2-REC KAYIT-SAYI
+                  MOVE CEVAP1-TARIH     TO CEVAP2-TARIH
+                  MOVE CEVAP1-NO        TO CEVAP2-NO
+                  START CEVAP2 KEY NOT < CEVAP2-ANAHTAR INVALID
+                        CONTINUE
+                  NOT INVALID
+                  INITIALIZE FS-CEVAP2 
+                  PERFORM WITH TEST AFTER UNTIL FS-CEVAP2 = "10"
+                  READ CEVAP2 NEXT NO LOCK END MOVE "10" TO FS-CEVAP2
+                  NOT AT END
+                       IF CEVAP2-TARIH NOT = CEVAP1-TARIH OR
+                          CEVAP2-NO    NOT = CEVAP1-NO 
+                          MOVE "10" TO FS-CEVAP2
+                          EXIT PERFORM
+                       ELSE
+                          IF CEVAP1-NO <> CEVAP2-NO 
+                             EXIT PERFORM CYCLE
+                          END-IF
+                          ADD 1 TO KAYIT-SAYI
+
+                          INITIALIZE TAKAS-REC HALK-REC
+                          MOVE CEVAP2-ANA    TO HALK-ANA 
+                          MOVE CEVAP2-ALT    TO HALK-ALT
+                          READ HALK NO LOCK INVALID
+                               CONTINUE
+                          NOT INVALID
+                               MOVE HALK-CEVAP   TO TAKAS-SORU
+                               MOVE HALK-ANA     TO TAKAS-ANA
+                               MOVE HALK-ALT     TO TAKAS-ALT
+                               READ TAKAS NO LOCK INVALID
+                                    INITIALIZE TAKAS-CEVAP-DIZI
+                               END-READ
+                               MOVE TAKAS-SORU TO TAKAS2-ANAHTAR 
+                               READ TAKAS2 NO LOCK INVALID
+                                    INITIALIZE TAKAS2-CEVAP-DIZI
+                               end-read
+                               evaluate cevap2-yanit
+                                    when 1 add 1 to takas-cevap(1)
+                                    when 2 add 1 to takas-cevap(2)
+                                    when 3 add 1 to takas-cevap(3)
+                                    when 4 add 1 to takas-cevap(4)
+                                    when 5 add 1 to takas-cevap(5)
+                                    when other add 1 to takas-cevap(6)
+                               end-evaluate
+                               write takas-rec invalid
+                                     rewrite takas-rec end-rewrite
+                               end-write
+                               move takas-soru to takas2-anahtar 
+                               EVALUATE CEVAP2-YANIT
+                                    WHEN 1 ADD 1 TO TAKAS2-CEVAP(1)
+                                    WHEN 2 ADD 1 TO TAKAS2-CEVAP(2)
+                                    WHEN 3 ADD 1 TO TAKAS2-CEVAP(3)
+                                    WHEN 4 ADD 1 TO TAKAS2-CEVAP(4)
+                                    WHEN 5 ADD 1 TO TAKAS2-CEVAP(5)
+                                    WHEN OTHER ADD 1 TO TAKAS2-CEVAP(6)
+                               END-EVALUATE
+                               WRITE TAKAS2-REC INVALID 
+                                      REWRITE TAKAS2-REC INVALID CONTINUE 
+                                      END-REWRITE
+                               END-WRITE
+                          END-READ
+                      
+                      END-IF
+                  END-READ
+                  END-PERFORM
+                  END-START
+                  IF KAYIT-SAYI > ZEROES
+                     ADD 1 TO TOPLAM-ANKET
+                    
+                     INITIALIZE TAKAS3-REC
+                     MOVE CEVAP1-ULKE      TO TAKAS3-ANAHTAR
+                     READ TAKAS3 NO LOCK INVALID
+                          INITIALIZE TAKAS3-GELEN TAKAS3-ANKET
+                     END-READ
+                     COMPUTE TAKAS3-ANKET = TAKAS3-ANKET + 1
+                     WRITE TAKAS3-REC INVALID
+                           REWRITE TAKAS3-REC END-REWRITE
+                     END-WRITE
+                  END-IF
+                END-IF
+              END-IF
+          END-READ
+    END-PERFORM
+    END-START
+    CLOSE CEVAP1 CEVAP2  halk.
+
+ram1.
+RAPOR-TAKAS2-START.
+    INITIALIZE TAKAS2-REC
+    START TAKAS2 KEY NOT < TAKAS2-ANAHTAR INVALID
+          GO OTEL-TOPLAM-START.
+RAPOR-TAKAS2-READ.
+    READ TAKAS2 NEXT NO LOCK END GO OTEL-TOPLAM-START.
+    INITIALIZE DETAY
+    MOVE TAKAS2-ANAHTAR TO SORU-KODU
+    READ SORU NO LOCK INVALID 
+         INITIALIZE SORU-REC
+    END-READ
+    INITIALIZE KAYIT-SAYI TEMP-ANAH.
+RAPOR-TAKAS-START.
+    INITIALIZE TAKAS-REC
+    MOVE TAKAS2-ANAHTAR     TO TAKAS-SORU
+    START TAKAS KEY NOT < TAKAS-ANAHTAR INVALID
+          GO RAPOR-TAKAS2-READ.
+    INITIALIZE DEP-CEVAP1 soru-adedi ortalama-basari DEP-CEVAP2 DEP-CEVAP3 DEP-CEVAP4 DEP-CEVAP5
+               DEP-KAYIT-SAYI DEP-CEVAP-SAYI.
+    INITIALIZE OTEL-CEVAP1 OTEL-CEVAP2 OTEL-CEVAP3 OTEL-CEVAP4 OTEL-CEVAP5
+               OTEL-KAYIT-SAYI OTEL-CEVAP-SAYI.
+RAPOR-TAKAS-READ.
+    READ TAKAS NEXT NO LOCK END 
+       PERFORM DEP-TOPLAM 
+    GO RAPOR-TAKAS2-READ.
+
+    IF TAKAS-SORU NOT = TAKAS2-ANAHTAR
+       PERFORM DEP-TOPLAM
+       GO RAPOR-TAKAS2-READ
+    END-IF
+    ADD 1 TO KAYIT-SAYI
+    IF TAKAS-ANA NOT = TEMP-ANA
+       IF KAYIT-SAYI > 1 
+          PERFORM DEP-TOPLAM
+       END-IF
+       initialize dokumer-rec detay
+       MOVE TAKAS-ANA       TO HALK-ANA
+       MOVE SPACES          TO HALK-ALT
+       READ HALK NO LOCK INVALID 
+            MOVE ALL "*" TO HALK-ADI
+       END-READ
+       MOVE HALK-ADI        TO DET-1
+
+       MOVE "Top.Cevap "    TO det-1-1
+ 
+       MOVE SORU1           TO DET-2
+    
+       MOVE SORU2           TO DET-3
+    
+       MOVE SORU3           TO DET-4
+ 
+       MOVE SORU4           TO DET-5
+      
+       MOVE SORU5           TO DET-6
+
+       if halk-alt = spaces
+          move "A"          to det-dokumer-20(3:1)
+          move 481          to det-renk1
+          move "1"          to det-dokumer-20(10:1)
+       end-if
+     
+       WRITE DOKUMER-REC from DETAY
+       initialize dokumer-rec detay
+       move "-"            to det-dokumer-20(5:1)
+       move all "-"  to det-1 det-1-1  det-2  det-2-2 det-6-7 det-3  
+                        det-3-3 det-4  det-4-4 det-5  det-5-5 det-6 det-6-6 
+
+       WRITE DOKUMER-REC from DETAY
+       MOVE TAKAS-ANA TO TEMP-ANA
+    END-IF
+    MOVE TAKAS-ANA          TO HALK-ANA
+    MOVE TAKAS-ALT          TO HALK-ALT
+    READ HALK NO LOCK INVALID 
+         INITIALIZE HALK-REC
+    END-READ
+***********
+
+    ADD 1 TO DEP-KAYIT-SAYI
+
+    INITIALIZE DETAY dokumer-rec
+    MOVE HALK-ADI           TO det-1(3:)
+    COMPUTE TEMP-SAYI = TAKAS-CEVAP(1) + TAKAS-CEVAP(2) + TAKAS-CEVAP(3) +
+                        TAKAS-CEVAP(4) + TAKAS-CEVAP(5)
+   
+    MOVE TEMP-SAYI          TO 10-Z
+    ADD  TEMP-SAYI          TO DEP-CEVAP-SAYI
+    MOVE 10-Z               TO det-1-1
+
+    MOVE TAKAS-CEVAP(1)       TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS-CEVAP(1) * 100) / TEMP-SAYI
+    ADD TAKAS-CEVAP(1)              TO DEP-CEVAP1
+
+
+    move detay-yed-1       to det-2
+    move detay-yed-2       to det-2-2
+    
+    MOVE TAKAS-CEVAP(2)       TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS-CEVAP(2) * 100) / TEMP-SAYI 
+    ADD TAKAS-CEVAP(2) TO DEP-CEVAP2
+
+    move detay-yed-1       to det-3
+    move detay-yed-2       to det-3-3
+   
+
+    MOVE TAKAS-CEVAP(3)       TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS-CEVAP(3) * 100) / TEMP-SAYI
+    ADD TAKAS-CEVAP(3) TO DEP-CEVAP3
+
+
+    move detay-yed-1       to det-4
+    move detay-yed-2       to det-4-4
+
+    MOVE TAKAS-CEVAP(4)       TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS-CEVAP(4) * 100) / TEMP-SAYI
+    ADD TAKAS-CEVAP(4) TO DEP-CEVAP4
+
+    move detay-yed-1       to det-5
+    move detay-yed-2       to det-5-5
+
+    MOVE TAKAS-CEVAP(5)       TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS-CEVAP(5) * 100) /  TEMP-SAYI
+    ADD TAKAS-CEVAP(5) TO DEP-CEVAP5
+
+    move detay-yed-1       to det-6
+    move detay-yed-2       to det-6-6
+
+    evaluate soru-basari
+    when 1
+         compute basari-orani rounded = 
+               ((TAKAS-CEVAP(1) * 100) + (TAKAS-CEVAP(2) * 75) - 
+               (TAKAS-CEVAP(3) * 50)) / (TAKAS-CEVAP(1) + TAKAS-CEVAP(2) + TAKAS-CEVAP(3))
+          move basari-orani              to eyuzde-hesapla
+          move eyuzde-hesapla-goster     to det-6-7
+          add basari-orani to ortalama-basari 
+ 
+          add basari-orani to basari-yuzde-toplam
+          add 1            to basari-dep-say
+    end-evaluate
+    add 1 to soru-adedi
+    WRITE DOKUMER-REC FROM DETAY
+
+    GO RAPOR-TAKAS-READ.
+
+
+OTEL-TOPLAM-START.
+    INITIALIZE TAKAS2-REC.
+    START TAKAS2 KEY NOT < TAKAS2-ANAHTAR INVALID
+          GO RAPOR-LISTE-BITTI.
+OTEL-TOPLAM-READ.
+    READ TAKAS2 NEXT NO LOCK END GO RAPOR-LISTE-BITTI.
+    INITIALIZE DOKUMER-REC DETAY
+    MOVE TAKAS2-ANAHTAR TO SORU-KODU
+    READ SORU NO LOCK INVALID 
+         INITIALIZE SORU-REC
+    END-READ
+    INITIALIZE KAYIT-SAYI TEMP-ANAH.
+    INITIALIZE OTEL-CEVAP1 OTEL-CEVAP2 OTEL-CEVAP3 OTEL-CEVAP4 OTEL-CEVAP5
+               OTEL-KAYIT-SAYI OTEL-CEVAP-SAYI.
+    IF TAKAS2-CEVAP(1) = 0 AND TAKAS2-CEVAP(2) = 0 AND
+       TAKAS2-CEVAP(3) = 0 AND TAKAS2-CEVAP(4) = 0 AND
+       TAKAS2-CEVAP(5) = 0 
+       GO OTEL-TOPLAM-READ
+    END-IF.
+***********
+          initialize dokumer-rec detay
+          move "A"          to det-dokumer-20(3:1)
+          move 481          to det-renk1
+          move "1"          to det-dokumer-20(10:1)
+       
+  
+       MOVE "Otel Yuzdesi..."  TO det-1
+       MOVE "Top.Cevap "    TO det-1-1
+       MOVE SORU1           TO det-2
+       MOVE SORU2           TO det-3
+       MOVE SORU3           TO det-4
+       MOVE SORU4           TO det-5
+       MOVE SORU5           TO det-6
+       WRITE DOKUMER-REC FROM DETAY
+
+  
+       move 1 to rap-detay-son
+
+    INITIALIZE DETAY dokumer-rec
+    MOVE " "       TO det-1-1
+    COMPUTE TEMP-SAYI = TAKAS2-CEVAP(1) + TAKAS2-CEVAP(2) + TAKAS2-CEVAP(3) +
+                        TAKAS2-CEVAP(4) + TAKAS2-CEVAP(5)
+    MOVE TEMP-SAYI          TO 10-Z
+    ADD  TEMP-SAYI          TO OTEL-CEVAP-SAYI
+    MOVE 10-Z               TO det-1-1
+
+    MOVE TAKAS2-CEVAP(1)    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS2-CEVAP(1) * 100) / TEMP-SAYI
+    ADD TAKAS2-CEVAP(1)     TO OTEL-CEVAP1
+    MOVE DETAY-YEDEK(1:10)        TO det-2
+    move detay-yedek(11:)         to det-2-2
+
+    MOVE TAKAS2-CEVAP(2)    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS2-CEVAP(2) * 100) / TEMP-SAYI 
+    ADD TAKAS2-CEVAP(2)     TO OTEL-CEVAP2
+    MOVE DETAY-YEDEK(1:10)        TO det-3
+    MOVE DETAY-YEDEK(11:)          TO det-3-3
+
+    MOVE TAKAS2-CEVAP(3)    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS2-CEVAP(3) * 100) / TEMP-SAYI
+    ADD TAKAS2-CEVAP(3)     TO OTEL-CEVAP3
+    MOVE DETAY-YEDEK(1:10)        TO det-4
+    MOVE DETAY-YEDEK(11:)         TO det-4-4
+
+    MOVE TAKAS2-CEVAP(4)    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS2-CEVAP(4) * 100) / TEMP-SAYI
+    ADD TAKAS2-CEVAP(4)     TO OTEL-CEVAP4
+    MOVE DETAY-YEDEK(1:10)        TO det-5
+    MOVE DETAY-YEDEK(11:)         TO det-5-5
+
+    MOVE TAKAS2-CEVAP(5)    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (TAKAS2-CEVAP(5) * 100) /  TEMP-SAYI
+    ADD TAKAS2-CEVAP(5)     TO OTEL-CEVAP5
+    MOVE DETAY-YEDEK(1:10)        TO det-6
+    MOVE DETAY-YEDEK(11:)         TO det-6-6
+
+    COMPUTE basari-yuzde-ort  ROUNDED = (basari-yuzde-toplam / basari-dep-say )
+
+    if basari-yuzde-ort > 0
+            MOVE basari-yuzde-ort  to eyuzde-hesapla
+            move eyuzde-hesapla-goster    TO det-6-7
+    end-if
+
+    move "A"          to det-dokumer-20(3:1)
+    move 144          to det-renk1
+    move "1"          to det-dokumer-20(10:1)
+
+    WRITE DOKUMER-REC FROM DETAY
+    GO OTEL-TOPLAM-READ.
+
+RAPOR-LISTE-BITTI.
+    
+
+
+RAPOR-LISTE-EXIT.
+    EXIT.
+
+DEP-TOPLAM.
+
+   IF rap-detay-son = 1
+        exit paragraph
+    END-IF
+
+    INITIALIZE DETAY dokumer-rec
+    
+    MOVE "Departman Toplami----" TO det-1(20:)
+    move "A"          to det-dokumer-20(3:1)
+    move 290          to det-renk1
+    move "1"          to det-dokumer-20(10:1)
+    MOVE DEP-CEVAP-SAYI     TO 10-Z
+    MOVE 10-Z               TO det-1-1
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP1    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP1  * 100 ) / DEP-CEVAP-SAYI
+    MOVE DETAY-YEDEK(1:10)             TO det-2
+    move detay-yedek(11:)              to det-2-2
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP2    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP2 *100 ) / DEP-CEVAP-SAYI
+    MOVE DETAY-YEDEK(1:10)             TO det-3
+    MOVE DETAY-YEDEK(11:)              TO det-3-3
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP3    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP3 * 100 ) / DEP-CEVAP-SAYI
+    MOVE DETAY-YEDEK(1:10)             TO det-4
+    MOVE DETAY-YEDEK(11:)              TO det-4-4
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP4    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP4 * 100)  / DEP-CEVAP-SAYI
+    MOVE DETAY-YEDEK(1:10)             TO det-5
+    MOVE DETAY-YEDEK(11:)              TO det-5-5
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP5    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP5  * 100 ) / DEP-CEVAP-SAYI
+    MOVE DETAY-YEDEK(1:10)             TO det-6
+    MOVE DETAY-YEDEK(11:)              TO det-6-6
+
+
+
+    WRITE DOKUMER-REC FROM DETAY
+
+    INITIALIZE DETAY dokumer-rec
+    
+    MOVE "O R T A L A M A----" TO det-1(20:)
+    move "A"          to det-dokumer-20(3:1)
+    move 176          to det-renk1
+    move "1"          to det-dokumer-20(10:1)
+
+*    MOVE DEP-CEVAP-SAYI     TO 10-Z
+*    MOVE 10-Z               TO det-1-1
+
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP-SAYI  / soru-adedi ) 
+    move detay-yedek(11:)              to det-1-1
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP1    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP1  / soru-adedi ) 
+    move detay-yedek(11:)              to det-2
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP2    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP2  / soru-adedi ) 
+    MOVE DETAY-YEDEK(11:)              TO det-3
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP3    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP3  / soru-adedi ) 
+    MOVE DETAY-YEDEK(11:)              TO det-4
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP4    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP4  / soru-adedi ) 
+    MOVE DETAY-YEDEK(11:)              TO det-5
+
+    INITIALIZE DETAY-YEDEK
+    MOVE DEP-CEVAP5    TO DETAY-YED-1
+    COMPUTE DETAY-YED-2 ROUNDED = (DEP-CEVAP5  / soru-adedi ) 
+    MOVE DETAY-YEDEK(11:)              TO det-6
+
+*    INITIALIZE DETAY-YEDEK
+
+*    COMPUTE DETAY-YED-2 ROUNDED = (ortalama-basari * 100) / soru-adedi 
+*    MOVE DETAY-YEDEK(11:)              TO det-6-7
+
+    INITIALIZE DETAY-YEDEK
+
+    COMPUTE DETAY-YED-2 ROUNDED = (ortalama-basari / soru-adedi )
+    MOVE DETAY-YEDEK(11:)              TO det-6-7
+
+
+    WRITE DOKUMER-REC FROM DETAY
+
+
+    INITIALIZE DEP-KAYIT-SAYI DEP-CEVAP1 ortalama-basari soru-adedi DEP-CEVAP2 DEP-CEVAP3 DEP-CEVAP4
+               DEP-CEVAP5 DEP-CEVAP-SAYI.
+
+
+
+LISTE-BASLIK-AT.
+LISTE-TARIH-TOPLAM.
+*    INITIALIZE CIZGI.
+*    MOVE TIRE TO CIZGI-SEC.
+*    PERFORM CIZGI-CEK.
+*    INITIALIZE DETAY1
+*    MOVE CIZGI TO DET-FILLER
+*    WRITE DOKUMER-REC FROM DETAY1.
+*    ADD 1 TO LISTE-SATIR.
+    INITIALIZE DETAY dokumer-rec.
+    MOVE "Tarihli Toplam:" TO DETAY(12:15).
+    MOVE GUN-X     TO det-1.
+    MOVE "/"       TO ARA-01.
+    MOVE AY-X      TO det-2.
+    MOVE "/"       TO ARA-02.
+    MOVE YIL-X     TO det-3.
+
+    INITIALIZE DETAY dokumer-rec
+*    MOVE DETAY TO DET-FILLER
+    WRITE DOKUMER-REC FROM DETAY.
+*    ADD 1 TO LISTE-SATIR.
+*    INITIALIZE CIZGI.
+*    MOVE TIRE TO CIZGI-SEC.
+*    PERFORM CIZGI-CEK.
+*    INITIALIZE DETAY1
+*    MOVE CIZGI TO DET-FILLER
+*    WRITE DOKUMER-REC FROM DETAY1.
+*    ADD 1 TO LISTE-SATIR.
+LISTE-GENEL-TOPLAM.
+    INITIALIZE DETAY dokumer-rec.
+    MOVE "Genel Toplam:"  TO det-1
+    
+    INITIALIZE DETAY dokumer-rec
+*    MOVE DETAY TO DET-FILLER
+    WRITE DOKUMER-REC FROM DETAY.
+*    ADD 1 TO LISTE-SATIR.
+*   INITIALIZE CIZGI.
+*    MOVE TIRE TO CIZGI-SEC.
+*    PERFORM CIZGI-CEK.
+*    INITIALIZE DETAY1
+*    MOVE CIZGI TO DET-FILLER
+*    WRITE DOKUMER-REC FROM DETAY1.
+*    ADD 1 TO LISTE-SATIR.
+ram1-ex.
+    exit.
+*
+
+
+
+ 

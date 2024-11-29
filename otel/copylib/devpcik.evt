@@ -1,0 +1,1422 @@
+* devpcik.evt
+* devpcik.evt is generated from D:\asya\acugt.ytl\otel\devpcik.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ form2-Exception-Proc.
+     EVALUATE Event-Control-Id
+     WHEN 0
+        PERFORM form2-Ex-Other
+     WHEN 15
+        PERFORM grd1-Ex-Other
+     END-EVALUATE
+     .
+
+ form2-Gd-1-Event-Proc.
+     PERFORM grd1-Ev-Other
+     .
+***   start event editor code   ***
+
+*
+ form2-Ex-Other.
+     evaluate key-status
+         when 1
+            if control-id = 36 then
+               initialize rpr-danisman-kodu
+                initialize odeme-kodu-cagir
+                     call "/asya/ytl/obj/otel/odemtipa.asy" using odeme-kodu-cagir
+                     on exception perform callerr-proc
+                        not on exception
+                        cancel "/asya/ytl/obj/otel/odemtipa.asy" 
+                      end-call
+                    move odeme-kodu-cagir     to odeme-sekli
+                    display accept-0101
+            end-if
+             if control-id = 11 then
+               initialize rpr-danisman-kodu
+                    initialize link-danisman-kodu
+               call "/asya/ytl/obj/otel/danisara.asy" using link-danisman-kodu
+                     on exception
+                        perform callerr-proc
+                     not on exception    
+                        cancel "/asya/ytl/obj/otel/danisara.asy"
+                        if link-danisman-kodu <> zeroes or 
+                           link-danisman-kodu <> spaces
+                             move link-danisman-kodu to rpr-danisman-kodu
+                             display accept-0101aa
+                        end-if
+                 end-call
+            end-if
+      end-evaluate 
+            
+     .
+
+
+                      
+*
+ accept-gir-yil-Aft-Procedure.
+      open input takvim
+      initialize kaldi-mi takvim-rec
+      move txt-donem-bas-tar to takvim-anah
+      read takvim no lock invalid
+              move 4    to accept-control
+              move 1004 to control-id
+              move 1 to kaldi-mi
+              continue
+      end-read
+      close takvim
+     .
+*
+ accept-cik-yil-Aft-Procedure2.
+      open input takvim
+      initialize kaldi-mi takvim-rec
+      move txt-donem-bas-tar to takvim-anah
+      read takvim no lock invalid
+              move 4    to accept-control
+              move 1009 to control-id 
+              move 1 to kaldi-mi
+              continue
+      end-read
+
+      close takvim
+     .
+
+*
+ form2-Bef-Create.
+      perform adresleri-tasi
+      open input genel
+      initialize genel-rec 
+      move 1        to genel-anahtar
+      read genel no lock invalid 
+           display message box "Genel Parametreler Tanimsiz..."
+                           title "Uyari"
+                           icon 1
+                 close genel
+                 exit paragraph           
+      end-read 
+      close genel
+      move muha-sirketi to  mgenelfis-dosya-adres 
+
+      move DONEM-BASI to txt-donem-bas-tar 
+      move tarih-tasi to txt-donem-bit-tar
+     .
+
+*
+ accept-0101aa-Aft-Procedure.
+         open input danisman
+        
+
+          initialize danisman-anah 
+          move rpr-danisman-kodu to danisman-kodu
+          read danisman no lock invalid
+                   move 4    to accept-control
+                   move 11 to control-id
+                   continue
+          not invalid
+                 initialize string-deger
+                 string string-deger
+                            danisman-adi delimited by spaces
+                            " " delimited by size 
+                            danisman-soyadi
+                  into string-deger
+                  modify form2-La-2   , title string-deger
+          end-read
+
+         close danisman
+     .
+*
+ odeme-bul.
+
+    initialize odemeler-rec odeme-toplam-bul onaylanmamis-cek-var vadesi-gelmemis-cek-var
+    move takasprim-devremulk-no            to odemeler-devremulk-no
+    start odemeler key not < odemeler-anah invalid 
+         continue 
+    not invalid 
+    perform with test after until fs-odemeler = "10"
+    read odemeler next no lock end move "10" to fs-odemeler
+    not at end 
+
+           if odemeler-devremulk-no <> takasprim-devremulk-no
+               exit perform 
+           end-if
+           if odemeler-hareket-turu <> "A"
+               exit perform cycle 
+           end-if
+           if odemeler-tarih not <= txt-donem-bit-tar then
+                 exit perform cycle
+           end-if
+           evaluate odemeler-islem-turu
+           when "SO"
+               continue 
+           when "IO"
+               continue 
+           when "SP"               
+           when "NP"               
+           when "PM"
+           when "AG"               
+           when "DP"                
+           when "GS"               
+           when "GN"
+           WHEN "PP"
+           WHEN "SS"
+           when "AV"
+           when "AI"
+           WHEN "AO"
+           WHEN "BO"
+                exit perform cycle 
+           when "FO"
+               continue                 
+           when "PI"
+               continue 
+           WHEN OTHER 
+                exit perform cycle 
+           end-evaluate
+
+           if odemeler-odeme-turu = "CE" or "SE" then
+                 move odemeler-cek-isl-no to cek-isl-no 
+                 read cek no lock invalid
+                          continue
+                 end-read    
+                 if  tarih-tasi >= CEK-VADE then
+                         if cek-durumu = "X" then
+                             compute odeme-toplam-bul = odeme-toplam-bul + odemeler-tutar
+                         else
+                              move 1 to onaylanmamis-cek-var
+                         end-if
+                 else
+                     move 1 to vadesi-gelmemis-cek-var
+                 end-if
+           else
+                 compute odeme-toplam-bul = odeme-toplam-bul + odemeler-tutar 
+           end-if
+             
+    end-read 
+    end-perform
+    end-start
+
+     .
+
+
+*
+ button-0103-Link.
+              modify grd1,reset-grid = 1
+               perform accept-gir-yil-Aft-Procedure
+              perform accept-cik-yil-Aft-Procedure2
+              if rpr-danisman-kodu = zeroes then
+                     display message box "Lutfen Danisman Kodu Giriniz"
+                     exit paragraph
+              end-if
+              if kaldi-mi = 1 then
+                   display message box "Lutfen Tarihleri Kontrol Ediniz !"
+                   move 4    to accept-control
+                   move 1004 to control-id
+                   exit paragraph
+              end-if
+
+
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   add 1 to EKRAN-FIS-1
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+              move EKRAN-FIS-1 to takasprim-no takasavans-no xtakasprim-no
+              open output takasprim xtakasprim takasavans  close takasprim xtakasprim takasavans 
+              open i-o  takasprim  takasavans                                                                
+              open input donem donem2 donhrk  devremulk  musteri odalar  taksit  DANISMAN  odemeler  primhrk cek 
+              
+              initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                         dokumer-dosya
+
+              set  dokumer-asya-set to true
+              move print-no         to dokumer-dosya-adi
+              open output dokumer
+*/WINDOW TITLE
+              initialize dokumer-rec detay
+              move "W"                    to det-dokumer-20(1:)
+              move "Odenecek Primler Raporu" to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR
+              initialize dokumer-rec detay
+              move "B"                  to det-dokumer-20(1:)
+              move "Odenecek Primler Raporu" to det-filler
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "B"                  to det-dokumer-20(1:)
+              write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+              initialize dokumer-rec detay
+              move "O"                        to det-dokumer-20(1:)
+              move "E" to dokumer-oto-sayfa-basi
+              move 56  to dokumer-oto-sayfa-satir
+              move "|" to dokumer-detay-kolon-ayirici
+              move "LLRLLLRLRLRRRRRRR" to dokumer-align-occ
+              move dokumer-ozellikler-rec     to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR 
+              initialize dokumer-rec detay
+              move "D1"              to det-dokumer-20(1:)     
+              move "Devremlk No"     to det-1
+              move "Adi"             to det-2
+              move "Odeme Top"       to det-3
+              move "P.Tarih"         to det-4
+              move "Prim Danisman"   to det-5
+              move "Sozlesme"        to det-6
+              move "Limit"           to det-8
+              move "Tur"             to det-9
+              move "Hakedis"         to det-10
+              move "Odenen"          to det-7
+              move "Odenecek"          to det-11
+              move "Cek Durumu"        to det-12
+              move "Satan Danisman"    to det-13
+              move all "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6  fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "D2"               to det-dokumer-20(1:)     
+              move "-"                to det-dokumer-20(5:1)
+              move all "-" to det-1 det-2 det-3 det-4  det-5 det-6 fil-7 det-8 det-9  det-10 det-11 det-12 det-13
+              write dokumer-rec from detay  
+
+            
+              initialize odenecek-prim-toplam
+              display form2-Ef-2 form2-Ef-2a form2-Ef-2aa
+
+             ||||avans yer borcu bulll...
+             perform danisman-avans-bul   
+             perform danisman-yer-borcu-bul
+
+             if danisman-avans-toplam not = zeroes then
+                     move danisman-avans-toplam to z-tutar 
+                     modify lbl-danisman-avans, title z-tutar
+             else
+                     modify lbl-danisman-avans, title "YOK"  
+             end-if
+             if danisman-yer-borcu-toplam not = zeroes then
+                     move danisman-yer-borcu-toplam to z-tutar 
+                     modify lbl-yer-borcu ,     title z-tutar
+             else
+                     modify lbl-yer-borcu ,     title "YOK"
+             end-if
+             |||||||||||||||||||||
+
+             initialize grd-toplamlar toplam-sozlesme toplam-kayit  odemeler-rec
+             move 1 to toplam-sozlesme
+
+             if rpr-danisman-kodu not = zeroes then
+                      move rpr-danisman-kodu  to odemeler-danisman-kodu
+                      start odemeler key not < odemeler-dan-anah2 invalid
+                                continue
+                      end-start
+              else
+                      initialize odemeler-rec
+                      start odemeler key not < odemeler-anah invalid
+                                continue
+                      end-start
+              end-if
+
+              perform until fs-odemeler = "10" 
+              read odemeler next no lock end move "10" to fs-odemeler
+              not end                    
+           
+                      if rpr-danisman-kodu not = zeroes and  rpr-danisman-kodu not = odemeler-danisman-kodu then
+                              exit perform  
+                      end-if
+
+                      initialize devremulk-rec
+                      move odemeler-devremulk-no to devremulk-no
+                      read devremulk no lock invalid
+                              initialize devremulk-rec
+                              exit perform cycle
+                      not invalid
+                              if devremulk-durumu not = "Y" then
+                                   exit perform cycle
+                              end-if
+                      end-read
+
+
+                      initialize detay tarih-filtrelemesine-girme
+                      EVALUATE odemeler-islem-turu
+                        WHEN  "SP"
+                        WHEN  "NP"
+                        WHEN  "GN"
+                        WHEN  "GS"
+                          move 1 to tarih-filtrelemesine-girme
+                        WHEN  "SS"
+                        WHEN  "PP"
+                              CONTINUE
+                        WHEN  "AG"
+                          if odemeler-AG-primden-dus not = 1 then exit perform cycle end-if
+                          move 1 to tarih-filtrelemesine-girme
+                        when other 
+                            exit perform cycle
+                      END-EVALUATE
+
+                      if txt-donem-bas-tar not <= odemeler-tarih 
+                      or txt-donem-bit-tar not >= odemeler-tarih 
+                      and tarih-filtrelemesine-girme = 0 then
+                               exit perform cycle
+                      end-if
+                       
+
+                      move odemeler-devremulk-no to  devremulk-no 
+                      read devremulk no lock invalid  
+                              move "   " to det-1
+                              continue
+                      end-read
+                      
+
+                   move odemeler-tutar       to z-tutar
+                   move z-tutar              to det-3
+                   add  odemeler-tutar       to toplam-tutar
+                   add 1 to toplam-sozlesme  toplam-kayit
+             
+                 
+                  
+                   initialize takasprim-rec
+                   move odemeler-devremulk-no   to  takasprim-devremulk-no
+                   move odemeler-danisman-kodu  to  takasprim-danisman-kodu  
+                   read takasprim no lock invalid             
+                           move  devremulk-satis-tarihi    to  takasprim-satis-tarihi
+                           move  odemeler-tarih            to  takasprim-prim-tarihi
+                                     
+                            initialize musteri-rec
+                            move odemeler-devremulk-no    to det-1
+                            move DEVREMULK-profil-sirket  to musteri-sirket
+                            move DEVREMULK-profil-no      to musteri-no
+                            read musteri no lock invalid 
+                                     continue
+                            end-read 
+                            initialize string-deger
+                              string string-deger
+                                    musteri-adi delimited by spaces " "
+                                    " " delimited by size 
+                                    musteri-soyadi
+                              into string-deger
+                              move string-deger to takasprim-musteri-adi
+
+                           initialize danisman-anah
+                           move odemeler-danisman-kodu to danisman-anah
+                           read danisman no lock invalid
+                           display message box danisman-kodu" Nolu danisman Bulunamadi !!!!"
+                           initialize danisman-rec
+                           continue
+                           end-read
+                           initialize string-deger
+                                string string-deger
+                                    danisman-adi delimited by spaces " "
+                                    " " delimited by size 
+                                    danisman-soyadi
+                                into string-deger
+                           move string-deger    to takasprim-danisman-adi
+
+                           initialize danisman-rec
+                           move devremulk-satan-danisman to danisman-anah
+                           read danisman no lock invalid
+                                   display message box danisman-kodu" Nolu danisman Bulunamadi !!!!"
+                                   initialize danisman-rec
+                                   continue
+                           end-read
+                           initialize string-deger
+                                string string-deger
+                                    danisman-adi delimited by spaces " "
+                                    " " delimited by size 
+                                    danisman-soyadi
+                                into string-deger
+                           move string-deger    to takasprim-prim-danisman-adi
+ 
+                           move  devremulk-satis-tutari    to  takasprim-sozlesme-fiyat             
+                           move  devremulk-odenen          to  takasprim-odenen-tutar  
+                           move  0                         to  takasprim-tahsilat-var
+                           move  odemeler-islem-turu       to  takasprim-prim-tipi
+   
+                            EVALUATE odemeler-islem-turu
+                                  WHEN  "PP"
+                                  WHEN  "GN"
+                                     move odemeler-tutar to takasprim-normal-prim
+                                  WHEN  "SS"   
+                                  WHEN  "GS"
+                                     move odemeler-tutar to takasprim-sabit-prim
+                                  WHEN  "NP"
+                                     move odemeler-tutar  to takasprim-normal-prim-odemesi
+                                  WHEN "SP"
+                                     move odemeler-tutar  to takasprim-sabit-prim-odemesi
+                                 when "AG"
+                                     move odemeler-tutar   to takasprim-avans-geri-odemesi
+                            end-evaluate
+                           |||||prim kategoriden limitleri alllll
+                          perform prim-limit-hesapla
+
+                           write takasprim-rec invalid
+                                   stop " "
+                           end-write
+                           continue
+                   not invalid
+                          EVALUATE odemeler-islem-turu
+                                  WHEN  "PP"
+                                  WHEN  "GN"
+                                     add odemeler-tutar to takasprim-normal-prim
+                                  WHEN  "SS"  
+                                  WHEN  "GS"
+                                     add odemeler-tutar to takasprim-sabit-prim
+                                  WHEN  "NP"
+                                     add odemeler-tutar  to takasprim-normal-prim-odemesi
+                                  WHEN "SP"
+                                     add odemeler-tutar  to takasprim-sabit-prim-odemesi
+                                  when "AG"
+                                    move odemeler-tutar   to takasprim-avans-geri-odemesi
+                          end-evaluate
+                   |||||prim kategoriden limitleri alllll
+                          perform prim-limit-hesapla
+
+                          rewrite takasprim-rec invalid
+                                   stop " "
+                           end-rewrite
+                   end-read
+
+                
+
+              end-read
+              end-perform
+              ||||avanslari hesapla
+              initialize odemeler-rec
+              if rpr-danisman-kodu not = zeroes then
+                      move rpr-danisman-kodu  to odemeler-danisman-kodu
+                      start odemeler key not < odemeler-dan-anah2 invalid
+                                continue
+                      end-start
+              else
+                      initialize odemeler-rec
+                      start odemeler key not < odemeler-anah invalid
+                                continue
+                      end-start
+              end-if
+              perform until fs-odemeler = "10" 
+              read odemeler next no lock end move "10" to fs-odemeler
+              not end 
+                      
+                      if rpr-danisman-kodu not = zeroes and  rpr-danisman-kodu not = odemeler-danisman-kodu then
+                              exit perform  
+                      end-if
+
+                      EVALUATE odemeler-islem-turu
+                        WHEN  "AV"
+                        WHEN  "AG"
+                              continue
+                        when other 
+                              exit perform cycle
+                      END-EVALUATE
+
+                   initialize takasavans-rec
+                   move odemeler-devremulk-no   to  takasavans-devremulk-no
+                   move odemeler-danisman-kodu  to  takasavans-danisman-kodu  
+                   read takasavans no lock invalid             
+    
+                            EVALUATE odemeler-islem-turu
+                                  WHEN  "AV"
+                                     move odemeler-tutar to takasavans-avans
+                                  WHEN  "AG"              
+                                     move odemeler-tutar to takasavans-avans-geri-odemesi
+                          end-evaluate
+  
+                             write takasavans-rec invalid
+                                   stop " "
+                             end-write
+                           continue
+                   not invalid
+                          EVALUATE odemeler-islem-turu
+                                  WHEN  "AV"
+                                     add odemeler-tutar to takasavans-avans
+                                  WHEN  "AG"              
+                                     add odemeler-tutar to takasavans-avans-geri-odemesi
+                          end-evaluate
+
+                           rewrite takasavans-rec invalid
+                                   stop " "
+                           end-rewrite
+                   end-read
+
+              end-read
+              end-perform
+              ||||||||||--
+
+              close  donem donem2 donhrk devremulk musteri odalar takasprim taksit DANISMAN odemeler primhrk takasavans cek
+         
+              perform grid-baslik-yukle
+              perform takasi-gride-daya
+     
+
+              close dokumer
+           |   call dokumer-prog on exception
+           |        perform callerr-proc
+           |   not on exception
+            |       cancel dokumer-prog
+           |   end-call
+  
+              delete file dokumer .
+*
+ prim-limit-hesapla.
+                              
+                       ||her prim gorevinin limitine göre alinacak danismanlar icinsede trek tek
+
+                         initialize danisman-rec
+                         move odemeler-danisman-kodu to danisman-kodu
+                         read danisman no lock invalid
+                                 initialize danisman-rec
+                                 continue
+                         not invalid
+                              initialize primhrk-rec
+                              if danisman-sabit-prim =  1 then
+                                  move devremulk-sabit-prim-kodu  to primhrk-kodu
+                                  move danisman-kodu              to primhrk-gorev-kodu
+                              else
+                                  move devremulk-prim-kodu         to primhrk-kodu
+                                  move danisman-gorev-kodu         to primhrk-gorev-kodu
+                              end-if
+
+                              read primhrk no lock invalid
+
+                               initialize primhrk-rec
+
+                                 EVALUATE odemeler-islem-turu
+                                 WHEN  "PP"
+                                     move devremulk-prim-kodu         to primhrk-kodu  filtre-prim-kodu
+                                 WHEN  "SS" 
+                                      move devremulk-sabit-prim-kodu     to primhrk-kodu filtre-prim-kodu
+                                 end-evaluate
+                                      start primhrk key not < primhrk-anah invalid
+                                              continue
+                                      not invalid
+                                      perform until fs-primhrk = "10" 
+                                      read primhrk next no lock end move "10" to fs-primhrk
+                                      not end
+                                           if primhrk-kodu not = filtre-prim-kodu then
+                                                 exit perform 
+                                           end-if
+
+                                           move primhrk-prim-sinir to takasprim-normal-limit
+                                           exit perform 
+                                      end-read
+                                      end-perform
+                                      end-start
+                                      continue
+                              not invalid
+                                  move primhrk-prim-sinir to takasprim-normal-limit
+                              end-read
+
+                         end-read
+                         
+                  
+                   |||||
+         .
+
+              
+
+*
+ avans-gride-daya.
+          
+
+               initialize detay 
+               move "TOP.AVANS BORCU"  to det-9
+               write dokumer-rec from detay
+             
+              open input takasavans danisman
+               initialize takasavans-rec top-avans-borcu
+               move 1 to satir-sayisi
+               start takasavans key not < takasavans-anah invalid
+                       continue
+               not invalid
+               perform until fs-takasavans = "10" 
+               read takasavans next no lock end move "10" to fs-takasavans
+               not end
+
+                       initialize detay  
+                       compute avans-borcu = takasavans-avans + takasavans-avans-geri-odemesi 
+
+                       if avans-borcu = zeroes then
+                             exit perform cycle
+                       end-if
+
+                       move takasavans-danisman-kodu to danisman-kodu
+                       read danisman no lock invalid
+                            initialize danisman-rec
+                               continue
+                       end-read
+                        initialize string-deger
+                         string string-deger
+                                    danisman-adi delimited by spaces
+                                    " " delimited by size 
+                                    danisman-soyadi
+                          into string-deger
+
+                       MOVE string-deger TO DET-9
+
+                       if avans-borcu > 0 then
+                            move avans-borcu        to z-dip-tutar
+                            move z-dip-tutar            to det-10
+                       else
+                           move avans-borcu         to z-dip-tutar
+                           move z-dip-tutar            to det-7
+                       end-if
+
+                       add avans-borcu to top-avans-borcu
+                       write dokumer-rec from detay
+               end-read
+               end-perform
+               end-start
+
+               initialize detay
+  
+                move "AVANS DAHIL"       to det-9
+                compute prim-odenecek-top = prim-odenecek-top + top-avans-borcu
+                move prim-odenecek-top   to z-tutar
+                move z-tutar             to det-11
+                move "A" to det-dokumer-20(3:1)
+                move 480 to det-renk1
+                move "1" to det-dokumer-20(10:1)
+
+                write dokumer-rec from detay
+
+            close takasavans danisman
+         .
+*
+ takasi-gride-daya.
+               open output xtakasprim close xtakasprim
+               open input takasprim odemeler  cek
+               open i-o xtakasprim
+               
+               modify grd1 , mass-update = 1
+               initialize takasprim-rec  satir-sayisi  alt-prim-top prim-toplamlar  takas-prim-kayit-sayisi xtakas-grid-sira
+               move 2 to satir-sayisi 
+               start takasprim key not < takasprim-anah invalid
+                       display message box "Listelenecek Kayit Bulunamadi !"
+                       close takasprim  xtakasprim odemeler  cek
+                       exit paragraph
+                       continue
+               not invalid
+               perform until fs-takasprim = "10" 
+               read takasprim next no lock end move "10" to fs-takasprim
+               not end 
+                       initialize grd1-record detay  filtre-gecme
+
+                       move takasprim-prim-gun      to gd-1-col-1(1:2)
+                       move "/"                     to gd-1-col-1(3:1)
+                       move takasprim-prim-ay       to gd-1-col-1(4:2)
+                       move "/"                     to gd-1-col-1(6:1)
+                       move takasprim-prim-yil      to gd-1-col-1(7:4)
+
+                     
+                       move takasprim-devremulk-no   to gd-1-col-2 
+                       move takasprim-musteri-adi    to gd-1-col-3
+                       move takasprim-danisman-adi   to gd-1-col-4
+                       move takasprim-sozlesme-fiyat to z-fiyat
+                       move z-fiyat                  to gd-1-col-5 
+
+                       perform odeme-bul
+
+                       move odeme-toplam-bul          to z-fiyat 
+                       move z-fiyat                   to  gd-1-col-6  
+                      
+                       move takasprim-normal-limit    to z-tutar
+                       move z-tutar                   to gd-1-col-7
+
+ 
+                       move takasprim-normal-prim          to prim-normal-hak
+                       move takasprim-normal-prim-odemesi  to prim-normal-odenen
+
+                       initialize prim-normal-alacagi filtre-gecme
+                       if odeme-toplam-bul >= takasprim-normal-limit
+                       and takasprim-normal-limit not = zeroes 
+                       and prim-normal-hak > 0 then
+                           compute prim-normal-alacagi = prim-normal-hak + prim-normal-odenen
+                       end-if
+                       if sadece-odenecek-prim = 1 and prim-normal-alacagi = zeroes then
+                          move 1 to  filtre-gecme  
+                       end-if
+                       if (takasprim-normal-prim not = zeroes  or takasprim-normal-prim-odemesi not = zeroes )
+                       and filtre-gecme = 0
+
+                         move "NORMAL PRIM"       to gd-1-col-12
+
+                         move prim-normal-hak     to z-tutar    takasprim-hakedis-bakiye
+                         move z-tutar             to gd-1-col-8
+                         add prim-normal-hak      to prim-hakedis-top
+              
+
+                         move prim-normal-alacagi to z-tutar     takasprim-odenecek-bakiye
+                         move z-tutar             to gd-1-col-9
+                         add prim-normal-alacagi  to prim-odenecek-top 
+
+                         add 1 to takas-prim-kayit-sayisi
+                         move "NP" to takasprim-prim-tipi
+                         perform gride-ekle-takasa-yaz
+                       end-if
+
+         
+                       move takasprim-sabit-prim           to prim-sabit-hak
+                       move takasprim-sabit-prim-odemesi   to prim-sabit-odenen
+
+                       initialize prim-sabit-alacagi filtre-gecme
+                       if odeme-toplam-bul >= takasprim-normal-limit 
+                       and takasprim-normal-limit not = zeroes  
+                       and prim-sabit-hak > 0 then 
+                            compute prim-sabit-alacagi = prim-sabit-hak + prim-sabit-odenen
+                       end-if
+
+                       if sadece-odenecek-prim = 1 and prim-sabit-alacagi = zeroes  then
+                            move 1 to filtre-gecme 
+                       end-if
+
+                       if ( takasprim-sabit-prim not = zeroes or takasprim-sabit-prim-odemesi not = zeroes)
+                          and filtre-gecme = 0
+                         move "SABIT PRIM"       to gd-1-col-12
+
+                         move prim-sabit-hak     to z-tutar    takasprim-hakedis-bakiye
+                         move z-tutar             to gd-1-col-8
+                         add prim-sabit-hak      to prim-hakedis-top
+              
+
+                         move prim-sabit-alacagi to z-tutar    takasprim-odenecek-bakiye
+                         move z-tutar             to gd-1-col-9
+                         add prim-sabit-alacagi  to prim-odenecek-top
+
+                         add 1 to takas-prim-kayit-sayisi
+                         move "SP" to takasprim-prim-tipi
+                         perform gride-ekle-takasa-yaz
+                      end-if
+
+
+                       initialize filtre-gecme
+                       if sadece-odenecek-prim = 1 and takasprim-avans-geri-odemesi = zeroes  then
+                             move 1 to filtre-gecme 
+                       end-if
+
+                       initialize det-10 det-7 det-11 det-9 DET-12 DET-8
+                       if takasprim-avans-geri-odemesi not = zeroes  and  filtre-gecme = 0  then
+                         move "(PRIMDEN)AVANS G.ODEME" to gd-1-col-12
+
+                         COMPUTE takasprim-avans-geri-odemesi = takasprim-avans-geri-odemesi * -1
+
+                         move takasprim-avans-geri-odemesi to z-tutar  takasprim-tahsilat-avans 
+                         move z-tutar             to gd-1-col-9
+                         add takasprim-avans-geri-odemesi  to prim-odenecek-top
+                         add 1 to takas-prim-kayit-sayisi
+                         initialize takasprim-odenecek-bakiye gd-1-col-8
+                         move "AG" to takasprim-prim-tipi
+                         perform gride-ekle-takasa-yaz
+                        
+                      end-if
+
+               end-read
+               end-perform
+               end-start
+
+
+                modify grd1 , mass-update = 0
+
+                if  takas-prim-kayit-sayisi not > 0 then
+                     display message box "Listelenecek Kayit bulunamadi "
+                end-if
+               close takasprim xtakasprim  odemeler  cek
+               .
+*
+ gride-ekle-takasa-yaz.
+
+                         |||
+                         add 1 to xtakas-grid-sira
+                         modify grd1,record-to-add(grd1-record)
+
+                         if takasprim-odenecek-bakiye < 0  then
+                               modify grd1(satir-sayisi) , row-color = 176
+                         ELSE
+                               modify grd1(satir-sayisi,11)  , bitmap = no-bmp
+                                                             , bitmap-number = 1
+                                                             , bitmap-width  = 16
+                                                             , color = 0
+                                modify grd1(satir-sayisi,11) , hidden-data = 0
+                         end-if
+                         modify grd1(satir-sayisi,4),hidden-data = takasprim-danisman-kodu 
+                         modify grd1(satir-sayisi,1),hidden-data = xtakas-grid-sira 
+ 
+                         move 0 to takasprim-tahsilat-var
+                         initialize xtakasprim-rec
+                         move takasprim-rec    to xtakasprim-rec
+                         move xtakas-grid-sira to xtakasprim-sira-no
+                         write xtakasprim-rec invalid
+                                 stop "xtakasprim yazamadiii!"
+                         end-write
+                         add 1 to satir-sayisi
+                         ||||
+                         .
+*
+ form2-Pb-1-Link.
+             if  prim-tediye-islem-no = zeroes then
+                  exit paragraph
+             end-if
+             perform prim-isl-kontorl
+             if hatali-islem = 1 then
+                     display message box "Hatali Tediye Numarasi Girdiniz !"
+                     icon 3
+                     exit paragraph
+             end-if
+             initialize link-tah-prim-isl-no   
+             move prim-tediye-islem-no to link-tah-prim-isl-no
+             call "/asya/ytl/obj/otel/devtahpr.asy" using link-tah-prim-isl-no  
+                 on exception 
+                 perform callerr-proc
+                 exit paragraph
+                 not on exception 
+              cancel "/asya/ytl/obj/otel/devtahpr.asy"
+              end-call 
+     .
+
+*
+ cek-fis-al.
+        open i-o mgenelfis
+        move 1        to mgenelfis-anahtar
+        read mgenelfis no lock invalid
+             initialize mgenelfis-rec
+             add 1    to mcek-oto
+             write mgenelfis-rec invalid
+                   rewrite mgenelfis-rec end-rewrite
+             end-write
+        not invalid
+             compute mcek-oto = mcek-oto + 1
+             rewrite mgenelfis-rec end-rewrite
+        end-read
+        close mgenelfis.
+*
+ cek-kaydet.
+
+     initialize cek-rec 
+     move mcek-oto                to cek-isl-no
+     read cek no lock invalid
+          move tarih-tasi       to cek-isl-tar  cek-valor  cek-vade
+          move 99                 to cek-banka
+          move takasprim-hakedis-bakiye        to cek-tutar
+          move "A"                to cek-a-v
+          move "E"                to cek-muhasebe-eh
+          move "T"                to cek-dovizlimi
+          move "NA"               to cek-tipi
+          write cek-rec invalid 
+              display message box "Kayit Yazilamadi..."
+          end-write 
+         
+     end-read  .
+
+*
+ form2-Aft-Initdata.
+
+ 
+     perform grid-baslik-yukle
+     .
+*
+ grid-baslik-yukle.
+          initialize grd1-record
+          modify grd1 , reset-grid = 1 , mass-update = 1
+          move "P.Tarih"        to gd-1-col-1
+          move "Dev.No "        to gd-1-col-2
+          move "Musteri Adi"    to gd-1-col-3
+          move "Sat. Danisman"   to gd-1-col-4
+          move "Soz.Fiyati"     to gd-1-col-5
+          move "T.Odeme"        to gd-1-col-6
+          move "P.Limit"        to gd-1-col-7
+          move "P.Hakedis"      to gd-1-col-8
+          move "P.Odenecek"     to gd-1-col-9
+          move "Onay"           to gd-1-col-10
+          move "P.Tur"          to gd-1-col-12
+          modify grd1,record-to-add(grd1-record)
+          modify grd1 , mass-update = 0
+         .
+*
+ grd1-Ev-Other.
+      evaluate event-type
+       when msg-begin-entry
+            move event-action-fail to event-action
+               open i-o xtakasprim
+               initialize Xtakasprim-rec  satir-sayisi  cell-dev-no
+               inquire grd1 , y in satir-sayisi
+               inquire grd1(satir-sayisi,11),hidden-data in yes-no 
+               inquire grd1(satir-sayisi,2),cell-data in   xtakasprim-devremulk-no 
+               move xtakasprim-devremulk-no to cell-dev-no
+               inquire grd1(satir-sayisi,4),hidden-data in xtakasprim-danisman-kodu
+               inquire grd1(satir-sayisi,1),hidden-data in xtakasprim-sira-no
+               read xtakasprim no lock invalid
+                       continue
+               not invalid
+                if yes-no = 1  then
+                    modify grd1(satir-sayisi,11) , bitmap = no-bmp
+                                                              , bitmap-number = 1
+                                                              , bitmap-width  = 16
+                    modify grd1(satir-sayisi,11)  , hidden-data = 0
+                    move 0 to Xtakasprim-tahsilat-var
+               else
+                    modify grd1(satir-sayisi,11) , bitmap = yes-bmp
+                                                              , bitmap-number = 1
+                                                              , bitmap-width  = 16
+                                                             
+                    modify grd1(satir-sayisi,11)  , hidden-data = 1
+                    move 1 to Xtakasprim-tahsilat-var
+               end-if 
+               rewrite xtakasprim-rec   invalid
+                       continue
+               end-rewrite
+              end-read
+            close xtakasprim  
+            PERFORM odenecek-primleri-topla
+       when msg-goto-cell-mouse
+               initialize  satir-sayisi  cell-dev-no
+               inquire grd1 , y in satir-sayisi
+               inquire grd1(satir-sayisi,2),cell-data in   cell-dev-no 
+      end-evaluate
+     .
+*
+ odenecek-primleri-topla.
+         open input xtakasprim
+
+          initialize xtakasprim-rec  odenecek-prim-toplam
+          move 1 to xtakasprim-tahsilat-var
+          start xtakasprim key not < xtakasprim-tahsilat-var invalid
+                  continue
+          not invalid
+          perform until fs-xtakasprim = "10"
+          read xtakasprim next no lock end move "10" to fs-xtakasprim
+          not end
+               if xtakasprim-tahsilat-var not = 1 then
+                       exit perform
+               end-if
+               add xtakasprim-odenecek-bakiye  to odenecek-prim
+               add xtakasprim-tahsilat-avans   to tahsil-edilecek-avans
+               compute toplam-odenecek = odenecek-prim + tahsil-edilecek-avans 
+
+          end-read
+          end-perform
+          end-start
+
+          DISPLAY form2-Ef-2a form2-Ef-2 form2-Ef-2aa
+         close xtakasprim
+         .
+
+
+*
+ odeme-sekli-oku.
+      open input odemetip
+     MOVE odeme-sekli TO odemetip-KODU
+     read odemetip no lock invalid 
+          move "Tanimsiz.." to odemetip-adi
+          move 4            to accept-control
+          move 36           to control-id
+     NOT INVALID
+          move odemetip-adi to odeme-sekli-adi   
+     end-read 
+          
+     close odemetip
+     display lb-odeme-sekli
+     .
+*
+ form2-Pb-2-Link.
+               perform yetki-kontrol
+               if yetki-yok = 1 then
+                      display message box "Bu Islem Icin Yetkiniz Bulunmamaktadir !"
+                      icon 3
+                      exit paragraph
+               end-if
+               |||| kontrolllerrr
+               if toplam-odenecek <= 0 then  
+                     display message box "Odenecek Prim 0 veya 0 dan Kucuk Olamaz"
+                     exit paragraph
+               end-if
+               if odeme-sekli = spaces  or txt-teslim-alan = spaces  then
+                     display message box "Lutfen Gerekli Alanlari Doldurunuz !"
+                     exit paragraph
+               end-if
+
+               ||||
+               perform cek-no-al
+               move mcek-oto to prim-isl-no
+               display message box prim-isl-no" Nolu Tediye Islemi "txt-teslim-alan " Adina Gerceklestirilecektir " new-line
+                       "Emin misiniz ?"
+                       icon 1
+                       type 2
+                       default 2
+                       returning  return-code 
+               if return-code not = 1 then
+                     exit paragraph
+               end-if
+
+               open input xtakasprim
+               open i-o odemeler cek
+                initialize xtakasprim-rec  
+                move 1 to xtakasprim-tahsilat-var
+                start xtakasprim key not < xtakasprim-tahsilat-var  invalid
+                        continue
+                not invalid
+                perform until fs-xtakasprim = "10"
+                read xtakasprim next no lock end move "10" to fs-xtakasprim
+                not end
+                     if xtakasprim-tahsilat-var not = 1 then
+                           exit perform
+                     end-if
+    
+                     evaluate xtakasprim-prim-tipi 
+                     when "AG"
+                           initialize odemeler-rec
+                           move xtakasprim-devremulk-no to odemeler-devremulk-no
+                           move txt-donem-bas-tar       to odemeler-tarih
+                           start odemeler key not < odemeler-dev-tar invalid
+                                   continue
+                           not invalid
+                           perform until fs-odemeler = "10"
+                           read odemeler next no lock end move "10" to fs-odemeler
+                           not end
+                               if xtakasprim-devremulk-no  not = odemeler-devremulk-no then
+                                     exit perform 
+                               end-if
+                               if rpr-danisman-kodu not = odemeler-danisman-kodu then
+                                     exit perform cycle
+                               end-if
+
+                               if odemeler-islem-turu = "AG" then 
+                                     move 0                  to odemeler-AG-primden-dus
+                                     move prim-isl-no        to odemeler-prim-isl-no
+                                     move k-kodu-tasi        to odemeler-staf
+                                     rewrite odemeler-rec invalid
+                                          stop "yenideen yazmadi"
+                                     end-rewrite
+                                     initialize cek-rec
+                                     move odemeler-cek-isl-no to cek-isl-no
+                                     read cek no lock invalid
+                                             continue
+                                     not invalid
+                                        move txt-teslim-alan to cek-odeyen
+                                        rewrite cek-rec invalid 
+                                                stop " "
+                                        end-rewrite
+                                     end-read
+                               end-if
+                               
+                           end-read
+                           end-perform
+                           end-start
+                           exit perform cycle
+                     end-evaluate
+
+                     perform cek-no-al
+                     perform prim-cek-kaydet
+                     perform prim-odemeler-kaydet 
+                end-read
+                end-perform
+                end-start
+
+           close xtakasprim odemeler cek
+           open output takasprim xtakasprim close xtakasprim takasprim
+           modify grd1,reset-grid = 1 
+           display message box "Prim Cikarma Islemi Tamamlandi Tediye Makbuzunu Almayi Unutmayiniz !"
+
+           perform prim-makbuz
+           perform prim-makbuz
+     .
+*
+ prim-cek-kaydet.
+           
+                    initialize CEK-REC
+                     move tarih-tasi               to CEK-ISL-TAR CEK-ODEME
+                     move odeme-sekli              to cek-tipi
+                     move mcek-oto                 to CEK-ISL-NO 
+                     evaluate Xtakasprim-prim-tipi 
+                     when "SP"
+                     WHEN "NP"
+                              move Xtakasprim-odenecek-bakiye   to CEK-TUTAR
+                     when "AG"
+                           continue
+                     when other 
+                             stop "hatali tip"
+                             set exit-pushed to true
+                     end-evaluate
+                     move k-kodu-tasi              to CEK-STAF
+
+                     move "A"                to cek-a-v
+                     move "E"                to cek-muhasebe-eh
+                     move "T"                to cek-dovizlimi
+
+                     move txt-teslim-alan to CEK-ODEYEN 
+                     write cek-rec  invalid
+                             stop "CEKE YAZAMADI"
+                     end-write
+
+         .
+*
+ prim-odemeler-kaydet.
+                     
+                     perform odemeler-bos-sira-bul
+                     initialize odemeler-rec
+                     evaluate Xtakasprim-prim-tipi 
+                     when "SP"
+                     WHEN "NP"
+                              COMPUTE  Xtakasprim-odenecek-bakiye = Xtakasprim-odenecek-bakiye * -1
+                              move Xtakasprim-odenecek-bakiye   to odemeler-tutar
+                     when other 
+                             stop "hatali tip"
+                             set exit-pushed to true
+                     end-evaluate
+  
+                     move tarih-tasi to odemeler-tarih
+                     move xtakasprim-devremulk-no to odemeler-devremulk-no
+                     move son-sira to odemeler-sira 
+             
+                     move "A"                      to odemeler-hareket-turu 
+                     move odeme-sekli              to odemeler-odeme-turu
+                     
+                     move mcek-oto                 to odemeler-cek-isl-no
+                     move xtakasprim-danisman-kodu to odemeler-danisman-kodu 
+
+                     move Xtakasprim-prim-tipi      to odemeler-islem-turu
+                     move prim-isl-no               to odemeler-prim-isl-no ||fat no
+                     move k-kodu-tasi               to odemeler-staf 
+                    
+                     write odemeler-rec  invalid
+                             stop "ODEMELERE YAZAMADI"
+                     end-write
+
+         .
+
+*
+ odemeler-bos-sira-bul.
+     initialize odemeler-rec son-sira
+     move xtakasprim-devremulk-no     to odemeler-devremulk-no
+     move high-values      to odemeler-sira 
+     start odemeler key < odemeler-anah invalid 
+          MOVE 1 TO son-sira
+          continue 
+     not invalid 
+     perform with test after until fs-odemeler = "10"
+     read odemeler previous no lock end move "10"   to fs-odemeler
+     not at end 
+              if odemeler-devremulk-no <> xtakasprim-devremulk-no
+                  move 1 to  son-sira
+                  exit perform 
+              end-if
+              if odemeler-sira is not numeric 
+                  initialize odemeler-sira 
+              end-if 
+              move odemeler-sira     to son-sira
+              compute son-sira = son-sira + 1
+              exit perform 
+     end-read 
+     end-perform
+     end-start
+       .
+* 
+  cek-no-al.
+        open i-o mgenelfis
+        move 1        to mgenelfis-anahtar
+        read mgenelfis no lock invalid
+             initialize mgenelfis-rec
+             add 1    to mcek-oto
+             write mgenelfis-rec invalid
+                   rewrite mgenelfis-rec end-rewrite
+             end-write
+        not invalid
+             compute mcek-oto = mcek-oto + 1
+             rewrite mgenelfis-rec end-rewrite
+        end-read
+        close mgenelfis.
+* 
+ danisman-avans-bul.
+     initialize odemeler-rec danisman-avans-toplam
+              move rpr-danisman-kodu  to odemeler-danisman-kodu
+              start odemeler key not < odemeler-dan-anah2 invalid
+                        continue
+              perform until fs-odemeler = "10" 
+              read odemeler next no lock end move "10" to fs-odemeler
+              not end 
+                      
+                      if rpr-danisman-kodu not = zeroes and  rpr-danisman-kodu not = odemeler-danisman-kodu then
+                              exit perform  
+                      end-if
+                      if odemeler-AG-primden-dus = 1 then
+                            exit perform cycle
+                      end-if
+                      EVALUATE odemeler-islem-turu
+                        WHEN  "AV"
+                        WHEN  "AG"
+                              continue
+                        when other 
+                              exit perform cycle
+                      END-EVALUATE
+                      add odemeler-tutar to danisman-avans-toplam
+               end-read
+               end-perform
+               end-start
+                .
+* 
+ danisman-yer-borcu-bul.
+               
+               initialize devremulk-rec danisman-yer-borcu-toplam
+               move rpr-danisman-kodu to devremulk-satan-danisman
+               start devremulk key not < devremulk-satan-danisman invalid
+                       continue
+               not invalid
+               perform until  fs-devremulk = "10"
+               read devremulk next no lock end move "10" to fs-devremulk
+               not end
+                    if  devremulk-satan-danisman not = rpr-danisman-kodu then
+                          exit perform 
+                    end-if
+                    if devremulk-danisman-kendisi not = 1 then
+                          exit perform cycle
+                    end-if
+                    move devremulk-no to takasprim-devremulk-no
+                    perform odeme-bul
+                    compute danisman-yer-borcu  = devremulk-satis-tutari - odeme-toplam-bul 
+                    add danisman-yer-borcu to danisman-yer-borcu-toplam
+
+               end-read
+               end-perform
+               end-start  
+               
+               .
+*
+ prim-makbuz.
+             initialize link-tah-prim-isl-no   
+             move prim-isl-no to link-tah-prim-isl-no
+             call "/asya/ytl/obj/otel/devtahpr.asy" using link-tah-prim-isl-no  
+                 on exception 
+                 perform callerr-proc
+                 exit paragraph
+                 not on exception 
+              cancel "/asya/ytl/obj/otel/devtahpr.asy"
+              end-call  .
+*
+ form2-Pb-3-Link.
+
+      open i-o xtakasprim
+      initialize xtakasprim-rec
+      start xtakasprim key not < xtakasprim-anah invalid
+              continue
+      not invalid
+      perform until fs-xtakasprim = "10"
+      read xtakasprim next no lock end move "10" to fs-xtakasprim
+      not end
+                 modify grd1(xtakasprim-sira-no + 1 ,11) , bitmap = yes-bmp
+                                           , bitmap-number = 1
+                                           , bitmap-width  = 16
+                  modify grd1(xtakasprim-sira-no + 1 ,11)  , hidden-data = 1
+                  move 1 to Xtakasprim-tahsilat-var
+                  rewrite xtakasprim-rec  invalid
+                          continue
+                  end-rewrite
+      end-read
+      end-perform
+      end-start
+      close xtakasprim
+      perform odenecek-primleri-topla
+     .
+*
+ grd1-Ex-Other.
+      evaluate key-status
+      when 4
+          initialize  link-uye-no link-odano link-donem
+          move cell-dev-no to link-uye-no 
+          call "/asya/ytl/obj/otel/devmulk.asy" 
+                        using  link-uye-no link-odano link-donem
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                cancel "/asya/ytl/obj/otel/devmulk.asy"
+          end-call 
+      end-evaluate
+     .
+*
+ form2-Pb-1a-Link.
+      perform yetki-kontrol
+      if yetki-yok = 1 then
+              display message box "Bu Islem Icin Yetkiniz Bulunmamaktadir !"
+              icon 3
+              exit paragraph
+      end-if
+
+      if  prim-tediye-islem-no = zeroes then
+           exit paragraph
+      end-if
+      perform prim-isl-kontorl
+      if hatali-islem = 1 then
+              display message box "Hatali Tediye Numarasi Girdiniz !"
+              icon 3
+              exit paragraph
+      end-if
+      display message box prim-tediye-islem-no " Nolu Tediye Makbuzundaki Tum Prim Odemeleri Iptal Edilecektir !" new-line
+                "Emin misiniz ?"
+                icon 1
+                type 2
+                default 2
+                returning return-code 
+      if return-code not = 1 then
+            exit paragraph
+      end-if
+
+      open i-o odemeler
+              initialize odemeler-rec
+              move prim-tediye-islem-no to odemeler-prim-isl-no
+              start odemeler key not < odemeler-prim-isl-no invalid
+                      continue
+              not invalid
+              perform until fs-odemeler = "10"
+              read odemeler next no lock end move "10" to fs-odemeler
+              not end
+                   if odemeler-prim-isl-no not = prim-tediye-islem-no then
+                         exit perform 
+                   end-if
+                   delete odemeler end-delete 
+
+              end-read
+              end-perform
+              end-start
+              display message box "Islem Tamamlandi !"
+      close odemeler
+     .
+*
+ prim-isl-kontorl.
+         open input odemeler
+              initialize odemeler-rec hatali-islem
+              move 1 to hatali-islem
+              move prim-tediye-islem-no to odemeler-prim-isl-no
+              start odemeler key not < odemeler-prim-isl-no invalid
+                      continue
+              not invalid
+              perform until fs-odemeler = "10"
+              read odemeler next no lock end move "10" to fs-odemeler
+              not end
+                   if odemeler-prim-isl-no not = prim-tediye-islem-no then
+                         exit perform 
+                   end-if
+
+                   initialize hatali-islem
+                   exit perform
+              end-read
+              end-perform
+              end-start
+         close odemeler
+         .
+*
+ yetki-kontrol .
+       open input kllnc
+       initialize yetki-yok
+       move k-kodu-tasi to K-KODU
+       read kllnc no lock invalid
+               continue
+       not invalid
+            if k-dev-prim-yetki not = 1 then
+               move 1 to yetki-yok
+            else
+               move 0 to yetki-yok
+            end-if
+       end-read
+       close kllnc      .
+
+ 

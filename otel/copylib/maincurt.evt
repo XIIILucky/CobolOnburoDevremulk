@@ -1,0 +1,969 @@
+* maincurt.evt
+* maincurt.evt is generated from D:\asya\acugt.ytl\otel\maincurt.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+    perform birlesik-ref-bul
+     .
+*
+ Form1-Aft-Initdata.
+    move tarih-tasi to filtre-tarih
+    move "H" to rapor-folio
+    display acc-01 acc-02 acc-03 acc-04 acc-05 com-01
+    move 4 to accept-control
+    move 12 to control-id.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 1
+      if control-id = 19
+         perform grup-ara
+      end-if 
+      if control-id = 5
+         initialize acenta-cagir 
+         call "/asya/ytl/obj/otel/acenara.asy" using
+              acenta-cagir
+         on exception 
+            perform callerr-proc
+         not on exception 
+         cancel "/asya/ytl/obj/otel/acenara.asy"
+         end-call
+         if acenta-cagir <> spaces
+            move acenta-cagir   to rapor-acenta
+            display acc-05
+         end-if
+         move 4 to accept-control
+         move 5 to control-id
+      end-if
+       if control-id = 18
+         initialize firma-cagir 
+         call "/asya/ytl/obj/otel/firmara.asy" using
+              firma-cagir
+         on exception 
+            perform callerr-proc
+         not on exception 
+         cancel "/asya/ytl/obj/otel/firmara.asy"
+         end-call
+         if firma-cagir <> spaces
+            move firma-cagir   to rapor-firma
+            display acc-05a
+         end-if
+         move 4 to accept-control
+         move 18 to control-id
+      end-if
+      exit paragraph
+      when 2
+              move filtre-tarih to filtre-tarih-tasi
+
+              call "/asya/ytl/obj/otel/hiskonuk.asy"
+                  using filtre-tarih-tasi hkonuk-dosya-tasi
+                on exception perform callerr-proc
+                not on exception
+                  cancel "/asya/ytl/obj/otel/hiskonuk.asy" 
+              end-call
+                
+              move filtre-tarih-tasi to filtre-tarih
+              move hkonuk-dosya-tasi to hkonuk-dosya
+              
+              initialize toplam
+              perform  maincurt-dosya-yaz
+
+
+              open input maincurt kodlar02 acenta exthrk romhrk odalar
+              initialize maincurt-rec
+              if grup-sonda = 1 
+              start maincurt key not < maincurt-grup1 invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close maincurt kodlar02 acenta exthrk romhrk odalar
+                    exit paragraph
+              end-start
+              else
+              start maincurt key not < maincurt-odano invalid
+                    initialize mesaj-link
+                    move 04 to mesaj-no
+                    perform mesaj-ver
+                    close maincurt kodlar02 acenta exthrk romhrk odalar
+                    exit paragraph
+              end-start
+               end-if
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "MainCurant [History]" to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "MainCurant Raporu [History]" to det-filler
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     move "1"          to det-dokumer-20(10:1)
+     move "Acenta.:"     to det-filler(01:10)
+     if rapor-acenta = spaces 
+        move "Tum Acentalar" to det-filler(11:15)
+     else
+        move rapor-acenta to acenta-kodu
+        read acenta no lock invalid continue
+        not invalid
+        move acenta-adi      to det-filler(11:15)
+        end-read
+     end-if
+     move "Folio Tipi.:"     to det-filler(30:15)
+     evaluate rapor-folio 
+       when "H"   move "Tum Foliolar"      to det-filler(45:20)
+       when "R"   move "Room Foliolar"     to det-filler(45:20)
+       when "E"   move "Extra Foliolar"    to det-filler(45:20)
+       when "T"   move "Telefon Foliolari" to det-filler(45:20)
+       when "G"   move "Grup Foliolari"    to det-filler(45:20)
+     end-evaluate 
+     move "Tarih :"          to det-filler(70:10)
+     move filtre-tarih-gun   to gun-x
+     move filtre-tarih-ay    to ay-x
+     move filtre-tarih-yil   to yil-x
+     move tarih-x            to det-filler(80:10)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "RRLLLRRRLLRRRRRRRRRR" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"                          to det-dokumer-20(1:2)     
+     move "Oda "                        to det-1
+     move "Folio no"                    to det-2
+     move "T"                           to det-3
+     move "Adi       "                  to det-4
+     move "Soyadi    "                  to det-5
+     move "Pax "                        to det-6
+     move "Chi."                        to det-7
+     move "Free"                        to det-8
+     move "Beb."                        to det-88
+     move "Acen"                        to det-9
+     move "Acenta adi"                  to det-10
+     move "C/in Tarih"                  to det-11
+     move "C/out Tar."                  to det-12
+     move "PK"                          to det-13
+     move "Dunden-Devir    "            to det-14
+     move "Oda Gelirleri   "            to det-15
+     move "Oda Dovizli     "            to det-151
+     move "Extra Gelirleri "            to det-16
+     move "Duzelmeler (+)  "            to det-17
+     move "Diger Gelirler  "            to det-18  
+     move "Kur Farki (+)   "            to det-18-1
+     move "Pesin Odemeler  "            to det-19
+     move "K.Kart Odemeler "            to det-20
+     move "Krediler        "            to det-21
+     move "Duzeltmeler (-) "            to det-22
+     move "Diger Odemeler  "            to det-23
+     move "Kur Farki (-)   "            to det-23-1
+     move "Kalan Bakiye    "            to det-24
+     move "GrupNo"                      to det-25
+     move "Provizyon"                   to det-26      
+
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6
+                 fil-7 fil-8 fil-88 fil-9 fil-10 fil-11
+                 fil-12 fil-13 fil-14 fil-15 fil-151
+                 fil-16 fil-17 fil-18 fil-19
+                 fil-20 fil-21 fil-22 fil-23 fil-24 fil-25 fil-26
+                 fil-18-1 fil-23-1
+
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+                 det-7 det-8 det-88 det-9 det-10 det-11
+                 det-12 det-13 det-14 det-15 det-151
+                 det-16 det-17 det-18 det-19
+                 det-20 det-21 det-22 det-23 det-24 det-25 det-26
+                 det-18-1 det-23-1
+     write dokumer-rec from detay
+**************************
+              open input depkod  konuk  cast
+              initialize fs-maincurt toplam
+              perform with test after until fs-maincurt = "10"
+                    read maincurt next no lock end move "10" to fs-maincurt
+                    not at end
+                        initialize dokumer-rec detay
+*                        if konuk-durumu not = "I" exit perform
+*                        end-if
+                        if maincurt-folio = 1005030 and isyeri-adres-tasi = "smelia17"
+                           exit perform cycle 
+                        end-if 
+                        if rapor-folio = "H" or
+                           rapor-folio = maincurt-fol-kodu 
+                           if rapor-acenta = spaces or
+                              rapor-acenta = maincurt-acenta
+
+                              move maincurt-folio to konuk-folio
+                              read konuk no lock invalid 
+                                 display message box konuk-folio " nolu folio bulunamadi" 
+                              end-read
+
+                              if konuk-fol-kodu not = "R" or konuk-git-tar <= filtre-tarih or  konuk-gel-tar >  filtre-tarih
+                                 initialize maincurt-buyuk  maincurt-kucuk maincurt-free   maincurt-bebek
+                                 else
+                                 move konuk-rez-no to cast-rez-no
+                                 move filtre-tarih  to cast-tarih
+                                 read cast no lock invalid continue
+                                    not invalid 
+                                    move cast-kisi to maincurt-kisi
+                                    move cast-oda-no to maincurt-ODANO
+                                end-read
+                              end-if
+                             if  rapor-firma = spaces or
+                              rapor-firma = konuk-firma
+                               if tumu > 1 then
+          
+                                  move "B" to kodlar02-tipi
+                                  move maincurt-odeme-tipi to kodlar02-kodu
+                                  read kodlar02 no lock invalid 
+                                      move spaces to kodlar02-adi
+                                  end-read
+                                  if ( ode-tipi = "D" or  ode-tipi = "F" or  ode-tipi = "O")   and tumu = 2 then
+                                     exit perform cycle
+                                  end-if
+                                  if ( ode-tipi not = "D" and ode-tipi not = "F" and ode-tipi not = "O") and tumu = 3 then
+                                    exit perform cycle
+                                  end-if
+                              end-if
+                          
+                              if konuk-grup-no not =  rapor-grup and
+                                 rapor-grup not = zeroes 
+                                    exit perform cycle 
+                              end-if 
+                                perform detay-ata
+                                if tut-knt = 0 or kalan > tut-knt
+                                  write dokumer-rec from detay
+                                end-if
+                           end-if
+                           end-if
+                        end-if
+                    end-read
+              end-perform
+              close depkod konuk  cast odalar
+
+              perform liste-toplam
+              close dokumer maincurt kodlar02 acenta exthrk romhrk
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              delete file dokumer hkonuk
+    end-evaluate.
+     .
+ detay-ata.
+     
+     initialize maincurt-paralar odalar-rec
+    
+    if maincurt-fol-kodu = "R" perform romhrk-bul thru romhrk-bul-exit
+                  else         perform exthrk-bul thru exthrk-bul-exit
+    end-if.
+
+    move maincurt-odano    to det-1 odalar-anah
+    read odalar no lock invalid 
+         continue
+    end-read
+    if odalar-uzun-no not = spaces 
+       move odalar-uzun-no to det-1
+    end-if                            
+
+    move maincurt-folio    to det-2
+    move maincurt-fol-kodu to det-3
+    move maincurt-adi      to det-4
+    move maincurt-soyadi   to det-5
+    move maincurt-buyuk    to z-2
+    move z-2             to det-6
+    move maincurt-kucuk    to z-2
+    move z-2             to det-7
+    move maincurt-free     to z-2
+    move z-2             to det-8
+    move maincurt-bebek    to z-2
+    move z-2             to det-88
+    move maincurt-acenta   to det-9 acenta-kodu.
+    read acenta no lock invalid move spaces to acenta-adi.
+    move acenta-adi      to det-10.
+
+    move maincurt-gel-gun  to gun-x
+    move maincurt-gel-ay   to ay-x
+    move maincurt-gel-yil  to yil-x
+    move tarih-x         to det-11
+
+    move maincurt-git-gun  to gun-x
+    move maincurt-git-ay   to ay-x
+    move maincurt-git-yil  to yil-x
+    move tarih-x         to det-12
+
+    move maincurt-pan-tipi         to det-13.
+    
+    move maincurt-dunden-devir     to z-1
+    move z-1                       to det-14.
+    
+    move maincurt-borc-oda         to z-1
+    move z-1                       to det-15. 
+    move maincurt-borc-oda-d       to z-1
+    move z-1                       to det-151.
+    move maincurt-borc-extra       to z-1
+    move z-1                       to det-16.
+  
+    move maincurt-borc-diger       to z-1
+    move z-1                       to det-18.
+
+    move maincurt-kur-arti         to z-1
+    move z-1                       to det-18-1.
+
+    move maincurt-alac-pesin       to z-1
+    move z-1                       to det-19.
+    move maincurt-alac-kredikart   to z-1
+    move z-1                       to det-20.
+    move maincurt-alac-kredi       to z-1
+    move z-1                       to det-21.
+   
+    move maincurt-alac-diger       to z-1
+    move z-1                       to det-23.    
+
+    move maincurt-kur-eksi         to z-1
+    move z-1                       to det-23-1.    
+
+
+    initialize kalan.
+    compute kalan = maincurt-dunden-devir   + 
+                    maincurt-borc-oda       + 
+                    maincurt-borc-extra     + 
+                    maincurt-borc-diger     +
+                    maincurt-kur-arti       - 
+                    maincurt-alac-pesin     -
+                    maincurt-alac-kredikart - 
+                    maincurt-alac-kredi     -
+                    maincurt-alac-diger     - 
+                    maincurt-kur-eksi
+
+
+    move kalan           to z-1           
+    move z-1             to det-24.
+    move " " to maincurt-grup-flag 
+    if maincurt-grup > 0 then 
+       move maincurt-grup   to det-25
+      
+    end-if.
+    if maincurt-onay-tutar > 0
+       move maincurt-onay-tutar  to z-1
+       move z-1                  to det-26
+    end-if 
+    if tut-knt = 0 or kalan > tut-knt
+      compute t-oda   = t-oda   + 1
+      compute t-pax   = t-pax   + maincurt-buyuk
+      compute t-chi   = t-chi   + maincurt-kucuk
+      compute t-fre   = t-fre   + maincurt-free
+      compute t-beb   = t-beb   + maincurt-bebek
+      add maincurt-dunden-devir   to t-dunden-devir
+      add maincurt-borc-oda       to t-borc-oda    
+      add maincurt-borc-oda-d     to t-borc-oda-d    
+      add maincurt-borc-extra     to t-borc-extra
+      add maincurt-borc-diger     to t-borc-diger
+
+      add maincurt-kur-arti       to t-kur-arti
+
+      add maincurt-alac-pesin     to t-alac-pesin
+      add maincurt-alac-kredikart to t-alac-kredikart
+      add maincurt-alac-kredi     to t-alac-kredi
+    
+      add maincurt-alac-diger     to t-alac-diger
+      
+      add maincurt-kur-eksi       to t-kur-eksi
+
+      compute t-kalan = t-kalan + kalan
+    end-if.
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6
+                 fil-7 fil-8 fil-88 fil-9 fil-10 fil-11
+                 fil-12 fil-13 fil-14 fil-15 fil-151
+                 fil-16 fil-17 fil-18 fil-19
+                 fil-20 fil-21 fil-22 fil-23 fil-24 fil-25 fil-26
+                 fil-18-1 fil-23-1.
+
+ liste-toplam.
+    initialize dokumer-rec detay
+    move "-"            to det-dokumer-20(5:1)
+    move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+                 det-7 det-8 det-88 det-9 det-10 det-11
+                 det-12 det-13 det-14 det-15 det-151
+                 det-16 det-17 det-18 det-19
+                 det-20 det-21 det-22 det-23 det-24 det-25 det-26
+                 det-18-1 det-23-1
+    write dokumer-rec from detay
+
+    initialize dokumer-rec detay
+    move "- Toplam -" to detay(06:10).
+    move t-oda     to z-3       
+    move z-3       to det-1
+    move t-pax     to z-3      
+    move z-3       to det-6
+    move t-chi     to z-3     
+    move z-3       to det-7
+    move t-fre     to z-3       
+    move z-3       to det-8
+    move t-beb     to z-3       
+    move z-3       to det-88
+    move t-dunden-devir    to z-1 
+    move z-1       to det-14
+    move t-borc-oda   to z-1 
+    move z-1       to det-15.
+    move t-borc-oda-d  to z-1 
+    move z-1       to det-151.
+    move t-borc-extra   to z-1 
+    move z-1       to det-16.
+    move t-borc-duzeltme   to z-1 
+    move z-1       to det-17.
+    move t-borc-diger   to z-1 
+    move z-1       to det-18.
+    move t-kur-arti   to z-1 
+    move z-1       to det-18-1.
+    move t-alac-pesin   to z-1 
+    move z-1       to det-19.
+    move t-alac-kredikart   to z-1 
+    move z-1       to det-20.
+    move t-alac-kredi   to z-1 
+    move z-1       to det-21.
+    move t-alac-duzeltme   to z-1 
+    move z-1       to det-22.
+    move t-alac-diger   to z-1 
+    move z-1       to det-23.
+    move t-kur-eksi   to z-1 
+    move z-1       to det-23-1.
+    move t-kalan   to z-1 
+    move z-1       to det-24.
+
+    move "A"          to det-dokumer-20(3:1)
+    move 481          to det-renk1
+    move "1"          to det-dokumer-20(10:1)
+    move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6
+                fil-7 fil-8 fil-88 fil-9 fil-10 fil-11
+                fil-12 fil-13 fil-14 fil-15 fil-151
+                fil-16 fil-17 fil-18 fil-19
+                 fil-20 fil-21 fil-22 fil-23 fil-24 fil-25 fil-26
+                 fil-18-1 fil-23-1
+    write dokumer-rec from detay.
+    initialize dokumer-rec detay
+    move "-"            to det-dokumer-20(5:1)
+    move all "-" to det-1 det-2 det-3 det-4 det-5 det-6
+                det-7 det-8 det-88 det-9 det-10 det-11
+                det-12 det-13 det-14 det-15 det-151
+                det-16 det-17 det-18 det-19
+                det-20 det-21 det-22 det-23 det-24 det-25 det-26
+                det-18-1 det-23-1
+    write dokumer-rec from detay.
+ romhrk-bul.
+ romhrk-start.
+
+    move maincurt-folio to romhrk-folio
+    move 00000000 to romhrk-tarih
+    
+    start romhrk key not < romhrk-anah1 invalid key
+          go romhrk-bul-exit. 
+
+ romhrk-oku.
+    
+     read romhrk next no lock end 
+              go romhrk-bul-exit. 
+
+    if romhrk-folio not = maincurt-folio go romhrk-bul-exit.
+   
+    if romhrk-tarih > filtre-tarih     go romhrk-bul-exit.
+    if romhrk-tarih < filtre-tarih 
+       evaluate romhrk-ba
+           when "B"
+                add romhrk-tl-tutar to maincurt-dunden-devir      
+           when "A"
+                subtract romhrk-tl-tutar from maincurt-dunden-devir    
+        end-evaluate
+     end-if.
+     
+     if romhrk-tarih = filtre-tarih 
+         move romhrk-depkod to depkod-anah
+         read depkod no lock invalid 
+              display message box "Departman Silinmis-", depkod-anah       
+         end-read
+         evaluate romhrk-ba 
+             when "B"
+                  if depkod-turu = 2 then 
+                     move romhrk-corr-depkod to depkod-anah
+
+                     read depkod no lock invalid 
+                          display message box "Departman Silinmis-", depkod-anah       
+                     end-read
+
+                     evaluate true
+                         when depkod-turu = 3  
+                              subtract romhrk-tl-tutar from maincurt-alac-pesin 
+                              initialize romhrk-tl-tutar
+
+                         when depkod-turu = 4
+                              subtract romhrk-tl-tutar from maincurt-alac-kredi 
+                              initialize romhrk-tl-tutar
+
+                         when depkod-turu = 5
+                              subtract romhrk-tl-tutar from maincurt-alac-kredikart 
+                              initialize romhrk-tl-tutar
+
+                         when other
+                              if depkod-adi(1:9) = "KUR FARKI" or 
+                                 depkod-adi(1:9) = "Kur Farki" or 
+                                 depkod-adi(1:5) = "KUR F" or 
+                                 depkod-adi(1:5) = "Kur F"  
+                                 subtract romhrk-tl-tutar from maincurt-kur-eksi     |firat ekleme 07/09/2020
+                              else
+                                 subtract romhrk-tl-tutar from maincurt-alac-diger   | maincurt-borc-digerden cýkarmasý gerekmiyor mu ?  
+                              end-if
+*                              subtract romhrk-tl-tutar from maincurt-alac-diger     |firat eski 07/09/2020
+                     end-evaluate
+
+                     initialize romhrk-tl-tutar
+
+                  else
+                     evaluate true
+                         when depkod-turu = 3  
+                              subtract romhrk-tl-tutar from maincurt-alac-pesin 
+                              initialize romhrk-tl-tutar
+
+                         when depkod-turu = 4
+                              subtract romhrk-tl-tutar from maincurt-alac-pesin 
+                              initialize romhrk-tl-tutar 
+
+                         when other 
+                           if depkod-tipi = 2 then
+                              add romhrk-tl-tutar to maincurt-borc-oda 
+                              initialize romhrk-tl-tutar
+                           else
+                              if depkod-tipi = 5
+                                 if depkod-adi(1:9) = "KUR FARKI" or 
+                                    depkod-adi(1:9) = "Kur Farki" or 
+                                    depkod-adi(1:5) = "KUR F" or 
+                                    depkod-adi(1:5) = "Kur F"  
+                                    add  romhrk-tl-tutar to maincurt-kur-arti     |firat ekleme 07/09/2020
+                                    initialize romhrk-tl-tutar
+                                 else
+                                    add  romhrk-tl-tutar to  maincurt-borc-diger     
+                                    initialize romhrk-tl-tutar
+                                 end-if
+*                                 add  romhrk-tl-tutar to  maincurt-borc-diger     |firat eski 07/09/2020
+*                                 initialize romhrk-tl-tutar
+                              else
+                                 add romhrk-tl-tutar  to maincurt-borc-extra 
+                                 initialize romhrk-tl-tutar
+                              end-if
+                           end-if
+                     end-evaluate
+                  end-if
+                    
+             when "A"
+                  if depkod-turu = 2 then 
+                     move romhrk-corr-depkod to depkod-anah
+                     read depkod no lock invalid 
+                          display message box "Departman Silinmis-", depkod-anah       
+                     end-read
+                     if depkod-tipi = 2 then
+                        subtract  romhrk-tl-tutar from maincurt-borc-oda 
+                        initialize romhrk-tl-tutar
+                     else
+                        if depkod-adi(1:9) = "KUR FARKI" or 
+                           depkod-adi(1:9) = "Kur Farki" or 
+                           depkod-adi(1:5) = "KUR F" or 
+                           depkod-adi(1:5) = "Kur F"  
+                           subtract romhrk-tl-tutar from maincurt-kur-arti     |firat ekleme 07/09/2020
+                           initialize romhrk-tl-tutar
+                        else
+                           subtract romhrk-tl-tutar from maincurt-borc-extra    
+                           initialize romhrk-tl-tutar
+                        end-if
+*                        subtract romhrk-tl-tutar from maincurt-borc-extra     |firat eksi 07/09/2020
+*                        initialize romhrk-tl-tutar
+                     end-if
+                       
+                  else
+                     evaluate true
+                         when depkod-turu = 3  
+                              add romhrk-tl-tutar to maincurt-alac-pesin 
+                              initialize romhrk-tl-tutar
+                  
+                         when depkod-turu = 4
+                              add romhrk-tl-tutar to maincurt-alac-kredi 
+                              initialize romhrk-tl-tutar
+
+                         when depkod-turu = 5
+                              add romhrk-tl-tutar to maincurt-alac-kredikart 
+                              initialize romhrk-tl-tutar
+
+                         when other
+                              if depkod-adi(1:9) = "KUR FARKI" or                   |firat ekleme 07/09/2020
+                                 depkod-adi(1:9) = "Kur Farki" or 
+                                 depkod-adi(1:5) = "KUR F" or 
+                                 depkod-adi(1:5) = "Kur F"  
+                                 add romhrk-tl-tutar      to    maincurt-kur-eksi     
+                              else
+                                 add romhrk-tl-tutar      to    maincurt-alac-diger     
+                              end-if
+*                             add romhrk-tl-tutar      to    maincurt-alac-diger     |firat eski 07/09/2020
+                     end-evaluate
+
+                     initialize romhrk-tl-tutar
+                  end-if
+         end-evaluate
+     end-if.
+
+    go romhrk-oku.
+ romhrk-bul-exit.
+     exit.
+ exthrk-bul.
+ exthrk-start.
+    move maincurt-folio to exthrk-folio
+    move 00000000 to exthrk-tarih
+    
+    start exthrk key not < exthrk-anah1 invalid key
+          go exthrk-bul-exit.
+
+ exthrk-oku.
+    read exthrk next no lock end 
+              go exthrk-bul-exit.
+
+    if exthrk-folio not = maincurt-folio 
+       go exthrk-bul-exit.
+       if exthrk-tarih > maincurt-GIT-TAR 
+          continue
+          |/////*******display message box  maincurt-folio   
+       end-if
+    if exthrk-tarih > filtre-tarih     go exthrk-bul-exit.
+    if exthrk-tarih < filtre-tarih 
+       evaluate exthrk-ba
+           when "B"
+                add exthrk-tl-tutar to maincurt-dunden-devir      
+           when "A"
+               subtract exthrk-tl-tutar from maincurt-dunden-devir    
+        end-evaluate
+     end-if.
+     
+     if exthrk-tarih = filtre-tarih 
+         move exthrk-depkod to depkod-anah
+         read depkod no lock invalid 
+                 display message box "Departman Silinmis-", depkod-anah       
+         end-read
+         evaluate exthrk-ba 
+              when "B"
+                  if depkod-turu = 2 then 
+                     move exthrk-corr-depkod to depkod-anah
+
+                     read depkod no lock invalid 
+                          display message box "Departman Silinmis-", depkod-anah       
+                     end-read
+
+                     evaluate true
+                         when depkod-turu = 3  
+                              subtract exthrk-tl-tutar from maincurt-alac-pesin 
+                              initialize exthrk-tl-tutar
+                  
+                         when depkod-turu = 4
+                              subtract exthrk-tl-tutar from maincurt-alac-kredi 
+                              initialize exthrk-tl-tutar
+
+                         when depkod-turu = 5
+                              subtract exthrk-tl-tutar from maincurt-alac-kredikart 
+                              initialize exthrk-tl-tutar
+
+                         when other
+                              subtract exthrk-tl-tutar from maincurt-alac-diger 
+                              initialize exthrk-tl-tutar
+                     end-evaluate
+
+                  else
+                     evaluate true
+                         when depkod-turu = 3  
+                              subtract exthrk-tl-tutar from maincurt-alac-pesin 
+                              initialize exthrk-tl-tutar
+
+                         when depkod-turu = 4
+                              subtract exthrk-tl-tutar from maincurt-alac-pesin 
+                              initialize exthrk-tl-tutar
+
+                         when other
+                              if depkod-tipi = 2 then
+                                 add exthrk-tl-tutar to maincurt-borc-oda 
+                                 initialize exthrk-tl-tutar
+
+                              else
+                                 if depkod-tipi = 5
+                                    if depkod-adi(1:9) = "KUR FARKI" or 
+                                       depkod-adi(1:9) = "Kur Farki" or 
+                                       depkod-adi(1:5) = "KUR F" or 
+                                       depkod-adi(1:5) = "Kur F"  
+                                       add exthrk-tl-tutar to maincurt-kur-arti     |firat ekleme 07/09/2020
+                                       initialize exthrk-tl-tutar
+                                    else
+                                       add exthrk-tl-tutar to  maincurt-borc-diger    
+                                       initialize exthrk-tl-tutar                 
+                                    end-if
+
+*                                    add exthrk-tl-tutar to  maincurt-borc-diger    |firat eski 07/09/2020
+*                                    initialize exthrk-tl-tutar
+
+                                 else
+                                    add exthrk-tl-tutar to  maincurt-borc-extra 
+                                    initialize exthrk-tl-tutar
+                                 end-if
+                              end-if
+                     end-evaluate
+                  end-if
+                    
+             when "A"
+                  if depkod-turu = 2 then 
+                     move exthrk-corr-depkod to depkod-anah
+
+                     read depkod no lock invalid 
+                          display message box "Departman Silinmis-", depkod-anah       
+                     end-read
+
+                     if depkod-tipi = 2 then
+                        subtract  exthrk-tl-tutar from maincurt-borc-oda 
+                        initialize exthrk-tl-tutar
+                     else
+                        subtract  exthrk-tl-tutar from maincurt-borc-extra 
+                        initialize exthrk-tl-tutar
+                     end-if
+                       
+                  else
+                     evaluate true
+                         when depkod-turu = 3  
+                              add exthrk-tl-tutar to maincurt-alac-pesin 
+                              initialize exthrk-tl-tutar
+                  
+                         when depkod-turu = 4
+                              add exthrk-tl-tutar to maincurt-alac-kredi 
+                              initialize exthrk-tl-tutar
+
+                         when depkod-turu = 5
+                              add exthrk-tl-tutar to maincurt-alac-kredikart 
+                              initialize exthrk-tl-tutar
+
+                         when other
+                              if depkod-adi(1:9) = "KUR FARKI" or                   |firat ekleme 07/09/2020
+                                 depkod-adi(1:9) = "Kur Farki" or 
+                                 depkod-adi(1:5) = "KUR F" or 
+                                 depkod-adi(1:5) = "Kur F"  
+                                 add exthrk-tl-tutar      to    maincurt-kur-eksi 
+                                 initialize exthrk-tl-tutar
+                              else
+                                 add exthrk-tl-tutar      to    maincurt-alac-diger 
+                                 initialize exthrk-tl-tutar
+                              end-if
+
+*                              add exthrk-tl-tutar      to    maincurt-alac-diger   |firat eski 07/09/2020
+*                              initialize exthrk-tl-tutar
+                     end-evaluate
+                     initialize exthrk-tl-tutar
+                  end-if
+         end-evaluate
+     end-if.
+
+    go exthrk-oku.
+ exthrk-bul-exit.
+    exit.
+*
+ acc-05-Aft-Procedure.
+    if rapor-acenta = spaces 
+       move "Tum acentalar ..." to acenta-adi
+       display lb-acenta-adi
+       exit paragraph
+    end-if.
+    open input acenta
+    move rapor-acenta  to acenta-kodu
+    read acenta no lock invalid
+         move "Tanimsiz ..." to acenta-adi
+    end-read
+    close acenta.
+    display lb-acenta-adi
+     
+     .
+ maincurt-dosya-yaz.
+        open i-o genelfis.
+        move 1 to genelfis-anahtar.
+    read genelfis no lock invalid 
+         move 1 to ekran-fis-1
+    end-read.
+  
+    add 1 to ekran-fis-1.
+    
+    move ekran-fis-1(2:) to maincurt-no.
+    rewrite genelfis-rec invalid 
+            write genelfis-rec invalid continue
+            end-write
+    end-rewrite.
+    close genelfis.
+    open output maincurt close maincurt open i-o maincurt with mass-update.
+    open input hkonuk konum kodlar02 odalar    
+    initialize hkonuk-anah     
+    start hkonuk key not < hkonuk-anah
+          invalid 
+            Display message box "Belirtilen Tarihte Konuk Yok"
+          not invalid
+            Perform until fs-hkonuk="10"
+                read hkonuk next 
+                   end move "10" to fs-hkonuk
+                   not end
+                    move hkonuk-oda-konumu   to rez-oda-konumu
+                    move hkonuk-fiyat-konumu to rez-fiyat-konumu
+                    if onkpara-referans-var = 1 then                        
+                        perform ref-filtre
+                       if  not ref-gecti then 
+                           exit perform cycle
+                       end-if
+                    end-if
+                   
+                     IF ( rapor-acenta = spaces or 
+                          rapor-acenta = hkonuk-acenta ) and 
+                        ( rapor-ref = 0 or rapor-ref = konum-ref)
+                        perform tek-kayit-yaz
+                     end-if
+                end-read
+            end-perform
+     end-start     
+     close hkonuk kodlar02 maincurt konum odalar.
+ tek-kayit-yaz.
+          initialize maincurt-rec
+          move hkonuk-folio      to   maincurt-folio.
+          move hkonuk-durumu     to   maincurt-durumu.
+          move hkonuk-fol-kodu   to   maincurt-fol-kodu.
+          move hkonuk-adi        to   maincurt-adi.
+          move hkonuk-soyadi     to   maincurt-soyadi.
+          move hkonuk-oda-konumu to   maincurt-oda-konumu.
+          move hkonuk-odano      to   maincurt-odano.
+          move hkonuk-kisi       to   maincurt-kisi.
+          move hkonuk-acenta     to   maincurt-acenta.
+          move hkonuk-odeme-tipi to   maincurt-odeme-tipi
+          move hkonuk-pan-tipi   to   maincurt-pan-tipi.
+          move hkonuk-gel-tar    to   maincurt-gel-tar.
+          move hkonuk-git-tar    to   maincurt-git-tar.
+          move hkonuk-kur-degeri to   maincurt-kur-degeri.
+          move hkonuk-grup-no       to maincurt-grup
+          move hkonuk-onay-tutar to maincurt-onay-tutar
+          if maincurt-grup > 0 then 
+            
+            if maincurt-fol-kodu not = "E" 
+                move "G" to maincurt-grup-flag 
+              else
+              move " " to maincurt-grup-flag 
+               initialize maincurt-grup
+            end-if
+            else
+             move " " to maincurt-grup-flag 
+         end-if.
+          if hkonuk-fol-kodu = "E" then 
+            move hkonuk-extra-rez-no to maincurt-rez-no
+            else
+            move hkonuk-rez-no to maincurt-rez-no
+          end-if
+          write maincurt-rec 
+                    invalid 
+                        display message box "Hata no : ma34455"
+          end-write.
+*
+ ref-bul.
+ 
+                MOVE hKONUK-ODA-KONUMU TO KONUM-ANAHTAR
+                READ KONUM NO LOCK INVALID
+                      DISPLAY MESSAGE BOX "kasa-KONUK-23644"
+                END-READ
+          .
+*
+ acc-05a-Aft-Procedure.
+    if rapor-firma = spaces 
+       move "Tum firmalar ..." to firma-adi
+       display lb-firma-adi
+       exit paragraph
+    end-if.
+    open input firma
+    move rapor-firma  to firma-kodu
+    read firma no lock invalid
+         move "Tanimsiz ..." to firma-adi
+    end-read
+    close firma.
+    display lb-firma-adi     
+     .
+*
+ grup-ara.
+    initialize gruplar-cagir
+    call "/asya/ytl/obj/otel/gruplara.asy" using gruplar-cagir filtre-tarih filtre-tarih
+         on exception perform callerr-proc
+         not on exception
+    cancel "/asya/ytl/obj/otel/gruplara.asy" 
+    end-call
+    move gruplar-cagir   to rapor-grup
+    display acc-05aa
+    perform gruplar-oku.
+*
+ gruplar-oku.        
+    if rapor-grup not = zeroes and spaces 
+     open input gruplar
+     initialize gruplar-rec
+     move rapor-grup  to gruplar-kodu
+     read gruplar no lock invalid 
+          move "    "      to gruplar-adi
+     end-read 
+          move gruplar-adi to gadi
+     close gruplar
+    else
+       move "Tum Gruplar" to gadi
+    end-if 
+    display lb-gadi
+    .
+ 

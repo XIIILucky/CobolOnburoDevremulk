@@ -1,0 +1,490 @@
+* depekgir.evt
+* depekgir.evt is generated from D:\asya\acugt.ytl\otel\depekgir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     call "c$narg" using link-var
+     open input genel
+     move 1 to genel-anahtar
+     read genel no lock invalid 
+         continue
+     end-read
+     close genel.
+     move tarih-tasi   to ilk-tar ucak-tar
+     call "c$narg" using link-var.
+*
+ Form1-Aft-Initdata.
+     open input kllnc 
+     initialize kllnc-rec 
+     move k-kodu-tasi to k-kodu
+     read kllnc no lock invalid
+          continue
+     end-read 
+     close kllnc
+         
+     if link-var > 0
+         if link-ekgir-rezno > 0
+            move link-ekgir-rezno  to ekran-rez-no
+            perform rez-oku
+            display acc-1a
+         end-if 
+     end-if 
+     move 018  to ekran-dep-no depkod-dep-kodu
+     display acc-1b
+     perform dep-oku
+
+     perform baslik-yukle
+     perform grid-yukle
+     perform doviz-yukle
+     move 4 to accept-control
+     move 3 to control-id.
+*
+ doviz-yukle.
+     modify cb-dovz,reset-list = 1
+                    mass-update = 1
+     initialize dovz
+     open input doviz
+     initialize doviz-rec
+     start doviz key not < doviz-kodu invalid
+            continue 
+     not invalid 
+     perform until fs-doviz = "10"
+     read doviz next no lock end move "10"  to fs-doviz
+     not at end 
+             initialize y-dov
+             move doviz-kodu   to y-dov-kod
+             move d-kisa-adi   to y-dov-adi
+             modify cb-dovz, ITEM-TO-ADD = y-dov  
+     end-read 
+     end-perform
+     end-start
+     close doviz 
+     modify cb-dovz,mass-update = 0
+     modify cb-dovz,value = y-dov.   
+*
+ baslik-yukle.
+     modify form1-gd-1,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "Sira"         to gd-1-col-0
+     move "Departman"    to gd-1-col-111
+     move "Rez No"       to gd-1-col-1
+     move "Rez Adi"      to gd-1-col-2
+     move "Gir-Cik Tarih"   to gd-1-col-3
+     move "Hiz Tar"      to gd-1-col-4
+     move "Tipi"         to gd-1-col-5
+     move "Tutar"        to gd-1-col-6
+     move "Doviz"        to gd-1-col-7
+     move "Staf"         to gd-1-col-8
+     move "Isl.Tarih"    to gd-1-col-9    
+     move "Aciklama"     to gd-1-col-10
+     move "Ucak Tarihi"  to gd-1-col-11
+     move "Zaman"        to gd-1-col-12
+     move "Ucus No"      to gd-1-col-13
+     modify form1-gd-1,record-to-add(form1-gd-1-record).
+*
+ grid-yukle.
+     open i-o depekhiz rez doviz kllnc depkod
+     initialize depekhiz-rec 
+     move 1               to kayit-adet
+     move ekran-rez-no    to depekhiz-rez
+     start depekhiz key not < depekhiz-anahtar invalid
+           continue 
+     not invalid 
+     perform with test after until fs-depekhiz = "10"
+     read depekhiz next no lock end move "10" to fs-depekhiz
+     not at end
+             if depekhiz-rez <> ekran-rez-no 
+                 exit perform 
+             end-if
+*             if depekhiz-islem-durumu = "S"
+*                exit perform cycle 
+*             end-if 
+             add 1 to kayit-adet
+             initialize form1-gd-1-record rez-rec
+             move depekhiz-sira      to zsir
+             move zsir               to gd-1-col-0
+             initialize depkod-rec
+             move depekhiz-depkod    to depkod-anah
+             read depkod no lock invalid 
+                continue 
+             end-read 
+                 move depkod-adi   to gd-1-col-111
+
+             move depekhiz-rez       to gd-1-col-1 rez-anah
+              read rez no lock invalid 
+                  move "Tanimsiz..." to rez-adi rez-soyadi
+             end-read 
+             if rez-durumu not = "I" 
+                  move rez-adi(1:10) to rez-adi(11:)
+                  move "Silinmis "   to rez-adi(1:10)
+             end-if
+             
+             string 
+                 rez-adi delimited by "        "
+                 " " rez-soyadi delimited by "       "
+             into gd-1-col-2
+
+             move rez-gir-yil   to eyil  
+             move rez-gir-ay    to eay 
+             move rez-gir-gun   to egun 
+             move etar          to gd-1-col-3(1:10) 
+            
+             move "-"           to gd-1-col-3(11:1)
+             move rez-cik-yil   to eyil  
+             move rez-cik-ay    to eay 
+             move rez-cik-gun   to egun 
+             move etar          to gd-1-col-3(12:10)
+             
+             move depekhiz-yil  to eyil  
+             move depekhiz-ay   to eay 
+             move depekhiz-gun  to egun 
+             move etar          to gd-1-col-4
+
+             evaluate depekhiz-tipi
+             when "0"
+                move "TRANSFER GELIS"      to gd-1-col-5
+             when "1"
+                move "TRANSFER GIDIS"      to gd-1-col-5
+             end-evaluate 
+
+             move depekhiz-tutar      to z-tutar 
+             move z-tutar             to gd-1-col-6
+
+             initialize doviz-rec  
+             move depekhiz-doviz      to doviz-kodu 
+             read doviz no lock invalid 
+                  move "Tanimsiz..."  to d-adi-1
+             end-read 
+             move d-adi-1             to gd-1-col-7
+           
+             move depekhiz-isl-yil    to eyil  
+             move depekhiz-isl-ay     to eay 
+             move depekhiz-isl-gun    to egun 
+             move etar                to gd-1-col-9
+     
+             move depekhiz-aciklama   to gd-1-col-10
+
+             initialize kllnc-rec 
+             move depekhiz-staf        to k-kodu
+             read kllnc no lock invalid 
+                  move "Tanimsiz..." to k-adi
+             end-read 
+
+             string k-adi  delimited by "  "
+             " "      delimited by size   
+             k-soyadi delimited by  "    "
+             into gd-1-col-8           
+
+
+              move depekhiz-ucak-gel-yil  to eyil
+              move depekhiz-ucak-gel-ay   to eay
+              move depekhiz-ucak-gel-gun  to egun
+              move etar                   to gd-1-col-11
+
+              move depekhiz-ucak-gel-zaman(1:2)  to gd-1-col-12(1:2)
+              move ":"        to gd-1-col-12(3:1)
+              move depekhiz-ucak-gel-zaman(3:2)  to gd-1-col-12(4:2)
+
+             
+             move depekhiz-ucus-no             to gd-1-col-13
+
+  
+             modify form1-gd-1,
+                    record-to-add(Form1-Gd-1-Record)  
+             modify form1-gd-1(kayit-adet,1),
+                    hidden-data = depekhiz-anahtar
+     end-read 
+     end-perform
+     end-start        
+     close depekhiz rez doviz kllnc depkod
+     modify form1-gd-1,mass-update = 0.
+*
+ user-control.
+     open input kllnc 
+     initialize kllnc-rec 
+     move k-kodu-tasi to k-kodu
+     read kllnc no lock invalid
+          continue
+     end-read 
+     close kllnc
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+        open input takvim
+        initialize takvim-rec
+        move ilk-tar       to takvim-anah
+        read takvim no lock invalid 
+             display message box "Hatali Tarih Girdiniz.."
+                             title "Uyari"
+                             icon 1
+                 close takvim
+                 exit paragraph 
+        end-read 
+        close takvim
+
+        open input takvim
+        initialize takvim-rec
+        move ucak-tar       to takvim-anah
+        read takvim no lock invalid 
+             display message box "Hatali Ucak Tarihi Girdiniz.."
+                             title "Uyari"
+                             icon 1
+                 close takvim
+                 exit paragraph 
+        end-read 
+        close takvim
+
+        if ekran-dep-no = zeroes 
+              display message box "Departman Kodu Giriniz..."
+                              title "Uyari"
+                              icon 1
+                 exit paragraph 
+        end-if 
+        if sir = zeroes 
+              display message box "Sira Numarasi Giriniz..."
+                              title "Uyari"
+                              icon 1
+                 exit paragraph 
+        end-if 
+        perform rez-oku
+
+        if ilk-tar > rez-cik-tar
+           display message box "Dikkat!!! Cikis Tarihinden Sonraya Bilgi Girilmektedir..."
+                           title "Uyari"
+                           icon 1
+        end-if 
+
+        if rez-cik-tar < tarih-tasi 
+           display message box "Rezervasyon C-out olmus isleme devam edilecek.." new-line
+                               "Emin Misiniz?"
+                           title "Uyari"
+                           icon 1
+                           type 2
+                           default 1
+                           returning return-code 
+           if return-code = 2
+             exit paragraph 
+           end-if 
+        end-if
+        display message box "Transfer Kaydedilecektir.." new-line
+                            "Emin Misiniz?"
+                        title "Uyari"
+                        icon 1
+                        type 2
+                        default 1
+                        returning return-code 
+        if return-code = 2
+          exit paragraph 
+        end-if 
+
+        perform form-kaydet
+        perform baslik-yukle
+        perform grid-yukle
+     when 3 
+        display message box "Transfer Silinecektir..." new-line
+                            "Emin Misiniz?"
+                        title "Uyari"
+                        icon 1
+                        type 2
+                        default 2
+                        returning return-code 
+        if return-code = 2
+          exit paragraph 
+        end-if 
+        perform form-sil
+        perform baslik-yukle
+        perform grid-yukle        
+     when 1002
+          initialize depkod-cagir
+          call "/asya/ytl/obj/otel/depara.asy" using depkod-cagir
+             on exception perform callerr-proc
+                not on exception
+                cancel "/asya/ytl/obj/otel/depara.asy" 
+           end-call
+              move depkod-dep-kodu to ekran-dep-no
+              display acc-1b
+           if depkod-dep-kodu > 0
+              perform dep-oku
+           end-if 
+           move 4  to accept-control
+           move 16 to control-id
+     when 1001
+      initialize rezara-cagir
+      move "I"   to rezara-cagri-tipi
+      call "/asya/ytl/obj/otel/rezara.asy" using rezara-cagir
+            on exception perform callerr-proc
+               not on exception
+               cancel "/asya/ytl/obj/otel/rezara.asy" 
+       end-call         
+  
+         initialize ekran-rez-no
+         move rezara-rez-no-cagir  to ekran-rez-no
+         display acc-1a 
+       if rezara-rez-no-cagir > 0
+          perform rez-oku
+       end-if   
+       perform baslik-yukle
+       perform grid-yukle
+     end-evaluate.
+*
+ form-sil.
+     open i-o depekhiz
+     initialize depekhiz-rec
+     move ekran-rez-no  to depekhiz-rez 
+     move ekran-dep-no  to depekhiz-depkod
+     move sir           to depekhiz-sira
+     read depekhiz no lock invalid 
+          continue 
+     end-read 
+     perform user-control
+     if k-ccenter-user = 1 and 
+        k-ccenter-supervisor = 0 and
+        depekhiz-kayit-staf <> spaces and 
+        depekhiz-kayit-staf <> k-kodu-tasi 
+        display message box "CRM & CCenter Supervisor yetkiniz yoktur.." new-line
+                            "Yalnizca kaydeden kullanici islem yapabilir.."
+                        title "Uyari"
+                        icon 1
+        close depekhiz
+        exit paragraph
+     end-if
+     delete depekhiz end-delete 
+     close depekhiz.
+*
+ rez-oku.
+     open input rez
+     initialize rez-rec
+     move ekran-rez-no to rez-no
+     read rez no lock invalid 
+          continue 
+     end-read 
+        initialize ad-soyad
+        string ad-soyad
+               rez-adi delimited by "              "
+               " " delimited by size
+               rez-soyadi delimited by "           "
+        into ad-soyad
+     close rez
+     display lb-rez-adi
+     move 4  to accept-control
+     move 11 to control-id.
+*
+ form-kaydet.            
+     open i-o depekhiz
+     initialize depekhiz-rec
+     move ekran-rez-no      to depekhiz-rez
+     move ekran-dep-no      to depekhiz-depkod
+     move sir               to depekhiz-sira
+     read depekhiz no lock invalid 
+          move k-kodu-tasi  to depekhiz-kayit-staf
+     end-read 
+
+     perform user-control
+     if k-ccenter-user = 1 and
+        k-ccenter-supervisor = 0
+        if depekhiz-kayit-staf <> k-kodu-tasi and spaces  
+           display message box "CRM & CCenter Supervisor yetkiniz yoktur.." new-line
+                               "Yalnizca kaydeden kullanici islem yapabilir.."
+                           title "Uyari"
+                           icon 1
+           close depekhiz
+           exit paragraph 
+        end-if 
+     end-if
+     move ilk-tar      to depekhiz-tarih
+     move hiz-tip(1:1) to depekhiz-tipi
+     move tut          to depekhiz-tutar
+     move dovz(1:2)    to depekhiz-doviz
+     move "I"          to depekhiz-durumu
+     move acik         to depekhiz-aciklama
+     move k-kodu-tasi  to depekhiz-staf
+     accept depekhiz-isl-tarih from century-date
+
+     move ucak-tar     to depekhiz-ucak-gel-tar
+     move ucak-saat    to depekhiz-ucak-gel-saat
+     move ucak-dakika  to depekhiz-ucak-gel-dakika
+     move ucus-no      to depekhiz-ucus-no
+     move lobby-st     to depekhiz-lbb-st
+     move lobby-dk     to depekhiz-lbb-dk
+     write depekhiz-rec invalid 
+           rewrite depekhiz-rec end-rewrite 
+     end-write 
+     close depekhiz.
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+         when msg-begin-entry
+              move event-action-fail to event-action 
+              open input depekhiz
+              initialize depekhiz-rec
+              inquire form1-gd-1(event-data-2,1),hidden-data = depekhiz-anahtar
+              read depekhiz no lock invalid
+                   initialize ekran-dep-no sir ilk-tar tut acik
+              end-read 
+              move depekhiz-depkod          to ekran-dep-no  depkod-dep-kodu
+              move depekhiz-sira            to sir
+              move depekhiz-tarih           to ilk-tar
+              move depekhiz-tipi            to hiz-tip
+              move depekhiz-doviz           to dovz
+              move depekhiz-tutar           to tut
+              move depekhiz-aciklama        to acik
+              move depekhiz-ucak-gel-tar    to ucak-tar     
+              move depekhiz-ucak-gel-saat   to ucak-saat   
+              move depekhiz-ucak-gel-dakika to ucak-dakika
+              move depekhiz-ucus-no         to ucus-no     
+              move depekhiz-lbb-st          to lobby-st
+              move depekhiz-lbb-dk          to lobby-dk
+              close depekhiz
+              display acc-1b acc-1c acc-1 acc-2 acc-3 acc-1d acc-1da cb-hiz-tip cb-dovz
+                      acc-1e acc-2a acc-3a  acc-2aa acc-1ea  acc-1eaa
+              perform dep-oku
+     end-evaluate.
+*
+ dep-oku.
+     open input depkod
+     initialize depkod-rec 
+     move depkod-dep-kodu   to depkod-anah
+     read depkod no lock invalid
+          continue 
+     end-read 
+         move depkod-adi to ekran-dep-adi 
+     close depkod
+     display lb-dep-adi.
+*
+ acc-1c-Aft-Procedure.
+     evaluate sir 
+     when 1
+        move 0 to hiz-tip
+        display cb-hiz-tip
+     when 2
+        move 1 to hiz-tip
+        display cb-hiz-tip
+     when other 
+     end-evaluate.
+*
+ acc-1a-Aft-Procedure.
+     perform rez-oku
+     if ad-soyad <> spaces 
+        move 4 to accept-control
+        move 16 to control-id
+     end-if
+     .
+
+ 

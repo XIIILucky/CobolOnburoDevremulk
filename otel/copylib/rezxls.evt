@@ -1,0 +1,823 @@
+* rezxls.evt
+* rezxls.evt is generated from D:\asya\acugt.ytl\otel\rezxls.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+
+     initialize deg
+     move 1 to enb-1
+     move 0 to enb-2.
+     move 1 to hesap-ilk-satir
+     call "c$narg" using link-var 
+     if link-var > 0
+        move link-gruplar-rec   to gruplar-rec 
+     end-if. 
+*
+ Form1-Aft-Initdata.
+     perform gd-reset.
+
+     open input kllnc.
+     move k-kodu-tasi     to k-kodu
+     read kllnc no lock invalid
+          display message box 
+                  "Gecersiz Kullanici kodu",
+                  icon mb_error_icon
+                  title "Hata",
+                  close kllnc
+                  perform destroy-window-proc
+                  goback
+     end-read. 
+     close kllnc.
+*
+ gd-reset.
+     modify form1-gd-1,
+            reset-grid = 1
+            mass-update = 1
+     initialize form1-gd-1-record
+     move "Rez Kodu   "   to gd-1-col-0
+     move "C-in Tarihi"   to gd-1-col-1
+     move "C-Out Tarihi"  to gd-1-col-2
+     move "Konum"         to gd-1-col-3
+     move "Adi"           to gd-1-col-4
+     move "Soyadi"        to gd-1-col-5
+     move "Tc Kimlik"     to gd-1-col-6
+     move "Dogum Tar."    to gd-1-col-7
+     move "Adres"         to gd-1-col-8
+     move "Uyruk"         to gd-1-col-9
+     move "Ana Adi"       to gd-1-col-10
+     move "Baba Adi"      to gd-1-col-11
+     move "Dogum Yeri"    to gd-1-col-12
+     move "N.Kay.il"      to gd-1-col-13 
+     move "Durum"         to gd-1-col-14
+     move "Asya Rez No"   to gd-1-col-15
+     move "Voucher"       to gd-1-col-16
+     move "Acenta"        to gd-1-col-17
+     move "S.Tarihi"      to gd-1-col-18
+
+     move "O.Say"         to gd-1-col-19
+     move "Yet."             to gd-1-col-20
+     move "Chd1."            to gd-1-col-21
+     move "Chd2."            to gd-1-col-22
+     move "Notlar"           to gd-1-col-23
+     modify form1-gd-1,
+            record-to-add(form1-gd-1-record)
+            mass-update = 0.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 1
+          perform xls-yer
+     when 2
+          open input rez
+          perform xls-ac
+          close rez
+     when 3
+          initialize kalan
+          compute kalan = bit-satir - bas-satir 
+          if kalan > 2500
+              display message box "Max.2500 Satir Alinabilir." new-line
+                                  "Lutfen Bitis Satirini Kisaltiniz."
+                              title "Uyari"
+                              icon 1
+              exit paragraph 
+          end-if 
+          display message box "Rezervasyonlar Olusturulacaktir." new-line
+                              "Eminmisiniz?"
+                          title "Uyari"
+                          icon 1
+                          type 2
+                          default 2
+                          returning return-code 
+          if return-code = 2
+             exit paragraph 
+          end-if 
+          perform xls-yaz
+     when 4 
+        perform tablo-kontrol
+     when 6
+        perform profil-olustur
+     end-evaluate.
+
+*
+ xls-ac.
+     if enb-1 <> 1
+        exit paragraph.
+
+     if xls-adres = spaces
+        exit paragraph.
+
+    inspect xls-adres replacing trailing spaces by low-values
+
+    create  application    of excel 
+            handle          in hexcelapp. 
+    modify  hexcelapp
+            @workbooks::@open(xls-adres)
+            giving hexcelwkb.
+    inquire hexcelapp,       
+            @worksheets::@item(1) in hexcelwks. 
+    modify hexcelapp, 
+            @visible = 0.
+
+    perform gd-reset.
+
+    perform takas-dosya-ac
+              
+    initialize durum
+    if csvden-al
+       perform read-from-csv
+    else
+       perform read-from-ole
+    end-if
+
+    close takas takas2
+
+    modify  hexcelwkb,
+            @close(0).
+*////@CLOSE(1) oldugu zaman kilitleme yapar dikkat
+    destroy hexcelwks. 
+    destroy hexcelwkb. 
+    modify  hexcelapp
+            workbooks::close().
+    modify  hexcelapp
+            @quit(). 
+    destroy hexcelapp.
+
+    move 0 to enb-1
+    move 1 to enb-2
+    display form1.
+
+*
+ xls-yer.
+     if enb-1 <> 1
+        exit paragraph.
+
+     initialize opensave-data opensave-status
+     string 
+     "Excel Calisma sayfasi (*.xls;*.xlsx;*.csv)|*.xls;*.xlsx;*.csv|" delimited by size
+               into opnsav-filters
+     move "xls"           to opnsav-default-ext
+     call "c$opensavebox" using opensave-open-box
+                                opensave-data
+                          giving opensave-status
+     end-call.
+     if opensave-status <> 1 
+        exit paragraph.
+
+     move opnsav-filename    to xls-adres.
+     display acc-1.
+     move 4 to accept-control
+     move 3 to control-id.
+*
+ xls-yaz.
+     if enb-2 <> 1
+        exit paragraph
+     end-if 
+ 
+     open i-o takas konum uyruk takas2 acenta
+     initialize takas-rec occ-sayi
+     start takas key not < takas-anah invalid 
+          continue
+     not invalid
+     perform with test after until fs-takas = "10"
+     read takas next no lock end move "10" to fs-takas
+     not at end
+            initialize link-toplu-xls-adlar
+            add 1                 to occ-sayi
+            initialize t
+            perform varying t
+                       from 1
+                       by 1
+                       until t > 9 
+                          move takas-adi(t)        to link-toplu-xls-grup-adi(occ-sayi,t)
+                          move takas-soyadi(t)     to link-toplu-xls-grup-soy(occ-sayi,t)
+                          move takas-tc-no(t)      to link-toplu-xls-tcno(occ-sayi,t)
+                          move takas-dog-tar(t)    to link-toplu-xls-dog-tar(occ-sayi,t)
+                          move takas-adres1(t)     to link-toplu-xls-adres1(occ-sayi,t)
+
+                          initialize uyruk-rec
+                          move takas-uyruk(t)      to uyruk-anah
+                          read uyruk no lock invalid 
+                                move "TC"          to uyruk-anah
+                          end-read 
+                          move uyruk-anah          to link-toplu-xls-uyruk(occ-sayi,t)
+
+                          move takas-ana-adi(t)    to link-toplu-xls-ana-adi(occ-sayi,t)
+                          move takas-baba-adi(t)   to link-toplu-xls-baba-adi(occ-sayi,t)
+                          move takas-dog-yeri(t)   to link-toplu-xls-dog-yeri(occ-sayi,t)
+                          move takas-nuf-kay-il(t) to link-toplu-xls-nuf-kay-il(occ-sayi,t)
+                          move takas-belge-tipi(t) to link-toplu-xls-belge-tipi(occ-sayi,t)
+                          move takas-belge-no(t)   to link-toplu-xls-belge-no(occ-sayi,t)
+                          move takas-voucher(t)    to link-toplu-xls-voucher(occ-sayi,t)
+            end-perform
+
+            initialize konum-rec buldum
+            start konum key not < konum-anahtar invalid 
+                 continue 
+            not invalid 
+            perform with test after until fs-konum = "10"
+            read konum next no lock end move "10" to fs-konum
+            not at end 
+                   if konum-adi <> takas-konum
+                       exit perform cycle 
+                   end-if 
+                   move 1               to buldum
+                   move konum-anahtar   to temp
+                   move "10"  to fs-konum
+                   exit perform
+            end-read 
+            end-perform
+            end-start
+ 
+           move 1          to link-share-xls-yok  |gecici olarak kaldýrýldý.daha sonra parametre koyulmasý gerekli '''ramazan''' 
+
+           if buldum = 1
+              move temp    to rez-oda-konumu rez-fiyat-konumu
+           else
+              move   1     to rez-oda-konumu rez-fiyat-konumu
+           end-if 
+                      
+            initialize acenta-rec buldum
+            start acenta key not < acenta-kodu invalid 
+                 continue 
+            not invalid 
+            perform with test after until fs-acenta = "10"
+            read acenta next no lock end move "10" to fs-acenta
+            not at end 
+                   if acenta-adi <> takas-acenta
+                       exit perform cycle 
+                   end-if 
+                   move 1               to buldum
+                   move acenta-kodu     to temp
+                   move "10"            to fs-acenta
+                   exit perform
+            end-read 
+            end-perform
+            end-start
+            if buldum = 1
+               move temp           to rez-acenta
+            end-if 
+
+           move takas-gir-tar      to rez-gir-tar
+           move takas-cik-tar      to rez-cik-tar
+           move takas-satis-tarihi to rez-al-tar rez-isl-tar
+           move takas-rez-kodu     to rez-no
+*           initialize gruplar-kodu
+*           move gruplar-rec        to link-rez-xls-grup-rec 
+           move takas-pax          to rez-buyuk
+           move takas-cocuk-1      to rez-kucuk
+           move takas-cocuk-2      to rez-free
+
+             move gruplar-firma       to rez-firma  
+             move gruplar-banka       to rez-banka  
+             move gruplar-doviz       to rez-doviz   
+             move gruplar-pan-tipi    to rez-pan-tipi  
+             move gruplar-anlasma     to rez-anlasma  
+             move gruplar-odeme       to rez-odeme-tipi  
+             move gruplar-pazar       to rez-pazar   
+             move gruplar-ulke        to rez-ulke  
+             move gruplar-kur         to rez-cin-kuru
+             
+           move rez-rec               to link-gelen-rec   
+           call "/asya/ytl/obj/otel/rez.asy" 
+                        using  link-rez-no link-gelen-rec link-gelen-sharenum link-rez-grup-rec 
+                               link-toplu-adlar link-degisim link-toplu-xls-adlar 
+                               link-rez-xls-grup-rec link-gelen-xls-rec link-gelen-xls-sharenum 
+                               link-xls-rez-no 
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                   cancel "/asya/ytl/obj/otel/rez.asy"
+          end-call 
+          initialize occ-sayi
+     end-read
+     end-perform
+     end-start
+     close takas konum uyruk takas2 acenta 
+
+     display message box 
+             "Aktarim tamamlanmistir ...",x"0a0d"            
+             title "Bilgi".
+     set exit-pushed to true.
+*
+read-from-ole.
+    move 1      to satir
+    perform varying i
+            from bas-satir
+            by 1
+            until i > bit-satir             
+               initialize form1-gd-1-record
+****************************************************************                
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,4) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move function numval(temp)        to z6
+               move z6                           to gd-1-col-0
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,1) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-1 
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,2) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-2
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,5) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-3 
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,1) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-1 
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,7) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-6 
+************************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,6) = hrange
+
+               inquire hrange          
+                       @value in temp
+
+               unstring temp delimited by " "
+               into gd-1-col-4 gd-1-col-5  
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,8) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-7 
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,9) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-8 
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,10) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-9 
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,11) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-10 
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,12) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-11 
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,13) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-12
+****************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,14) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-13 
+****************************************************************
+                                  
+
+*            initialize voucher-buldum 
+*            perform rez-bul-kontrol
+*            if voucher-buldum = 1
+*               move "OK"              to gd-1-col-14
+*            else
+*               move "  "              to gd-1-col-14
+*            end-if 
+*            move rez-no               to gd-1-col-15
+*/*************************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,17) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move function numval(temp)        to z6
+               move z6                          to gd-1-col-16  
+*************************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,18) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-17 
+*************************************************************************
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,19) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-18 
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,20) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move function numval(temp)        to z1
+               move z1                           to gd-1-col-19
+
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,21) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move function numval(temp)        to z1
+               move z1                           to gd-1-col-20  
+
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,22) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move function numval(temp)        to z1
+               move z1                           to gd-1-col-21  
+
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,23) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move function numval(temp)        to z1
+               move z1                           to gd-1-col-22  
+
+               initialize temp
+               inquire hexcelwks,
+                       @cells::@item(i,24) = hrange
+
+               inquire hrange          
+                       @value in temp
+               move temp        to gd-1-col-23
+               inspect form1-gd-1-record 
+                       replacing all 
+                       low-values by 
+                               spaces
+
+*/*************************************************************************
+            modify form1-gd-1,
+                   record-to-add(form1-gd-1-record)
+            add 1                     to satir 
+*/*************************************************************************            
+            modify form1-gd-1(satir,1),
+                    hidden-data gd-1-col-0
+
+            if voucher-buldum = 1
+               modify form1-gd-1(satir,15),
+                       cell-color 112
+            else
+               modify form1-gd-1(satir,15),
+                       cell-color 000               
+            end-if 
+
+            modify form1-st-1-handle,
+                   title = i
+            
+            perform takas-yaz
+    end-perform.
+*
+ read-from-csv.
+    initialize copy-status
+    accept to-dosya-zaman from time
+    accept to-dosya-tarih from century-date
+    accept fr-dosya-zaman from time
+    accept fr-dosya-tarih from century-date
+
+    inspect fr-dosya-1 replacing trailing spaces by low-values
+
+    modify hexcelwkb,
+           @SaveAs(by name @Filename fr-dosya-1,
+                   by name @FileFormat @xlCSV,
+                   by name @Password null,
+                   by name @WriteResPassword null,
+                   by name @ReadOnlyRecommended 0,
+                   by name @CreateBackup 0,
+                   by name @AccessMode @xlNoChange)
+
+    if is-remote 
+       call "c$copy" using fr-dosya to-dosya giving copy-status
+    else
+       call "c$copy" using fr-dosya-1 to-dosya giving copy-status
+    end-if.
+
+
+    if copy-status <> 0 
+       display message box
+            "Dosya sisteme alinamadi ...",x"0a0d",
+            x"0a0d",
+            "Kaynak : ",fr-dosya,x"0a0d",
+            "Hedef : ",to-dosya
+            icon mb_error_icon
+            title "Hata"
+       set hata to true
+       exit paragraph
+    end-if.
+
+    open input csv
+    initialize i ii
+    perform with test after until fs-csv = "10"
+    initialize csv-rec
+    read csv next no lock end exit perform
+    not at end
+         add 1 to ii
+
+         unstring csv-rec delimited by ";"
+         into occ(01) occ(02) occ(03) occ(04) occ(05) occ(06) occ(07) occ(08) occ(09) occ(10) 
+              occ(11) occ(12) occ(13) occ(14) occ(15) occ(16) occ(17) occ(18) occ(19) occ(20) 
+            
+            initialize form1-gd-1-record
+
+            inspect form1-gd-1-record replacing all low-values by spaces
+
+            modify form1-gd-1,
+                   record-to-add(form1-gd-1-record)
+
+            modify form1-st-1-handle,
+                   title = i
+
+    end-read
+    end-perform
+    close csv.
+    delete file csv.
+*
+ takas-dosya-ac.
+    open i-o genelfis
+    initialize genelfis-rec 
+    move 1         to genelfis-anahtar
+    read genelfis no lock invalid 
+         continue 
+    end-read 
+        add 1 to ekran-fis-1
+        rewrite genelfis-rec end-rewrite
+        move ekran-fis-1           to takas-no takas2-no
+    close genelfis
+    move k-kodu-tasi               to takas-k-kodu takas2-k-kodu
+    open output takas close takas open i-o takas 
+    open output takas2 close takas2 open i-o takas2 
+      .
+*
+ takas-yaz.
+    initialize takas-rec dizi  
+    move gd-1-col-0            to takas-rez-kodu takas2-rez-kodu
+    unstring gd-1-col-1 delimited by "." or " " or "-" or "/"
+    into takas-gir-gun takas-gir-ay takas-gir-yil
+    unstring gd-1-col-2 delimited by "." or " " or "-" or "/"
+    into takas-cik-gun takas-cik-ay takas-cik-yil
+
+*    move gd-1-col-1(1:2)       to takas-gir-gun
+*    move gd-1-col-1(4:2)       to takas-gir-ay
+*    move gd-1-col-1(7:4)       to takas-gir-yil
+*
+*    move gd-1-col-2(1:2)       to takas-cik-gun
+*    move gd-1-col-2(4:2)       to takas-cik-ay
+*    move gd-1-col-2(7:4)       to takas-cik-yil
+    read takas no lock invalid 
+        continue 
+    end-read 
+        add 1                      to takas-kisi
+        move takas-kisi            to dizi
+        move gd-1-col-4            to takas-adi(dizi)
+        move gd-1-col-5            to takas-soyadi(dizi)             
+        move gd-1-col-3            to takas-konum
+        move gd-1-col-6            to takas-tc-no(dizi) 
+       
+*        move gd-1-col-7(1:2)       to takas-dog-gun(dizi)
+*        move gd-1-col-7(4:2)       to takas-dog-ay(dizi)
+*        move gd-1-col-7(7:4)       to takas-dog-yil(dizi) 
+        unstring gd-1-col-7 delimited by "." or " " or "-" or "/"
+        into takas-dog-gun(dizi) takas-dog-ay(dizi) takas-dog-yil(dizi) 
+        move takas-dog-tar(dizi)   to takas2-dog-tar
+        move gd-1-col-8            to takas-adres1(dizi)
+        move gd-1-col-9            to takas-uyruk(dizi) 
+        move gd-1-col-10           to takas-ana-adi(dizi)
+        move gd-1-col-11           to takas-baba-adi(dizi)
+        move gd-1-col-12           to takas-dog-yeri(dizi)
+        move gd-1-col-13           to takas-nuf-kay-il(dizi)
+        move "N"                   to takas-belge-tipi(dizi)
+        move gd-1-col-6            to takas-belge-no(dizi)
+        move gd-1-col-16           to takas-voucher(dizi) 
+
+        move gd-1-col-17           to takas-acenta 
+        unstring gd-1-col-18 delimited by "." or " " or "-" or "/"
+        into takas-satis-gun takas-satis-ay takas-satis-yil 
+
+        move gd-1-col-19           to takas-oda-sayisi 
+        move function numval(gd-1-col-20)           to takas-pax 
+        move function numval(gd-1-col-21)           to takas-cocuk-1
+        move function numval(gd-1-col-22)           to takas-cocuk-2
+        move gd-1-col-23           to takas-not
+         
+    write takas-rec invalid 
+        rewrite takas-rec end-rewrite 
+    end-write.
+*
+ Form1-Gd-1-Ev-Other.
+    evaluate event-type
+    when msg-begin-entry
+    when msg-finish-entry
+         move event-action-fail to event-action
+    end-evaluate.
+*
+ tablo-kontrol.
+    open input takvim
+    inquire form1-gd-1,last-row in son-satir
+    perform varying p
+             from 2
+             by   1
+             until p > son-satir
+              inquire form1-gd-1(p),
+                      record-data form1-gd-1-record
+
+              initialize takvim-rec
+              move gd-1-col-1(1:2)       to takvim-gun
+              move gd-1-col-1(4:2)       to takvim-ay
+              move gd-1-col-1(7:4)       to takvim-yil
+              read takvim no lock invalid 
+                   modify form1-gd-1(p,2),cell-color = 176
+              end-read 
+
+              initialize takvim-rec
+              move gd-1-col-2(1:2)       to takvim-gun
+              move gd-1-col-2(4:2)       to takvim-ay
+              move gd-1-col-2(7:4)       to takvim-yil
+              read takvim no lock invalid 
+                   modify form1-gd-1(p,3),cell-color = 176
+              end-read 
+
+    end-perform
+    close takvim.
+*
+ rez-bul-kontrol.
+    initialize rez-rec 
+    move gd-1-col-0            to rez-voucher
+    move "I"                   to rez-durumu
+    start rez key not < rez-vouc invalid 
+         continue 
+    not invalid 
+    perform with test after until fs-rez = "10"
+    read rez next no lock end move "10"  to fs-rez
+    not at end 
+           if rez-durumu <> "I"
+               exit perform 
+           end-if 
+           if rez-voucher <> gd-1-col-0
+               exit perform 
+           end-if
+           if gd-1-col-1(1:2) <> rez-gir-gun
+              exit perform cycle 
+           end-if 
+           if gd-1-col-1(4:2) <> rez-gir-ay
+              exit perform cycle 
+           end-if 
+           if gd-1-col-1(7:4) <> rez-gir-yil
+              exit perform cycle 
+           end-if 
+
+           if gd-1-col-2(1:2)  <> rez-cik-gun
+              exit perform cycle 
+           end-if 
+           if gd-1-col-2(4:2)  <> rez-cik-ay
+              exit perform cycle 
+           end-if 
+           if gd-1-col-2(7:4)  <> rez-cik-yil
+              exit perform cycle 
+           end-if 
+           
+           move 1        to voucher-buldum
+           move "10"     to fs-rez
+           exit perform 
+    end-read 
+    end-perform
+    end-start
+    .
+*
+ profil-olustur.
+     if enb-2 <> 1
+        exit paragraph
+     end-if 
+ 
+     open input takas  uyruk takas2
+     initialize takas-rec occ-sayi
+     start takas key not < takas-anah invalid 
+          continue
+     not invalid
+     perform with test after until fs-takas = "10"
+     read takas next no lock end move "10" to fs-takas
+     not at end
+            initialize mis-cagir mis-toplu-cagir
+            initialize t
+            perform varying t
+                       from 1
+                       by 1
+                       until t > 9 
+                          if takas-adi(t) = spaces 
+                              exit perform cycle 
+                          end-if 
+                          move takas-adi(t)        to mis-toplu-adi
+                          move takas-soyadi(t)     to mis-toplu-soyadi
+                          move takas-tc-no(t)      to mis-toplu-tc-no
+                          move takas-dog-tar(t)    to mis-toplu-dog-tar
+                          move takas-adres1(t)     to mis-toplu-adres
+
+                          initialize uyruk-rec
+                          move takas-uyruk(t)      to uyruk-anah
+                          read uyruk no lock invalid 
+                                move "TC"          to uyruk-anah
+                          end-read 
+                          move uyruk-anah          to mis-toplu-uyruk
+
+                          move takas-ana-adi(t)    to mis-toplu-ana-adi
+                          move takas-baba-adi(t)   to mis-toplu-baba-adi 
+                          move takas-dog-yeri(t)   to mis-toplu-dogum-yeri
+                          move takas-nuf-kay-il(t) to mis-toplu-kayitli-il 
+                          move takas-belge-tipi(t) to mis-toplu-belge-tipi
+*                          move takas-belge-no(t)   to link-toplu-xls-belge-no
+**                          move takas-voucher(t)    to link-toplu-xls-voucher(t)
+              
+                           call "/asya/ytl/obj/otel/musteri.asy" 
+                                        using  mis-cagir mis-toplu-cagir
+                                        on exception 
+                                        perform callerr-proc
+                                        exit paragraph
+                                        not on exception 
+                                   cancel "/asya/ytl/obj/otel/musteri.asy"
+                          end-call 
+
+            end-perform
+           
+     end-read
+     end-perform
+     end-start
+     close takas uyruk takas2  
+
+     display message box 
+             "Aktarim tamamlanmistir ...",x"0a0d"            
+             title "Bilgi".
+
+ 

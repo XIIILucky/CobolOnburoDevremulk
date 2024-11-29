@@ -1,0 +1,149 @@
+* dovcevir.evt
+* dovcevir.evt is generated from D:\asya\acugt.ytl\otel\dovcevir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+     .
+*
+ Form1-Bef-Initdata.
+    move tarih-tasi to tarih.
+    move "D" to dov-tip.
+    display acc-01 acc-02 acc-03 com-01.
+     .
+*
+ Form1-Gd-1-Bef-Procedure.
+    open input banka doviz kur.
+
+    initialize kur-rec.
+    move tarih   to kur-tarih.
+    move bnk-kod to kur-banka.
+    move dov-kod to kur-doviz.
+    read kur no lock invalid 
+       display message box "Kurlar Girilmemis...."
+       close banka doviz kur exit paragraph.
+    evaluate dov-tip 
+      when "D" move doviz-alis    to sakla-1
+      when "E" move efektif-alis  to sakla-1
+    end-evaluate.
+    compute sakla-1 = sakla-1 * top-tut
+ 
+    modify form1-gd-1, reset-grid  = 1 mass-update = 1.
+    move "Doviz"       to gd-1-col-1
+    move "Doviz Adi"   to gd-1-col-2
+    move "Tl. Tutar"   to gd-1-col-3
+    modify form1-gd-1,record-to-add(form1-gd-1-record)
+    move 1 to kay-say
+ 
+    initialize doviz-rec
+    start doviz key not < doviz-kodu invalid continue
+      not invalid
+      perform with test after until fs-doviz = "10"
+        read doviz next no lock end move "10" to fs-doviz
+          not end
+
+          if doviz-kodu not = dov-kod
+            initialize kur-rec tl-tut dv-tut
+            move tarih      to kur-tarih
+            move bnk-krs    to kur-banka
+            move doviz-kodu to kur-doviz
+            read kur no lock invalid move 0 to tl-tut dv-tut
+              not invalid
+                evaluate krs-tip 
+                  when "D" move doviz-alis   to sakla-2
+                  when "E" move efektif-alis to sakla-2
+                end-evaluate
+                compute tl-tut = sakla-1 / sakla-2
+
+                initialize form1-gd-1-record          
+                move d-kisa-adi  to gd-1-col-1
+                move d-adi-1     to gd-1-col-2
+                move tl-tut      to z-1
+                move z-1         to gd-1-col-3
+                add 1 to kay-say
+                modify form1-gd-1,record-to-add(form1-gd-1-record)
+            end-read
+          end-if
+        end-read
+      end-perform
+    end-start.
+    modify form1-gd-1, mass-update = 0.
+    close banka doviz kur.
+     .
+*
+ Form1-Gd-1-Ev-Other.
+    evaluate event-type 
+         when msg-begin-entry
+           move event-action-fail to event-action,
+    end-evaluate.     
+     .
+*
+ Form1-Ex-Other.
+     evaluate key-status
+       when 1 perform yardimlar
+     end-evaluate
+     .
+*
+ yardimlar.
+     evaluate control-id
+       when 8  perform banka1-ara
+       when 24 perform banka2-ara
+       when 10 perform doviz-ara
+     end-evaluate
+     .
+*
+ banka-ara.
+    call "/asya/ytl/obj/otel/bankaara.asy"
+      using banka-cagir
+      on exception
+         perform callerr-proc
+      not on exception
+         cancel "/asya/ytl/obj/otel/bankaara.asy" 
+    end-call
+    .
+*
+ banka1-ara.
+     perform banka-ara
+     move banka-cagir to bnk-kod
+     display acc-04
+     .
+*
+ banka2-ara.
+     perform banka-ara
+     move banka-cagir to bnk-krs
+     display acc-06
+     .
+*
+ doviz-ara.
+    call "/asya/ytl/obj/otel/dovizara.asy"
+      using dov-kod
+      on exception
+         perform callerr-proc
+      not on exception
+         cancel "/asya/ytl/obj/otel/dovizara.asy" 
+    end-call
+    display acc-05
+     .
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+
+ 

@@ -1,0 +1,4818 @@
+* webcin.evt
+* webcin.evt is generated from D:\asya\acugt.ytl\otel\webcin.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Exception-Procedure
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     move 1 to share-en
+      perform icyetki-kontrol
+     call "c$narg" using link-var.
+     perform adresleri-tasi.
+*    move tus-yetkileri   to tus-kodlari.
+     open input genel 
+     open i-o genel2
+     move 1 to genel-anahtar
+     read genel no lock invalid 
+          continue
+     end-read
+     move 1 to genel2-anah
+     read genel2 no lock invalid 
+         continue
+     end-read
+     close genel genel2.
+      open i-o odalar2 
+      if genel-uzun-oda-no-kullanilsin = 1 
+         move 1 to vis-uzun    move 0 to vis-kisa 
+                       else
+         move 1 to vis-kisa    move 0 to vis-uzun
+     end-if
+
+     move muha-sirketi to hesap-dosya-adres.
+     if genel-fiks-yok = 1 then 
+       move 0 to vis-fiy-acik
+       else
+       move 1 to vis-fiy-acik
+     end-if
+     perform  acuserve-adres-aktar.
+     initialize xkonuk-rec konuk-rec rez-rec islkilit-acik-kapali
+     open  i-o rez konuk ozluk ozluk2.
+     initialize gec-gecme.
+     if k-kodu-tasi = "ASYA" or "X   " then
+       move 1 to asyami
+     end-if
+     open input kllnc
+     move k-kodu-tasi to k-kodu
+     read kllnc no lock invalid stop " "
+     end-read
+      move  k-muh-sup to k1-muh-sup
+     move  k-fiy-sup  to k1-fiy-sup
+     close kllnc
+     if link-var = 4 and link-fol-no = 99999977
+         move link-rezno to xkonuk-rez-no
+         move link-odano to xkonuk-odano
+         perform rez-oku
+         perform yanrez-oku
+         if xkonuk-vip = spaces 
+            move "N" to xkonuk-vip
+         end-if
+         perform folio-numarasi-al
+         if xkonuk-folio > 0
+            move 1 to cin-tipi
+            move 2 to key-status
+            perform exception-procedure
+            goback
+         end-if 
+     end-if. 
+* 
+ Form1-Aft-Initdata.
+
+     .    
+*
+ rez-oku.
+     move xkonuk-rez-no to rez-no
+     read rez no lock invalid 
+          initialize rez-rec xrez-rec 
+              move 1 to gec-gecme
+              exit paragraph           
+              move cin-tipi     to cin-tipi-combo-value
+          not invalid 
+              if rez-gir-tar not = tarih-tasi  
+                 initialize mesaj-degiskenler
+                 move " [ Bugun Gelmesi Beklenmiyor ] " to mmesaj-title
+                 move "Giris gunu uymuyor    " to mmesaj-1
+                 move "Rezervasyon giris tarihini degistiriniz...." to mmesaj-2
+                 move 1           to mmesaj-type
+                 move 3           to mmesaj-icon
+                 move 1           to mmesaj-default
+                 perform mmesaj-ver
+                 move 1 to gec-gecme
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+                 exit paragraph     
+              end-if
+              if rez-durumu not = "I"
+                 initialize mesaj-degiskenler
+                 move " [ Silinmis Rezervasyon ] " to mmesaj-title
+                 move "Silinmis Rezervasyon Check-In Yapilamaz    " to mmesaj-1
+                 move "Rezervasyon Nosunu degistiriniz...." to mmesaj-2
+                 move 1           to mmesaj-type
+                 move 3           to mmesaj-icon
+                 move 1           to mmesaj-default
+                 perform mmesaj-ver
+                 move 1 to gec-gecme
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+                 exit paragraph     
+              end-if
+               if REZ-K-G-B not = "K"
+                 initialize mesaj-degiskenler
+                 move " [ Not Konfirme Rezervasyon ] " to mmesaj-title
+                 move "Konfirme olmayan Rezervasyon Check-In Yapilamaz    " to mmesaj-1
+                 move "Rezervasyonu Konfirme ediniz......" to mmesaj-2
+                 move 1           to mmesaj-type
+                 move 3           to mmesaj-icon
+                 move 1           to mmesaj-default
+                 perform mmesaj-ver
+                 move 1 to gec-gecme
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+                 exit paragraph     
+              end-if
+              if rez-c-in = "E"
+                 initialize mesaj-degiskenler
+                 move " [ Check-In Yapilmis ] " to mmesaj-title
+                 move "Secmis Oldugunuz Rezervasyon Check-In Yapilmis" to mmesaj-1
+                 move "Rezervasyon Nosunu degistiriniz...." to mmesaj-2
+                 move 1           to mmesaj-type
+                 move 3           to mmesaj-icon
+                 move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+                 perform mmesaj-ver
+                 move 1 to gec-gecme
+                 exit paragraph
+              end-if
+              move rez-rec to xrez-rec
+              move rez-oda-konumu to eski-oda-konum
+     end-read.
+     move  REZ-OZEL-DURUM-CAR   to  yREZ-OZEL-DURUM-CAR 
+     move  REZ-OZEL-DURUM       to  yREZ-OZEL-DURUM     
+     move  REZ-ozel-tip         to  yREZ-ozel-tip  
+     move rez-git-sirket to  yrez-git-sirket
+     move rez-gel-sirket to  yrez-gel-sirket
+     perform rez-to-konuk thru rez-to-konuk-exit
+     move xkonuk-odano  to ydk-odano
+     perform fiyat-hesapla thru fiyat-hesapla-exit. 
+     perform kur-bul thru kur-bul-exit
+       if gecmez 
+          exit paragraph
+       end-if.
+ 
+      
+     
+             initialize gec-gecme.
+*
+ fiyat-hesapla. 
+       move 0 to kur-bulundu
+        if cinpara-kur-duzelt  = "E" and xkonuk-kur-degeri not = 0 
+           move xkonuk-kur-degeri  to doviz-alis
+             move 1 to kur-bulundu
+        end-if
+         if kur-bulundu = 0 then  
+              if rez-grup-no > 0 then
+                open input gruplar kur  
+                move xkonuk-grup-no to gruplar-kodu
+                read gruplar no lock invalid continue
+                not invalid 
+                if gruplar-kur > 0 and 
+                   gruplar-doviz = xkonuk-doviz then 
+                     move gruplar-kur to doviz-alis
+                     move 1 to kur-bulundu
+
+                else
+                    if gruplar-sabit-tarih-kur = 1
+                       if gruplar-sabit-kur-tarih <= xkonuk-gel-tar and 
+                          gruplar-doviz = xkonuk-doviz
+                          initialize kur-rec 
+                          move gruplar-sabit-kur-tarih to kur-tarih
+                          move gruplar-banka           to kur-banka
+                          move gruplar-doviz           to kur-doviz
+                          read kur no lock invalid 
+                               continue 
+                          not invalid 
+                               move 1 to kur-bulundu
+                          end-read 
+                       end-if 
+                    else 
+                          initialize kur-rec 
+                          move xkonuk-gel-tar to kur-tarih
+                          move xkonuk-banka           to kur-banka
+                          move xkonuk-doviz           to kur-doviz
+                          read kur no lock invalid 
+                               continue 
+                          not invalid 
+                               move 1 to kur-bulundu
+                          end-read 
+                    end-if 
+                end-if
+                end-read
+                close gruplar kur 
+              end-if
+      end-if
+
+       if kur-bulundu = 0 then  
+        if rez-cin-kuru > 0 and rez-cin-kuru < 100 and xkonuk-kur-degeri = 0 then
+          move rez-cin-kuru to doviz-alis
+            move 1 to kur-bulundu
+         end-if
+       end-if
+
+
+       if kur-bulundu = 0 then 
+         open input kur
+         move xkonuk-gel-yil      to kur-yil
+         move xkonuk-gel-ay       to kur-ay
+         move xkonuk-gel-gun      to kur-gun
+         if xkonuk-gec-giris = 1 then
+           open input takvim
+           move xkonuk-gel-tar to takvim-anah
+           start takvim key = takvim-anah
+             invalid   continue
+             not invalid
+                read takvim previous no lock  end continue end-read
+                read takvim previous no lock  end continue end-read
+                move takvim-anah to kur-tarih
+            end-start
+            close takvim
+         end-if
+
+         move xkonuk-banka        to kur-banka 
+         move xkonuk-doviz        to kur-doviz 
+         if xkonuk-kur-aygun = "A" then
+            move 01 to kur-gun 
+         end-if
+         
+         Read Kur no lock invalid 
+             close kur 
+             initialize mesaj-degiskenler
+             move " [ Kurlar Hatali ] " to mmesaj-title
+             move "Istenilen Tarihte Kur Kaydi Yok    " to mmesaj-1
+             move "Banka:    Doviz:    Tar:  /  /     " to mmesaj-2
+             move kur-banka        to mmesaj-2(07:02)
+             move kur-doviz        to mmesaj-2(17:02) 
+             move kur-gun          to mmesaj-2(25:02) 
+             move kur-ay           to mmesaj-2(28:02) 
+             move kur-yil          to mmesaj-2(31:04) 
+             move 1           to mmesaj-type
+             move 3           to mmesaj-icon
+             move 1           to mmesaj-default
+             perform mmesaj-ver
+             move 1 to gec-gecme
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata           
+             exit paragraph
+           not invalid continue
+         end-read
+
+        if  doviz-alis = 0       
+            close kur 
+             initialize mesaj-degiskenler
+             move " [ Kurlar Hatali ] " to mmesaj-title
+             move "Istenilen Tarihte Kur Kaydi Yok    " to mmesaj-1
+             move "Banka:    Doviz:    Tar:  /  /     " to mmesaj-2
+             move kur-banka        to mmesaj-2(07:02)
+             move kur-doviz        to mmesaj-2(17:02) 
+             move kur-gun          to mmesaj-2(25:02) 
+             move kur-ay           to mmesaj-2(28:02) 
+             move kur-yil          to mmesaj-2(31:04) 
+             move 1           to mmesaj-type
+             move 3           to mmesaj-icon
+             move 1           to mmesaj-default
+             perform mmesaj-ver
+             move 1 to gec-gecme
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+             exit paragraph
+        end-if
+      
+        close kur 
+*******>Konuk Kartindaki kuru almasi icin konuldu 
+**      if cinpara-peryot-kuru = "R" and xkonuk-kur-degeri not = 0 
+       
+        end-if .
+        
+*******>Konuk Kartindaki kuru almasi icin konuldu 
+********if xkonuk-kur-degeri = 0
+        
+            move doviz-alis          to xkonuk-kur-degeri
+********end-if 
+        
+*******>Kuruslu Rakam Ciktiginda Dogru Dovizi Bulmasi Icin Konuldu
+        initialize tl-toplam-kuruslu.
+        compute tl-toplam-kuruslu rounded = rez-ucreti * doviz-alis. 
+*        if tl-toplam-kuruslu(13:2) not = 00 
+*           compute tl-toplam-kuruslu = tl-toplam-kuruslu + 1
+*        end-if.
+        move tl-toplam-kuruslu to tl-toplam. 
+
+*        compute tl-toplam   = rez-ucreti * doviz-alis. 
+            initialize tl-oda   tl-kahvalti tl-ogle tl-aksam tl-icecek 
+                                tl-extra    tl-extra-bed 
+                       dv-oda   dv-kahvalti dv-ogle dv-aksam dv-icecek 
+                                dv-extra    dv-extra-bed. 
+            if tl-toplam = 0 
+               go fiyat-hesapla-exit
+            end-if. 
+
+        move rez-ucreti to xkonuk-dv-degeri
+        if cinpara-breakdown = "H" 
+           initialize xkonuk-kahvalti-tutar xkonuk-ogle-tutar
+                      xkonuk-aksam-tutar    xkonuk-icecek-tutar
+                      xkonuk-extra-tutar    xkonuk-extbed-tutar
+           move tl-toplam to xkonuk-oda-tutar 
+           move dv-toplam to dv-oda 
+           if cinpara-dag-komisyondan = "E"
+              perform komisyon-dagit
+              perform xkonuk-ata
+           end-if
+           go fiyat-hesapla-exit 
+        end-if.
+           open input kodlar02. 
+           move "A"                to kodlar02-tipi. 
+           move xkonuk-pan-tipi    to kodlar02-kodu. 
+       read kodlar02 no lock invalid 
+            close kodlar02 
+             initialize mesaj-degiskenler
+             move " [ Pansiyon Kodu Hatali ] " to mmesaj-title
+             MOVE "Istenilen Pansiyon Tipi Tanimsiz   " to mmesaj-1 
+             MOVE "Pansiyon Kodu..:                   " to mmesaj-2
+             move kodlar02-kodu    to mmesaj-2(20:02) 
+             move 1           to mmesaj-type
+             move 3           to mmesaj-icon
+             move 1           to mmesaj-default
+             perform mmesaj-ver
+             move 1 to gec-gecme
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+             exit paragraph
+           not invalid continue
+       end-read.
+       close kodlar02. 
+
+       open input dagilim. 
+       move xkonuk-doviz to dagilim-anahtar. 
+       read dagilim  no lock invalid 
+            close dagilim  
+             initialize mesaj-degiskenler
+             move " [ Breakdown Hatali ] " to mmesaj-title
+             move "Istenilen Doviz Kodunda Breakd.YOK " to mmesaj-1
+             move "Doviz... Kodu..:                   " to mmesaj-2 
+             move dagilim-anahtar    to mmesaj-2(20:02) 
+             move 1           to mmesaj-type
+             move 3           to mmesaj-icon
+             move 1           to mmesaj-default
+             perform mmesaj-ver
+             move 1 to gec-gecme
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+             exit paragraph
+           not invalid continue
+       end-read.
+       close dagilim. 
+
+    if pan-kahvalti = "X" 
+       compute tl-kahvalti rounded = ((( xkonuk-buyuk * dagilim-kahvalti ) + 
+                             ( xkonuk-kucuk * dagilim-kahvalti / 2 )) 
+                             *  doviz-alis ) 
+       compute dv-kahvalti rounded = (( xkonuk-buyuk * dagilim-kahvalti ) + 
+                             ( xkonuk-kucuk * dagilim-kahvalti / 2 )). 
+*/  -> Kahvalti Kontrol 
+    initialize tl-kontrol dv-kontrol. 
+    compute tl-kontrol = tl-kontrol + tl-kahvalti. 
+    compute dv-kontrol = dv-kontrol + dv-kahvalti. 
+    if (tl-kontrol > tl-toplam) or (dv-kontrol > dv-toplam) 
+       compute tl-kontrol  = tl-kontrol - tl-kahvalti 
+       compute dv-kontrol  = dv-kontrol - dv-kahvalti 
+       compute tl-kahvalti = tl-toplam  - tl-kontrol 
+       compute dv-kahvalti = dv-toplam  - dv-kontrol 
+       go xkonuk-ata. 
+    if pan-ogle = "X" 
+       compute tl-ogle rounded    = ((( xkonuk-buyuk * dagilim-ogle     ) + 
+                             ( xkonuk-kucuk * dagilim-ogle     / 2 )) 
+                             *  doviz-alis ) 
+       compute dv-ogle rounded    = (( xkonuk-buyuk * dagilim-ogle     ) + 
+                             ( xkonuk-kucuk * dagilim-ogle     / 2 )). 
+*/  -> Ogle Kontrol 
+    compute tl-kontrol = tl-kontrol + tl-ogle. 
+    compute dv-kontrol = dv-kontrol + dv-ogle. 
+    if (tl-kontrol > tl-toplam) or (dv-kontrol > dv-toplam) 
+       compute tl-kontrol  = tl-kontrol - tl-ogle 
+       compute dv-kontrol  = dv-kontrol - dv-ogle 
+       compute tl-ogle     = tl-toplam  - tl-kontrol 
+       compute dv-ogle     = dv-toplam  - dv-kontrol 
+       go xkonuk-ata. 
+    if pan-aksam     = "X" 
+       compute tl-aksam rounded   = ((( xkonuk-buyuk * dagilim-aksam    ) + 
+                             ( xkonuk-kucuk * dagilim-aksam    / 2 )) 
+                             *  doviz-alis ) 
+       compute dv-aksam rounded   = (( xkonuk-buyuk * dagilim-aksam    ) + 
+                             ( xkonuk-kucuk * dagilim-aksam    / 2 )). 
+*/  -> Aksam Kontrol 
+    compute tl-kontrol = tl-kontrol + tl-aksam. 
+    compute dv-kontrol = dv-kontrol + dv-aksam. 
+    if (tl-kontrol > tl-toplam) or (dv-kontrol > dv-toplam) 
+       compute tl-kontrol  = tl-kontrol - tl-aksam 
+       compute dv-kontrol  = dv-kontrol - dv-aksam 
+       compute tl-aksam    = tl-toplam  - tl-kontrol 
+       compute dv-aksam    = dv-toplam  - dv-kontrol 
+       go xkonuk-ata. 
+    if pan-icecek    = "X" 
+       compute tl-icecek rounded  = ((( xkonuk-buyuk * dagilim-icecek   ) + 
+                             ( xkonuk-kucuk * dagilim-icecek   / 2 )) 
+                             *  doviz-alis ) 
+       compute dv-icecek rounded  = (( xkonuk-buyuk * dagilim-icecek   ) + 
+                             ( xkonuk-kucuk * dagilim-icecek   / 2 )). 
+*/  -> Icecek Kontrol 
+    compute tl-kontrol = tl-kontrol + tl-icecek. 
+    compute dv-kontrol = dv-kontrol + dv-icecek. 
+    if (tl-kontrol > tl-toplam) or (dv-kontrol > dv-toplam) 
+       compute tl-kontrol  = tl-kontrol - tl-icecek 
+       compute dv-kontrol  = dv-kontrol - dv-icecek 
+       compute tl-icecek   = tl-toplam  - tl-kontrol 
+       compute dv-icecek   = dv-toplam  - dv-kontrol 
+       go xkonuk-ata. 
+    if pan-extra     = "X" 
+       compute tl-extra rounded   = ((( xkonuk-buyuk * dagilim-extra    ) + 
+                             ( xkonuk-kucuk * dagilim-extra    / 2 )) 
+                             *  doviz-alis ) 
+       compute dv-extra rounded   = (( xkonuk-buyuk * dagilim-extra    ) + 
+                             ( xkonuk-kucuk * dagilim-extra    / 2 )). 
+*/  -> Extra Kontrol 
+    compute tl-kontrol = tl-kontrol + tl-extra. 
+    compute dv-kontrol = dv-kontrol + dv-extra. 
+    if (tl-kontrol > tl-toplam) or (dv-kontrol > dv-toplam) 
+       compute tl-kontrol  = tl-kontrol - tl-extra 
+       compute dv-kontrol  = dv-kontrol - dv-extra 
+       compute tl-extra    = tl-toplam  - tl-kontrol 
+       compute dv-extra    = dv-toplam  - dv-kontrol 
+       go xkonuk-ata. 
+    if pan-oda = "X" 
+       compute tl-oda = tl-toplam - tl-kahvalti - tl-ogle - tl-aksam - 
+                        tl-icecek - tl-extra 
+       compute dv-oda = dv-toplam - dv-kahvalti - dv-ogle - dv-aksam - 
+                        dv-icecek - dv-extra. 
+    if tl-oda < 0 
+       initialize mesaj-degiskenler
+       move " [ Breakdown Hatali ] " to mmesaj-title
+       move "Breakdown Fiyatlari Rezervasyon    " to mmesaj-1
+       move "fiyatindan Buyuk.........          " to mmesaj-2 
+       move 1           to mmesaj-type
+       move 3           to mmesaj-icon
+       move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+       perform mmesaj-ver
+       if cinpara-breakdown-cik = "E" 
+          move 1 to gec-gecme
+          exit paragraph
+       end-if
+    end-if.
+
+
+ xkonuk-ata. 
+    move tl-oda        to xkonuk-oda-tutar      tl-oda-z. 
+    move tl-kahvalti   to xkonuk-kahvalti-tutar tl-kahvalti-z. 
+    move tl-ogle       to xkonuk-ogle-tutar     tl-ogle-z. 
+    move tl-aksam      to xkonuk-aksam-tutar    tl-aksam-z. 
+    move tl-icecek     to xkonuk-icecek-tutar   tl-icecek-z. 
+    move tl-extra      to xkonuk-extra-tutar    tl-extra-z. 
+ fiyat-hesapla-exit. 
+      exit. 
+*
+ yeni-fiyat-al-1. 
+    initialize tl-toplam dv-toplam. 
+    move rez-ucreti to rez-fiyati dv-toplam xkonuk-dv-degeri. 
+
+
+    perform fiyat-hesapla thru fiyat-hesapla-exit. 
+    move xkonuk-oda-tutar         to tl-goster tl-oda-z. 
+    move xkonuk-kahvalti-tutar    to tl-goster tl-kahvalti-z. 
+    move xkonuk-ogle-tutar        to tl-goster tl-ogle-z. 
+    move xkonuk-aksam-tutar       to tl-goster tl-aksam-z. 
+    move xkonuk-icecek-tutar      to tl-goster tl-icecek-z. 
+    move xkonuk-extra-tutar       to tl-goster tl-extra-z. 
+    initialize tl-toplam 
+    compute tl-toplam = xkonuk-oda-tutar .
+
+    move tl-toplam               to tl-goster tl-toplam-z. 
+    move xkonuk-dv-degeri        to dv-goster dv-toplam-z. 
+    move xkonuk-kur-degeri       to dv-goster islem-kuru-z. 
+
+    move dv-oda                  to dv-goster dv-oda-z. 
+    move dv-kahvalti             to dv-goster dv-kahvalti-z. 
+    move dv-ogle                 to dv-goster dv-ogle-z. 
+    move dv-aksam                to dv-goster dv-aksam-z. 
+    move dv-icecek               to dv-goster dv-icecek-z. 
+    move dv-extra                to dv-goster dv-extra-z. 
+    move dv-toplam               to dv-goster dv-toplam-z. 
+
+ yeni-fiyat-al-exit. 
+    exit. 
+*
+ kur-bul. 
+         initialize kur-bulundu
+         if cinpara-kur-duzelt  = "E" and 
+           xkonuk-kur-degeri not = 0 
+           move xkonuk-kur-degeri  to doviz-alis
+           move 1                  to kur-bulundu
+        end-if .
+*******>Konuk Kartindaki kuru almasi icin konuldu 
+
+
+         if kur-bulundu = 0  
+        if xkonuk-grup-no > 0 then 
+            open input gruplar kur
+                move xkonuk-grup-no to gruplar-kodu
+                read gruplar no lock invalid 
+                     continue
+                not invalid 
+                if gruplar-kur > 0 and gruplar-doviz = xkonuk-doviz then 
+                     move gruplar-kur to doviz-alis
+                     move 1 to kur-bulundu
+                else
+                    if gruplar-sabit-tarih-kur = 1
+                       if gruplar-sabit-kur-tarih <= xkonuk-gel-tar and 
+                          gruplar-doviz = xkonuk-doviz
+                          initialize kur-rec 
+                          move gruplar-sabit-kur-tarih to kur-tarih
+                          move gruplar-banka           to kur-banka
+                          move gruplar-doviz           to kur-doviz
+                          read kur no lock invalid 
+                               continue 
+                          not invalid 
+                               move 1 to kur-bulundu
+                          end-read 
+                       end-if 
+                    else 
+                          initialize kur-rec 
+                          move xkonuk-gel-tar         to kur-tarih
+                          move xkonuk-banka           to kur-banka
+                          move xkonuk-doviz           to kur-doviz
+                          if xkonuk-kur-aygun = "A" move 01 to kur-gun end-if
+                          read kur no lock invalid 
+                               continue 
+                          not invalid 
+                               move 1 to kur-bulundu
+                          end-read                       
+                    end-if 
+                end-if
+                end-read
+              close gruplar kur
+        end-if 
+        end-if.
+        
+        if kur-bulundu = 0 
+        if rez-cin-kuru > 0 and rez-cin-kuru < 100 and xkonuk-kur-degeri = 0 then
+          move rez-cin-kuru to doviz-alis
+        end-if
+        end-if .
+        if kur-bulundu = 0
+          open input kur
+        move xkonuk-gel-yil      to kur-yil takvim-yil
+        move xkonuk-gel-ay       to kur-ay  takvim-ay
+        move xkonuk-gel-gun      to kur-gun takvim-gun
+        
+        if xkonuk-gec-giris = 1 then
+        open input takvim
+          start takvim key = takvim-anah
+            invalid 
+**             display message box "takvim start hatasi:188345"
+           not invalid
+            read takvim previous 
+              end
+***                   display message box "takvim start hatasi:15555"
+              not end
+                read takvim previous  
+                     end
+***                        display message box "takvim start hatasi:15555"
+                     not end
+                       move takvim-yil      to kur-yil 
+                       move takvim-ay       to kur-ay 
+                       move takvim-gun      to kur-gun 
+                end-read
+             end-read
+         end-start
+          
+*         if  xkonuk-kur-degeri  = 0 
+*           display message box "Konuk Gec Giris yaptigi icin"  new-line
+*                            kur-gun "/" kur-ay "/" kur-yil " tarihli kur alinmistir"
+*                            new-line "Bilginize ..............."
+*                            title "GEC GIRIS UYARISI"
+*         end-if
+         close takvim
+        end-if 
+
+        move xkonuk-banka        to kur-banka 
+        move xkonuk-doviz        to kur-doviz 
+        if xkonuk-kur-aygun = "A" move 01 to kur-gun end-if 
+        read kur no lock invalid 
+             close kur 
+             initialize mesaj-degiskenler
+             move " [ Kurlar Tanimsiz ] " to mmesaj-title
+             move "Girdiginiz Tarihe Kur Kaydi....."  to mmesaj-1
+             move "....BULUNAMADI.................."  to mmesaj-2
+             move 1           to mmesaj-type
+             move 3           to mmesaj-icon
+             move 1           to mmesaj-default
+             perform mmesaj-ver
+             move 1 to gec-gecme
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+             exit paragraph
+                 not invalid continue
+        end-read
+ 
+*******>Konuk Kartindaki kuru almasi icin konuldu 
+*       if cinpara-peryot-kuru = "R" and 
+        close kur
+        end-if  . 
+        
+        move doviz-alis    to xkonuk-kur-degeri. 
+                  if doviz-alis = 0 
+                   
+                     initialize mesaj-degiskenler
+                     move " [ Kurlar Tanimsiz ] " to mmesaj-title
+                     move "Girdiginiz Tarihe Kur Kaydi....."  to mmesaj-1
+                     move "....BULUNAMADI.................."  to mmesaj-2
+                     move 1           to mmesaj-type
+                     move 3           to mmesaj-icon
+                     move 1           to mmesaj-default
+                     perform mmesaj-ver
+                     move 1 to gec-gecme
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+                     exit paragraph
+                  end-if.
+            
+
+********compute tl-toplam   = rez-ucreti * doviz-alis. 
+      initialize tl-toplam dv-toplam dv-oda dv-kahvalti dv-ogle dv-aksam 
+                 dv-icecek dv-extra. 
+    move xkonuk-oda-tutar         to tl-goster tl-oda-z. 
+    move xkonuk-kahvalti-tutar    to tl-goster tl-kahvalti-z. 
+    move xkonuk-ogle-tutar        to tl-goster tl-ogle-z. 
+    move xkonuk-aksam-tutar       to tl-goster tl-aksam-z. 
+    move xkonuk-icecek-tutar      to tl-goster tl-icecek-z. 
+    move xkonuk-extra-tutar       to tl-goster tl-extra-z. 
+    initialize tl-toplam 
+    compute tl-toplam = xkonuk-oda-tutar .
+*la butik ramazan    + xkonuk-kahvalti-tutar + 
+*                        xkonuk-extbed-tutar + xkonuk-ogle-tutar  + 
+*                        xkonuk-aksam-tutar  + xkonuk-icecek-tutar  + 
+*                        xkonuk-extra-tutar. 
+    move tl-toplam               to tl-goster tl-toplam-z. 
+
+    compute dv-toplam  rounded = tl-toplam         / xkonuk-kur-degeri. 
+*    compute dv-oda      rounded = xkonuk-oda-tutar           / xkonuk-kur-degeri. 
+    compute dv-kahvalti rounded = xkonuk-kahvalti-tutar      / xkonuk-kur-degeri. 
+    compute dv-ogle     rounded = xkonuk-ogle-tutar          / xkonuk-kur-degeri. 
+    compute dv-aksam    rounded = xkonuk-aksam-tutar         / xkonuk-kur-degeri. 
+    compute dv-icecek   rounded = xkonuk-icecek-tutar        / xkonuk-kur-degeri. 
+    compute dv-extra    rounded = xkonuk-extra-tutar         / xkonuk-kur-degeri. 
+    compute dv-oda rounded = dv-toplam .
+*    - dv-kahvalti - dv-ogle - dv-aksam - 
+*                           dv-icecek - dv-extra. 
+
+    move xkonuk-dv-degeri        to dv-goster dv-toplam-z. 
+    move xkonuk-kur-degeri       to dv-goster islem-kuru-z. 
+
+    move dv-oda                  to dv-goster dv-oda-z. 
+    move dv-kahvalti             to dv-goster dv-kahvalti-z. 
+    move dv-ogle                 to dv-goster dv-ogle-z. 
+    move dv-aksam                to dv-goster dv-aksam-z. 
+    move dv-icecek               to dv-goster dv-icecek-z. 
+    move dv-extra                to dv-goster dv-extra-z. 
+    move dv-toplam               to dv-goster dv-toplam-z. 
+            move dv-toplam    to xkonuk-dv-degeri. 
+
+ 
+
+ kur-bul-exit. 
+    exit. 
+*
+ rez-to-konuk.
+         initialize srez-bilgi. 
+         move 1 to xkonuk-online-cin
+    move rez-no              to xkonuk-rez-no. 
+    move rez-adi             to xkonuk-adi.
+    move rez-paylas-oda      to xkonuk-paylas-oda
+    move rez-soyadi          to xkonuk-soyadi. 
+    move rez-s-d-t-g         to xkonuk-s-d-t-g srez-s-d-t-g.
+    move rez-rehber          to xkonuk-rehber
+    move rez-oda-konumu      to xkonuk-oda-konumu srez-oda-konumu. 
+    if rez-fiyat-konumu = 0 then 
+       move rez-oda-konumu   to rez-fiyat-konumu
+    end-if
+    move rez-fiyat-konumu    to xkonuk-fiyat-konumu srez-fiyat-konumu. 
+    move rez-odeme-tipi      to xkonuk-odeme-tipi. 
+    move rez-odano           to xkonuk-odano srez-odano. 
+    move rez-ulke            to xkonuk-ulke. 
+    move rez-buyuk           to xkonuk-buyuk  srez-buyuk. 
+*    move rez-profil-no       to xkonuk-profil-no
+
+    move rez-firma           to xkonuk-firma
+    move rez-kucuk           to xkonuk-kucuk  srez-kucuk. 
+    move rez-free            to xkonuk-free   srez-free. 
+
+    move rez-bebek           to xkonuk-bebek  srez-bebek.
+    move rez-acenta          to xkonuk-acenta srez-acenta. 
+    move rez-grup-no         to xkonuk-grup-no. 
+    move rez-voucher         to xkonuk-voucher. 
+    move rez-fiyat-konumu    to xkonuk-fiyat-konumu .
+    move rez-nor-indirim     to xkonuk-nor-indirim. 
+    move rez-pan-tipi        to xkonuk-pan-tipi. 
+    move rez-tipi            to xkonuk-rez-tipi. 
+    move rez-banka           to xkonuk-banka. 
+    move rez-doviz           to xkonuk-doviz. 
+    move rez-anlasma         to xkonuk-anlasma.
+    move rez-gec             to xkonuk-gec-giris.
+    move rez-room-kdv-yok    to xkonuk-room-kdv-yok
+    move rez-extra-kdv-yok   to xkonuk-extra-kdv-yok
+    move rez-telefon-no      to xkonuk-telefon-no
+    move rez-kaynak-1        to xkonuk-kaynak-1
+    move rez-kaynak-2        to xkonuk-kaynak-2
+    move rez-kaynak-3        to xkonuk-kaynak-3
+    move rez-sehir           to xkonuk-sehir
+    if  rez-no-post = 1
+       move "C"   to xkonuk-acik-kapali
+       else
+          move "O"   to xkonuk-acik-kapali
+    end-if
+*    move  2000               to rez-al-yil
+    move rez-al-tar(3:)      to xkonuk-al-tar.
+  
+     if xkonuk-al-yil  < "01" then 
+                move rez-al-yil(3:) to xkonuk-al-yil
+                 if xkonuk-al-yil  < "01" then 
+                       move rez-isl-yil(3:) to xkonuk-al-yil
+                 end-if
+              end-if   
+    move rez-plan            to xkonuk-plan.
+    move rez-dig-plan        to xkonuk-dig-plan
+   
+    move rez-OPERATOR        to xkonuk-OPERATOR. 
+    move rez-pazar           to xkonuk-pazar.
+    move rez-share           to xkonuk-share
+    move rez-eb              to xkonuk-eb.
+    move rez-ug-ind          to xkonuk-ug-indirimi
+    move rez-fiyat-fix       to xkonuk-fiyat-fix.
+    move rez-fix-anl         to xkonuk-fix-anl.
+    move rez-special-eh      to xkonuk-special-eh 
+    move rez-paylas-oda        to xkonuk-paylas-oda
+    move rez-kur-aygun       to xkonuk-kur-aygun. 
+    move rez-bilbord-eh      to xkonuk-bilbord-eh
+    move REZ-AKSIYON-EH      to xKONUK-AKSIYON-EH  
+    move REZ-share           to xKONUK-share
+    move rez-vip             to xkonuk-vip. 
+    move rez-gir-tar         to xkonuk-gel-tar. 
+    move rez-al-tar(3:)          to xkonuk-al-tar.
+    if xkonuk-al-yil  < "01" then 
+                move rez-al-yil(3:) to xkonuk-al-yil
+                 if xkonuk-al-yil  < "01" then 
+                       move rez-isl-yil(3:) to xkonuk-al-yil
+                 end-if
+              end-if   
+    move rez-cik-tar         to xkonuk-git-tar. 
+    move rez-not1            to xkonuk-acik-1. 
+    move rez-not2            to xkonuk-acik-2. 
+    move rez-gel-saat        to xkonuk-gel-saat.
+    move rez-gel-dak         to xkonuk-gel-dakika.
+    move rez-late-zaman      to xkonuk-late-zaman
+
+    move rez-git-saat        to xkonuk-git-saat.
+    move rez-git-dak         to xkonuk-git-dakika.
+
+    move "I"                 to xkonuk-durumu. 
+    move "R"                 to xkonuk-fol-kodu. 
+         initialize rez-ucreti tl-toplam dv-toplam. 
+    move rez-fiyati          to rez-ucreti dv-toplam xkonuk-dv-degeri
+                                srez-fiyati. 
+****>Ozluk Bilgileri ataniyor.....
+    move rez-adres1          to xozluk-adres1.
+    move rez-adres2          to xozluk-adres2.
+    move rez-e-mail          to xozluk-e-mail.
+    move rez-sharenum to xkonuk-sharenum  .
+*    move rez-telno           to xozluk-telno.
+         
+ rez-to-konuk-exit.
+     exit.
+*
+ share-edilebilir-mi.
+  
+     move 1 to share-en
+     if genel-paylas-oda = 1
+         if xkonuk-paylas-oda = 1
+            move 1 to share-en
+          else
+           move 0 to share-en
+        end-if
+        else
+        move 1 to share-en
+     end-if
+     .
+*
+ ortak-yanrez.
+      move konuk-rez-no  to yanrez-rezno
+      move konuk-gel-tar   to yanrez-gel-tar
+      move konuk-git-tar   to yanrez-git-tar
+      move konuk-odano     to yanrez-odano.
+*
+ yanrez-kaydet.
+    if konuk-rez-no not > 0 then 
+       exit paragraph 
+    end-if 
+    open i-o yanrez
+    initialize yanrez-rec
+       move 1 to yanrez-sirano
+       move konuk-adi        to yanrez-adi
+       move konuk-soyadi     to yanrez-soyadi
+       move xozluk-dogum-tar to yanrez-dog-tar
+       move mis-no           to yanrez-profil-no
+       move ps1              to yanrez-profil-sirket
+       perform ortak-yanrez
+       write yanrez-rec invalid 
+             rewrite yanrez-rec 
+             end-rewrite 
+       end-write
+           perform log-operation-yanrez
+
+     if adi2 = spaces and soy2  = spaces  
+         then
+*          move xozluk-yani-adi1   to adi2   
+*          move xozluk-yani-soy1   to  soy2 
+        continue 
+    end-if
+     if adi3 = spaces and soy3  = spaces 
+         then
+*          move xozluk-yani-adi2   to adi3  
+*          move xozluk-yani-soy2   to soy3 
+           continue 
+    end-if
+    if adi2 not = spaces or soy2 not = spaces then
+          
+       initialize yanrez-rec
+       move 2 to yanrez-sirano
+       move adi2   to yanrez-adi    xozluk-yani-adi1
+       move soy2   to yanrez-soyadi    xozluk-yani-soy1
+       move d-tar2 to yanrez-dog-tar
+       move pno2   to yanrez-profil-no
+       move ps2    to yanrez-profil-sirket
+       perform ortak-yanrez
+       write yanrez-rec invalid 
+             rewrite yanrez-rec 
+             end-rewrite 
+       end-write
+           perform log-operation-yanrez
+     else
+         move  konuk-rez-no      to yanrez-rezno
+          
+         move 2 to yanrez-sirano
+          read yanrez no lock invalid continue not invalid 
+         delete yanrez invalid continue 
+         end-delete
+             perform log-operation-yanrez
+             end-read
+    end-if
+    if adi3 not = spaces or soy3 not = spaces then
+       initialize yanrez-rec
+       move 3 to yanrez-sirano
+       move adi3   to yanrez-adi     xozluk-yani-adi2
+       move soy3   to yanrez-soyadi  xozluk-yani-soy2
+       move d-tar3 to yanrez-dog-tar
+       move pno3   to yanrez-profil-no
+       move ps3    to yanrez-profil-sirket
+       perform ortak-yanrez
+       write yanrez-rec invalid 
+             rewrite yanrez-rec 
+             end-rewrite 
+       end-write
+           perform log-operation-yanrez
+        else
+         move  konuk-rez-no      to yanrez-rezno
+         move 3 to yanrez-sirano
+          read yanrez no lock invalid continue not invalid 
+         delete yanrez invalid continue 
+         end-delete
+             perform log-operation-yanrez
+             end-read
+    end-if
+    if adi4 not = spaces or soy4 not = spaces then
+       initialize yanrez-rec
+       move 4 to yanrez-sirano
+       move adi4   to yanrez-adi
+       move soy4   to yanrez-soyadi
+       move d-tar4 to yanrez-dog-tar
+       move pno4   to yanrez-profil-no
+       move ps4    to yanrez-profil-sirket
+       perform ortak-yanrez
+       write yanrez-rec invalid 
+             rewrite yanrez-rec 
+             end-rewrite 
+       end-write
+           perform log-operation-yanrez
+       else
+         move  konuk-rez-no      to yanrez-rezno
+
+
+         move 4 to yanrez-sirano
+          read yanrez no lock invalid continue not invalid 
+         delete yanrez invalid continue 
+         end-delete
+             perform log-operation-yanrez
+             end-read
+    end-if
+
+    if adi5 not = spaces or soy5 not = spaces then
+       initialize yanrez-rec
+       move 5 to yanrez-sirano
+       move adi5   to yanrez-adi
+       move soy5   to yanrez-soyadi
+       move d-tar5 to yanrez-dog-tar
+       move pno5   to yanrez-profil-no
+       move ps5    to yanrez-profil-sirket
+       perform ortak-yanrez
+       write yanrez-rec invalid 
+             rewrite yanrez-rec 
+             end-rewrite 
+       end-write
+           perform log-operation-yanrez
+       else
+         move konuk-rez-no      to yanrez-rezno
+         move 5 to yanrez-sirano
+          read yanrez no lock invalid continue not invalid 
+         delete yanrez invalid continue 
+         end-delete
+             perform log-operation-yanrez
+             end-read
+    end-if
+    if adi6 not = spaces or soy6 not = spaces then
+       initialize yanrez-rec
+       move 6 to yanrez-sirano
+       move adi6   to yanrez-adi
+       move soy6   to yanrez-soyadi
+       move d-tar6 to yanrez-dog-tar
+       move pno6   to yanrez-profil-no
+       move ps6    to yanrez-profil-sirket
+       perform ortak-yanrez
+       write yanrez-rec invalid 
+             rewrite yanrez-rec 
+             end-rewrite 
+       end-write
+           perform log-operation-yanrez
+       else
+         move konuk-rez-no      to yanrez-rezno
+         move 6 to yanrez-sirano
+          read yanrez no lock invalid continue not invalid 
+         delete yanrez invalid continue 
+         end-delete
+             perform log-operation-yanrez
+             end-read
+    end-if
+    if adi7 not = spaces or soy7 not = spaces then
+       initialize yanrez-rec
+       move 7 to yanrez-sirano
+       move adi7   to yanrez-adi
+       move soy7   to yanrez-soyadi
+       move d-tar7 to yanrez-dog-tar
+       move pno7   to yanrez-profil-no
+       move ps7    to yanrez-profil-sirket
+       perform ortak-yanrez
+       write yanrez-rec invalid 
+             rewrite yanrez-rec 
+             end-rewrite 
+       end-write
+           perform log-operation-yanrez
+       else
+         move konuk-rez-no      to yanrez-rezno
+         move 7 to yanrez-sirano
+          read yanrez no lock invalid continue not invalid 
+         delete yanrez invalid continue 
+         end-delete
+         perform log-operation-yanrez
+         end-read
+    end-if
+
+    if adi8 not = spaces or soy8 not = spaces then
+       initialize yanrez-rec
+       move 8 to yanrez-sirano
+       move adi8   to yanrez-adi
+       move soy8   to yanrez-soyadi
+       move d-tar8 to yanrez-dog-tar
+       move pno8   to yanrez-profil-no
+       move ps8    to yanrez-profil-sirket
+       perform ortak-yanrez
+       write yanrez-rec invalid 
+             rewrite yanrez-rec 
+             end-rewrite 
+       end-write
+           perform log-operation-yanrez
+       else
+         move konuk-rez-no      to yanrez-rezno
+         move 8 to yanrez-sirano
+          read yanrez no lock invalid continue not invalid 
+         delete yanrez invalid continue 
+         end-delete
+         perform log-operation-yanrez
+         end-read
+    end-if
+
+    if adi9 not = spaces or soy9 not = spaces then
+       initialize yanrez-rec
+       move 9 to yanrez-sirano
+       move adi9   to yanrez-adi
+       move soy9   to yanrez-soyadi
+       move d-tar9 to yanrez-dog-tar
+       move pno9   to yanrez-profil-no
+       move ps9    to yanrez-profil-sirket
+       perform ortak-yanrez
+       write yanrez-rec invalid 
+             rewrite yanrez-rec 
+             end-rewrite 
+       end-write
+           perform log-operation-yanrez
+       else
+         move konuk-rez-no      to yanrez-rezno
+         move 9 to yanrez-sirano
+           read yanrez no lock invalid continue not invalid 
+         delete yanrez invalid continue 
+         end-delete
+         perform log-operation-yanrez
+         end-read
+    end-if
+
+    close yanrez.
+*
+ yanrez-oku.
+        initialize yan-deg tum-yas kk.
+        if xkonuk-rez-no not > 0 then 
+           exit paragraph 
+        end-if       
+        open input yanrez
+        move xkonuk-rez-no to yanrez-rezno
+        start yanrez key > yanrez-anah
+         invalid
+            continue
+         not invalid 
+           perform until fs-yanrez = "10"
+              read yanrez next no lock
+                 end 
+                   move "10" to fs-yanrez
+                 not end
+                   if yanrez-rezno not = xkonuk-rez-no
+                      move "10" to fs-yanrez
+                      else
+                      evaluate yanrez-sirano
+                         when 1
+                           move yanrez-profil-no to mis-no
+                           move yanrez-profil-sirket to ps1
+                            
+                           
+                         when 2
+                           move yanrez-adi      to  adi2
+                           move yanrez-soyadi   to  soy2
+                           move yanrez-dog-tar  to  d-tar2    
+                           move yanrez-profil-no to pno2
+                           move yanrez-profil-sirket to ps2
+                          
+                          if xozluk-yani-adi1 = spaces then 
+                            move  adi2     to xozluk-yani-adi1
+                          end-if
+                          if xozluk-yani-soy1 = spaces then 
+                            move  soy2     to xozluk-yani-soy1
+                          end-if
+                         when 3
+                           move yanrez-adi      to  adi3
+                           move yanrez-soyadi   to  soy3
+                           move yanrez-dog-tar  to  d-tar3 
+                           move yanrez-profil-no to pno3
+                           move yanrez-profil-sirket to ps3
+                           
+                           if xozluk-yani-adi2 = spaces then 
+                            move  adi3     to xozluk-yani-adi2
+                          end-if
+                          if xozluk-yani-soy2 = spaces then 
+                            move  soy3     to xozluk-yani-soy2
+                          end-if
+                         when 4
+                           move yanrez-adi      to  adi4
+                           move yanrez-soyadi   to  soy4
+                           move yanrez-dog-tar  to  d-tar4 
+                           move yanrez-profil-no to pno4
+                           move yanrez-profil-sirket to ps4
+*                           display acc-ps4
+                         when 5
+                           move yanrez-adi      to  adi5
+                           move yanrez-soyadi   to  soy5
+                           move yanrez-dog-tar  to  d-tar5 
+                           move yanrez-profil-no to pno5
+                           move yanrez-profil-sirket to ps5
+*                           display acc-ps5
+                         when 6
+                           move yanrez-adi      to  adi6
+                           move yanrez-soyadi   to  soy6
+                           move yanrez-dog-tar  to  d-tar6 
+                           move yanrez-profil-no to pno6
+                           move yanrez-profil-sirket to ps6
+*                           display acc-ps6
+                         when 7
+                           move yanrez-adi      to  adi7
+                           move yanrez-soyadi   to  soy7
+                           move yanrez-dog-tar  to  d-tar7 
+                           move yanrez-profil-no to pno7
+                           move yanrez-profil-sirket to ps7
+*                           display acc-ps7
+                         when 8
+                           move yanrez-adi      to  adi8
+                           move yanrez-soyadi   to  soy8
+                           move yanrez-dog-tar  to  d-tar8 
+                           move yanrez-profil-no to pno8
+                           move yanrez-profil-sirket to ps8
+*                           display acc-ps8
+                         when 9
+                           move yanrez-adi      to  adi9
+                           move yanrez-soyadi   to  soy9
+                           move yanrez-dog-tar  to  d-tar9 
+                           move yanrez-profil-no to pno9
+                           move yanrez-profil-sirket to ps9
+*                           display acc-ps9
+                     end-evaluate
+                     add 1               to kk 
+                     move yanrez-dog-tar  to tum-doglar(kk)
+                   end-if
+              end-read
+           end-perform
+        end-start.
+        close yanrez.
+*
+ exception-procedure.
+     perform kullandi.           
+     evaluate key-status 
+     when 2 
+        initialize link-hata
+       if xkonuk-fol-kodu = "R" 
+        if xkonuk-plan not = 1 then           
+             perform hes-gonder              
+        end-if
+       end-if
+       perform kaydet thru kaydet-exit 
+       if link-hata not = 1 
+           move "Basarili"   to link-hata-donus
+           move 0            to link-hata
+       end-if 
+     end-evaluate.
+*
+ kaydet.    
+    if cin-tipi = 3
+       move 1 to xkonuk-s-d-t-g
+    end-if.
+    if konuk-kayit-durumu = "Y" and cin-tipi not = 1
+       move 6 to xkonuk-rez-tipi
+    end-if.
+    if konuk-kayit-durumu not = "E" and cin-tipi = 3
+       move "E" to xkonuk-fol-kodu
+    end-if.
+ kaydet-kontrol. 
+      if xkonuk-durumu = "H" 
+         initialize mesaj-degiskenler
+         move " [ DIKKAT ] " to mmesaj-title
+         move "Bu Folio Check Out Olmus......." to mmesaj-1 
+         move "Degistiremezsiniz......!!!!!!!!" to mmesaj-2 
+         move 1           to mmesaj-type
+         move 1           to mmesaj-icon
+         move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+         perform mmesaj-ver 
+         go kaydet-exit
+      end-if.
+        initialize mesaj-degiskenler gec-gecme.
+        move " [ Hata ] " to mmesaj-title
+        move "Hata Tipi : [ Zorunlu Alanlarda Bilgi Eksik.......]" to mmesaj-1
+        perform oda-oku   thru oda-oku-exit
+                if gecmez 
+                move "Hata Yeri : [ Oda No Tanimsiz.....................]" to mmesaj-2
+                move 1           to mmesaj-type
+                move 3           to mmesaj-icon
+                move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+                perform mmesaj-ver
+                go kaydet-exit
+                end-if 
+         if konuk-kayit-durumu = "Y"
+                 perform blok-kont2
+                 if not gecmez
+                  perform dolu-oda-kontrol thru dolu-oda-kontrol-exit 
+                 end-if
+               if gecmez
+                  initialize xkonuk-odano
+                  move ydk-odano to xkonuk-odano
+*                  display accept-odano
+                  perform xkonuk-oda-uzat
+                  move 1 to gec-gecme
+                      go kaydet-exit
+                      else
+                        move xkonuk-odano to ydk-odano
+               end-if
+            
+         end-if
+ 
+      if konuk-kayit-durumu = "Y"
+        move xkonuk-gel-tar to tarih
+        perform takvim-oku   thru takvim-oku-exit
+                if gecmez
+                move "Hata Yeri : [ Giris Gunu    Tanimsiz..............]" to mmesaj-2
+                move 1           to mmesaj-type
+                move 3           to mmesaj-icon
+                move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+                perform mmesaj-ver
+                go kaydet-exit
+                end-if 
+
+        move xkonuk-git-tar to tarih
+        perform takvim-oku   thru takvim-oku-exit
+                if gecmez
+                move "Hata Yeri : [ Cikis Gunu    Tanimsiz..............]" to mmesaj-2
+                move 1           to mmesaj-type
+                move 3           to mmesaj-icon
+                move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+                perform mmesaj-ver
+                go kaydet-exit
+                end-if 
+        if xkonuk-git-tar < xkonuk-gel-tar 
+           move "Hata Yeri : [ Cikis Tarihi Kucuk Olamaz...........]" to mmesaj-2
+           move 1           to mmesaj-type
+           move 3           to mmesaj-icon
+           move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+           perform mmesaj-ver
+           go kaydet-exit
+        end-if 
+
+        if xkonuk-gel-tar <> tarih-tasi
+
+           move "Hata Yeri : [ Giris Tarihi Uyumsuz ...........]" to mmesaj-2
+           move 1           to mmesaj-type
+           move 3           to mmesaj-icon
+           move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+           perform mmesaj-ver
+           go kaydet-exit
+        end-if 
+      end-if
+        if xkonuk-kur-aygun not = "G" and not = "A" 
+           move "Hata Yeri : [ Kur Tipi Tanimsiz...................]" to mmesaj-2
+           move 1           to mmesaj-type
+           move 3           to mmesaj-icon
+           move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+           perform mmesaj-ver
+           go kaydet-exit
+        end-if                 
+
+        if  cin-tipi not = 3 and 
+            odalar-durumu not = house-bt and 
+            konuk-kayit-durumu = "Y" and
+            k-kirli-odaya-cin-yapamaz = 1  
+*             display message box "Kirli Odaya C/IN Yapamazsiniz !"new-line
+*                                 "Bu Islem Icin Yetkiniz Yoktur"
+*             icon 3
+*             title "[ Oda Durum Kirli ]"
+             go kaydet-exit
+        end-if
+
+        open input konum
+        move xkonuk-oda-konumu to konum-anahtar
+        read konum no lock invalid 
+             move "Hata Yeri : [ Oda Konumu Tanimsiz.................]" to mmesaj-2
+             move 1           to mmesaj-type
+             move 3           to mmesaj-icon
+             move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+             perform mmesaj-ver
+             close konum
+             move 1 to gec-gecme
+             go kaydet-exit
+             not invalid continue
+             end-read
+             close konum
+
+           initialize onay-uygulandi-yaz
+            
+ 
+       
+
+
+        if xkonuk-s-d-t-g   not = 1 and not = 2 and not = 3 and not = 4 
+           evaluate true      
+              when xkonuk-buyuk < 2 move "1" to xkonuk-s-d-t-g 
+              when xkonuk-buyuk = 2 move "2" to xkonuk-s-d-t-g 
+              when xkonuk-buyuk = 3 move "3" to xkonuk-s-d-t-g 
+              when xkonuk-buyuk > 3 move "4" to xkonuk-s-d-t-g
+            end-evaluate
+        end-if 
+        
+       
+        if oto-gec not = 1 then 
+        if birles-vis = 1 and birles-oda = spaces then 
+           if link-var not = 4
+            display message box "Birlesen Hayali odalarda Gercek Oda Foliosunu Belirtmeniz Onerilir"
+             title "DIKKAT" icon 1
+           end-if
+        end-if
+        end-if
+*        if xkonuk-buyuk  <  1 
+*           move "Hata Yeri : [ Buyuk Sayisi [0] Olamaz.............]" to mmesaj-2
+*           move 1           to mmesaj-type
+*           move 3           to mmesaj-icon
+*           move 1           to mmesaj-default
+*           perform mmesaj-ver
+*           go kaydet-exit
+*        end-if 
+       if oto-gec = 1
+         move 1 to donus-kodu 
+         else
+       initialize mesaj-degiskenler
+       move " [ Kaydet Soru ] " to mmesaj-title
+       move " GIRDIGINIZ BILGILER KAYDEDILECEKTIR " to mmesaj-1
+       move " EMIN MISINIZ.....E->Evet, H->Hayir  " to mmesaj-2
+       move 2           to mmesaj-type
+       move 1           to mmesaj-icon
+       move 1           to mmesaj-default
+       perform mmesaj-ver
+       end-if
+        if genel-konum-upgrade-devrede = 1 and xkonuk-fol-kodu = "R" 
+       if eski-oda-konum not = spaces  and  eski-oda-konum <> odalar-konumu
+      
+       move eski-oda-konum to  l-eski-konum    
+       move odalar-konumu to l-yeni-konum     
+       move xrez-no      to  l-rezno          
+       move xrez-rec      to  l-rez-rec     
+       move 0 to  l-yapabilir     
+
+               call "/asya/ytl/obj/otel/blokupg.asy" using  l-eski-konum  l-yeni-konum l-rezno l-rez-rec  l-yapabilir      
+                    on exception perform callerr-proc
+                    not on exception
+               cancel "/asya/ytl/obj/otel/blokupg.asy" 
+               end-call
+*               display message box  "l-eski-konum    :" l-eski-konum    new-line
+*                                    "l-yeni-konum    :" l-yeni-konum     new-line
+*                                    "l-rezno         :" l-rezno          new-line
+*                                    "l-rez-rec(1:200):" l-rez-rec(1:200)  new-line
+*                                    "l-yapabilir     :" l-yapabilir        new-line
+*                                    "k-kodu-tasi     :" k-kodu-tasi        new-line
+        if  l-yapabilir = 0 then 
+            if link-var not = 4   
+                  display message box  "Oda Upgrade yetkiniz olmamasina ragmen oda upgrade ettiniz" new-line
+                                       "CIN islemi Gerceklesmedi" title "KAYIT EDILMEDI .. YETKISIZ KULLANICI"
+            end-if
+                 
+         go kaydet-exit
+                  
+             
+        end-if
+      end-if
+      end-if
+       if donus-kodu = 2 
+          go kaydet-exit
+       end-if
+        if ( xkonuk-buyuk not = konuk-buyuk or
+             xkonuk-kucuk not = konuk-kucuk or 
+             xkonuk-free  not = konuk-free  or
+             xkonuk-bebek not = konuk-bebek ) and
+           ( xkonuk-gel-tar < tarih-tasi )  then 
+             move xkonuk-gel-gun to egun
+             move xkonuk-gel-ay  to eay
+             move xkonuk-gel-yil to eyil
+*                  display message box
+*                  
+*                  " DIKKAT  " new-line
+*                  etarih
+*                  "  tarihinde C/In olmus odanin" new-line
+*                  " kisi sayisini degistirdiniz " new-line
+*                  " Gecmise dogru istatistikler otomatik " new-line
+*                  " olarak degistirelecektir .. "         new-line
+*                  " Devam etmek istemisiniz  ...E->Evet, H->Hayir  "new-line
+*                   type 2, icon 1 , default 2,  
+*                   title " [ Kaydet Soru ] " 
+*                   giving donus-kodu
+*                  
+*                  if donus-kodu = 2 
+*                    go kaydet-exit
+*                  end-if
+                    
+                   open i-o nt
+   
+                    initialize not-rec
+                    move "kll"    to NOT-DOS
+                    move "kredi-ist1  "  to not-dos-anah
+              
+                    move tarih-tasi  to NOT-DOS-ANAH (15:)
+                    move 01 to not-sira
+                    perform until fs-not = "10" or not-sira > 90 
+                    read nt no lock 
+                       invalid
+                         add 1 to not-sira
+                       not invalid 
+                         move "10" to fs-not
+                    end-read
+                    end-perform 
+                    string   etarih delimited by "hhjhjjh"
+                             " girisli "   delimited by "hhjhjjh"
+                             konuk-folio(3:)  delimited by "hhjhjjh"
+                             " nolu "      delimited by "hhjhjjh"
+                             konuk-adi   delimited by " "
+                             " " delimited by "c" 
+                             konuk-soyadi  delimited by "     "
+                             " foliosunda "   delimited by "hhjhjjh"
+                             k-kodu-tasi        delimited by "hhjhjjh"
+
+                             " tarafindan kisi sayisi degistirildi" delimited by "hhjhjjh"
+                             into not1
+
+                             write not-rec invalid continue end-write
+                             add 1 to not-sira
+                        display message box not1  new-line 
+                                       " mesaji Gelir kontrol LOG a kaydedildi." 
+                        initialize not1
+                      string    etarih   delimited by "hhjhjjh"
+                             " tarihine kadar kisi istatistikleri otomatik olarak degistirildi Kontrol ediniz" 
+                             delimited by "hhjhjjh"
+                             into not1
+                       write not-rec invalid continue end-write
+                      close nt    
+                end-if 
+       .
+ kaydet-rez-kontrol. 
+**********>Rezervasyonlu Check-In degilse rez dosyasiyla isi yoktur...
+       if cin-tipi not = 1 
+          go kaydet-rez-kontrol-exit
+       end-if. 
+**********>Ayni anda bir rezervasyon iki kisi tarafindan C-In Yapilamasin 
+       if konuk-kayit-durumu = "Y" and xkonuk-fol-kodu = "R" 
+          continue
+       else 
+          go kaydet-rez-kontrol-exit
+       end-if. 
+       move xkonuk-rez-no   to rez-no. 
+       read rez no lock invalid 
+            go kaydet-rez-kontrol-exit. 
+       if rez-c-in = "E" 
+          move "Hata Yeri : [ Bu Oda C-In Yapilmis................]" to mmesaj-2
+          move 1           to mmesaj-type
+          move 3           to mmesaj-icon
+          move 1           to mmesaj-default
+                 move mmesaj-2   to link-hata-donus
+                 move 1                     to link-hata
+
+          perform mmesaj-ver
+          go kaydet-exit
+       end-if 
+       .
+ kaydet-rez-kontrol-exit. 
+    if konuk-kayit-durumu not = "E" 
+       accept sys-zaman from time 
+       move sys-saat               to xkonuk-gel-saat 
+       move sys-dakika             to xkonuk-gel-dakika 
+       move sys-saniye             to xkonuk-gel-saniye
+       move k-kodu-tasi to xkonuk-cin-staf
+    end-if   . 
+    initialize konuk-rec. 
+    initialize ozluk-rec . 
+         
+    if konuk-kayit-durumu not = "E" 
+       move "I"                    to xkonuk-durumu 
+    end-if.
+
+    if konuk-kayit-durumu not = "E" and cin-tipi not = 3
+       move "R"                    to xkonuk-fol-kodu
+    end-if. 
+
+    move k-kodu-tasi   to xkonuk-staf.
+    if bagli-vis = 1 then
+
+    move bagli-rez to xkonuk-extra-rez-no
+    end-if
+    move xkonuk-rec    to konuk-rec.
+    
+     if konuk-kayit-durumu = "Y" 
+             move mis-no         to konuk-profil-no
+             move rez-kredi-kart to konuk-kredi-kart
+             write konuk-rec invalid go kaydet-exit 
+                             not invalid 
+                      perform log-operation-konuk
+               if onay-uygulandi-yaz = 1 
+               open i-o onay
+                   set onay-uygulandi to true
+                    move k-kodu-tasi to ONAY-uyg-STAF
+                                                accept ONAY-uyg-TARIH from century-date 
+                                                accept ONAY-uyg-zaman  from time
+                   rewrite  onay-rec invalid write onay-rec end-rewrite
+                 close onay
+                 initialize onay-uygulandi-yaz
+              end-if    
+           
+
+            if cinpara-ext-fol-ac not = "E" 
+                  
+                   if cinpara-kartsiz-pos = 1 then 
+                            move konuk-folio(2:) to REZ-EXTRA-KART
+                            perform extra-kart-tanimla
+                   else
+                      if rez-extra-kart not = spaces
+                         perform extra-kart-tanimla
+                      end-if
+                      if rez-extra-kart2 not = spaces
+                          perform extra-kart-tanimla2
+                      end-if
+                   end-if
+   
+            end-if
+              
+                    
+             if xkonuk-fol-kodu = "R"
+                 if  TELPARA-dishat-ac-kapa = 1 then 
+                    perform hat-ac
+                 end-if
+                perform odalar-isle   thru odalar-isle-exit 
+              end-if
+             if oto-gec not = 1
+                 continue
+*               display message box "C/In islemi Basariyla Tamamlandi..."
+*                                 title "[ Uyari ]"
+*                                 icon 1
+             end-if 
+     end-if.          
+              perform ozluk-isle   thru ozluk-isle-exit. 
+           
+***********>Rezervasyonlu check-in ise rezervasyon ve casti duzelt...
+            if ( xkonuk-fol-kodu = "R" or xkonuk-fol-kodu = "G" )
+               and cin-tipi = 1
+                   perform rez-isle     thru rez-isle-exit 
+                   perform cast-isle    thru cast-isle-exit 
+                   perform takvim-isle  thru takvim-isle-exit
+            end-if. 
+***********>Register Kartta Rezervasyonu Etkileyen Degisiklikleri Olursa Duzeltsin
+            if konuk-kayit-durumu = "E" and xkonuk-fol-kodu = "R" 
+                   perform rez-isle     thru rez-isle-exit 
+                   perform cast-isle    thru cast-isle-exit 
+                   perform takvim-isle  thru takvim-isle-exit
+            end-if. 
+ 
+            if konuk-rez-no > 0 then 
+              perform yanrez-kaydet
+           end-if 
+                  
+          if rez-sharenum > 0 then 
+                  perform share-koy-kont
+           end-if .
+*********[]  EXTRA-TEL-AC = "B" 
+          if konuk-kayit-durumu = "Y" and xkonuk-fol-kodu = "R" 
+          
+             move konuk-pan-tipi to tampon-pan-tipi
+ 
+             if rez-onodeme-var = 1
+                 perform on-odeme-yaz |yeni on odeme sekli
+             end-if 
+             perform extra-ac  thru extra-ac-exit
+             perform tel-ac  thru tel-ac-exit
+          end-if.
+          if konuk-kayit-durumu = "Y" and xkonuk-fol-kodu = "R"  and konuk-grup-no > 0 
+              open i-o gruplar
+            
+                        move xkonuk-grup-no to gruplar-kodu
+                        read gruplar no lock invalid continue
+                        not invalid 
+                        if gruplar-kur = 0 and 
+                           gruplar-doviz = xkonuk-doviz and 
+                           gruplar-skur = 1  then 
+                             move xkonuk-kur-degeri to gruplar-kur
+                             rewrite gruplar-rec invalid continue end-rewrite
+                         end-if
+                        end-read
+                        close gruplar
+
+          end-if
+
+       go kaydet-exit. 
+ ozluk-isle. 
+            
+            initialize ozluk-rec. 
+          move xozluk-folio to ozluk-folio. 
+          read ozluk no lock invalid 
+                             move "Y" to ozluk-kayit-durumu 
+         not invalid 
+                             move "E" to ozluk-kayit-durumu. 
+          move xkonuk-folio        to xozluk-folio. 
+          move xkonuk-durumu       to xozluk-durumu. 
+          move xkonuk-adi          to xozluk-adi. 
+          move xkonuk-soyadi       to xozluk-soyadi.
+          move kim-tipi-combo-value to xozluk-kim-turu
+          move k-kodu-tasi         to xozluk-staf. 
+          move xozluk-rec          to ozluk-rec. 
+          if ozluk-kayit-durumu = "Y"
+              
+             write ozluk-rec invalid
+               rewrite ozluk-rec 
+               
+            end-write      
+                   perform log-operation-ozluk
+          end-if.
+          if ozluk-kayit-durumu = "E" 
+              
+             rewrite ozluk-rec invalid 
+               write ozluk-rec 
+            end-write 
+                   perform log-operation-ozluk
+          end-if.
+
+          write ozluk2-rec  invalid 
+                rewrite ozluk2-rec 
+                end-rewrite
+          end-write.
+               perform log-operation-ozluk2.
+ ozluk-isle-exit. 
+    exit. 
+*********>Rezervasyonlu Check-in'de rezervasyonu duzelt
+*
+ fiyat-after.
+       move fiyat-konumu-combo-value(1:2) to xkonuk-fiyat-konumu
+      .
+* 
+ rez-isle.
+        
+       initialize bilbord-duzelt
+       move xkonuk-rez-no       to rez-no. 
+       read rez no lock invalid 
+            go rez-isle-exit.
+       if rez-bilbord-eh = " " then 
+           move "H" to rez-bilbord-eh 
+       end-if
+       if xkonuk-bilbord-eh = " " then
+          move "H" to xkonuk-bilbord-eh
+       end-if
+       if xkonuk-bilbord-eh not = rez-bilbord-eh then 
+          move 1 to bilbord-duzelt
+          if rez-bilbord-eh = "E" then
+             perform bilbord-dus
+          end-if
+       end-if
+       move xkonuk-bilbord-eh to rez-bilbord-eh
+       move xkonuk-dv-degeri    to rez-fiyati.
+       move xkonuk-folio        to rez-folio. 
+       move xkonuk-odano        to rez-odano. 
+       move "E"                 to rez-c-in. 
+       move xkonuk-adi          to rez-adi.
+       move xkonuk-paylas-oda   to rez-paylas-oda
+       move xkonuk-rehber       to rez-rehber
+       move xkonuk-soyadi       to rez-soyadi. 
+       move xkonuk-s-d-t-g      to rez-s-d-t-g.
+       move xkonuk-oda-konumu   to rez-oda-konumu. 
+       move xkonuk-fiyat-konumu to rez-fiyat-konumu. 
+       move xkonuk-odeme-tipi   to rez-odeme-tipi. 
+       move xkonuk-odano        to rez-odano. 
+       move xkonuk-ulke         to rez-ulke. 
+       move xkonuk-buyuk        to rez-buyuk. 
+       move xkonuk-kucuk        to rez-kucuk. 
+       move xkonuk-free         to rez-free. 
+       move xkonuk-bebek        to rez-bebek.
+       move xkonuk-rez-tipi     to rez-tipi
+       move xkonuk-share        to rez-share.           
+       move xkonuk-aksiyon-eh   to rez-aksiyon-eh.
+       move xkonuk-acenta       to rez-acenta. 
+       move xkonuk-grup-no      to rez-grup-no.
+       move xkonuk-gel-saat     to rez-gel-saat.
+       move 2000 to rez-al-yil
+       move xkonuk-al-tar       to rez-al-tar(3:).
+       move xkonuk-gel-dakika   to rez-gel-dak.
+       move xkonuk-git-saat     to rez-git-saat.
+       move xkonuk-git-dakika   to rez-git-dak.
+       move xkonuk-fiyat-konumu to rez-fiyat-konumu
+       move xkonuk-voucher      to rez-voucher. 
+       move xkonuk-nor-indirim  to rez-nor-indirim. 
+       move xkonuk-pan-tipi     to rez-pan-tipi. 
+       move xkonuk-banka        to rez-banka. 
+       move xkonuk-doviz        to rez-doviz.
+       move xkonuk-gel-tar      to rez-gir-tar
+       move xkonuk-git-tar      to rez-cik-tar
+       move xkonuk-pazar        to rez-pazar.
+       move xkonuk-eb           to rez-eb
+       move xkonuk-ug-indirimi  to rez-ug-ind
+       move xkonuk-anlasma      to rez-anlasma.
+       move xkonuk-gec-giris            to rez-gec
+       
+       if xkonuk-acik-kapali = "C"
+          move 1 to rez-no-post
+          else
+          move 0 to rez-no-post
+       end-if
+       move xkonuk-plan         to rez-plan.
+       move xkonuk-dig-plan     to rez-dig-plan.
+       move xkonuk-al-tar       to rez-al-tar(3:)
+       move xkonuk-OPERATOR     to rez-OPERATOR.
+       move  yREZ-OZEL-DURUM-CAR   to REZ-OZEL-DURUM-CAR 
+       move  yREZ-OZEL-DURUM       to  REZ-OZEL-DURUM     
+       move  yREZ-ozel-tip         to  REZ-ozel-tip 
+         move yrez-git-sirket to  rez-git-sirket
+         move yrez-gel-sirket to  rez-gel-sirket
+       move xkonuk-firma        to rez-firma
+       move xkonuk-kur-aygun    to rez-kur-aygun. 
+       move xkonuk-vip          to rez-vip. 
+       move xkonuk-acik-1       to rez-not1. 
+       move xkonuk-acik-2       to rez-not2.
+       move xkonuk-fiyat-fix    to rez-fiyat-fix.
+       move xkonuk-fix-anl      to rez-fix-anl.
+       move xkonuk-special-eh   to rez-special-eh
+       move xkonuk-paylas-oda   to rez-paylas-oda
+       move xozluk-adres1       to rez-adres1.
+       move xozluk-adres2       to rez-adres2.
+       move xozluk-e-mail       to rez-e-mail.
+*       move xkonuk-profil-no    to rez-profil-no
+       move xkonuk-kaynak-1      to rez-kaynak-1
+       move xkonuk-kaynak-2      to rez-kaynak-2
+       move xkonuk-kaynak-3      to rez-kaynak-3
+       move xkonuk-telefon-no   to rez-telefon-no
+       move xkonuk-sehir        to rez-sehir 
+
+       move xkonuk-late-zaman         to rez-late-zaman.
+       if rez-bilbord-eh = "E" and bilbord-duzelt = 1  then
+             perform bilbord-ekle
+       end-if
+
+       if pre-cin-ok = 1
+          move 1                 to rez-pre-cin
+       end-if
+
+       accept rez-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+       accept rez-edit-zaman from time          |                           
+       
+       rewrite rez-rec invalid 
+            continue
+       end-rewrite.
+           perform log-operation-rez.
+           
+ rez-isle-exit. 
+    exit. 
+
+ cast-isle. 
+
+ cast-isle-basla.
+           
+          open i-o cast break. 
+         initialize cast-rec.
+         open input hesayr
+        move calisma-tarihi  to cast-tarih.
+        move rez-no          to cast-rez-no. 
+        start cast key not < cast-anah1 invalid 
+              go cast-isle-bitti. 
+ cast-isle-oku. 
+        read cast  next no lock end go cast-isle-bitti. 
+        if fs-cast = 99 go cast-isle-oku. 
+        if cast-tarih  > xkonuk-git-tar go cast-isle-bitti.
+        if cast-rez-no > xkonuk-rez-no 
+           go cast-isle-bitti
+        end-if. 
+        if cast-rez-no = xkonuk-rez-no 
+           continue
+        else 
+           go cast-isle-oku
+        end-if. 
+************=======>  Bu Bolum Yazma-Silme Islemleri Icindir <====*********** 
+ 
+         
+           
+           
+             initialize      hesaplanan-fiyat eski-cast
+           if xkonuk-gel-tar = cast-tarih and xkonuk-gec-giris = 1  and xKONUK-FIYAT-FIX not = "E"  
+             initialize hesayr-rec
+               move cast-rez-no to hesayr-rez-no
+               move cast-tarih to hesayr-tarih
+           start hesayr key >= hesayr-anah invalid continue
+              not invalid
+              perform until fs-hesayr = "10"
+                  read hesayr previous no lock end move "10" to fs-hesayr
+                      not end 
+                        if hesayr-rez-no = xkonuk-rez-no and hesayr-tarih <= xkonuk-gel-tar
+                          add hesayr-basilacak-tut to hesaplanan-fiyat 
+                          else
+                          move "10" to fs-hesayr
+                        end-if
+                  end-read
+              end-perform
+              else
+               initialize hesayr-rec
+               move cast-rez-no to hesayr-rez-no
+               move cast-tarih to hesayr-tarih
+               read hesayr no lock invalid continue
+                  not invalid
+                 move  hesayr-basilacak-tut to hesaplanan-fiyat 
+               end-read
+           end-if   
+           if hesaplanan-fiyat = 0 then 
+               move xKONUK-DV-DEGERI to hesaplanan-fiyat
+            end-if  
+               
+                   move cast-rec to eski-cast
+          
+*******               if xkonuk-gec-giris not = 1 
+****                   move hesaplanan-fiyat to cast-fiyati
+****                   else
+****                   if cast-tarih = tarih-tasi
+                   if xkonuk-plan not = 1 
+                       move hesaplanan-fiyat to cast-fiyati
+                   end-if
+
+*****                   end-if
+******                end-if
+                  move hesaplanan-fiyat to cast-anlasma-fiyati
+            
+               if tarih-tasi = cast-tarih
+                  if xkonuk-dv-degeri not = hesaplanan-fiyat 
+*                    display message box " Anlasma Fiyatlarindan Farkli bir Fiyat girdiniz " new-line 
+*                                        " Sadece Bugun girdiginiz fiyat basilacaktir"  new-line 
+*                                        " Tum konaklama boyunca bu fiyatin uygulanamsini " new-line 
+*                                        " isterseniz. Fix fiyat tikini tiklayip HESAP tusuna basiniz" new-line
+*                                        new-line
+*                                        " F6 --- Konaklama boyunca uygulanacak fiyatlar " new-line 
+                      move xkonuk-dv-degeri to cast-fiyati
+                 end-if
+              end-if
+  
+             
+                 move xkonuk-anlasma      to cast-anlasma
+                
+                 if xkonuk-pans-plan not = 1
+                     move xkonuk-pan-tipi     to cast-pan-tipi
+                  else
+                     if cast-pan-tipi   = spaces
+                       move xkonuk-pan-tipi     to cast-pan-tipi          
+                     end-if 
+                  end-if
+
+                  if xkonuk-fkonum-plan not = 1
+                     move xkonuk-fiyat-konumu to cast-fiyat-konumu
+                  else
+                     if cast-fiyat-konumu = zeroes 
+                        move xkonuk-fiyat-konumu to cast-fiyat-konumu                        
+                     end-if 
+                  end-if
+
+                  if xkonuk-oda-plan not = 1
+                        move xkonuk-odano        to cast-oda-no
+                        move xkonuk-oda-konumu   to cast-oda-konumu
+                     
+                  else
+                     if cast-oda-no = spaces 
+                        move xkonuk-odano        to cast-oda-no
+                        move xkonuk-oda-konumu   to cast-oda-konumu
+                     end-if 
+                  end-if
+          if xkonuk-kisi-plan not = 1 or  tarih-tasi = cast-tarih 
+               
+                 move xkonuk-buyuk        to cast-buyuk
+                 move xkonuk-kucuk        to cast-kucuk
+                 move xkonuk-bebek        to cast-bebek
+                 move xkonuk-free         to cast-free
+               
+                
+         end-if
+             
+             move xkonuk-sharenum to cast-sharenum
+               move xkonuk-grup-no      to cast-grup
+          if cast-tarih = xkonuk-git-tar
+               initialize      cast-fiyati  cast-anlasma-fiyati
+           end-if
+          
+           perform break-mami
+          rewrite cast-rec invalid 
+                       go cast-isle-oku
+                      end-rewrite
+               
+      if cast-rec not = eski-cast(1:function length(cast-rec)) then 
+                perform log-operation-cast
+        end-if 
+
+            go cast-isle-oku. 
+ cast-isle-bitti. 
+             close cast hesayr break. 
+ cast-isle-exit. 
+     exit. 
+ takvim-isle. 
+         if srez-buyuk not = xkonuk-buyuk go takvim-isle-basla. 
+         if srez-kucuk not = xkonuk-kucuk go takvim-isle-basla. 
+         if srez-free  not = xkonuk-free  go takvim-isle-basla. 
+         if srez-bebek not = xkonuk-bebek go takvim-isle-basla. 
+         if srez-oda-konumu  not = xkonuk-oda-konumu 
+            go takvim-isle-basla. 
+            go takvim-isle-exit. 
+ takvim-isle-basla. 
+        open i-o takvim.
+        move xkonuk-gel-tar to takvim-anah. 
+        start takvim key not < takvim-anah invalid 
+              go takvim-isle-bitti.
+ takvim-oku-yaz. 
+        read takvim next no lock end 
+             go takvim-isle-bitti.
+        if fs-takvim = 99 go takvim-oku-yaz. 
+        if takvim-anah = xkonuk-git-tar 
+           go takvim-isle-bitti
+        end-if. 
+        if takvim-anah > xkonuk-git-tar 
+           go takvim-isle-bitti
+        end-if. 
+          compute takvim-sat-buyuk(xkonuk-oda-konumu) = 
+                  takvim-sat-buyuk(xkonuk-oda-konumu) + 
+                  xkonuk-buyuk. 
+          compute takvim-sat-buyuk(srez-oda-konumu) = 
+                  takvim-sat-buyuk(srez-oda-konumu) - 
+                  srez-buyuk. 
+          compute takvim-sat-kucuk(xkonuk-oda-konumu) = 
+                  takvim-sat-kucuk(xkonuk-oda-konumu) + 
+                  xkonuk-kucuk. 
+          compute takvim-sat-kucuk(srez-oda-konumu) = 
+                  takvim-sat-kucuk(srez-oda-konumu) - 
+                  srez-kucuk. 
+
+          compute takvim-sat-free(xkonuk-oda-konumu) = 
+                  takvim-sat-free(xkonuk-oda-konumu) + 
+                  xkonuk-free. 
+          compute takvim-sat-free(xkonuk-oda-konumu) = 
+                  takvim-sat-free(xkonuk-oda-konumu) + 
+                  xkonuk-bebek.
+          compute takvim-sat-free(srez-oda-konumu) = 
+                  takvim-sat-free(srez-oda-konumu) - 
+                  srez-free. 
+          compute takvim-sat-free(srez-oda-konumu) = 
+                  takvim-sat-free(srez-oda-konumu) - 
+                  srez-bebek.
+        rewrite takvim-rec invalid go takvim-oku-yaz. 
+            go takvim-oku-yaz. 
+ takvim-isle-bitti.
+        close takvim.
+ takvim-isle-exit.
+      
+      exit. 
+*
+ odalar-isle. 
+             open i-o odalar. 
+             move xkonuk-odano  to odalar-no. 
+             read odalar no lock invalid close odalar go odalar-isle-exit. 
+*        Clup ersan da cin yapilmis odalar yenide listede ikmasin diye huose-durumu eklendi MUHAMMED
+             move cinpara-cin-house   to odalar-durumu house-durumu.  
+
+             rewrite odalar-rec invalid continue 
+             end-rewrite. 
+                     perform log-operation-odalar.
+             close odalar. 
+ odalar-isle-exit. 
+       exit. 
+ extra-ac. 
+        if cinpara-ext-fol-ac = "E" 
+           continue
+        else 
+           go extra-ac-exit
+        end-if. 
+ extra-kacdefa. 
+        perform extra-fol-ac thru extra-fol-ac-exit 
+                cinpara-ext-fol-adet times. 
+        go extra-ac-exit. 
+ extra-fol-ac. 
+ extra-fol-no. 
+    initialize gecici-fol-no. 
+    open i-o genelfis. 
+    move 1 to genelfis-anahtar. 
+    read genelfis no lock invalid 
+         initialize genelfis-rec 
+         move 1 to genelfis-anahtar
+         not invalid continue
+    end-read. 
+    add 1 to folio-oto. 
+    move folio-oto to gecici-fol-no. 
+    rewrite genelfis-rec invalid write genelfis-rec. 
+    close genelfis. 
+          move gecici-fol-no to konuk-folio. 
+          read konuk no lock invalid continue, 
+                         not invalid go extra-fol-no. 
+          move gecici-fol-no to ozluk-folio. 
+          read ozluk no lock invalid continue, 
+                         not invalid go extra-fol-no. 
+ extra-fol-no-bitti. 
+          initialize konuk-rec ozluk-rec. 
+          move xkonuk-rec    to konuk-rec. 
+          
+          move xozluk-rec    to ozluk-rec.
+ 
+          move gecici-fol-no to konuk-folio ozluk-folio ozluk2-folio. 
+         open input banka. 
+    move cinpara-ext-fol-banka to banka-kodu. 
+    read banka  no lock invalid continue, 
+                    not invalid move cinpara-ext-fol-banka  to konuk-banka. 
+         close      banka. 
+         open input doviz. 
+    move cinpara-ext-fol-doviz  to doviz-kodu. 
+    read doviz  no lock invalid continue, 
+                    not invalid move cinpara-ext-fol-doviz  to konuk-doviz. 
+         close      doviz. 
+         open input kodlar02. 
+    move "A"           to kodlar02-tipi. 
+    move    tampon-pan-tipi to kodlar02-kodu    
+         read kodlar02  no lock invalid continue, 
+                     not invalid 
+                     move    tampon-pan-tipi to konuk-pan-tipi
+        end-read                    
+                    
+*    move cinpara-ext-fol-pan to konuk-pan-tipi.
+*    move cinpara-ext-fol-pan to kodlar02-kodu. 
+*    read kodlar02  no lock invalid continue, 
+*                    not invalid move cinpara-ext-fol-pan to konuk-pan-tipi. 
+    move "B"             to kodlar02-tipi. 
+    move cinpara-ext-fol-ode  to kodlar02-kodu. 
+    read kodlar02  no lock invalid continue, 
+                    not invalid move cinpara-ext-fol-ode to konuk-odeme-tipi. 
+         close      kodlar02. 
+         open input ulke. 
+    move cinpara-ext-fol-ulke    to ulke-anah1. 
+    read ulke      no lock invalid continue, 
+                    not invalid move cinpara-ext-fol-ulke to konuk-ulke. 
+         close      ulke. 
+          move rez-no to konuk-extra-rez-no 
+
+          move "I"  to  konuk-durumu. 
+          move "E"  to konuk-fol-kodu. 
+          move xkonuk-adi           to konuk-adi(04:17). 
+          move "E=>"                to konuk-adi(01:03). 
+***********>Gereksiz bilgiler sifirlaniyor........... 
+          initialize  konuk-rez-no 
+          konuk-kisi  konuk-voucher  konuk-nor-indirim 
+          konuk-cik-cikma 
+          konuk-oda-tutar  konuk-extbed-tutar konuk-kahvalti-tutar 
+          konuk-ogle-tutar  konuk-aksam-tutar konuk-icecek-tutar 
+          konuk-extra-tutar konuk-top-borc konuk-top-alac konuk-kur-degeri 
+          konuk-dv-degeri konuk-dv-degeri konuk-acik konuk-kartno konuk-firma. 
+          move "I"  to  ozluk-durumu. 
+          move xkonuk-adi           to ozluk-adi(04:17). 
+          move "E=>"                to ozluk-adi(01:03). 
+          write konuk-rec invalid continue
+          end-write.
+                perform log-operation-konuk.
+           
+          write ozluk-rec invalid continue
+          end-write.
+                perform log-operation-ozluk. 
+          write ozluk2-rec invalid continue
+          end-write.
+*          if rez-extra-kart not = spaces
+*            perform extra-kart-tanimla
+*            else
+ 
+ 
+                   if cinpara-kartsiz-pos = 1 then 
+                            move konuk-folio(2:) to REZ-EXTRA-KART
+                            perform extra-kart-tanimla
+                   else
+                        if rez-extra-kart not = spaces
+                         perform extra-kart-tanimla
+                        end-if
+                         if rez-extra-kart2 not = spaces
+                          perform extra-kart-tanimla2
+                        end-if
+                    end-if
+                     
+          
+
+
+          
+*          end-if
+*          if rez-extra-kart2 not = spaces
+*            perform extra-kart-tanimla2
+*          end-if.
+            .    
+ extra-fol-ac-exit. 
+      exit. 
+ extra-ac-exit. 
+    exit. 
+ tel-ac. 
+        if cinpara-tel-fol-ac = "E" 
+           continue
+        else 
+           go tel-ac-exit
+        end-if. 
+ tel-kacdefa. 
+        perform tel-fol-ac thru tel-fol-ac-exit 
+                cinpara-tel-fol-adet times. 
+        go tel-ac-exit. 
+ tel-fol-ac. 
+ tel-fol-no. 
+    initialize gecici-fol-no. 
+    open i-o genelfis. 
+    move 1 to genelfis-anahtar. 
+    read genelfis no lock invalid 
+         initialize genelfis-rec 
+         move 1 to genelfis-anahtar
+         not invalid continue
+    end-read. 
+    add 1 to folio-oto. 
+    move folio-oto to gecici-fol-no. 
+    rewrite genelfis-rec invalid write genelfis-rec. 
+    close genelfis. 
+          move gecici-fol-no to konuk-folio. 
+          read konuk no lock invalid continue, 
+                         not invalid go tel-fol-no. 
+          move gecici-fol-no to ozluk-folio. 
+          read ozluk no lock invalid continue, 
+                         not invalid go tel-fol-no. 
+ tel-fol-no-bitti. 
+          initialize konuk-rec ozluk-rec. 
+          move xkonuk-rec    to konuk-rec. 
+          move xozluk-rec    to ozluk-rec. 
+          move gecici-fol-no to konuk-folio ozluk-folio. 
+         open input banka. 
+    move cinpara-ext-fol-banka to banka-kodu. 
+    read banka  no lock invalid continue, 
+                    not invalid move cinpara-ext-fol-banka  to konuk-banka. 
+         close      banka. 
+         open input doviz. 
+    move cinpara-ext-fol-doviz  to doviz-kodu. 
+    read doviz  no lock invalid continue, 
+                    not invalid move cinpara-ext-fol-doviz  to konuk-doviz. 
+         close      doviz. 
+         open input kodlar02. 
+    move "A"           to kodlar02-tipi. 
+    move cinpara-ext-fol-pan to kodlar02-kodu. 
+    read kodlar02  no lock invalid continue, 
+                   not invalid move cinpara-ext-fol-pan to konuk-pan-tipi. 
+    move "B"             to kodlar02-tipi. 
+    move cinpara-ext-fol-ode  to kodlar02-kodu. 
+    read kodlar02  no lock invalid continue, 
+                    not invalid move cinpara-ext-fol-ode to konuk-odeme-tipi. 
+         close      kodlar02. 
+         open input ulke. 
+    move cinpara-ext-fol-ulke    to ulke-anah1. 
+    read ulke      no lock invalid continue, 
+                    not invalid move cinpara-ext-fol-ulke to konuk-ulke. 
+         close      ulke. 
+          move "I"  to  konuk-durumu. 
+          move "T"  to  konuk-fol-kodu. 
+          move xkonuk-adi           to konuk-adi(04:17). 
+          move "T=>"                to konuk-adi(01:03). 
+***********>Gereksiz bilgiler sifirlaniyor........... 
+          initialize  konuk-rez-no 
+          konuk-kisi  konuk-voucher    konuk-nor-indirim 
+          konuk-cik-cikma 
+          konuk-oda-tutar  konuk-extbed-tutar konuk-kahvalti-tutar 
+          konuk-ogle-tutar  konuk-aksam-tutar konuk-icecek-tutar 
+          konuk-extra-tutar konuk-top-borc konuk-top-alac konuk-kur-degeri 
+          konuk-dv-degeri konuk-dv-degeri konuk-acik konuk-kartno konuk-firma. 
+          move "I"  to  ozluk-durumu. 
+          move xkonuk-adi           to ozluk-adi(04:17). 
+          move "T=>"                to ozluk-adi(01:03). 
+          move plaka to ozluk-plaka
+          write konuk-rec invalid continue
+          end-write.
+                perform log-operation-konuk.
+          write ozluk-rec invalid continue 
+          end-write.
+                perform log-operation-ozluk.
+ tel-fol-ac-exit. 
+      exit. 
+ tel-ac-exit. 
+    exit. 
+ islem-bitti.
+ kaydet-exit.
+    exit.
+*
+ takvim-sil. 
+ takvim-sil-basla. 
+        open i-o takvim.
+        move xkonuk-gel-tar to takvim-anah. 
+        start takvim key not < takvim-anah invalid 
+              go takvim-sil-bitti.
+
+ takvim-sil-oku. 
+        read takvim next no lock end 
+             go takvim-sil-bitti.
+        if fs-takvim = 99 go takvim-sil-oku. 
+        if takvim-anah = xkonuk-git-tar 
+           go takvim-sil-bitti
+        end-if. 
+        if takvim-anah > xkonuk-git-tar 
+           go takvim-sil-bitti
+        end-if. 
+ 
+      compute takvim-sat-oda(xkonuk-oda-konumu) = 
+              takvim-sat-oda(xkonuk-oda-konumu) - 1. 
+      compute takvim-sat-buyuk(xkonuk-oda-konumu) = 
+              takvim-sat-buyuk(xkonuk-oda-konumu) - xkonuk-buyuk. 
+      compute takvim-sat-kucuk(xkonuk-oda-konumu) = 
+              takvim-sat-kucuk(xkonuk-oda-konumu) - xkonuk-kucuk. 
+      compute takvim-sat-free(xkonuk-oda-konumu) = 
+              takvim-sat-free(xkonuk-oda-konumu) - xkonuk-free. 
+      compute takvim-sat-free(xkonuk-oda-konumu) = 
+              takvim-sat-free(xkonuk-oda-konumu) - xkonuk-bebek.
+        rewrite takvim-rec invalid go takvim-sil-oku. 
+            go takvim-sil-oku. 
+ takvim-sil-bitti.
+      close takvim.
+ takvim-sil-exit. 
+     exit. 
+*
+ cast-sil. 
+          open i-o cast. 
+         initialize cast-rec. 
+        move xkonuk-rez-no    to cast-rez-no. 
+        start cast key not < cast-anah1 invalid 
+              go cast-sil-bitti. 
+ cast-sil-oku. 
+        read cast  next no lock end go cast-sil-bitti. 
+        if fs-cast = 99 go cast-sil-oku. 
+        if   cast-rez-no > xkonuk-rez-no 
+             go cast-sil-bitti
+        end-if. 
+        if cast-rez-no = xkonuk-rez-no 
+           continue
+        else 
+           go cast-sil-oku
+        end-if.        
+        
+        delete cast invalid 
+           go cast-sil-oku. 
+          perform log-operation-cast
+            go cast-sil-oku. 
+ cast-sil-bitti. 
+             close cast. 
+ cast-sil-exit. 
+     exit. 
+*
+ r-kayit-ara. 
+        open input romhrk. 
+        initialize romhrk-rec. 
+        move xkonuk-folio   to romhrk-folio. 
+        move spaces         to romhrk-islem. 
+        start romhrk key not < romhrk-anah invalid 
+              go r-kayit-ara-bitti. 
+ r-kayit-oku. 
+        read  romhrk next no lock end go r-kayit-ara-bitti. 
+        if fs-romhrk = 99 go r-kayit-oku. 
+        if romhrk-folio > xkonuk-folio  go r-kayit-ara-bitti. 
+        if romhrk-folio = xkonuk-folio 
+           continue
+        else 
+           go r-kayit-oku
+        end-if. 
+           move 1 to gec-gecme. 
+ r-kayit-ara-bitti. 
+        close      romhrk. 
+ r-kayit-ara-exit. 
+     exit. 
+ e-kayit-ara. 
+        open input exthrk. 
+        initialize exthrk-rec. 
+        move xkonuk-folio   to exthrk-folio. 
+        move spaces         to exthrk-islem. 
+        start exthrk key not < exthrk-anah invalid 
+              go e-kayit-ara-bitti. 
+ e-kayit-oku. 
+        read  exthrk next no lock end go e-kayit-ara-bitti. 
+        if fs-exthrk = 99 go e-kayit-oku. 
+        if exthrk-folio > xkonuk-folio  go e-kayit-ara-bitti. 
+        if exthrk-folio = xkonuk-folio 
+           continue
+        else 
+           go e-kayit-oku
+        end-if. 
+           move 1 to gec-gecme. 
+ e-kayit-ara-bitti. 
+        close      exthrk. 
+ e-kayit-ara-exit. 
+       exit. 
+
+*
+ y-kayit-ara. 
+        open input yromhrk. 
+        initialize yromhrk-rec. 
+        move xkonuk-folio   to yromhrk-folio. 
+        move spaces         to yromhrk-islem. 
+        start yromhrk key not < yromhrk-anah invalid 
+              go y-kayit-ara-bitti. 
+ y-kayit-oku. 
+        read  yromhrk next no lock end go y-kayit-ara-bitti. 
+        if fs-yromhrk = 99 go y-kayit-oku. 
+        if yromhrk-folio > xkonuk-folio  go y-kayit-ara-bitti. 
+        if yromhrk-folio = xkonuk-folio 
+           continue
+        else 
+           go y-kayit-oku
+        end-if. 
+           move 1 to gec-gecme. 
+ y-kayit-ara-bitti. 
+        close      yromhrk. 
+ y-kayit-ara-exit. 
+     exit. 
+*
+ blok-kont2.
+          
+          perform oda-oku thru oda-oku-exit
+            if gecmez
+               initialize xkonuk-odano
+                  move   ydk-odano  to xkonuk-odano 
+                   
+                  perform xkonuk-oda-uzat
+                  move 1 to gec-gecme
+                  exit paragraph
+            end-if 
+            add 1 to debug            
+               initialize blok-cagir 
+               move xkonuk-gel-tar    to blok-bas-tar 
+               move xkonuk-git-tar    to blok-bit-tar 
+               move xkonuk-rez-no     to blok-rez-no 
+               move xkonuk-odano      to blok-oda 
+               if cin-tipi = 2 and konuk-kayit-durumu = "Y" then 
+                   move  xkonuk-sharenum   to blok-sharenum
+               end-if
+               call "/asya/ytl/obj/otel/blokara.asy" using blok-cagir
+                    on exception perform callerr-proc
+                    not on exception
+               cancel "/asya/ytl/obj/otel/blokara.asy" 
+               end-call
+               if rezpara-cifte-blokaj not = "E" and blok-yapabilir = "H" 
+                  initialize xkonuk-odano
+                  move   ydk-odano  to xkonuk-odano 
+              
+                  perform xkonuk-oda-uzat
+                  move 1 to gec-gecme
+                  exit paragraph
+               end-if
+             
+           .
+
+ dolu-oda-kontrol.
+        
+            initialize konuk-rec gec-gecme. 
+              if xkonuk-odano  = spaces 
+                    go dolu-oda-kontrol-exit
+              end-if
+              initialize blok-cagir 
+               move rez-gir-tar    to blok-bas-tar 
+               move rez-cik-tar    to blok-bit-tar 
+               move rez-no         to blok-rez-no 
+               move xkonuk-odano      to blok-oda 
+               call "/asya/ytl/obj/otel/blokara.asy" using blok-cagir
+                    on exception perform callerr-proc
+                    not on exception
+               cancel "/asya/ytl/obj/otel/blokara.asy" 
+               end-call
+              if rezpara-cifte-blokaj not = "E" and blok-yapabilir = "H" 
+                  initialize xkonuk-odano
+                  move ydk-odano to xkonuk-odano
+                 
+                  perform xkonuk-oda-uzat
+                  move 1 to gec-gecme
+                  go dolu-oda-kontrol-exit
+               end-if
+                move xkonuk-odano to ydk-odano 
+            initialize konuk-rec gec-gecme. 
+            move "I"            to konuk-durumu. 
+            move xkonuk-odano   to konuk-odano. 
+         start konuk key not < konuk-oda 
+               invalid initialize gec-gecme
+               go dolu-oda-kontrol-exit. 
+ dolu-oda-oku. 
+        
+           read konuk next no lock end go dolu-oda-kontrol-exit. 
+           if fs-konuk = 99 go dolu-oda-oku. 
+           if konuk-odano > xkonuk-odano go dolu-oda-kontrol-exit. 
+           if konuk-durumu not = "I" go dolu-oda-kontrol-exit. 
+           if konuk-odano = xkonuk-odano  and  konuk-sharenum = xkonuk-sharenum 
+              move 1 to dolu-share
+              string konuk-adi delimited by "   "
+               " " delimited by size
+               konuk-soyadi delimited " " 
+                  into dolu-adi
+             
+          end-if
+           if konuk-odano = xkonuk-odano  and ((  konuk-share not  = 1  and 
+                xkonuk-share not  = 1  )  or konuk-sharenum not = xkonuk-sharenum  )
+              continue
+           else 
+              go dolu-oda-kontrol-exit
+           end-if. 
+
+           if 
+              cin-tipi <> "3" 
+              initialize mesaj-degiskenler
+              move " [ Dolu Oda Secildi ] " to mmesaj-title
+              move "F:         G:  /  /     C:  /  /    " to mmesaj-1 
+              move konuk-folio         to mmesaj-1(03:08) 
+              move konuk-gel-gun       to mmesaj-1(14:02) 
+              move konuk-gel-ay        to mmesaj-1(17:02) 
+              move konuk-gel-yil       to mmesaj-1(20:04) 
+              move konuk-git-gun       to mmesaj-1(27:02) 
+              move konuk-git-ay        to mmesaj-1(30:02) 
+              move konuk-git-yil       to mmesaj-1(33:04) 
+              move konuk-adi(01:15)    to mmesaj-2(01:15) 
+              move konuk-soyadi(01:15) to mmesaj-2(17:15) 
+              move 1           to mmesaj-type
+              move 3           to mmesaj-icon
+              move 1           to mmesaj-default
+                move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+              perform mmesaj-ver
+              if CINPARA-DOLU-ODAYA not = "E" 
+              move 1 to gec-gecme
+              end-if
+           end-if.
+
+          
+              if cin-tipi <> "3"
+                 initialize mesaj-degiskenler
+                 move " [ Dolu Oda Secildi ] " to mmesaj-title
+                 move "Dolu Odaya C/In !!"    to mmesaj-1 
+                 move "    Enter Devam    "   to mmesaj-2 
+                 move 1           to mmesaj-type
+                 move 3           to mmesaj-icon
+                 move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+                 perform mmesaj-ver
+              end-if .
+          
+ dolu-oda-kontrol-exit. 
+     exit. 
+*
+ folio-numarasi-al. 
+    open i-o genelfis. 
+    move 1 to genelfis-anahtar. 
+    read genelfis no lock invalid 
+          initialize genelfis-rec 
+          move 1 to genelfis-anahtar
+    end-read. 
+    add 1 to folio-oto. 
+    move folio-oto to xkonuk-folio. 
+    rewrite genelfis-rec invalid write genelfis-rec. 
+    close genelfis. 
+    move xkonuk-folio    to konuk-folio. 
+         read konuk no lock 
+              invalid move "Y" to konuk-kayit-durumu 
+          not invalid move "E" to konuk-kayit-durumu
+              if cin-tipi = 1
+                 initialize mesaj-degiskenler
+                 move " [ Folio Numarasi Yanlis ] " to mmesaj-title
+                 move "Verilen Folio Numarasinda Kayit   " to mmesaj-1 
+                 move "Var Folio No Degistirin..         " to mmesaj-2
+                 move xkonuk-folio     to mmesaj-2(25:08)
+                 move 1           to mmesaj-type
+                 move 3           to mmesaj-icon
+                 move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+                 perform mmesaj-ver
+                 move 1 to gec-gecme
+              end-if
+         end-read. 
+       
+
+
+********>Rezervasyon asamasindaki kontrolller
+********>Walk-in Check-in'de bu kontrollerin 
+********>olup-olmamasi dusunulecek..................
+ kontrat-kontrol. 
+            move "V" to kontrat-var-yok. 
+         if xrez-tipi = 1 
+            continue
+         else 
+            go kontrat-kontrol-exit
+         end-if.
+         open input acenhrk. 
+ kontrat-basla. 
+          initialize acenhrk-rec. 
+          move xrez-acenta  to acenhrk-acenta. 
+          move xrez-gir-tar to acenhrk-tarih. 
+          start acenhrk key not < acenhrk-anah invalid 
+                go kontrat-yok. 
+ kontrat-oku. 
+         read acenhrk  next no lock end 
+              go kontrat-yok. 
+         if fs-acenhrk   = 99 go kontrat-oku. 
+         if acenhrk-acenta  = xrez-acenta 
+            continue
+         else 
+            go kontrat-yok
+         end-if. 
+         if acenhrk-tarih not > xrez-gir-tar 
+            continue
+         else 
+            go kontrat-yok
+         end-if. 
+         if acenhrk-kontrat-oda = 0 go kontrat-oku. 
+            close acenhrk. 
+            go kontrat-kontrol-exit. 
+ kontrat-yok. 
+            move "Y" to kontrat-var-yok. 
+            close acenhrk. 
+            initialize mesaj-degiskenler
+            move "Bu Acentanin Bu Tarihlerde Kontrati YOK...."  to mmesaj-1
+            move "Rezervasyon Tipini Degistirin.............."  to mmesaj-2
+            move " [ Kontrat Uyari] " to mmesaj-title
+            move 1           to mmesaj-type
+            move 3           to mmesaj-icon
+            move 1           to mmesaj-default
+            perform mmesaj-ver.
+ kontrat-kontrol-exit. 
+     exit. 
+ aksiyon-kontrol. 
+         open input aksiyhrk takvim. 
+         initialize aksiyon-varsa gun-sayi. 
+ aksiyon-basla. 
+          move xrez-gir-tar to takvim-anah. 
+          start takvim key not < takvim-anah invalid 
+                close aksiyhrk takvim
+                go aksiyon-kontrol-exit. 
+ aksiyon-oku. 
+         read takvim   next no lock end go ak-bak. 
+         if fs-takvim   = 99 go aksiyon-oku. 
+         if takvim-anah = xrez-cik-tar go ak-bak. 
+         if takvim-anah > xrez-cik-tar go ak-bak. 
+         add 1 to gun-sayi. 
+         go aksiyon-oku. 
+ ak-bak. 
+         move "A"           to aksiyhrk-tipi.
+         move xrez-acenta   to aksiyhrk-acenta. 
+         move xrez-gir-tar  to aksiyhrk-tarih. 
+         move xrez-pan-tipi to aksiyhrk-pan-tipi.
+         move gun-sayi      to aksiyhrk-gecele. 
+         read aksiyhrk no lock invalid 
+             close aksiyhrk takvim go aksiyon-kontrol-exit. 
+            initialize mesaj-degiskenler
+            move "Aksiyona Tabi Acenta                       "  to mmesaj-1
+            move "Geceleme..:"   to mmesaj-2(01:12)
+
+
+            move aksiyhrk-gecele to mmesaj-2(12:02)
+            move "Tahsil....:"   to mmesaj-2(15:12)
+            move aksiyhrk-ode(1:2)    to mmesaj-2(26:02)
+            move " [ Aksiyon Uyari] " to mmesaj-title
+            move 1           to mmesaj-type
+            move 3           to mmesaj-icon
+            move 1           to mmesaj-default
+            perform mmesaj-ver.
+            move "V"  to aksiyon-var-yok. 
+            move aksiyhrk-gecele   to ak-gece. 
+
+            move aksiyhrk-ode      to ak-tahsil. 
+            close      aksiyhrk takvim. 
+ aksiyon-kontrol-exit. 
+      exit. 
+ stopsale-kontrol. 
+      open input aksiyhrk.
+ stopsale-oku. 
+         move "Y" to stopsale-var-yok.
+         move "S"           to aksiyhrk-tipi.
+         move xrez-acenta   to aksiyhrk-acenta. 
+         move xrez-gir-tar  to aksiyhrk-tarih. 
+         move xrez-pan-tipi to aksiyhrk-pan-tipi.
+         move 0             to aksiyhrk-gecele.
+         read aksiyhrk no lock invalid 
+              close aksiyhrk go stopsale-kontrol-exit. 
+            initialize mesaj-degiskenler
+            move "Bu Acentaya Stop-Sale Cekilmis......."  to mmesaj-1
+            move "Bu Tarihlere Rezervasyon Girmeyin...."  to mmesaj-2
+            move " [ Stop Sale Uyari] " to mmesaj-title
+            move 1           to mmesaj-type
+            move 3           to mmesaj-icon
+            move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+            perform mmesaj-ver.
+            move "V" to stopsale-var-yok.
+            close      aksiyhrk.
+ stopsale-kontrol-exit. 
+      exit.
+*
+ eskimus-ara. 
+        move "I"          to rez-durumu. 
+        move xrez-soyadi  to rez-soyadi. 
+       start rez key not < rez-soy invalid 
+             go eskimus-ara-exit. 
+ eskimus-oku. 
+         read rez next no lock end go eskimus-ara-exit. 
+         if fs-rez = 99 go eskimus-oku. 
+         if rez-soyadi > xrez-soyadi go eskimus-ara-exit. 
+         if rez-durumu not = "I" go eskimus-ara-exit. 
+         if rez-soyadi = xrez-soyadi and rez-adi = xrez-adi 
+            continue
+         else 
+            go eskimus-oku
+         end-if. 
+         if rez-no   =   xrez-no     go eskimus-oku. 
+            initialize mesaj-degiskenler
+            move " [ Eski Musteri Uyari ] " to mmesaj-title
+            move "DAHA ONCE GELMIS...Rez No:         " to mmesaj-1.
+            move rez-no                                to mmesaj-1(27:08). 
+            move "Acen:     G:  /  /     C:  /  /    " to mmesaj-2. 
+            move rez-acenta   to mmesaj-2(06:04). 
+            move rez-gir-gun  to mmesaj-2(13:02). 
+            move rez-gir-ay   to mmesaj-2(16:02). 
+            move rez-gir-yil  to mmesaj-2(19:04). 
+            move rez-cik-gun  to mmesaj-2(26:02). 
+            move rez-cik-ay   to mmesaj-2(29:02). 
+            move rez-cik-yil  to mmesaj-2(32:04). 
+            move 2           to mmesaj-type
+
+            move 3           to mmesaj-icon
+            move 1           to mmesaj-default
+            perform mmesaj-ver
+            if donus-kodu = 2 
+               go eskimus-ara-exit
+            end-if
+         go eskimus-oku. 
+ eskimus-ara-exit. 
+     exit. 
+ mukerrer-isimden. 
+        move "I"          to rez-durumu. 
+        move xrez-soyadi  to rez-soyadi. 
+       start rez key not < rez-soy invalid 
+             go mukerrer-isimden-exit. 
+ mukerrer-isim-oku. 
+         read rez next no lock end go mukerrer-isimden-exit. 
+         if fs-rez = 99 go mukerrer-isim-oku. 
+
+         if rez-soyadi > xrez-soyadi go mukerrer-isimden-exit. 
+         if rez-durumu not = "I" go mukerrer-isimden-exit. 
+         if rez-soyadi = xrez-soyadi and rez-adi = xrez-adi 
+            and rez-acenta = xrez-acenta 
+            continue
+         else 
+            go mukerrer-isim-oku
+         end-if. 
+         if rez-no   =   xrez-no     go mukerrer-isim-oku. 
+            initialize mesaj-degiskenler
+            move " [ Mukerrer Kayit Uyari ] " to mmesaj-title
+            move "MUKERRER KAYIT.....Rez No:         " to mmesaj-1.
+            move rez-no                                to mmesaj-1(27:08). 
+            move "Acen:     G:  /  /     C:  /  /    " to mmesaj-2. 
+            move rez-acenta   to mmesaj-2(06:04). 
+            move rez-gir-gun  to mmesaj-2(13:02). 
+            move rez-gir-ay   to mmesaj-2(16:02). 
+            move rez-gir-yil  to mmesaj-2(19:04). 
+            move rez-cik-gun  to mmesaj-2(26:02). 
+            move rez-cik-ay   to mmesaj-2(29:02). 
+            move rez-cik-yil  to mmesaj-2(32:04). 
+            move 2           to mmesaj-type
+            move 3           to mmesaj-icon
+            move 1           to mmesaj-default
+            perform mmesaj-ver
+            if donus-kodu = 2 
+               go mukerrer-isimden-exit
+            end-if
+         go mukerrer-isim-oku. 
+ mukerrer-isimden-exit. 
+      exit. 
+ mukerrer-voucherden. 
+        move "I"          to rez-durumu. 
+        move xrez-voucher to rez-voucher. 
+       start rez key not < rez-vouc invalid go mukerrer-voucherden-exit. 
+ mukerrer-vouc-oku. 
+         read rez next no lock end go mukerrer-voucherden-exit. 
+         if fs-rez = 99 go mukerrer-vouc-oku. 
+         if rez-voucher > xrez-voucher go mukerrer-voucherden-exit. 
+         if rez-durumu not = "I" go mukerrer-voucherden-exit. 
+         if rez-voucher = xrez-voucher 
+            continue
+         else 
+            go mukerrer-vouc-oku
+         end-if. 
+         if rez-no   =   xrez-no     go mukerrer-vouc-oku. 
+            initialize mesaj-degiskenler
+            move " [ Mukerrer Kayit Uyari ] " to mmesaj-title
+            move "MUKERRER KAYIT.....Rez No:         " to mmesaj-1.
+            move rez-no                                to mmesaj-1(27:08). 
+            move "Acen:     G:  /  /     C:  /  /    " to mmesaj-2. 
+            move rez-acenta   to mmesaj-2(06:04). 
+            move rez-gir-gun  to mmesaj-2(13:02). 
+            move rez-gir-ay   to mmesaj-2(16:02). 
+            move rez-gir-yil  to mmesaj-2(19:04). 
+            move rez-cik-gun  to mmesaj-2(26:02). 
+            move rez-cik-ay   to mmesaj-2(29:02). 
+            move rez-cik-yil  to mmesaj-2(32:04). 
+            move 2           to mmesaj-type
+            move 3           to mmesaj-icon
+            move 1           to mmesaj-default
+            perform mmesaj-ver
+            if donus-kodu = 2 
+               go mukerrer-voucherden-exit
+            end-if
+         go mukerrer-vouc-oku. 
+ mukerrer-voucherden-exit. 
+      exit. 
+*
+ short-kontrol.
+            open input konum.
+            initialize konum-rec short-1konum short-toplam.
+            move xrez-oda-konumu   to konum-anahtar.
+            read konum no lock invalid 
+                 initialize konum-rec.
+            close konum.
+            open input takvim.
+        move "Y" to short-var-yok.
+        move xrez-gir-tar to takvim-anah.
+        start takvim key not < takvim-anah invalid 
+              go short-kontrol-bitti.
+ short-oku.
+         read takvim next no lock end go short-kontrol-bitti.
+         if fs-takvim = 99 go short-oku.
+         if takvim-anah = xrez-cik-tar  go short-kontrol-bitti.
+         if takvim-anah > xrez-cik-tar  go short-kontrol-bitti.
+            initialize short-1konum short-toplam.
+         compute short-1konum =  1 +
+                 takvim-sat-oda(xrez-oda-konumu)  .
+         compute short-toplam =  1 +
+                 takvim-sat-oda(1) + takvim-sat-oda(2) +
+                 takvim-sat-oda(3) + takvim-sat-oda(4) +
+                 takvim-sat-oda(5) + takvim-sat-oda(6) +
+                 takvim-sat-oda(7) + takvim-sat-oda(8) +
+                 takvim-sat-oda(9) .
+         if short-1konum > konum-hazir-oda  
+            perform 1konum-shortta
+              if donus-kodu = 2 
+                 go short-kontrol-bitti
+              end-if
+         end-if.
+
+         if short-toplam > takvim-hazir-oda 
+            perform toplam-shortta
+              if donus-kodu = 2 
+                 go short-kontrol-bitti
+              end-if
+         end-if.
+            go short-oku.
+*
+ 1konum-shortta.
+       move "V" to short-var-yok.
+       initialize mesaj-degiskenler
+       move " [ Oda Konumunuz Short'ta ] " to mmesaj-title
+       move "Bu Tarihte"                           to mmesaj-1(01:10)
+       move konum-adi(01:10)                       to mmesaj-1(12:10)
+       move "Oda Shortta"                          to mmesaj-1(23:11)
+       move "Tarih:  /  /     Kap:      Sat:     " to mmesaj-2
+       move takvim-gun   to mmesaj-2(07:02)
+       move takvim-ay    to mmesaj-2(10:02)
+       move takvim-yil   to mmesaj-2(13:04)
+
+       move konum-hazir-oda  to mmesaj-2(22:04)
+       move short-1konum     to mmesaj-2(32:04)
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+       move 2           to mmesaj-type
+       move 3           to mmesaj-icon
+       move 1           to mmesaj-default
+            perform mmesaj-ver
+        .
+*
+ toplam-shortta.
+       move "V" to short-var-yok.
+       initialize mesaj-degiskenler
+       move " [ Tum Konumlar Short'ta ] " to mmesaj-title
+       move "Bu Tarihte Tum Konumlar Short'ta"     to mmesaj-1
+       move "Tarih:  /  /     Kap:      Sat:     " to mmesaj-2
+       move takvim-gun   to mmesaj-2(07:02)
+       move takvim-ay    to mmesaj-2(10:02)
+       move takvim-yil   to mmesaj-2(13:04)
+
+       move takvim-hazir-oda to mmesaj-2(22:04)
+       move short-toplam     to mmesaj-2(32:04)
+
+       move 2           to mmesaj-type
+       move 3           to mmesaj-icon
+       move 1           to mmesaj-default
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+            perform mmesaj-ver
+        .
+ short-kontrol-bitti.
+       close takvim.
+ short-kontrol-exit.
+    exit.
+
+*
+ kontenjan-kontrol. 
+        open  input acenhrk takvim. 
+        move "V" to kontj-var-yok. 
+        move xrez-gir-tar to takvim-anah. 
+        start takvim key not < takvim-anah 
+              invalid go kontenjan-kontrol-bitti. 
+ kontj-oku. 
+         read takvim next no lock end 
+              go kontenjan-kontrol-bitti. 
+         if fs-takvim = 99 go kontj-oku. 
+         if takvim-anah = xrez-cik-tar 
+            go kontenjan-kontrol-bitti
+         end-if. 
+         if takvim-anah > xrez-cik-tar 
+            go kontenjan-kontrol-bitti
+         end-if. 
+         initialize acenhrk-rec. 
+         move xrez-acenta       to acenhrk-acenta. 
+         move takvim-anah       to acenhrk-tarih. 
+         move rezpara-kont-tipi to acenhrk-s-d-t-g. 
+         if rezpara-kont-tipi = 0 
+            move xrez-s-d-t-g   to acenhrk-s-d-t-g
+         end-if. 
+         move xrez-fiyat-konumu to acenhrk-oda-konumu. 
+         read acenhrk no lock invalid 
+              perform kontenjani-dolu. 
+         if acenhrk-sat-oda > acenhrk-kontrat-oda + 1 
+            perform kontenjani-dolu
+            if donus-kodu = 2 
+               go kontenjan-kontrol-bitti
+            end-if
+         end-if.
+         go kontj-oku. 
+ kontenjani-dolu. 
+       move "Y" to kontj-var-yok. 
+       initialize mesaj-degiskenler
+       move " [ Kontenjan Hata ] " to mmesaj-title
+       move "Bu Tarihte Bu Acentanin Kon.Yok"      to mmesaj-1. 
+       move "Tarih:  /  /     Kon:      Sat:     " to mmesaj-2. 
+       move takvim-gun                             to mmesaj-2(07:02). 
+       move takvim-ay                              to mmesaj-2(10:02). 
+       move takvim-yil                             to mmesaj-2(13:04). 
+       move acenhrk-kontrat-oda                    to mmesaj-2(22:04). 
+       move acenhrk-sat-oda                        to mmesaj-2(32:04). 
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+       move 2           to mmesaj-type
+       move 3           to mmesaj-icon
+       move 1           to mmesaj-default
+            perform mmesaj-ver
+        .
+ kontenjan-kontrol-bitti. 
+          close acenhrk takvim. 
+ kontenjan-kontrol-exit. 
+    exit. 
+*
+ blok-kontrol.
+           initialize gec-gecme
+           open input cast.
+        move xrez-gir-tar   to cast-tarih.
+        move xrez-odano     to cast-oda-no.
+        start cast key not < cast-anah3 invalid 
+              go blok-kontrol-bitti.
+ blok-kontrol-oku.
+        read cast next no lock end 
+             go blok-kontrol-bitti.
+        if fs-cast = 99 go blok-kontrol-oku.
+        if cast-tarih  > xrez-cik-tar   go blok-kontrol-bitti.
+        if cast-tarih  = xrez-cik-tar   go blok-kontrol-bitti.
+        if cast-oda-no > xrez-odano     go blok-kontrol-bitti.
+        if cast-oda-no = xrez-odano  
+           continue
+        else 
+           go blok-kontrol-oku
+        end-if.
+        if cast-rez-no = xrez-no go blok-kontrol-oku.
+           initialize mesaj-degiskenler
+           move " [ DIKKAT ] " to mmesaj-title
+           move "Girdiginiz Oda Bu Tarihte Blokeli  " to mmesaj-1
+           move "Tarih..:  /  /                     " to mmesaj-2
+           move cast-gun     to mmesaj-2(09:02)
+           move cast-ay      to mmesaj-2(12:02)
+           move cast-yil     to mmesaj-2(15:04)
+                 move mmesaj-1   to link-hata-donus
+                 move 1                     to link-hata
+
+           move 1           to mmesaj-type
+           move 3           to mmesaj-icon
+           move 1           to mmesaj-default
+             perform mmesaj-ver
+             .
+ blok-kontrol-bitti.
+            close cast.
+ blok-kontrol-exit.
+     exit.                                 
+*
+ takvim-oku.
+       open input takvim.
+       initialize takvim-rec.
+       move tarih         to takvim-anah 
+       read takvim        no lock invalid 
+            move 1        to gec-gecme
+            not invalid continue 
+       end-read
+       close takvim.
+ takvim-oku-exit.
+       exit.
+
+ oda-oku.
+       open input odalar.
+       initialize odalar-rec.
+       move xkonuk-odano     to odalar-anah
+       read odalar         no lock invalid 
+            move 1         to gec-gecme
+       not invalid 
+        if odalar-aktif-pasif = 1
+            move 1         to gec-gecme
+        end-if 
+         if odalar-hayali= "H" then
+               move 1 to birles-vis
+               else
+               
+               move 0 to birles-vis
+            end-if
+       end-read
+       close odalar.
+      
+       perform xkonuk-oda-uzat.
+ oda-oku-exit.
+       exit.
+*
+ mmesaj-ver.
+      inspect mmesaj-1 replacing trailing spaces by low-values
+      inspect mmesaj-2 replacing trailing spaces by low-values
+      inspect mmesaj-3 replacing trailing spaces by low-values.
+*
+ komisyon-dagit. 
+    perform komisyon-aksiyon
+    compute dv-oda rounded = ((dv-toplam / (100 - xkonuk-nor-indirim)) * 100) * 0.65
+    if dv-oda > dv-toplam
+       move dv-toplam to dv-oda
+    else
+     compute dv-kahvalti rounded = ((dv-toplam / (100 - xkonuk-nor-indirim)) * 100) * (aksiyhrk-ode / 100)
+     if dv-toplam <= dv-oda + dv-kahvalti
+        compute dv-kahvalti = dv-toplam - dv-oda
+     else 
+        compute dv-ogle = dv-toplam - dv-oda - dv-kahvalti
+     end-if
+    end-if.
+
+    initialize tl-oda tl-kahvalti tl-ogle. 
+    compute tl-oda rounded = dv-oda * doviz-alis
+    compute tl-kahvalti rounded = dv-kahvalti * doviz-alis
+    if tl-toplam <= tl-oda + tl-kahvalti
+       compute tl-kahvalti = tl-toplam - tl-oda
+    else 
+       compute tl-ogle = tl-toplam - tl-oda - tl-kahvalti
+    end-if.
+      .
+*
+ komisyon-aksiyon. 
+         open input aksiyhrk.
+         initialize aksiyhrk-rec.
+         move "K"             to aksiyhrk-tipi.
+         move xkonuk-acenta   to aksiyhrk-acenta. 
+         move xkonuk-gel-tar  to aksiyhrk-tarih. 
+         move xkonuk-pan-tipi to aksiyhrk-pan-tipi.
+         move 0               to aksiyhrk-gecele. 
+         read aksiyhrk no lock invalid 
+              initialize aksiyhrk-ode
+         end-read
+         close aksiyhrk.
+         .
+*
+ Form1-Aft-Routine.
+     close rez konuk ozluk ozluk2 ODALAR2.
+
+ eraly-booking-cb-Ex-Cmd-Clicked.
+                      
+     
+              if sayi = 1 move "E" to xkonuk-eb
+                  else     move "H" to xkonuk-eb
+              end-if
+     .
+*
+ liste-cik-cb-Ex-Cmd-Clicked.
+     initialize sayi
+    
+     if liste-cikma move "H" to xkonuk-cik-cikma
+     else           move "E" to xkonuk-cik-cikma
+     end-if.
+     .
+*
+*
+*
+ liste-post-cb-Ex-Cmd-Clicked.
+       initialize sayi    
+     if nopost-cikma move "C" to xkonuk-acik-kapali
+     else           move "O" to xkonuk-acik-kapali
+     end-if. 
+ fiyat-bul.
+        open input fiyat fiyatana. 
+        move 0 to oda-fiyati. 
+        move xkonuk-acenta        to fiyat-acenta. 
+        move xkonuk-gel-tar       to fiyat-tarih. 
+        move xkonuk-rez-tipi         to fiyat-rez-tipi. 
+        move xkonuk-pan-tipi      to fiyat-pan-tipi. 
+        move xkonuk-banka         to fiyat-banka. 
+        move xkonuk-doviz         to fiyat-doviz. 
+        move xkonuk-anlasma       to fiyat-anlasma. 
+        move xkonuk-buyuk         to fiyat-buyuk.
+        move xkonuk-kucuk         to fiyat-kucuk.
+        read fiyat no lock invalid go fiyat-bulundu.
+ 
+             move fiyat-acenta    to fiyatana-acenta. 
+             move fiyat-bas-tarih to fiyatana-ilk-tarih.
+             move fiyat-bit-tarih to fiyatana-son-tarih.
+             move fiyat-rez-tipi  to fiyatana-rez-tipi. 
+             move fiyat-pan-tipi  to fiyatana-pan-tipi. 
+             move fiyat-banka     to fiyatana-banka. 
+             move fiyat-doviz     to fiyatana-doviz. 
+             move fiyat-anlasma   to fiyatana-anlasma. 
+             move fiyat-buyuk     to fiyatana-buyuk.
+             move fiyat-kucuk     to fiyatana-kucuk.
+
+             read fiyatana no lock invalid go fiyat-bulundu.
+           
+********>Early Booking kontrol
+             perform eb-varsa-uyar.
+             perform ug-varsa-uyar.
+             perform cift-indirim-uyar.
+       move fiyatana-oda-fiyati(xkonuk-fiyat-konumu) to oda-fiyati. 
+
+*/********* 
+       if xkonuk-nor-indirim not = 0 
+       compute oda-fiyati = 
+              (((oda-fiyati * xkonuk-nor-indirim) / 100) - oda-fiyati)
+       end-if.
+*/Early booking orani var ve early booking uygulanacak ise 
+       if xkonuk-eb = "E" and fiyatana-eb-oran not = 0 
+       compute oda-fiyati = 
+              (((oda-fiyati * (fiyatana-eb-oran +( fiyatana-eb-kusur / 100) )) / 100) - oda-fiyati)
+       end-if. 
+       if  fiyatana-ug-oran not = 0 and gun-s >= fiyatana-ug-geceleme 
+           and xkonuk-ug-indirimi = 1 then  
+       compute oda-fiyati = 
+              (((oda-fiyati * (fiyatana-ug-oran + (fiyatana-ug-kusur / 100))) / 100) - oda-fiyati)
+       end-if. 
+       
+*/Kick back orani
+       if fiyatana-kick-back <> 0
+       compute oda-fiyati  = 
+              (((oda-fiyati * fiyatana-kick-back) / 1000) - oda-fiyati)
+       end-if.
+       move oda-fiyati to xrez-fiyati. 
+       compute xrez-fiyati rounded = oda-fiyati * 1.
+ aksiyonlu-uyar. 
+       if aksiyon-var 
+          continue
+       else 
+          go fiyat-bulundu
+       end-if. 
+            initialize mesaj-degiskenler
+            move " [ Aksiyon Fiyati ] " to mmesaj-title
+            move "Anlasma Fiyati:"      to mmesaj-1(01:15). 
+            move oda-fiyati             to oda-fiyati-z. 
+            move oda-fiyati-z           to mmesaj-1(16:20). 
+            move "Aksiyon Fiyati:"      to mmesaj-2(01:15). 
+            if aksiyhrk-sondan = 1 and fiyatana-fiks = 0 
+                and Xkonuk-FIYAT-FIX not = "E"  then 
+                  perform aksiyon-toplam-bul
+                else 
+                  compute aksiyonlu-toplam = 
+                            oda-fiyati * aksiyhrk-ode
+            end-if
+*            if xkonuk-aksiyon-eh not = "H"
+               
+               compute oda-fiyati rounded = ((aksiyonlu-toplam) / aksiyhrk-gecele)
+               move oda-fiyati            to oda-fiyati-z
+*            else
+*               compute oda-fiyati-z = ((aksiyonlu-toplam) / aksiyhrk-gecele)
+*            end-if.
+************move oda-fiyati            to oda-fiyati-z. 
+            move oda-fiyati-z          to mmesaj-2(16:20). 
+
+            move 1           to mmesaj-type
+            move 1           to mmesaj-icon
+            move 1           to mmesaj-default
+             perform mmesaj-ver.
+ aksiyonlu-uyar-exit. 
+       exit. 
+ fiyat-bulundu. 
+       move oda-fiyati to xrez-fiyati.
+       compute xrez-fiyati rounded = oda-fiyati * 1.
+       close      fiyat fiyatana. 
+ fiyat-bul-exit. 
+       exit. 
+*
+ cift-indirim-uyar.
+    perform gun-bul
+    if xkonuk-ug-indirimi = 1 
+       if not (fiyatana-ug-oran > 0 and gun-s >= fiyatana-ug-geceleme) 
+           display message box
+               " Uzun geceleme indirimini kapsamiyor ve kaldirilacak "
+               move 0 to xkonuk-ug-indirimi
+                      
+        end-if
+    end-if
+    if xkonuk-eb = "E" 
+       if  not (fiyatana-eb-oran > 0 )
+           display message box
+               " EB indirimini kapsamiyor ve kaldirilacak "
+                   
+                      move "H" to xkonuk-eb
+        end-if
+    end-if
+    initialize ind-sayi
+    
+    if aksiyon-var    add 1 to ind-sayi end-if
+    if xkonuk-ug-indirimi = 1    add 1 to ind-sayi end-if
+    if xkonuk-eb = "E"  add 1 to ind-sayi end-if
+    if ind-sayi > 1 then 
+        continue 
+*        display message box 
+*             "Bu Rezervasyon icin Aksiyon - Uzun Geceleme - EB indirimlerinden " new-line
+*             "en az 2 tanesi uygulanmis kontrol ediniz."
+       end-if.
+*
+ ug-varsa-uyar.
+      if fiyatana-ug-oran > 0 and gun-s >= fiyatana-ug-geceleme 
+          and xkonuk-ug-indirimi = 0 then 
+               initialize mesaj-degiskenler
+                   move " [ Uzun Geceleme Indirimini Kapsayan Rez ] " to mmesaj-title
+                   move " Bu Rezervasyon Uzun Geceleme Indirimi Sartlarini Sagliyor  " to mmesaj-1
+                   move " UZUN GECELEME SECENEGI CHECH EDILSIN MI ?? " to mmesaj-2 
+                   move " ..... [ E->Check Et H->Check Iptal I->Iptal ]  ........ " to mmesaj-3 
+                   move 4           to mmesaj-type
+                   move 1           to mmesaj-icon
+                   move 3           to mmesaj-default
+                   perform mmesaj-ver
+                    
+                      move 1 to xkonuk-ug-indirimi
+                     
+                   
+      end-if .
+*
+ eb-varsa-uyar.
+                accept sys-tar from century-date 
+                   move sys-yil to xrez-isl-yil
+                   move sys-ay  to xrez-isl-ay 
+                   move sys-gun to xrez-isl-gun 
+                if fiyatana-eb-oran not = 0 
+                   and sys-tar not < fiyatana-eb-bas-tarih  and
+                       sys-tar not > fiyatana-eb-bit-tarih  and xkonuk-eb not = "E"   
+                   initialize mesaj-degiskenler
+                   move " [ Early Booking Rezervasyon ] " to mmesaj-title
+                   move " GIRDIGINIZ RERVASYON BU TARIH ITIBARIYLE E/B ICERIYOR.. " to mmesaj-1
+                   move " EARLY BOOKING SECENEGI CHECH EDILSIN MI  ............?? " to mmesaj-2 
+                   move " ..... [ E->Check Et H->Check Iptal I->Iptal ]  ........ " to mmesaj-3 
+                   move 4           to mmesaj-type
+                   move 1           to mmesaj-icon
+                   move 3           to mmesaj-default
+                   perform mmesaj-ver
+                   
+                    
+                      move "E" to xkonuk-eb
+                   
+                end-if 
+           . 
+ eb-varsa-uyar-exit.
+    exit.
+ gun-bul.
+     initialize gun-s
+
+     move Xkonuk-gel-tar to takvim-anah
+     start takvim key not < takvim-anah
+         invalid 
+             continue
+          not invalid
+             perform until fs-takvim = "10"
+                read takvim next no lock
+                    end move "10" to fs-takvim
+                    not end
+                      if takvim-anah >= Xkonuk-git-tar
+                          move "10" to fs-takvim
+                        else
+                          add 1 to gun-s                      end-if 
+                end-read
+              end-perform  
+      end-start.
+      move gun-s to gun-say
+      
+      .
+*
+ aksiyon-toplam-bul.
+        initialize aksiyonlu-toplam
+        move xkonuk-gel-tar to takvim-anah
+        start takvim key not < takvim-anah 
+           invalid 
+              display message box "Takvim Bulunamadi"
+            not invalid 
+                perform varying i from 1 by 1 until i > aksiyhrk-ode
+                 read takvim next no lock
+                    end 
+                       exit perform
+                   not end 
+                     perform gunluk-bul
+                     add oda-fiyati to aksiyonlu-toplam
+                  end-read  
+                 end-perform
+         end-start.
+          .
+*
+ gunluk-bul.
+        move 0 to oda-fiyati. 
+        move xkonuk-acenta        to fiyat-acenta. 
+        move takvim-anah          to fiyat-tarih. 
+        move xkonuk-rez-tipi      to fiyat-rez-tipi. 
+        move xkonuk-pan-tipi      to fiyat-pan-tipi. 
+        move xkonuk-banka         to fiyat-banka. 
+        move xkonuk-doviz         to fiyat-doviz. 
+        move xkonuk-anlasma       to fiyat-anlasma. 
+        move xkonuk-buyuk         to fiyat-buyuk.
+        move xkonuk-kucuk         to fiyat-kucuk.
+        read fiyat no lock invalid 
+        close fiyat fiyatana
+        exit paragraph.
+ 
+             move fiyat-acenta    to fiyatana-acenta. 
+             move fiyat-bas-tarih to fiyatana-ilk-tarih.
+             move fiyat-bit-tarih to fiyatana-son-tarih.
+             move fiyat-rez-tipi  to fiyatana-rez-tipi. 
+             move fiyat-pan-tipi  to fiyatana-pan-tipi. 
+             move fiyat-banka     to fiyatana-banka. 
+             move fiyat-doviz     to fiyatana-doviz. 
+             move fiyat-anlasma   to fiyatana-anlasma. 
+             move fiyat-buyuk     to fiyatana-buyuk.
+             move fiyat-kucuk     to fiyatana-kucuk.
+             read fiyatana no lock invalid 
+             close fiyat fiyatana
+             exit paragraph .
+
+       move fiyatana-oda-fiyati(xkonuk-fiyat-konumu) to oda-fiyati. 
+*/********* 
+       if xkonuk-nor-indirim not = 0 
+       compute oda-fiyati = 
+              (((oda-fiyati * xkonuk-nor-indirim) / 100) - oda-fiyati)
+       end-if.
+*/Early booking orani var ve early booking uygulanacak ise 
+       if xkonuk-eb = "E" and fiyatana-eb-oran not = 0 
+       compute oda-fiyati = 
+              (((oda-fiyati * fiyatana-eb-oran) / 100) - oda-fiyati)
+       end-if. 
+*/Kick back orani
+       if  fiyatana-ug-oran not = 0 and gun-s > fiyatana-ug-geceleme  
+           and xkonuk-ug-indirimi =1 then
+       compute oda-fiyati = 
+              (((oda-fiyati * fiyatana-ug-oran) / 100) - oda-fiyati)
+       end-if. 
+       
+       if fiyatana-kick-back <> 0
+       compute oda-fiyati  = 
+              (((oda-fiyati * fiyatana-kick-back) / 1000) - oda-fiyati)
+       end-if.
+*
+ bilbord-dus. 
+      open i-o bilbord takvim. 
+  
+      move rez-gir-tar to takvim-anah. 
+         start takvim key not < takvim-anah invalid 
+            continue
+         not invalid
+         perform until fs-takvim = "10"
+           read takvim next no lock end 
+                   move "10" to fs-takvim
+                not end
+                 if takvim-anah >= rez-cik-tar 
+                    move "10" to fs-takvim
+                 else
+                   initialize bilbord-rec
+                   move rez-acenta      to bilbord-acenta 
+                   move takvim-anah      to bilbord-tarih 
+                   move rez-fiyat-konumu  to bilbord-oda-tip 
+                   read bilbord no lock invalid 
+                       initialize bilbord-rec
+                       move rez-acenta      to bilbord-acenta
+                       move takvim-anah      to bilbord-tarih 
+                       move rez-fiyat-konumu  to bilbord-oda-tip 
+                       write bilbord-rec invalid 
+                            continue 
+***                           display message box "Bilborda yazilamadi hata no : bil-1001"
+                       end-write
+                    end-read
+                    if bilbord-sat-oda > 0
+                      compute  bilbord-sat-oda   = bilbord-sat-oda   - 1
+                    end-if 
+                    if bilbord-sat-buyuk > 0
+                       compute  bilbord-sat-buyuk = bilbord-sat-buyuk - srez-buyuk
+                    end-if 
+                    rewrite bilbord-rec invalid 
+                              continue
+***                         display message box "Bilborda yazilamdi hata no : bil-1002"
+                    end-rewrite
+                end-if
+              end-read
+            end-perform
+         end-start
+      close bilbord takvim.
+*
+
+ bilbord-ekle. 
+      open i-o bilbord takvim. 
+      move rez-gir-tar to takvim-anah. 
+         start takvim key not < takvim-anah invalid 
+            continue
+         not invalid
+         perform until fs-takvim = "10"
+           read takvim next no lock end 
+                   move "10" to fs-takvim
+                not end
+               
+                 if takvim-anah >= rez-cik-tar 
+                    move "10" to fs-takvim
+                 else
+                   initialize bilbord-rec
+                   move rez-acenta      to bilbord-acenta 
+                   move takvim-anah      to bilbord-tarih 
+                   move rez-fiyat-konumu  to bilbord-oda-tip
+                   read bilbord no lock invalid 
+                       initialize bilbord-rec
+                       move rez-acenta      to bilbord-acenta
+                       move takvim-anah      to bilbord-tarih 
+                       move rez-fiyat-konumu  to bilbord-oda-tip 
+                       write bilbord-rec invalid 
+                                continue 
+*                           display message box "Bilborda yazilamadi hata no : bil-1001"
+                       end-write
+                    end-read
+                    compute  bilbord-sat-oda   = bilbord-sat-oda   + 1 
+                    compute  bilbord-sat-buyuk = bilbord-sat-buyuk + rez-buyuk
+                    rewrite bilbord-rec invalid 
+                              continue
+*                         display message box "Bilborda yazilamdi hata no : bil-1002"
+                    end-rewrite
+                end-if
+              end-read
+            end-perform
+         end-start
+      close bilbord takvim.
+*
+*
+ bilbord-cb-Ex-Cmd-Clicked.
+    
+       if key-status = 5464 
+       evaluate control-id
+         when 95
+               
+              if sayi = 1 move "E" to xkonuk-bilbord-eh
+                 else     move "H" to xkonuk-bilbord-eh
+              end-if
+        end-evaluate
+        else 
+        perform exception-procedure
+        end-if.
+     .
+*
+*
+ Form1-Ef-1b-Ev-Ntf-Changed.
+     .
+*
+ aks-Cmd-Clicked.
+        if aks-yok = 1 then 
+           move "H" to xkonuk-aksiyon-eh
+        else 
+           move "E" to xkonuk-aksiyon-eh
+       end-if
+     .
+********************* kart.asy
+ extra-kart-tanimla.
+     if cost-sirketi not = spaces 
+        initialize dokcagir-tasi
+        set dokcagir-tasi-call-kart3   to true
+        move konuk-folio               to dokcagir-konuk-folio
+        move rez-extra-kart            to dokcagir-rez-extra-kart
+        move "1"                       to dokcagir-kart-filler
+        perform dokcagir-call
+        move dokcagir-konuk-folio      to konuk-folio
+        move dokcagir-rez-extra-kart   to rez-extra-kart
+      end-if
+         .
+ extra-kart-tanimla2.
+     if cost-sirketi not = spaces
+        initialize dokcagir-tasi
+        set dokcagir-tasi-call-kart3   to true
+        move konuk-folio               to dokcagir-konuk-folio
+        move rez-extra-kart2           to dokcagir-rez-extra-kart
+        move "1"                       to dokcagir-kart-filler
+        perform dokcagir-call
+        move dokcagir-konuk-folio      to konuk-folio
+        move dokcagir-rez-extra-kart   to rez-extra-kart2
+        end-if.
+         .
+
+ dokcagir-call.
+     call "/asya/ytl/obj/otel/dokcagir.asy" using dokcagir-tasi
+          on exception 
+             perform callerr-proc
+          not on exception
+             cancel "/asya/ytl/obj/otel/dokcagir.asy"
+     end-call.
+*
+ hat-ac.
+     open input telkod 
+     initialize telayarq-dosya-adi telayar-rec telayarq-rec
+*      move xkonuk-odano to telayarq-dosya-adi
+*      move ".tay"       to telayarq-dosya-adi(5:4)
+     if function numval(xkonuk-odano) < 1000
+        move xkonuk-odano to telayarq-dosya-adi(1:3)
+        move ".tay" to telayarq-dosya-adi(4:4)
+     else 
+       move xkonuk-odano to telayarq-dosya-adi
+       move ".tay" to telayarq-dosya-adi(5:4)
+
+     end-if 
+
+     open output telayarq  
+     open i-o telayar
+     if TELPARA-dishat-ac-kapa-dahili = 1
+        initialize telkod-rec kayit-var
+        start telkod key not < telkod-anah invalid 
+            continue 
+        not invalid 
+        perform with test after until fs-telkod = "10"
+        read telkod next no lock end move "10" to fs-telkod
+        not at end 
+                if tel-onb-oda = xkonuk-odano
+                    move TEL-ODA to telayarq-odano  telayar-odano
+                    move 1       to kayit-var
+                else
+                   exit perform cycle 
+                end-if 
+        end-read 
+        end-perform
+        end-start
+        if kayit-var not = 1 
+           move xkonuk-odano to telayarq-odano  telayar-odano 
+        end-if 
+     else
+        move xkonuk-odano to telayarq-odano  telayar-odano 
+     end-if 
+     if xkonuk-folio > 0 then 
+        move xkonuk-folio to  telayar-folio   telayarq-folio
+     end-if
+
+     move xkonuk-adi  to telayar-adi telayarq-adi
+     move xkonuk-soyadi  to telayar-soy telayarq-soy
+     
+     accept telayar-tarih from century-date 
+     accept telayar-saat from time 
+     move telayar-saat to telayarq-saat 
+     move telayar-tarih to telayarq-tarih  
+
+     if  TELPARA-dishat-ac-kapa-ignore = 1 and  telayarq-odano(1:1) = "0"
+        move  telayarq-odano(2:) to telayarq-odano(1:)
+        move " " to   telayarq-odano(4:1) 
+     end-if
+      if  TELPARA-dishat-ac-kapa-ignore = 1 and  telayar-odano(1:1) = "0"
+        move  telayar-odano(2:) to telayar-odano(1:)
+        move " " to   telayar-odano(4:1) 
+     end-if
+     move "A " to telayar-islem telayarq-islem 
+     write telayar-rec invalid continue end-write
+     write telayarq-rec  end-write
+     close telayarq
+
+     if function numval(konuk-odano) < 1000
+        move ".may" to telayarq-dosya-adi(4:4)
+     else 
+        move ".may" to telayarq-dosya-adi(5:4)
+     end-if 
+       
+     open output telayarq 
+     write telayarq-rec  end-write
+     close telayar telkod telayarq.
+*
+ acuserve-adres-aktar.
+
+    move muha-sirketi of genel-rec to CARI-DOSYA-adres         
+                         ISLENEN-DOSYA-adres      
+                         HESAP-DOSYA-adres        
+                         MAHSUP-DOSYA-adres       
+                         
+                         REFERANS-DOSYA-adres     
+                         mgenel-DOSYA-adres       
+                       
+                        
+            
+
+    move all low-values to      
+                           CARI-ACUSERVE-DOSYA       
+                           ISLENEN-ACUSERVE-DOSYA    
+                           HESAP-ACUSERVE-DOSYA      
+                           MAHSUP-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA   
+                           REFERANS-ACUSERVE-DOSYA   
+                           Mgenel-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA  
+                           ip-no.
+
+
+    inspect genel-muha-uzak-ip 
+            replacing trailing spaces by low-values.
+
+    if genel-muha-uzak-ip <> low-values
+       move all low-values to ip-no
+       string ip-no,
+              "@" delimited by low-values
+              genel-muha-uzak-ip delimited by low-values
+              ":" delimited by low-values
+              into ip-no
+    end-if
+
+    string mgenel-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mgenel-dosya                    delimited by low-values
+           into mgenel-acuserve-dosya.
+  
+    
+    string hesap-acuserve-dosya,
+           ip-no                        delimited by low-values
+           hesap-dosya                 delimited by low-values
+           into hesap-acuserve-dosya.
+    string mahsup-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mahsup-dosya                 delimited by low-values
+           into mahsup-acuserve-dosya.
+    string cari-acuserve-dosya,
+           ip-no                        delimited by low-values
+           cari-dosya                 delimited by low-values
+           into cari-acuserve-dosya.
+    string islenen-acuserve-dosya,
+           ip-no                        delimited by low-values
+           islenen-dosya               delimited by low-values
+           into islenen-acuserve-dosya.
+    string referans-acuserve-dosya,
+           ip-no                        delimited by low-values
+           referans-dosya                delimited by low-values
+           into referans-acuserve-dosya.
+    
+
+    inspect CARI-ACUSERVE-DOSYA        replacing  all spaces by low-values
+    inspect ISLENEN-ACUSERVE-DOSYA     replacing  all spaces by low-values
+    inspect HESAP-ACUSERVE-DOSYA       replacing  all spaces by low-values
+    inspect MAHSUP-ACUSERVE-DOSYA      replacing  all spaces by low-values
+    inspect REFERANS-ACUSERVE-DOSYA    replacing  all spaces by low-values
+    inspect mgenel-ACUSERVE-DOSYA      replacing  all spaces by low-values
+    . 
+*
+ ortak-profil-yaz.
+    
+      if secildi = 5 then 
+         
+         perform yanrez-oku
+
+       end-if      
+       if secildi = 1 or 
+          secildi = 2 OR 
+          secildi = 3
+          open i-o yanrez
+          initialize yanrez-rec
+          move xkonuk-rez-no            to yanrez-rezno
+          move yan-kac            to yanrez-sirano
+          read yanrez no lock invalid
+              continue
+          end-read
+           if secildi = 2
+             initialize musteri-rec         
+          end-if
+
+          if secildi = 1 or secildi = 3                
+            move bulunan-profil-sirket to musteri-sirket   
+            move bulunan-profil-no     to musteri-no
+            open input musteri
+              read musteri no lock invalid
+*                  display message box "Lutfen Ant-Bim Bilgisayari Arayiniz.." 
+*                                  title "[ uyari ]"
+*                                  icon 1
+                   continue
+              not invalid
+                  move musteri-adi to yanrez-adi 
+                  move musteri-soyadi to yanrez-soyadi 
+                  move musteri-d-tarihi to yanrez-dog-tar
+              end-read
+              close musteri 
+          end-if
+         
+          evaluate yan-kac
+          when 1
+            move bulunan-profil-no       to mis-no yanrez-profil-no
+            move bulunan-profil-sirket   to ps1    yanrez-profil-sirket
+           
+            move xkonuk-adi                           to yanrez-adi  
+            move xkonuk-soyadi                        to yanrez-soyadi
+
+               if secildi = 1 or secildi = 3  
+                 move musteri-adi to xkonuk-adi yanrez-adi
+                 move musteri-soyadi to xkonuk-soyadi yanrez-soyadi 
+*                 move musteri-gelis-sayisi to xkonuk-gelis-sayisi  
+               end-if
+            move yanrez-adi                        to   xkonuk-adi
+            move yanrez-soyadi                      to  xkonuk-soyadi 
+          
+          when 2
+              move bulunan-profil-no       to pno2 yanrez-profil-no    
+              move bulunan-profil-sirket   to ps2  yanrez-profil-sirket
+              if secildi = 1 or secildi = 3 
+                 move yanrez-adi                        to   adi2         
+                 move yanrez-soyadi                      to   soy2 
+                move yanrez-dog-tar  to d-tar2
+             end-if
+            
+          when 3
+            move bulunan-profil-no       to pno3 yanrez-profil-no    
+            move bulunan-profil-sirket   to ps3  yanrez-profil-sirket
+             if secildi = 1 or secildi = 3
+            move  yanrez-adi     to adi3                           
+            move  yanrez-soyadi to   soy3
+             move yanrez-dog-tar  to d-tar3 
+             end-if 
+            
+          when 4
+            move bulunan-profil-no       to pno4  yanrez-profil-no    
+            move bulunan-profil-sirket   to ps4   yanrez-profil-sirket
+             if secildi = 1 or secildi = 3
+            move  yanrez-adi     to adi4                           
+            move  yanrez-soyadi to   soy4 
+             move yanrez-dog-tar  to d-tar4
+             end-if
+            
+          when 5
+            move bulunan-profil-no       to pno5  yanrez-profil-no    
+            move bulunan-profil-sirket   to ps5   yanrez-profil-sirket
+             if secildi = 1 or secildi = 3
+             move  yanrez-adi     to adi5                           
+             move  yanrez-soyadi to   soy5 
+              move yanrez-dog-tar  to d-tar5
+              end-if
+            
+          when 6
+            move bulunan-profil-no       to pno6  yanrez-profil-no    
+            move bulunan-profil-sirket   to ps6   yanrez-profil-sirket
+              if secildi =1 or secildi = 3
+            move  yanrez-adi     to adi6                          
+            move  yanrez-soyadi to   soy6 
+            move yanrez-dog-tar  to d-tar6
+            end-if
+            
+          when 7
+            move bulunan-profil-no       to pno7  yanrez-profil-no    
+            move bulunan-profil-sirket   to ps7   yanrez-profil-sirket
+              if secildi =1 or secildi = 3
+            move  yanrez-adi     to adi7                           
+            move  yanrez-soyadi to   soy7
+            move yanrez-dog-tar  to d-tar7
+            end-if                                                            
+
+          when 8
+            move bulunan-profil-no       to pno8  yanrez-profil-no    
+            move bulunan-profil-sirket   to ps8   yanrez-profil-sirket
+              if secildi =1 or secildi = 3
+            move  yanrez-adi     to adi8                           
+            move  yanrez-soyadi to   soy8
+            move yanrez-dog-tar  to d-tar8
+            end-if
+
+          when 9
+            move bulunan-profil-no       to pno9  yanrez-profil-no    
+            move bulunan-profil-sirket   to ps9   yanrez-profil-sirket
+              if secildi =1 or secildi = 3
+            move  yanrez-adi     to adi9                           
+            move  yanrez-soyadi to   soy9
+            move yanrez-dog-tar  to d-tar9
+            end-if
+
+          end-evaluate
+              write yanrez-rec invalid rewrite yanrez-rec end-rewrite end-write 
+              perform log-operation-yanrez
+         close yanrez 
+       end-if.  
+*
+ hes-gonder.
+    if key-status not = 2 then 
+        Display message box
+        new-line   new-line "Anlasma fiyatlarini yeniden hesaplamak uzeresiniz" new-line
+                          "Bu islem Bugun ve ileride basilacak fiyatlari degistirecektir        " new-line   new-line
+                           new-line
+                          "Devam etmek istediginize emin misiniz ? " title "UYARI" icon 2 type 2 
+                          default 2 giving sonuc
+            if sonuc = 2 then 
+              exit paragraph
+           end-if
+    end-if
+     if xkonuk-rez-no > 0 then 
+         move xkonuk-rez-no to rez-no       
+        read rez no lock invalid              
+                 move "Rezervasyon Okunamadi-Fiyat Hesaplama"   to link-hata-donus
+                 move 1                     to link-hata
+        end-read       
+          move rez-rec to xrez-rec
+           perform x-r
+           if konuk-kayit-durumu = "Y" and xkonuk-fol-kodu = "R"  
+               and cin-tipi = 2 
+                  move 1              to xrez-tipi
+           end-if 
+        initialize linkh-odahes
+        move xrez-no to  linkh-rez-no     
+         move 2 to linkh-nereden  
+         move 1 to linkh-anl-yaz
+        
+*         if XREZ-FIYAT-FIX not = "E"
+           move  0 to linkh-cast-yaz
+*         end-if
+          call "/asya/ytl/obj/otel/odahes.asy" 
+                        using  xrez-rec   linkh-odahes
+                        on exception 
+                        perform callerr-proc
+                        exit paragraph
+                        not on exception 
+                   cancel "/asya/ytl/obj/otel/odahes.asy"
+         end-call
+          MOVE XREZ-EB        TO XKONUK-EB
+          MOVE XREZ-UG-IND   TO XKONUK-UG-INDIRIMI          
+     end-if
+           
+       
+              open input cast
+
+            initialize cast-rec
+            move  xkonuk-rez-no to cast-rez-no
+            evaluate true
+               when tarih-tasi >= xkonuk-git-tar
+                open input takvim
+                 move xkonuk-git-tar to takvim-anah 
+                 start takvim key = takvim-anah invalid continue
+                   not invalid
+                     read takvim next no lock end continue end-read
+                     read takvim previous no lock end continue end-read
+                     move takvim-anah to  cast-tarih
+                 end-start
+                 close takvim
+               when tarih-tasi < rez-gir-tar
+                  move xkonuk-gel-tar to cast-tarih
+               when other
+                  move tarih-tasi to cast-tarih
+            end-evaluate
+            
+              read cast  no lock invalid
+                continue
+                not invalid
+               
+                   
+              move CAST-ANLASMA-FIYATI to xKONUK-DV-DEGERI
+              move xKONUK-DV-DEGERI    to rez-ucreti yeni-fiyat
+           
+              perform kur-bul  thru kur-bul-exit
+              perform yeni-fiyat-al-1   thru yeni-fiyat-al-exit
+              end-read
+              close  cast
+         
+
+     .
+*
+ x-r.
+       move xkonuk-bilbord-eh   to xrez-bilbord-eh
+       move xkonuk-dv-degeri    to xrez-fiyati.
+       move xkonuk-folio        to xrez-folio. 
+       move xkonuk-odano        to xrez-odano. 
+       move "E"                 to xrez-c-in. 
+       move xkonuk-adi          to xrez-adi.
+       move xkonuk-paylas-oda   to xrez-paylas-oda
+       move xkonuk-rehber       to xrez-rehber
+       move xkonuk-soyadi       to xrez-soyadi. 
+       move xkonuk-s-d-t-g      to xrez-s-d-t-g.
+       move xkonuk-oda-konumu   to xrez-oda-konumu. 
+       move xkonuk-fiyat-konumu to xrez-fiyat-konumu. 
+       move xkonuk-odeme-tipi   to xrez-odeme-tipi. 
+       move xkonuk-odano        to xrez-odano. 
+       move xkonuk-ulke         to xrez-ulke. 
+       move xkonuk-buyuk        to xrez-buyuk. 
+       move xkonuk-kucuk        to xrez-kucuk. 
+       move xkonuk-free         to xrez-free. 
+       move xkonuk-bebek        to xrez-bebek.
+       move xkonuk-rez-tipi     to xrez-tipi
+       move xkonuk-share        to xrez-share.           
+       move xkonuk-aksiyon-eh   to xrez-aksiyon-eh.
+       move xkonuk-acenta       to xrez-acenta. 
+       move 2000                to  xrez-al-yil
+       move xkonuk-al-tar       to     xrez-al-tar(3:)
+       move xkonuk-grup-no      to xrez-grup-no.
+       move xkonuk-gel-saat     to xrez-gel-saat.
+       move xkonuk-gel-dakika   to xrez-gel-dak.
+       move xkonuk-git-saat     to xrez-git-saat.
+       move xkonuk-git-dakika   to xrez-git-dak.
+       move xkonuk-fiyat-konumu to xrez-fiyat-konumu
+       move xkonuk-voucher      to xrez-voucher. 
+       move xkonuk-nor-indirim  to xrez-nor-indirim. 
+       move xkonuk-pan-tipi     to xrez-pan-tipi. 
+       move xkonuk-banka        to xrez-banka. 
+       move xkonuk-doviz        to xrez-doviz. 
+       move xkonuk-pazar        to xrez-pazar.
+       move xkonuk-eb           to xrez-eb
+       move xkonuk-ug-indirimi  to xrez-ug-ind
+       move xkonuk-anlasma      to xrez-anlasma.
+       move xkonuk-gec-giris            to xrez-gec
+       move xkonuk-vip-oto-degis to xrez-vip-oto-degis
+       move xkonuk-sehir        to xrez-sehir
+       if xkonuk-acik-kapali = "C"
+          move 1 to xrez-no-post
+          else
+          move 0 to xrez-no-post
+       end-if
+       move xkonuk-plan         to xrez-plan.
+       move xkonuk-dig-plan to xrez-dig-plan 
+       move xkonuk-OPERATOR     to xrez-OPERATOR.
+       move  yREZ-OZEL-DURUM-CAR   to xREZ-OZEL-DURUM-CAR 
+       move  yREZ-OZEL-DURUM       to  xREZ-OZEL-DURUM     
+       move  yREZ-ozel-tip         to  xREZ-ozel-tip 
+       move yrez-git-sirket to  xrez-git-sirket
+       move yrez-gel-sirket to  xrez-gel-sirket
+       move xkonuk-firma        to xrez-firma
+       move xkonuk-kur-aygun    to xrez-kur-aygun. 
+       move xkonuk-vip          to xrez-vip. 
+       move xkonuk-acik-1       to xrez-not1. 
+       move xkonuk-acik-2       to xrez-not2.
+       move xkonuk-fiyat-fix    to xrez-fiyat-fix.
+       move xkonuk-fix-anl      to xrez-fix-anl.
+       move xkonuk-special-eh   to xrez-special-eh
+       move xkonuk-paylas-oda to xrez-paylas-oda
+       move xozluk-adres1       to xrez-adres1.
+       move xozluk-adres2       to xrez-adres2.
+       move xozluk-e-mail       to xrez-e-mail.
+*       move xkonuk-profil-no    to xrez-profil-no .
+       move xkonuk-telefon-no   to xrez-telefon-no.
+
+*
+ profile-eslesen-ara.
+    open i-o genelfis
+    move 1 to genelfis-anahtar
+    read genelfis no lock invalid
+         accept print-no from time
+    not invalid
+         add 1 to print-no
+         rewrite genelfis-rec end-rewrite
+    end-read
+    close genelfis
+    move print-no to takasp-dno
+    move k-kodu-tasi to takasp-k
+    open output takasp close takasp         
+    open input  musteri 
+    open i-o takasp
+    initialize  musteri-rec c5 aranan
+    move musteri-adi-filtre(1:kac-adet)    to musteri-adi(1:kac-adet)
+    start musteri key not < musteri-ilk invalid
+          continue
+    not invalid
+    perform with test after until fs-musteri = "10"
+    read musteri next no lock end move "10" to fs-musteri
+    not at end
+            initialize takasp-rec
+            if musteri-sirket = spaces or 
+               musteri-no = zeroes
+                 exit perform cycle
+            end-if
+            if musteri-silindi = 1
+                 exit perform cycle 
+            end-if 
+
+            if musteri-adi(1:kac-adet) not = musteri-adi-filtre(1:kac-adet)
+               move "10"   to fs-musteri
+            end-if 
+            if musteri-adi(1:10) = musteri-adi-filtre(1:10) and
+               musteri-soyadi(1:10) = musteri-soy-filtre(1:10) and
+               musteri-adi not = spaces and
+               musteri-soyadi not = spaces 
+                 move 1   to xrez-gr-olabilir takasp-tam-uyum
+                 
+            end-if 
+             initialize c1 c2 c3 c4  c6 puan
+            move musteri-adi         to aranan
+            move musteri-adi-filtre           to aranacak
+
+            if musteri-adi-filtre not = spaces
+               perform ada-gore
+            end-if 
+             initialize c1 c2 c3 c4  c6  
+            move musteri-soyadi         to aranan
+
+            move musteri-soy-filtre        to aranacak
+
+            if musteri-soy-filtre not = spaces
+               perform ada-gore
+            end-if 
+      
+        if puan > 0
+           add 1               to c5
+            
+           move m-profil       to takasp-anah
+           move puan           to takasp-puan
+           move musteri-adi    to takasp-adi
+           move musteri-soyadi to takasp-soyadi
+           move musteri-ulke   to takasp-ulke
+           move musteri-d-tarihi        to takasp-d-tarih
+           move musteri-gelis-sayisi    to takas-p-gel-sayi
+           move musteri-kazanilan-puan  to takasp-gercek-puan
+           move musteri-kart-tipi       to takasp-kart-tipi
+           write takasp-rec invalid 
+              rewrite takasp-rec end-rewrite 
+           end-write 
+        end-if 
+
+     end-read
+    end-perform
+    end-start
+    close  musteri .
+    close takasp.
+
+
+*
+ ada-gore.
+        inspect aranan tallying c1 for trailing spaces
+        compute c2 = 20 - c1
+        initialize c1
+        inspect aranacak tallying c1 for trailing spaces
+        compute c3 = 20 - c1 
+
+        move 0 to c4
+        inspect aranan(1:c3) tallying c4 for all aranacak(1:c3)
+        if c4 > 0
+           add 10000 to puan
+           if c2 = c3 
+               add 10000 to puan
+           end-if 
+        end-if 
+
+        move 0 to c4
+        inspect aranan(1:3) tallying c4 for all aranacak(1:3)
+        if c4 > 0
+           add 3000 to puan
+        end-if
+
+        move 0 to c4
+        inspect aranan tallying c4 for all aranacak(1:c3)
+        if c4 > 0
+           add 5000 to puan
+        end-if 
+
+        perform varying i 
+                  from 1
+                  by 1
+                  until i > c3 - 2
+                      move 0   to c4 
+                      inspect aranan tallying c4 for all aranacak(i:3)
+                      if c4 > 0
+                        if i = 1
+                           add 300 to puan
+                        end-if 
+                          add 100 to puan
+                      end-if 
+        end-perform
+
+        perform varying i 
+                  from 1
+                  by 1
+                  until i > c3 - 1
+                      move 0   to c4 
+                      inspect aranan tallying c4 for all aranacak(i:2)
+                      if c4 > 0
+                        if i = 1
+                           add 100 to puan
+                        end-if 
+                          add 10 to puan
+                      end-if 
+        end-perform.    
+*
+ link-pop.
+      display message box control-id
+     .
+*
+*
+ share-koy-kont.
+       
+****** kural .
+****** kontrol edilecek rez kaydi cagrýlmadan okunmus ve kaydedilmis olmali
+******* arez.lib acast.lib takvim2.lib sel tfd de olmali  rez acik olmali
+       
+       open i-o arez  acast konu2
+       open input takvim2
+       initialize ana-oda-verildi arez-rec
+        move "I" to arez-durumu
+        move rez-sharenum to arez-sharenum
+        move high-values to ilk-share-tar 
+        move low-values  to son-share-tar
+        initialize sodasay
+ 
+
+      
+       initialize ana-oda-verildi acast-rec  share-odalar
+         move high-values to ilk-share-tar 
+        move low-values  to son-share-tar
+        initialize sodasay
+        move rez-sharenum to acast-sharenum
+        move tarih-tasi to acast-tarih
+               initialize fs-acast
+       start acast key >= acast-anah6 
+               invalid continue
+          not invalid
+          perform until fs-acast = "10" 
+              read acast next no lock end 
+                     move "10" to fs-acast
+                 not end
+                    if rez-sharenum not = acast-sharenum 
+                        move "10" to fs-acast
+                        exit perform cycle
+                    end-if
+                    move acast-rez-no to arez-no 
+                    read arez no lock invalid 
+                              continue
+***                          display message  box "Hata Bakim icin arayiniz Castttt "
+                     end-read
+                            if arez-durumu  = "S" then
+                              exit perform cycle
+                            end-if
+
+                             if acast-tarih > son-share-tar
+                                move  acast-tarih to son-share-tar
+                             end-if
+                              if acast-tarih < ilk-share-tar
+                                move  acast-tarih to ilk-share-tar
+                             end-if
+
+                                perform varying ish from 1 by 1 until ish > sodasay or ish > 20 
+                                    if share-oda(ish) = acast-oda-no
+                                      exit perform 
+                                    end-if
+                                end-perform
+                                 if ish > sodasay then 
+                                     if ish >= 20 then
+                                          continue
+***                                          display message box "20 den fazla oda bagladiniz"
+                                       else
+                                             move acast-oda-no to share-oda(ish)
+                                             move ish to  sodasay
+                                            
+                                     end-if
+                                 end-if
+              end-read
+          end-perform 
+       end-start
+       initialize fs-takvim2 takvim2-rec
+       move ilk-share-tar to takvim2-anah 
+       
+       start takvim2 key >= takvim2-anah invalid continue
+         not invalid 
+         perform until fs-takvim2 = "10"
+             read takvim2 next no lock end move "10" to fs-takvim2 
+               not end
+               if takvim2-anah > son-share-tar 
+                   move "10" to fs-takvim2 
+                   exit perform cycle
+                end-if
+             end-read
+                perform varying ish  from 1 by 1 until ish > sodasay or ish > 20 
+                  initialize ana-oda-verildi acast-rec   fs-acast
+                  move takvim2-anah to acast-tarih
+                  move rez-sharenum to acast-sharenum
+                  move share-oda(ish) to acast-oda-no
+                  move high-values to acast-fiyati  acast-buyuk
+
+                  start acast key < acast-anah6 invalid 
+                          continue
+                     not invalid
+                       perform until fs-acast = "10" 
+                           read acast previous no lock  
+                               end
+                                move "10" to fs-acast
+                                if ana-oda-verildi not = 1 
+                                              move 1 to  ana-oda-verildi
+                                               if  acast-share not = 0
+                                                    move 0 to acast-share
+                                                  rewrite acast-rec invalid stop " " end-rewrite
+                                                  else
+                                                  display message box "Hataaaaa"
+                                               end-if
+                                  end-if
+                                not end
+        if   takvim2-anah not = acast-tarih  or
+             rez-sharenum not = acast-sharenum  or
+             share-oda(ish) not = acast-oda-no
+               move "10" to fs-acast
+                if ana-oda-verildi not = 1 
+                  read   acast next no lock 
+                  end   display message box "Hataaaaa"
+                  exit perform cycle
+                  end-read
+                      if   takvim2-anah not = acast-tarih  or
+                             rez-sharenum not = acast-sharenum  or
+                             share-oda(ish) not = acast-oda-no
+                          |display message box "Hataaaaa25666"
+                          if k-kodu-tasi = "X   " or "ASYA" then stop " "  end-if 
+                           exit perform cycle
+                     end-if
+                      move 1 to  ana-oda-verildi
+                       if  acast-share not = 0
+                            move 0 to acast-share
+                          rewrite acast-rec invalid stop " " end-rewrite
+                          else
+                          display message box "Hataaaaa"
+                       end-if
+                 end-if
+               exit perform cycle
+        end-if
+                               move acast-rez-no to arez-no
+                                move acast-rez-no to arez-no 
+                                    read arez no lock invalid 
+                                      display message  box "Hata Bakim icin arayiniz Castttt "
+                                          end-read
+                                            if arez-durumu  = "S" then
+                                                  display message box "Silinmis Share gorunuyor"
+                                                  exit perform cycle
+                                                  
+                                            end-if
+                                   if arez-cik-tar <= acast-tarih
+                                       if  acast-share not = 1
+                                            move 1 to acast-share
+                                            rewrite acast-rec invalid stop " " end-rewrite
+                                       end-if
+                                    else
+                                        if ana-oda-verildi not = 1 
+                                              move 1 to  ana-oda-verildi
+                                               if  acast-share not = 0
+                                                    move 0 to acast-share
+
+
+                                                  rewrite acast-rec invalid stop " " end-rewrite
+                                              end-if
+                                        else
+                                                 if  acast-share not = 1
+                                                       move 1 to acast-share
+                                                      rewrite acast-rec invalid stop " " end-rewrite
+                                                 end-if
+                                  end-if
+                             end-if
+
+                           end-read
+                       end-perform
+                  end-start
+                end-perform 
+        end-perform
+      end-start
+      initialize arez-rec fs-arez
+
+        move "I" to arez-durumu
+        move rez-sharenum to arez-sharenum
+       start arez key >= aREZ-anah-share invalid continue
+          not invalid
+          perform until fs-arez = "10" 
+              read arez next no lock end 
+                       
+                     move "10" to fs-arez
+                 not end
+                    if rez-sharenum not = arez-sharenum  
+                     
+                            move "10" to fs-arez
+                        exit perform cycle
+                    end-if
+                    if  arez-durumu not = "I"
+                       exit perform cycle
+                    end-if
+                    if arez-cik-tar < tarih-tasi 
+                         exit perform cycle
+                    end-if
+                    if arez-gir-tar <= tarih-tasi
+                       move   tarih-tasi to acast-tarih
+                       move   arez-no   to  acast-rez-no
+                       read acast no lock invalid 
+                                   display message  box "Hata Bakim icin arayiniz Cast444tt "
+                             not invalid 
+                             if acast-share not = arez-share 
+                                     move acast-share to arez-share
+                                     rewrite arez-rec invalid stop " " end-rewrite
+                                      if arez-folio > 0 then 
+                                       move arez-folio to konu2-folio
+                                       read konu2 no lock invalid continue
+                                       not invalid
+                                          move acast-share to konu2-share
+                                          rewrite konu2-rec invalid continue end-rewrite
+                                       end-read
+
+                                     end-if
+                             end-if
+                       end-read
+                        else
+                        move   arez-gir-tar  to acast-tarih
+                         move   arez-no        to  acast-rez-no
+                       read acast no lock invalid 
+                                   display message  box "Hata Bakim icin arayiniz Cast444tt "
+                             not invalid 
+                             if acast-share not = arez-share 
+                                     move acast-share to arez-share
+                                     rewrite arez-rec invalid stop " " end-rewrite
+                             end-if
+                       end-read
+
+
+                   end-if
+              end-read
+          end-perform 
+       end-start
+       read rez no lock invalid stop " " 
+       end-read
+
+     close arez acast takvim2 konu2.  
+*
+ ara-mesaj.
+     if xkonuk-folio > 0  then
+      move 1       to link-nereden 
+      move "F"     to  link-not-islem
+      move "REZ"   to  link-NOT-DOS    
+      move xkonuk-acenta  to link-not-dos-anah   
+      move xkonuk-gel-tar to link-not-dos-anah(5:8)  
+      move xkonuk-git-tar to link-not-dos-anah(13:8)  
+      move xkonuk-firma  to  link-not-dos-anah(22:8)  
+      move 1 to link-nereden 
+           call "/asya/ytl/obj/otel/mesajgir.asy" 
+                using link-not
+                on exception 
+                perform callerr-proc
+                exit paragraph
+                not on exception 
+           cancel "/asya/ytl/obj/otel/mesajgir.asy"
+           end-call
+        move  link-not-donus  to  toplam-not
+      
+     end-if. 
+ 
+ 
+
+*
+ on-odeme-yaz.
+      open i-o konu2 hrk2 exthrk romhrk yromhrk  cektr nt
+      initialize konu2-rec onodeme-sorun-yok
+      move "I"                 to konu2-durumu
+      move genel-onodeme-odano to konu2-odano
+      start konu2 key not < konu2-oda invalid 
+           continue 
+      not invalid 
+      perform with test after until fs-konu2 = "10"
+      read konu2  next no lock end move "10" to fs-konu2
+      not at end 
+              if konu2-odano <> genel-onodeme-odano 
+                 exit perform 
+              end-if 
+              if konu2-durumu <> "I"
+                 exit perform 
+              end-if 
+                perform exthrk-oku
+      end-read 
+      end-perform
+      end-start
+      close konu2 exthrk romhrk yromhrk  hrk2  cektr  nt.
+genelfis-cekgir.
+    open i-o genelfis. 
+             MOVE 1 TO GENELFIS-ANAHTAR. 
+    READ GENELFIS NO LOCK INVALID 
+         INITIALIZE GENELFIS-REC MOVE 1 TO GENELFIS-ANAHTAR. 
+    ADD 1 TO CEKGIR-OTO. 
+   
+    REWRITE GENELFIS-REC INVALID WRITE GENELFIS-REC END-WRITE. 
+    CLOSE GENELFIS. 
+
+* 
+ derle-acik.
+          
+
+         if form-acik not = spaces then
+           
+               initialize not-rec
+               
+                  move  "EHR"      to NOT-DOS
+                  move exthrk-anah to  NOT-DOS-ANAH 
+
+              
+               move form-acik to not1
+
+              write not-rec invalid
+                continue
+              end-write
+          
+          
+         end-if   .
+
+*
+ exthrk-oku.
+    
+    initialize exthrk-rec 
+    move konu2-folio    to exthrk-folio
+    start exthrk key not < EXTHRK-ANAH1 invalid 
+          continue 
+    not invalid 
+    perform with test after until fs-exthrk = "10"
+    read exthrk next no lock end move "10" to fs-exthrk
+    not at end 
+            if exthrk-folio <> konu2-folio
+                exit perform 
+            end-if
+
+            initialize yromhrk-rec
+            move exthrk-anah   to yromhrk-anah
+            read yromhrk no lock invalid
+                 exit perform cycle 
+            not invalid
+                 if yromhrk-rez-no = xkonuk-rez-no  and yromhrk-derle-kaydi not = 1 and yromhrk-derle-kaydi not = 2
+                 
+                    initialize hrk2-rec
+                    move exthrk-anah  to hrk2-ANAH
+                    read hrk2 no lock invalid 
+                         exit perform cycle 
+                    not invalid 
+****************************************************************
+      if GENEL-ONODEME-DOV-DERLE = 1 then
+       move  exthrk-anah to yedek-anah
+    
+     if yromhrk-dovizli-kk = 1 and yromhrk-doviz-kodu = xkonuk-doviz and yromhrk-doviz-tut > 0 then 
+        compute derle-fark rounded = yromhrk-doviz-tut * xkonuk-kur-degeri - exthrk-tl-tutar
+        if derle-fark > 1 or derle-fark < -1
+           if derle-fark >  exthrk-tl-tutar / 3 or  derle-fark <  -1 * exthrk-tl-tutar / 3 
+                display message box "Onodemede Coook buyuk doviz degerlemesi " new-line 
+                            "Doviz derlemesi yapildi Lutfen Muhasebeden onay aliniz "
+
+             end-if
+            compute  yromhrk-kur-degeri rounded =  xkonuk-kur-degeri
+            move  yromhrk-doviz-tut to zdov
+            move  xkonuk-kur-degeri to zkur
+            move  exthrk-tl-tutar to ztl
+            string 
+                 "Onodeme Doviz Deg.:" delimited by size 
+                 xkonuk-rez-no delimited by size 
+                 xkonuk-adi delimited by "    "
+                 " " delimited by size
+                 xkonuk-soyadi  delimited by "    "
+                 "--(" delimited by size
+                 zdov delimited by size
+                 " X " delimited by size
+                  zkur delimited by size
+                  ") - " delimited by size
+                  ztl delimited by size
+                 
+            into form-acik
+           
+             add derle-fark to exthrk-tl-tutar
+            
+             add derle-fark to yromhrk-tl-tutar
+
+             rewrite exthrk-rec invalid display message box "HAAAAAATAAAA"
+                 not invalid rewrite yromhrk-rec  invalid display message box "HAAAAAATAAAA"
+                    not invalid
+                      move derle-fark to exthrk-tl-tutar yromhrk-tl-tutar
+                      initialize   yromhrk-kur-degeri        yromhrk-kk-onay-kodu    
+                             yromhrk-doviz-kodu   yromhrk-dovizli-kk   yromhrk-doviz-tut
+                   
+
+                               perform  genelfis-cekgir
+                            MOVE CEKGIR-OTO TO extHRK-ISLEM
+                             yromhrk-islem hrk2-ISLEM
+                      if derle-fark > 0
+                        move   exthrk-depkod to exthrk-corr-depkod yromhrk-corr-depkod
+                         move   ONKPARA-CORR-ARTI  to exthrk-depkod yromhrk-depkod 
+                        
+                         move "B" to exthrk-ba yromhrk-ba
+                                initialize onkasa-rec
+                         OPEN I-O ONKASA
+                               MOVE exthrk-TARIH    TO ONKASA-TARIH
+                               MOVE exthrk-DEPKOD   TO ONKASA-DEP
+                               READ ONKASA NO LOCK INVALID continue
+                                 
+                              
+                              end-read
+                              COMPUTE ONKASA-TUTAR-TL   = ONKASA-TUTAR-TL - derle-fark
+                              COMPUTE ONKASA-CORR-TUTAR-TL   = ONKASA-CORR-TUTAR-TL + derle-fark
+                               REWRITE ONKASA-REC INVALID WRITE ONKASA-REC END-REWRITE
+                          CLOSE ONKASA
+
+
+
+                        else
+                         
+                          move   exthrk-depkod to  exthrk-depkod yromhrk-depkod 
+                           initialize  exthrk-corr-depkod yromhrk-corr-depkod
+                    end-if
+                     move 1 to yromhrk-derle-kaydi
+                        write exthrk-rec invalid display message box "HAAAAAATAAAA"
+                         not invalid write yromhrk-rec invalid display message box "HAAAAAATAAAA"
+                         not invalid write hrk2-rec  invalid display message box "HAAAAAATAAAA"
+                         not invalid move derle-fark to sz-tut 
+                          perform  derle-acik
+***                         display message box "Doviz degerlemesi yapildi -" sz-tut
+                        end-write end-write end-write
+                        
+                     perform    kambiyo-bul
+                    if kambi-depkod > spaces
+
+                          if derle-fark > 0
+                            move    yromhrk-corr-depkod to yromhrk-derkar-depkod
+                            move 1 to yromhrk-derkar-corr
+                            else
+                              move    yromhrk-depkod to yromhrk-derkar-depkod
+                            move 0 to yromhrk-derkar-corr
+                          end-if
+                          perform  genelfis-cekgir
+                            MOVE CEKGIR-OTO TO extHRK-ISLEM
+                             yromhrk-islem hrk2-ISLEM
+                         move kambi-depkod to exthrk-depkod yromhrk-depkod
+                          initialize  exthrk-corr-depkod yromhrk-corr-depkod
+                         move  depkod-ba to  exthrk-ba yromhrk-ba    
+                        move tarih-tasi to exthrk-tarih yromhrk-tarih 
+                          move 2 to yromhrk-derle-kaydi
+                          
+
+
+                        write exthrk-rec invalid display message box "HAAAAAATAAAA"
+                         not invalid write yromhrk-rec invalid display message box "HAAAAAATAAAA"
+                         not invalid write hrk2-rec  invalid display message box "HAAAAAATAAAA"
+                         not invalid  perform  derle-acik
+                        end-write end-write end-write
+                           initialize onkasa-rec
+                           OPEN I-O ONKASA
+                               MOVE exthrk-TARIH    TO ONKASA-TARIH
+                               MOVE exthrk-DEPKOD   TO ONKASA-DEP
+                               READ ONKASA NO LOCK INVALID continue
+                               end-read   
+                               if derle-fark < 0 then
+                               compute derle-fark = -1 * derle-fark
+                             
+                              end-if
+                                COMPUTE ONKASA-TUTAR-TL   = ONKASA-TUTAR-TL + derle-fark
+                               REWRITE ONKASA-REC INVALID WRITE ONKASA-REC END-REWRITE
+                          CLOSE ONKASA
+
+                    end-if  
+             end-rewrite 
+        end-if 
+     end-if
+     initialize exthrk-anah yromhrk-rec hrk2-rec
+      move yedek-anah to exthrk-anah yromhrk-anah hrk2-anah
+      read exthrk no lock invalid display message box "HAAAAAATAAAA" exit perform cycle 
+        not invalid 
+         
+        
+         read yromhrk no lock invalid
+              display message box "HAAAAAATAAAA" exit perform cycle 
+         not invalid
+                 read hrk2 no lock invalid 
+                     display message box "HAAAAAATAAAA" exit perform cycle 
+                 end-read
+          end-read
+     end-read
+     
+     end-if
+
+                            delete exthrk invalid 
+                                 continue 
+                            end-delete  
+
+                            initialize romhrk-rec 
+                            move exthrk-rec   to romhrk-rec 
+                            move xkonuk-folio to romhrk-folio
+                            
+
+
+                            write romhrk-rec invalid 
+                                  continue 
+                            end-write
+****************************************************************      
+
+                            delete yromhrk invalid 
+                                continue 
+                            end-delete
+                            
+                            move exthrk-rec        to yromhrk-ust-data                           
+                            move xkonuk-folio      to yromhrk-folio yROMHRK-kaynak-folio
+                            move xkonuk-rez-no     to yromhrk-rez-no
+                            move rez-cin-kur-tar   to yromhrk-kur-tarih
+                            move rez-cin-kuru      to yromhrk-kur-degeri
+                            
+                            write yromhrk-rec invalid
+                                 continue 
+                            end-write
+****************************************************************
+                            delete hrk2 invalid 
+                                continue 
+                            end-delete 
+
+                            initialize hrk2-rec 
+                            move exthrk-anah   to hrk2-anah                                                       
+                            move xkonuk-folio  to hrk2-kaynak-folio hrk2-folio
+                            move k-kodu-tasi   to hrk2-STAF
+                            write hrk2-rec invalid 
+                                continue 
+                            end-write  
+****************************************************************
+                            initialize cektr-rec
+                            move exthrk-folio    to cektr-eski-folio
+                            move xkonuk-folio    to cektr-yeni-folio
+                            move 1               to cektr-on-odeme
+                             
+                                    
+                                       initialize not-rec
+                                        move  "EHR"     to NOT-DOS
+                                         move exthrk-anah to  NOT-DOS-ANAH 
+                                           read nt no lock invalid continue
+                                           end-read
+                                          move  "RHR"     to NOT-DOS
+                                          move romhrk-anah to  NOT-DOS-ANAH 
+                                            
+                                      write not-rec invalid
+                                       rewrite  not-rec
+                                      end-write
+                                  
+                                   
+                                 
+                            perform cektr-kaydet
+                            perform main-duz
+                            move 1   to onodeme-sorun-yok
+                    end-read  
+                 end-if 
+            end-read 
+    end-read 
+    end-perform
+    end-start.
+
+*
+*
+ main-duz.
+    move xkonuk-folio to ozluk-folio
+    read ozluk  no lock invalid
+      continue
+    end-read
+         if ozluk-ilk-har > "20000000"  
+             if 
+            ozluk-ilk-har > romhrk-tarih
+
+              move romhrk-tarih to ozluk-ilk-har
+              rewrite ozluk-rec invalid write ozluk-rec end-rewrite
+              end-if
+              else
+                 move romhrk-tarih to ozluk-ilk-har
+              rewrite ozluk-rec invalid write ozluk-rec end-rewrite
+         end-if
+        if ozluk-son-har-tar > "20000000"  
+             if 
+            ozluk-son-har-tar < romhrk-tarih
+
+              move romhrk-tarih to ozluk-son-har-tar
+              rewrite ozluk-rec invalid write ozluk-rec end-rewrite
+              end-if
+              else
+                 move romhrk-tarih to ozluk-son-har-tar
+              rewrite ozluk-rec invalid write ozluk-rec end-rewrite
+         end-if.
+*
+ l-yaz.
+      continue.
+ eski-yaz.
+      continue.
+ yeni-yaz.
+    continue.
+ a-yaz.
+     continue.
+*
+ kambiyo-bul.
+     initialize depkod-rec kambi-depkod
+        move "KAM   " to depkod-adi
+        open input depkod
+        start depkod key > depkod-adi
+                invalid 
+                   continue
+               not invalid 
+            perform until fs-depkod = "10"
+              read depkod next no lock end move "10" to fs-depkod
+                    not end
+                    if depkod-adi(1:5) = "KAMBI"  then 
+                       if derle-fark > 0
+                          if depkod-ba ="A"
+                            move depkod-anah to kambi-depkod
+                             move "10" to fs-depkod
+                          end-if
+                       else
+                         if depkod-ba ="B"
+                            move depkod-anah to kambi-depkod
+                             move "10" to fs-depkod
+                          end-if
+
+
+                       end-if
+                    end-if
+             end-read
+           end-perform
+         end-start
+        close depkod .
+ 
+ 
+*
+ romhrk-oku.
+    initialize romhrk-rec
+    move konuk-folio    to romhrk-folio
+    start romhrk key not < romhrk-anah1 invalid 
+          continue 
+    not invalid 
+    perform with test after until fs-romhrk = "10"
+    read romhrk next no lock end move "10" to fs-romhrk
+    not at end 
+            if romhrk-folio <> konuk-folio
+                exit perform 
+            end-if
+
+            initialize yromhrk-rec
+            move romhrk-anah   to yromhrk-anah
+            read yromhrk no lock invalid
+                 exit perform cycle 
+            not invalid
+                 if yromhrk-rez-no = konuk-rez-no
+                    initialize hrk2-rec
+                    move yromhrk-anah  to hrk2-ANAH
+                    read hrk2 no lock invalid 
+                         exit perform cycle 
+                    not invalid 
+****************************************************************
+                            delete romhrk invalid 
+                                 continue 
+                            end-delete  
+                             
+                            initialize exthrk-rec 
+                            move romhrk-rec    to exthrk-rec 
+                            move onodeme-folio to exthrk-folio
+                            write exthrk-rec invalid 
+                                  continue 
+                            end-write
+****************************************************************      
+
+                            delete yromhrk invalid 
+                                continue 
+                            end-delete
+                            
+                            
+                            move romhrk-rec    to yromhrk-ust-data
+                            move onodeme-folio to yromhrk-folio yROMHRK-kaynak-folio
+                            
+                            write yromhrk-rec invalid
+                                 continue 
+                            end-write
+****************************************************************
+                            delete hrk2 invalid 
+                                continue 
+                            end-delete 
+
+                            initialize hrk2-rec 
+                            move romhrk-anah   to hrk2-anah                                                       
+                            move onodeme-folio  to hrk2-kaynak-folio hrk2-folio
+                            move k-kodu-tasi   to hrk2-STAF
+                            write hrk2-rec invalid 
+                                continue 
+                            end-write  
+****************************************************************
+                            initialize cektr-rec
+                            move konuk-folio     to cektr-eski-folio
+                            move exthrk-folio    to cektr-yeni-folio
+                            move 2               to cektr-on-odeme
+                            perform cektr-kaydet 
+                    end-read  
+                 end-if 
+            end-read 
+    end-read 
+    end-perform
+    end-start.
+*
+ cektr-kaydet.
+
+    move exthrk-islem                            to cektr-islem
+    move exthrk-islem-tipi                       to cektr-islem-tipi
+    move exthrk-islem-tipi2                      to cektr-islem-tipi2
+    move tarih-tasi                              to cektr-isl-tarih
+    move exthrk-tarih                            to cektr-tarih
+    move exthrk-corr-depkod                      to cektr-corr-depkod
+    move exthrk-depkod                           to cektr-depkod
+    move exthrk-ba                               to cektr-ba
+    move exthrk-tl-tutar                         to cektr-tl-tutar
+    move exthrk-dv-tutar                         to cektr-dv-tutar
+    move exthrk-zaman                            to cektr-zaman
+    accept zaman from time
+    move zaman                                   to cektr-zaman
+    move exthrk-kart-no                          to cektr-kart-no
+    move exthrk-cekno                            to cektr-cekno
+    move exthrk-pos-kodu                         to cektr-pos-kodu    
+    move exthrk-staf                             to cektr-staf
+    move k-kodu-tasi                             to cektr-staf
+    write cektr-rec invalid rewrite cektr-rec,end-write.
+ 
+*
+ firma-dft-oku.
+      open input nt
+     initialize not-rec 
+     move "FIR" to not-dos
+     move "Default" to not-dos-anah.
+     move firma-kodu to not-dos-anah(8:)
+     read nt no lock 
+        invalid
+           initialize acen-dft
+           move  rezpara-banka      to acen-dft-banka
+           move  rezpara-doviz      to acen-dft-doviz
+           move  rezpara-pan-tipi   to acen-dft-pan-tipi
+           move  rezpara-odeme-tipi to acen-dft-odeme-tipi
+           move  rezpara-anlasma    to acen-dft-anlasma
+           move  rezpara-ulke       to acen-dft-ulke
+
+           move  rezpara-pazar      to acen-dft-pazar
+        not invalid 
+          move not1 to acen-dft
+     end-read
+     close nt.
+*
+ firma-dft-yukle.
+       move   acen-dft-banka         to xkonuk-banka
+       move   acen-dft-doviz         to xkonuk-doviz
+       move   acen-dft-pan-tipi      to xkonuk-pan-tipi
+       move   acen-dft-odeme-tipi    to xkonuk-odeme-tipi
+       move   acen-dft-anlasma       to xkonuk-anlasma
+       move   acen-dft-ulke          to xkonuk-ulke
+      
+       move   acen-dft-pazar         to xkonuk-pazar
+       if acen-dft-early= 1 move "E" to xkonuk-eb
+                 else     move "H" to xkonuk-eb
+              end-if
+       if acen-dft-bilboard = 1 move "E" to xkonuk-bilbord-eh
+                 else     move "H" to xkonuk-bilbord-eh
+              end-if.
+*
+
+*
+ acen-dft-oku.
+      open input nt
+     initialize not-rec 
+     move "ACE" to not-dos
+     move "Default" to not-dos-anah.
+     move acenta-kodu to not-dos-anah(8:)
+     read nt no lock 
+        invalid
+           initialize acen-dft
+           move  rezpara-banka      to acen-dft-banka
+           move  rezpara-doviz      to acen-dft-doviz
+           move  rezpara-pan-tipi   to acen-dft-pan-tipi
+           move  rezpara-odeme-tipi to acen-dft-odeme-tipi
+           move  rezpara-anlasma    to acen-dft-anlasma
+           move  rezpara-ulke       to acen-dft-ulke
+           move  rezpara-pazar      to acen-dft-pazar
+        not invalid 
+          move not1 to acen-dft
+     end-read
+     close nt.
+*
+ acen-dft-yukle.
+       move   acen-dft-banka         to xkonuk-banka
+       move   acen-dft-doviz         to xkonuk-doviz
+       move   acen-dft-pan-tipi      to xkonuk-pan-tipi
+       move   acen-dft-odeme-tipi    to xkonuk-odeme-tipi
+       move   acen-dft-anlasma       to xkonuk-anlasma
+       move   acen-dft-ulke          to xkonuk-ulke
+        if   acen-dft-vip not = spaces then
+           move   acen-dft-vip          to xkonuk-vip
+       end-if
+       move   acen-dft-pazar         to xkonuk-pazar
+       if acen-dft-early= 1 move "E" to xkonuk-eb
+                 else     move "H" to xkonuk-eb
+              end-if
+       if acen-dft-bilboard = 1 move "E" to xkonuk-bilbord-eh
+                 else     move "H" to xkonuk-bilbord-eh
+              end-if. 
+*
+ xkonuk-oda-uzat.  
+            move  xkonuk-odano to o-kisa 
+            perform oda-uzat
+            move o-uzun to xkonuk-odano-uzun.
+*            display accept-odano-uzun.
+*
+ xkonuk-oda-kisalt.  
+      if genel-uzun-oda-no-kullanilsin = 1
+            move  xkonuk-odano-uzun  to o-uzun
+            perform oda-kisalt
+            move o-kisa to   xkonuk-odano
+             
+       end-if .
+
+ 

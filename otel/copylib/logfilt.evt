@@ -1,0 +1,1395 @@
+* logfilt.evt
+* logfilt.evt is generated from D:\asya\acugt.ytl\otel\logfilt.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ combo-sirket-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM combo-sirket-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ combo-dosya-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM combo-dosya-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM flt-grid-Ev-Other
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ Form2-Gd-1-Event-Proc.
+     .
+
+ arabul-Event-Proc.
+     .
+
+ arabul-Exception-Proc.
+     PERFORM arabul-Ex-Other
+     .
+
+ arabul-Ef-1-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Changed
+           PERFORM arabul-Ef-1-Ex-Ntf-Changed
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+  
+     perform load-log-dir.
+     perform load-log-file.
+     perform flt-grid-reset.
+     perform load-kllnc.
+     perform load-screen.
+
+ load-log-file.
+     move all low-values to log-dir
+     inspect combo-sirket-value replacing trailing spaces
+     by low-values
+     string log-dir,
+            "/asya/ytl/log/" delimited by low-values
+            program-modul    delimited by low-values
+            "/"              delimited by low-values
+            combo-sirket-value delimited by low-values
+            into log-dir.
+            
+     call "c$list-directory" using 
+                             listdir-open, 
+                             log-dir,
+                             "*.log". 
+    move return-code to log-dir-handle. 
+    if log-dir-handle = 0
+       display message box
+               "Log kutuphanesi acilmamis veya log sistemi devrede degil"
+               icon mb_Error_icon
+               title "Bilginize ..."
+       exit paragraph
+    end-if.
+    modify combo-dosya,
+           reset-list = 1
+           mass-update = 1
+    perform with test after until log-filename = spaces
+            call "c$list-directory" using 
+                                    listdir-next, 
+                                    log-dir-handle, 
+                                    log-filename 
+            if log-filename <> spaces
+               inspect log-filename
+                       replacing all ".log"
+                       by spaces
+               modify combo-dosya,
+                      item-to-add(log-filename)
+               move log-filename to combo-dosya-value
+            end-if
+    end-perform.
+    call "c$list-directory" using 
+                            listdir-close,
+                            log-dir-handle.
+    modify combo-dosya,
+           value = combo-dosya-value
+           mass-update = 0
+           .
+*
+ load-log-dir.
+     initialize log-i
+     move all low-values to log-dir
+     string log-dir,
+            "/asya/ytl/log/" delimited by low-values
+            program-modul    delimited by low-values
+            into log-dir.
+            
+     call "c$list-directory" using 
+                             listdir-open, 
+                             log-dir,
+                             "*".
+    move return-code to log-dir-handle. 
+    if log-dir-handle = 0
+       display message box
+               "Log kutuphanesi acilmamis veya log sistemi devrede degil"
+               icon mb_Error_icon
+               title "Bilginize ..."
+       exit paragraph
+    end-if.
+    modify combo-sirket,
+           reset-list = 1
+           mass-update = 1
+    perform with test after until log-filename = spaces
+            call "c$list-directory" using 
+                                    listdir-next, 
+                                    log-dir-handle, 
+                                    log-filename,
+                                    listdir-file-information
+            if log-filename <> spaces and 
+               log-filename <> "." and
+               log-filename <> ".." and
+               listdir-file-type-directory 
+                   add 1 to log-i
+                   modify combo-sirket,
+                          item-to-add(log-filename)
+            end-if
+    end-perform.
+    call "c$list-directory" using listdir-close,
+                                  log-filename.
+    move isyeri-adres-tasi     to combo-sirket-value
+    modify combo-sirket,
+           value = combo-sirket-value
+           mass-update = 0.
+*
+ load-screen.
+    move "B"   to combo-tarih-value.
+    modify combo-tarih,
+           reset-list = 1
+           mass-update = 1
+           item-to-add("A-Calisma Tarihi","B-Sistem Tarihi")
+    modify combo-tarih
+           mass-update = 0
+           value = combo-tarih-value.
+
+
+*
+ load-kllnc.
+    modify combo-kullanici,
+           reset-list = 1
+           mass-update = 1
+           item-to-add("0000-Tum Kullanicilar")
+    initialize i
+    open input kllnc.
+    initialize kllnc-rec
+    start kllnc key not < k-kodu invalid
+          continue
+    not invalid
+    initialize fs-kllnc
+    perform with test after until fs-kllnc = "10"
+    read kllnc next no lock end move "10" to fs-kllnc
+    not at end
+         add 1 to i
+         move k-kodu    to combo-kullanici-value
+         move "-"       to combo-kullanici-value(5:)
+         move k-adi     to combo-kullanici-value(6:)
+         move " "       to combo-kullanici-value(16:)
+         move k-soyadi  to combo-kullanici-value(17:)
+         modify combo-kullanici,
+                item-to-add(combo-kullanici-value)
+    end-read
+    end-perform
+    end-start
+    close kllnc.
+    move "0000-Tum Kullanicilar" to combo-kullanici-value
+    modify combo-kullanici,
+           mass-update = 0
+           value combo-kullanici-value.
+           
+*
+ combo-sirket-Ex-Ntf-Selchange.
+    perform load-log-file.
+     
+     .
+*
+ Form1-Bef-Create.
+*    move 01           to isyeri-no-tasi.
+*    move "ASYA"       to k-kodu-tasi.
+*    move "pala2006"   to isyeri-adres-tasi.
+     set turkce        to true
+*    move 01           to gun-tasi
+*    move 01           to ay-tasi
+*    move 2003         to yil-tasi.
+    perform adresleri-tasi.
+    move 1 to yazma-islemi duzeltme-islemi silme-islemi.
+    move 90.50         to win-size.
+     .
+*
+ Form1-Ex-Other.
+    if key-status = 2
+       initialize kayit-sira kayit
+       perform rapor-proc
+    end-if.
+*
+ rapor-proc.
+    inquire combo-bas-tar, value in bas-tar.
+    inquire combo-bit-tar, value in bit-tar.
+    if bas-tar > bit-tar
+       move 4 to accept-control
+       move 2 to control-id
+       exit paragraph.
+
+    if yazma-islemi = 0 and 
+       duzeltme-islemi = 0 and 
+       silme-islemi = 0
+             move 4 to accept-control
+             move 13 to control-id
+             exit paragraph.
+
+    perform flt2dizi.
+    if flt-durum = "X"
+       move 4 to accept-control
+       move 22 to control-id
+       exit paragraph
+    end-if.
+
+    perform fis-al.
+    perform index-to-ara.
+*
+ index-to-ara.
+    accept ver from environment "V_VERSION".
+    set environment "V-VERSION"         to 5.
+    open output ara-data close ara-data open i-o ara-data mass-update.
+    open output ara-index close ara-index open i-o ara-index mass-update.
+    set environment "V-VERSION"   to ver.
+    move all low-values to log-index-adres log-data-adres
+    inspect combo-dosya-value replacing trailing spaces 
+                              by low-values
+    string log-index-adres,
+             "/asya/ytl/log/"       delimited by low-values,
+             program-modul          delimited by low-values,
+             "/"                    delimited by low-values,
+             combo-sirket-value     delimited by low-values,
+             "/"                    delimited by low-values,
+             combo-dosya-value      delimited by low-values,
+             into log-index-adres.
+    string log-data-adres,
+             "/asya/ytl/log/"       delimited by low-values,
+             program-modul          delimited by low-values,
+             "/"                    delimited by low-values,
+             combo-sirket-value     delimited by low-values,
+             "/"                    delimited by low-values,
+             combo-dosya-value      delimited by low-values,
+             ".log"                 delimited by low-values
+             into log-data-adres.
+    
+    inspect log-data-adres replacing trailing spaces 
+                              by low-values
+    perform open-log-file.
+    if log-data-handle = null
+       close ara-data ara-index 
+       delete file ara-data ara-index 
+       exit paragraph.
+    perform  get-log-key-info.
+    open input log-index.
+    initialize log-index-anah
+    evaluate combo-tarih-value
+    when "A"
+         move bas-tar        to log-index-cal-tarih
+         start log-index key not < log-index-anah invalid
+               close ara-data ara-index log-index 
+               delete file ara-data ara-index 
+               exit paragraph
+         end-start
+    when "B"
+         move bas-tar        to log-index-sys-tarih
+         start log-index key not < log-index-anah1 invalid
+               close ara-data ara-index log-index 
+               delete file ara-data ara-index 
+               exit paragraph
+         end-start
+    end-evaluate.
+
+    perform ara-xfd-yukle.
+    perform ara-xfd-get-key-info.
+    perform ara-xfd-get-fields.
+
+    initialize fs-log-index
+    perform with test after until fs-log-index = "10"
+    read log-index next no lock end move "10" to fs-log-index
+    not at end
+         evaluate combo-tarih-value
+         when "A"
+              if bit-tar < log-index-cal-tarih
+                 exit perform
+              end-if
+         when "B"
+              if bit-tar < log-index-sys-tarih
+                 exit perform
+              end-if
+         end-evaluate
+         if combo-kullanici-value(1:4) <> "0000"
+            if log-index-kullanici <> combo-kullanici-value(1:4)
+               exit perform cycle
+            end-if
+         end-if
+
+         perform read-log-file
+         if return-code <> 0
+            perform flt-incele
+            if flt-durum = space
+               perform write-ara-data
+               perform write-ara-index
+            end-if
+         end-if
+    end-read
+    end-perform.
+    perform ara-kayit-kaynak-bul.
+    perform acu-form2-routine.
+    close log-index ara-index ara-data .
+    delete file ara-index ara-data .
+*
+ ara-raporla.
+    open input kllnc.
+    perform xfd-basliklar-to-dokumer
+    initialize ara-index-rec 
+    move 1 to grid-kayit-no
+    start ara-index key not < ara-index-anah invalid
+          continue
+    not invalid
+    initialize fs-ara-index
+    perform with test after until fs-ara-index = "10"
+    read ara-index next no lock end move "10" to fs-ara-index
+    not at end
+         initialize ara-data-rec kiyas-alan kiyas-i kiyas-ii
+         move ara-index-anah     to ara-data-dosya-anah
+         move combo-dosya-value  to ara-data-dosya-adi
+         start ara-data key not < ara-data-anah invalid
+               continue
+         not invalid
+         initialize fs-ara-data
+         perform with test after until fs-ara-data = "10"
+         read ara-data next no lock end move "10" to fs-ara-data
+         not at end
+              if ara-data-dosya-anah = ara-index-anah
+                 perform move-rec-to-grid
+              else
+                 exit perform 
+              end-if
+         end-read
+         end-perform
+         end-start
+         
+    end-read
+    end-perform
+    end-start.
+    close kllnc.
+    modify Form2-Gd-1, mass-update = 0.
+*
+ move-rec-to-grid.
+    initialize form2-gd-1-record
+    perform varying xfd-key-i
+            from 1
+            by 1
+            until xfd-key-i >  parsexfd-number-fields
+            move detay-source-bp(xfd-key-i)   to i
+            move detay-source-au(xfd-key-i)   to ii
+            perform xfd-data-cevir
+            perform grid-col-ekle
+    end-perform.
+    move ara-data-islem-cal-yil           to eyil
+    move ara-data-islem-cal-ay            to eay
+    move ara-data-islem-cal-gun           to egun
+    move etarih                           to x-80
+    perform grid-col-ekle
+    move ara-data-islem-sys-yil           to eyil
+    move ara-data-islem-sys-ay            to eay
+    move ara-data-islem-sys-gun           to egun
+    move etarih                           to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move low-values                       to x-80
+    move ara-data-islem-kullanici         to k-kodu
+    read kllnc no lock invalid
+         move k-kodu                      to k-adi
+         move "Tanimsiz Kod"              to k-soyadi
+    end-read
+    inspect k-adi replacing trailing spaces by low-values
+    inspect k-soyadi replacing trailing spaces by low-values
+    string x-80,
+           k-adi  delimited by low-values,
+           " "    delimited by low-values
+           k-soyadi delimited by low-values 
+           into x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move ara-data-islem-sys-saat          to esaat
+    move ara-data-islem-sys-dakika        to edakika
+    move ara-data-islem-sys-saniye        to esaniye
+    move ezaman                           to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move ara-data-islem-user-id           to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move ara-data-islem-station-id        to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move ara-data-islem-terminal-name     to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move ara-data-islem-client-machine-name to x-80
+    add 1                                   to xfd-key-i
+    perform grid-col-ekle
+    move ara-data-islem-program-name        to x-80
+    add 1                                   to xfd-key-i
+    perform grid-col-ekle                         
+    inspect form2-gd-1-record 
+            replacing all low-values by spaces.
+* YAZMA SILME DUZELTME FILTRELEMESI
+    evaluate ara-data-islem-turu
+    when "W"
+          if yazma-islemi = 0
+             exit paragraph
+          end-if
+    when "R"
+          if duzeltme-islemi = 0
+             exit paragraph
+          end-if
+    when "D"
+          if silme-islemi = 0
+             exit paragraph
+          end-if
+    end-evaluate
+*
+     
+    modify form2-gd-1,
+           record-to-add(form2-gd-1-record).
+    add 1 to grid-kayit-no
+    evaluate ara-data-islem-turu
+    when "W"
+           modify form2-gd-1(grid-kayit-no),
+                  row-color(112)
+           add 1 to kayit
+           move 1 to kayit-sira
+           modify form2-gd-1(grid-kayit-no,9),
+                  cell-data = "WRITE"
+
+
+    when "R"
+           modify form2-gd-1(grid-kayit-no),
+                  row-color(208)
+    when "D"
+           modify form2-gd-1(grid-kayit-no),
+                  row-color(176)
+    end-evaluate.
+***********> KIYASLA
+    if ara-data-islem-turu = "D"
+       initialize kiyas-alan
+    else
+       perform log-kiyasla
+    end-if
+    perform xfd-degisenleri-goster.
+*
+ ara-kayit-kaynak-bul.
+    initialize ara-index-rec ara-data-rec
+    start ara-index key not < ara-index-anah invalid
+          continue
+    not invalid
+    initialize fs-ara-index
+    perform with test after until fs-ara-index = "10"
+    read ara-index next no lock at end move "10" to fs-ara-index
+    not at end
+
+         initialize ara-data-rec
+         move ara-index-anah     to ara-data-dosya-anah
+         move combo-dosya-value  to ara-data-dosya-adi
+         start ara-data key not < ara-data-anah invalid
+               continue
+         not invalid
+         initialize fs-ara-data
+         read ara-data next no lock end move "10" to fs-ara-data
+         not at end
+              if ara-data-dosya-anah = ara-index-anah
+                 if ara-data-sira <> 0 
+                    evaluate ara-data-islem-turu
+                    when "R"
+                         perform log-data-kaynak-bul | eger onceki kaydý bulmazsa Write olarak islem gor
+                         if f-errno <> 0
+                            move "W"      to ara-data-islem-turu
+                            rewrite ara-data-rec end-rewrite
+                         end-if
+                    end-evaluate
+                 end-if
+              end-if
+         end-read
+         end-start
+    end-read
+    end-perform
+    end-start.
+    perform close-log-file.
+    
+*
+ log-data-kaynak-bul.
+    call "m$alloc" using function length(ara-data-rec), 
+                         temp-pointer
+    call "m$put" using temp-pointer 
+                       ara-data-rec,
+                       function length(ara-data-rec),
+                       1.
+    perform start-log-kucuktur.
+    if f-errno = 0
+       perform read-log-kucuktur
+       if f-errno = 0 
+*/ ayný anahtardan bulduysa kontroliertesttene
+          move ara-data-data     to log-kayit-alani
+          perform log-key-area-to-temp-key-area
+          if temp-key-area(1:ara-data-dosya-anah-size) = 
+             ara-index-anah(1:ara-data-dosya-anah-size)
+
+                 move 0          to ara-data-sira
+                 move "W"        to ara-data-islem-turu
+                 write ara-data-rec end-write    | HATA BURDAAAAAAAAAAA GEREK YOK
+          else 
+* geriye doðru gelen kayit farklýysa buda write gibi iþlem görür
+                 call "m$get" using temp-pointer,
+                                    ara-data-rec,
+                                    function length(ara-data-rec)
+                                    1
+                 move "W"        to ara-data-islem-turu
+                 rewrite ara-data-rec end-rewrite
+          end-if
+       end-if
+    end-if.
+    call "m$free" using temp-pointer.
+*
+ log-key-area-to-temp-key-area.
+    initialize temp-key-area temp-key-area-2.
+    move 1 to ii
+    perform varying i
+            from 1
+            by 1
+            until i > (num-segs - 1) | sadece 1. segmenti almasý yeterli
+                  move log-kayit-alani(key-offset(i) + 1:key-size(i)) to temp-key-area(ii:key-size(i))
+                  add key-size(i)   to ii
+    end-perform.
+* islem numarasi son segmentte
+*    move log-kayit-alani(key-offset(num-segs) + 1: key-size(num-segs))   to temp-key-area-2.
+    
+*    
+ write-ara-data.
+    initialize ara-data-rec 
+    move combo-dosya-value                to ara-data-dosya-adi.
+    perform log-key-area-to-temp-key-area
+    move temp-key-area                    to ara-data-dosya-anah
+    move ii                               to ara-data-dosya-anah-size
+*    subtract 10                     from ara-data-dosya-anah-size
+    move log-index-islem-no               to ara-data-sira 
+    move log-kayit-alani                  to ara-data-data(1:log-index-record-size + 10)
+    move log-index-islem-turu             to ara-data-islem-turu
+    move log-index-cal-tarih              to ara-data-islem-cal-tarih
+    move log-index-kullanici              to ara-data-islem-kullanici
+    move log-index-sys-tarih              to ara-data-islem-sys-tarih
+    move log-index-sys-zaman              to ara-data-islem-sys-zaman
+    move log-index-user-id                to ara-data-islem-user-id
+    move log-index-station-id             to ara-data-islem-station-id
+    move log-index-terminal-name          to ara-data-islem-terminal-name
+    move log-index-client-machine-name    to ara-data-islem-client-machine-name
+    move log-index-program-name           to ara-data-islem-program-name
+    
+    write ara-data-rec invalid 
+          if hata-verme
+             display message box "index ciftlemesi",x"0a0d",
+                                 "Ayni hatayi verdiginde gostersin mi ?"
+                                 type mb_yes_no
+                                 title "?"
+                                 default 1
+                                 returning return-code
+             if return-code = 2
+                set hata-verme  to true
+             end-if
+          end-if
+          compute ara-data-sira =  ara-data-sira * log-index-sys-dakika * log-index-sys-saniye
+          write ara-data-rec end-write
+    end-write.
+*    
+ write-ara-index.
+    initialize ara-index-rec
+    move ara-data-dosya-anah        to ara-index-anah
+    move log-index-record-size      to ara-index-record-size
+    write ara-index-rec invalid
+          continue
+    end-write.
+         
+*
+ fis-al.
+    open i-o genelfis.
+    move 1 to genelfis-anahtar
+    read genelfis no lock invalid
+         continue
+    end-read
+    add 1 to ekran-fis-1
+    move ekran-fis-1     to ara-data-no
+    add 1 to ekran-fis-1
+    move ekran-fis-1     to ara-index-no
+    add 1 to ekran-fis-1
+    rewrite genelfis-rec invalid
+            continue
+    end-rewrite.
+    close genelfis.
+*
+ open-log-file.
+    move null         to log-data-handle.
+    set Finput        to true
+    set open-function to true
+    call "i$io" using io-function,
+                      log-data-adres,
+                      open-mode,
+                      filesys-logical-info
+    end-call.
+    if return-code = 0
+       display message box
+               log-data-adres," dosyasi acilamiyor ...",new-line,
+               "Error code : ", f-errno
+               icon mb_error_icon
+               title "Hata"
+    else
+       move return-code     to log-data-handle
+    end-if.
+*
+ get-log-key-info.
+    set info-function           to true
+    move 1                      to info-mode
+    call "i$io" using io-function,
+                      log-data-handle,
+                      info-mode,
+                      key-info.
+*
+ start-log-kucuktur.
+    set start-function          to true
+    set f-less                  to true
+    call "i$io" using io-function,
+                      log-data-handle,
+                      ara-data-data,
+                      by value 1,
+                      by value 0,
+                      start-mode.
+*    if return-code = 0 ise startlayamadý demektir
+*    yeni kayýt iþlemi görecek 
+*
+ read-log-kucuktur.
+    set previous-function       to true
+    call "i$io" using io-function,
+                      log-data-handle,
+                      ara-data-data.
+*
+ read-log-file.
+    move 1                      to f-no-lock
+    move all spaces             to log-kayit-alani
+    set read-function           to true
+    move log-index-islem-no     to log-kayit-alani(log-index-record-size + 1:10)
+    call "i$io" using io-function,
+                      log-data-handle,
+                      log-kayit-alani,
+                      by value 0.
+*
+ close-log-file.
+    set close-function          to true
+    call "i$io" using io-function
+                      log-data-handle.
+*
+ ara-xfd-yukle.
+    move low-values         to xfd-dir
+    string xfd-dir,
+           "/asya/ytl/xfd/"   delimited by low-values,
+           program-modul      delimited by low-values
+           "/"                delimited by low-values,
+           combo-dosya-value  delimited by low-values,
+           ".xfd"             delimited by low-values 
+           into xfd-dir
+    inspect xfd-dir,
+           replacing trailing spaces by low-values
+    call "c$parsexfd" using parsexfd-parse
+                            xfd-dir,
+                            null,
+                            0, |parsexfd-flag-include-999,
+                            parsexfd-description.
+    if return-code <> 0
+       move return-code     to parsexfd-handle
+    else
+       display message box 
+               xfd-dir," dosyasi bulunamadi ...."
+               icon mb_error_icon
+               title "Hata"
+               perform destroy-window-proc
+               goback 0000
+    end-if.
+*
+ ara-xfd-get-key-info.
+    call "c$parsexfd" using parsexfd-get-key-info, 
+                            parsexfd-handle
+                            1,
+                            parsexfd-key-description. 
+*
+ ara-xfd-get-fields.
+    perform xfd-mem-point-sifirla.
+    perform varying xfd-key-i
+            from 1
+            by 1
+            until xfd-key-i > parsexfd-number-fields + 1
+                  compute dummy-999 = xfd-key-i - 1
+                  call "c$parsexfd" using parsexfd-get-field-info
+                                          parsexfd-handle,
+                                          dummy-999,
+                                          parsexfd-field-description
+                  end-call
+                  perform xfd-alloc-mem
+                  perform xfd-put-mem
+    end-perform.
+*
+ xfd-mem-point-sifirla.
+    perform varying xfd-key-i
+                    from 1
+                    by 1
+                    until xfd-key-i > max-field
+                    move null to xfd-key-area(xfd-key-i)
+    end-perform.
+*
+ xfd-alloc-mem.
+    call "m$alloc" using function length(parsexfd-field-description), 
+                         xfd-key-area(xfd-key-i).
+         
+*
+ xfd-get-mem.
+    call "m$get" using xfd-key-area(xfd-key-i),
+                       parsexfd-field-description,
+                       function length(parsexfd-field-description)
+                       1.
+*
+ xfd-put-mem.
+    call "m$put" using xfd-key-area(xfd-key-i),
+                       parsexfd-field-description,
+                       function length(parsexfd-field-description)
+                       1.
+*
+ xfd-destroy-mem.
+    perform varying xfd-key-i
+                    from 1
+                    by 1
+                    until xfd-key-i > max-field
+                    if xfd-key-area(xfd-key-i) <> null
+                       call "m$free" using xfd-key-area(xfd-key-i)
+                    end-if
+    end-perform.
+xfd-basliklar-to-dokumer.
+    modify form2-gd-1,
+           reset-grid = 1
+           mass-update = 1
+           alignment("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL")
+    initialize detay-koor detay-koor-i detay-koor-ii i ii
+               form2-gd-1-record
+    move 1     to i
+    perform varying xfd-key-i
+            from 1
+            by 1
+            until xfd-key-i > parsexfd-number-fields
+            perform xfd-get-mem
+            move parsexfd-field-name      to det-filler(i:parsexfd-field-digits)
+            move parsexfd-field-offset    to detay-source-bp(xfd-key-i)
+            add 1                         to detay-source-bp(xfd-key-i)
+            move parsexfd-field-length    to detay-source-au(xfd-key-i)
+            move i                        to detay-dest-bp(xfd-key-i)
+            move parsexfd-field-digits    to detay-dest-au(xfd-key-i)
+            add parsexfd-field-digits     to i
+            move "|"                      to det-filler(i:1)
+            add 1                         to i
+            move parsexfd-field-name      to x-80
+            perform grid-col-ekle
+            modify form2-gd-1,
+                   x=xfd-key-i
+                   alignment("R")
+    end-perform.
+    move "Calisma Tarihi"                 to x-80
+    perform grid-col-ekle
+    move "Sistem Tarihi"                  to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move "Kullanici"                      to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move "Zaman"                          to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move "User-Id"                        to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move "Station-Id"                     to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move "Terminal Name"                  to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move "Client Name"                    to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    move "Program Name"                   to x-80
+    add 1                                 to xfd-key-i
+    perform grid-col-ekle
+    modify Form2-Gd-1, 
+           record-to-add(form2-gd-1-record).
+*
+ grid-col-ekle.
+    evaluate xfd-key-i
+    when 01 move x-80                to gd-1-col-1
+    when 02 move x-80                to gd-1-col-2
+    when 03 move x-80                to gd-1-col-3
+    when 04 move x-80                to gd-1-col-4
+    when 05 move x-80                to gd-1-col-5
+    when 06 move x-80                to gd-1-col-6
+    when 07 move x-80                to gd-1-col-7
+    when 08 move x-80                to gd-1-col-8
+*    when 09 move x-80                to gd-1-col-9
+    when 10 move x-80                to gd-1-col-10
+    when 11 move x-80                to gd-1-col-11
+    when 12 move x-80                to gd-1-col-12
+    when 13 move x-80                to gd-1-col-13
+    when 14 move x-80                to gd-1-col-14
+    when 15 move x-80                to gd-1-col-15
+    when 16 move x-80                to gd-1-col-16
+    when 17 move x-80                to gd-1-col-17
+    when 18 move x-80                to gd-1-col-18
+    when 19 move x-80                to gd-1-col-19
+    when 20 move x-80                to gd-1-col-20
+    when 21 move x-80                to gd-1-col-21
+    when 22 move x-80                to gd-1-col-22
+    when 23 move x-80                to gd-1-col-23
+    when 24 move x-80                to gd-1-col-24
+    when 25 move x-80                to gd-1-col-25
+    when 26 move x-80                to gd-1-col-26
+    when 27 move x-80                to gd-1-col-27
+    when 28 move x-80                to gd-1-col-28
+    when 29 move x-80                to gd-1-col-29
+    when 30 move x-80                to gd-1-col-30
+    when 31 move x-80                to gd-1-col-31
+    when 32 move x-80                to gd-1-col-32
+    when 33 move x-80                to gd-1-col-33
+    when 34 move x-80                to gd-1-col-34
+    when 35 move x-80                to gd-1-col-35
+    when 36 move x-80                to gd-1-col-36
+    when 37 move x-80                to gd-1-col-37
+    when 38 move x-80                to gd-1-col-38
+    when 39 move x-80                to gd-1-col-39
+    when 40 move x-80                to gd-1-col-40
+    when 41 move x-80                to gd-1-col-41
+    when 42 move x-80                to gd-1-col-42
+    when 43 move x-80                to gd-1-col-43
+    when 44 move x-80                to gd-1-col-44
+    when 45 move x-80                to gd-1-col-45
+    when 46 move x-80                to gd-1-col-46
+    when 47 move x-80                to gd-1-col-47
+    when 48 move x-80                to gd-1-col-48
+    when 49 move x-80                to gd-1-col-49
+    when 50 move x-80                to gd-1-col-50
+    when 51 move x-80                to gd-1-col-51
+    when 52 move x-80                to gd-1-col-52
+    when 53 move x-80                to gd-1-col-53
+    when 54 move x-80                to gd-1-col-54
+    when 55 move x-80                to gd-1-col-55
+    when 56 move x-80                to gd-1-col-56
+    when 57 move x-80                to gd-1-col-57
+    when 58 move x-80                to gd-1-col-58
+    when 59 move x-80                to gd-1-col-59
+    when 60 move x-80                to gd-1-col-60
+    when 61 move x-80                to gd-1-col-61
+    when 62 move x-80                to gd-1-col-62
+    when 63 move x-80                to gd-1-col-63
+    when 64 move x-80                to gd-1-col-64
+    when 65 move x-80                to gd-1-col-65
+    when 66 move x-80                to gd-1-col-66
+    when 67 move x-80                to gd-1-col-67
+    when 68 move x-80                to gd-1-col-68
+    when 69 move x-80                to gd-1-col-69
+    when 70 move x-80                to gd-1-col-70
+    when 71 move x-80                to gd-1-col-71
+    when 72 move x-80                to gd-1-col-72
+    when 73 move x-80                to gd-1-col-73
+    when 74 move x-80                to gd-1-col-74
+    when 75 move x-80                to gd-1-col-75
+    when 76 move x-80                to gd-1-col-76
+    when 77 move x-80                to gd-1-col-77
+    when 78 move x-80                to gd-1-col-78
+    when 79 move x-80                to gd-1-col-79
+    when 80 move x-80                to gd-1-col-80
+    when 81 move x-80                to gd-1-col-81
+    when 82 move x-80                to gd-1-col-82
+    when 83 move x-80                to gd-1-col-83
+    when 84 move x-80                to gd-1-col-84
+    when 85 move x-80                to gd-1-col-85
+    when 86 move x-80                to gd-1-col-86
+    when 87 move x-80                to gd-1-col-87
+    when 88 move x-80                to gd-1-col-88
+    when 89 move x-80                to gd-1-col-89
+    when 90 move x-80                to gd-1-col-90
+    end-evaluate.
+*
+ Form2-Aft-Initdata.
+    perform ara-raporla.
+     
+     .
+*
+ xfd-data-cevir.
+    perform xfd-get-mem.
+    call "m$alloc" using ara-index-record-size,
+                   temp-pointer
+    call "m$put" using temp-pointer 
+                 ara-data-data,
+                 ara-index-record-size,
+                 1.
+    call "C$LCONVERT" using x-80, 
+                            temp-pointer,
+                            parsexfd-field-offset,
+                            parsexfd-field-length,
+                            parsexfd-field-type, 
+                            parsexfd-field-digits, 
+                            parsexfd-field-scale.
+    if parsexfd-field-user-type = userdate
+       perform convert-to-ddmmyyyyy.
+    call "m$free" using temp-pointer.
+*/ Kod alanlarindan ismine ulasmak icin
+*/    perform kodmu.
+*
+ kodmu.
+    evaluate parsexfd-field-name
+    when "hesap_kodu" 
+         move "hesap_kodu"  to x-80(parsexfd-field-length + 1:)
+    when  other 
+         continue
+    end-evaluate.
+
+*
+ log-kiyasla. 
+    if kiyas-alan <> spaces and ara-data-islem-turu = "R"
+       call "m$alloc" using function length(ara-data-data),
+                            temp-pointer
+       call "m$put" using temp-pointer 
+                          ara-data-data
+                          function length(ara-data-data),
+                          1
+       call "m$alloc" using function length(kiyas-alan),
+                            kiyas-pointer
+       call "m$put" using kiyas-pointer 
+                          kiyas-alan
+                          function length(kiyas-alan),
+                          1
+       perform varying xfd-key-i
+               from 1
+               by 1
+               until xfd-key-i > (parsexfd-number-fields - 1)
+               perform xfd-get-mem
+               call "C$LCONVERT" using kiyas-x-80, 
+                                       kiyas-pointer,
+                                       parsexfd-field-offset,
+                                       parsexfd-field-length,
+                                       parsexfd-field-type, 
+                                       parsexfd-field-digits, 
+                                       parsexfd-field-scale
+               end-call
+               call "C$LCONVERT" using x-80, 
+                                       temp-pointer,
+                                       parsexfd-field-offset,
+                                       parsexfd-field-length,
+                                       parsexfd-field-type, 
+                                       parsexfd-field-digits, 
+                                       parsexfd-field-scale
+               end-call
+               if x-80 <> kiyas-x-80
+                  move 1               to kiyas-degisen-alan(xfd-key-i)
+               end-if
+       end-perform
+       call "m$free" using temp-pointer
+       call "m$free" using kiyas-pointer
+       move ara-data-data             to kiyas-alan
+    else
+       if ara-data-islem-turu = "W" 
+          move ara-data-data          to kiyas-alan
+       end-if
+    end-if.
+*
+ xfd-degisenleri-goster.
+    initialize slh
+    perform varying kiyas-i
+            from 1
+            by 1
+            until kiyas-i > max-field
+            if kiyas-degisen-alan(kiyas-i) = 1
+               modify form2-gd-1,
+                      y = grid-kayit-no,
+                      x = kiyas-i
+                      cell-color = 456
+               if kiyas-i = 4 or kiyas-i = 5 or kiyas-i = 6| hangi kolon degisti
+                  move "E" to slh
+               end-if
+
+            end-if
+    end-perform.
+
+    if SLH(1:1) = "E"
+                  add 1 to kayit-sira
+
+                  modify form2-gd-1,
+                        y = grid-kayit-no,
+                        x = 9
+                        cell-data = kayit-x
+
+                     move 1 to aa
+       perform until 1 = 0
+               inquire form2-gd-1(grid-kayit-no - aa,9)
+                       cell-data in slh
+               if slh = spaces 
+                  add 1 to aa
+                  exit perform cycle
+               else
+                  if slh(1:5) = "WRITE" 
+                          subtract 1 from kayit-sira
+                          modify form2-gd-1(grid-kayit-no - aa ,9)
+                              cell-data = kayit-x
+                          add 1 to kayit-sira
+                          exit perform
+                  else
+                     exit perform
+                  end-if
+              end-if
+       end-perform
+
+    end-if
+
+
+    initialize kiyas-degisen-alanlar.
+*
+ convert-to-ddmmyyyyy.
+
+    inspect x-80(1:8) replacing all spaces by zeroes.
+    move x-80(1:4)             to eyil
+    move x-80(5:2)             to eay
+    move x-80(7:2)             to egun
+    move etarih                to x-80.
+*
+ arabul-Ef-1-Ex-Ntf-Changed.
+     if arabul-value = spaces
+        modify arabul-pb-1,
+               enabled = false
+     else
+        modify arabul-pb-1,
+               enabled = true
+     end-if.
+     
+*
+ ara-bul.
+     modify form2-gd-1(arabul-y,arabul-x),
+            search-options  = grid-search-options
+            search-text     = arabul-value
+            giving arabul-sonuc.
+
+     if arabul-sonuc = 0
+        display message box
+                "Aranilen kelime : ",arabul-value,x"0a0d",
+                "Kayitlar icinde bulunamadi ..."
+                icon mb_warning_icon
+                title "Bilginize ..."
+        initialize arabul-degiskenler
+        set arabul-yeni-arama         to true
+        exit paragraph
+     end-if.
+
+     set arabul-tekrar-arama to true
+     inquire form2-gd-1,
+             x in arabul-x,
+             y in arabul-y,
+     
+     modify form2-gd-1,
+            cursor-x = arabul-x
+            cursor-y = arabul-y
+            start-x = arabul-x
+            start-y = arabul-y
+            region-color = 480.
+
+     .
+*
+ arabul-Ex-Other.
+     if key-status <> 3 
+        exit paragraph.
+ 
+     if arabul-value = spaces
+        exit paragraph.
+
+     if arabul-yeni-arama
+        set grid-search-forwards         to true
+        move 1                           to grid-search-wrap-flag
+        set grid-search-skip-current     to true
+        set grid-search-match-any        to true
+        modify form2-gd-1,
+               search-options = grid-search-options
+     end-if.
+
+     perform ara-bul.
+
+
+     
+     .
+*
+ arabul-Bef-Create.
+     initialize arabul-degiskenler
+     set arabul-yeni-arama         to true.
+     
+     .
+*
+ arabul-Aft-Initdata.
+     modify arabul-pb-1,
+            enabled = false.
+*
+ Form2-Ex-Other.
+     if key-status = 3
+        perform acu-arabul-routine
+        modify form2-gd-1,
+               region-color = 0
+     end-if.
+     
+     .
+*
+ flt-grid-reset.
+    initialize flt-deg.
+    modify flt-grid,
+           reset-grid = 1
+           mass-update = 1
+    initialize flt-grid-data
+    move " "                           to gd-2-col-1
+    move "Degisken"                    to gd-2-col-2
+    move "Baslangic Deger   "          to gd-2-col-3
+    move "Bitis Deger   "              to gd-2-col-4
+    move "X"                           to gd-2-col-5
+    
+    modify flt-grid,
+           record-to-add(flt-grid-data)
+
+    perform ara-xfd-yukle.
+    perform varying xfd-key-i
+            from 1
+            by 1
+            until xfd-key-i > parsexfd-number-fields + 1
+                  compute dummy-999 = xfd-key-i - 1
+                  call "c$parsexfd" using parsexfd-get-field-info
+                                          parsexfd-handle,
+                                          dummy-999,
+                                          parsexfd-field-description
+                  end-call
+
+                  if parsexfd-field-name = spaces
+                     exit perform cycle
+                  end-if
+                    
+                  initialize flt-grid-data
+                  move parsexfd-field-name   to gd-2-col-2
+                  inspect form2-gd-1-record replacing all low-values by spaces
+                  if parsexfd-field-user-type = UserDate
+                     move "*"                to gd-2-col-1
+                  end-if
+                  move xfd-key-i             to gd-2-col-6
+                  modify flt-grid,
+                         record-to-add(flt-grid-data)
+    end-perform.
+
+    call "c$parsexfd" using parsexfd-release, parsexfd-handle.
+
+
+    modify flt-grid,
+           mass-update = 0.
+*
+ combo-dosya-Ex-Ntf-Selchange.
+*/    exit paragraph.
+
+    perform flt-grid-reset.
+     .
+*
+ flt2dizi.
+    initialize flt-i flt-ii flt-son-i flt-durum.
+    inquire flt-grid, 
+            last-row in flt-ii
+    perform varying flt-i 
+            from 2
+            by 1
+            until flt-i > flt-ii
+            inquire flt-grid(flt-i)
+                    record-data flt-grid-data
+            inquire flt-grid(flt-i,5),
+                    hidden-data in eh
+
+            if eh <> "E"
+               exit perform cycle
+            end-if
+
+            if gd-2-col-3 > gd-2-col-4 
+                   display message box
+                           gd-2-col-2," alani bitis degeri baslangic degerinden kucuk !!!"
+                           icon mb_error_icon
+                           title "Hata"
+                   move "X"                  to flt-durum
+                  exit paragraph
+            end-if
+
+
+            add 1                 to flt-son-i
+            if gd-2-col-1 = "*" | Tarih bu alan
+*/ Baslangic deger               
+               initialize flt-iii
+               inspect gd-2-col-3 tallying flt-iii for all "."
+               if flt-iii = zeroes
+                  inspect gd-2-col-3 tallying flt-iii for all "/"
+               end-if
+
+               if flt-iii = zeroes | 01052017 þeklinde girilmiþ
+                  move gd-2-col-3(5:4)    to flt-bas(flt-son-i)
+                  move gd-2-col-3(3:2)    to flt-bas(flt-son-i)(5:)
+                  move gd-2-col-3(1:2)    to flt-bas(flt-son-i)(7:)
+               else | 01.01.2017 þeklinde girilmiþ
+                  move gd-2-col-3(7:4)    to flt-bas(flt-son-i)
+                  move gd-2-col-3(4:2)    to flt-bas(flt-son-i)(5:)
+                  move gd-2-col-3(1:2)    to flt-bas(flt-son-i)(7:)
+               end-if
+*/ Bitis deger               
+               initialize flt-iii
+               inspect gd-2-col-4 tallying flt-iii for all "."
+               if flt-iii = zeroes
+                  inspect gd-2-col-4 tallying flt-iii for all "/"
+               end-if
+
+               if flt-iii = zeroes | 01052017 þeklinde girilmiþ
+                  move gd-2-col-4(5:4)    to flt-bit(flt-son-i)
+                  move gd-2-col-4(3:2)    to flt-bit(flt-son-i)(5:)
+                  move gd-2-col-4(1:2)    to flt-bit(flt-son-i)(7:)
+               else | 01.01.2017 þeklinde girilmiþ
+                  move gd-2-col-4(7:4)    to flt-bit(flt-son-i)
+                  move gd-2-col-4(4:2)    to flt-bit(flt-son-i)(5:)
+                  move gd-2-col-4(1:2)    to flt-bit(flt-son-i)(7:)
+               end-if
+
+            else
+               move gd-2-col-3       to flt-bas(flt-son-i)
+               move gd-2-col-4       to flt-bit(flt-son-i)
+            end-if
+
+            move gd-2-col-6          to flt-no(flt-son-i)
+
+    end-perform.
+
+
+*
+ flt-incele.
+    initialize flt-durum
+    if flt-son-i = zeroes
+       exit paragraph.
+
+
+    compute flt-iii = log-index-record-size + 10
+
+    call "m$alloc" using flt-iii
+                         flt-pointer
+
+    call "m$put" using flt-pointer 
+                       log-kayit-alani,
+                       flt-iii,
+                       1
+
+
+
+    perform varying flt-i
+            from 1
+            by 1
+            until flt-i > flt-son-i
+
+                  move flt-no(flt-i)            to xfd-key-i
+                  perform xfd-get-mem
+
+
+                  call "C$LCONVERT" using flt-data, 
+                                    flt-pointer,
+                                    parsexfd-field-offset,
+                                    parsexfd-field-length,
+                                    parsexfd-field-type, 
+                                    parsexfd-field-digits, 
+                                    parsexfd-field-scale
+                  end-call
+
+
+                  if flt-bas(flt-i) > flt-data or 
+                     flt-bit(flt-i) < flt-data
+                         move "X"    to flt-durum
+                         exit perform
+                  end-if
+
+    end-perform.
+
+    call "m$free" using flt-pointer.
+*
+ flt-grid-Ev-Other.
+     evaluate event-type
+     when msg-finish-entry
+     when msg-cancel-entry
+          inquire flt-grid(event-data-2)
+                  record-data in flt-grid-data
+          inquire flt-grid(event-data-2,5)
+                  hidden-data in eh 
+
+          if gd-2-col-3 = spaces and gd-2-col-4 = spaces
+               if eh = "E"
+                  modify flt-grid(event-data-2,5)
+                         bitmap = null
+                         hidden-data = " "
+               else
+                  modify flt-grid(event-data-2,5)
+                         bitmap = yes-bmp
+                         bitmap-width = 16
+                         bitmap-number = 1
+                         bitmap-trailing = 1
+                         hidden-data = "E"
+               end-if
+          else
+               if eh = space
+                  modify flt-grid(event-data-2,5)
+                         bitmap = yes-bmp
+                         bitmap-width = 16
+                         bitmap-number = 1
+                         bitmap-trailing = 1
+                         hidden-data = "E"
+               end-if
+          end-if
+     when msg-begin-entry
+          evaluate event-data-1
+          when 1
+          when 2
+          when 6
+               move event-action-fail         to event-action
+          when 3
+          when 4
+               continue
+          when 5
+               move event-action-fail         to event-action
+               inquire flt-grid(event-data-2,5)
+                       hidden-data in eh 
+               if eh = "E"
+                  modify flt-grid(event-data-2,5)
+                         bitmap = null
+                         hidden-data = " "
+               else
+                  modify flt-grid(event-data-2,5)
+                         bitmap = yes-bmp
+                         bitmap-width = 16
+                         bitmap-number = 1
+                         bitmap-trailing = 1
+                         hidden-data = "E"
+               end-if
+          end-evaluate
+     end-evaluate.
+     .
+
+ 

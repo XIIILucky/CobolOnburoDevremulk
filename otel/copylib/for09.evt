@@ -1,0 +1,1768 @@
+* for09.evt
+* for09.evt is generated from D:\asya\acugt.ytl\otel\for09.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    move onkpara-banka to banka-kodu
+    move onkpara-doviz to doviz-kodu
+     move 1 to reel-gecmis
+    compute secili-sene = yil-tasi - 1   
+    close genel.
+    open input genel2
+    move 1 to genel2-anah 
+    read genel2 no lock invalid continue
+         not invalid continue
+    end-read
+    close genel2  
+            
+    perform birlesik-ref-bul
+
+**********************************************************************pdf conv
+    call "c$narg" using link-var
+**********************************************************************pdf conv
+    if genel2-rapor-comp-durumu = spaces 
+       move 2 to tumu
+    else 
+       move genel2-rapor-comp-durumu to tumu
+    end-if
+     .
+*
+ Form1-Aft-Initdata.
+    move yil-tasi      to rap-yil.
+    move onkpara-banka to banka-kodu
+    move onkpara-doviz to doviz-kodu
+    display accept-banka accept-doviz
+    perform banka-after
+    perform doviz-after
+    display acc-01.
+     open i-o genelfis
+        move 1 to genelfis-anahtar
+        read genelfis no lock invalid
+             accept print-no from time
+        not invalid
+             add 1 to print-no
+             rewrite genelfis-rec end-rewrite
+        end-read
+     close genelfis.
+**********************************************************************pdf conv
+    if link-var > 0 
+        move 0 to oda-ref fiyat-ref
+        move forlink-bas-yil   to rap-yil
+*        move forlink-bit-tarih to son-tarih
+        move 2 to key-status
+        perform Form1-Ex-Other       
+    end-if 
+**********************************************************************pdf conv
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+*
+ Form1-Ex-Other.
+    evaluate key-status
+      when 1 perform yardimlar
+      when 2 perform rapor-islem
+      when 33 
+            call "/asya/ytl/obj/otel/rezfilt.asy" 
+                  using filtre-tasi  
+                  on exception 
+                     perform callerr-proc
+                  not on exception
+                     continue
+             end-call
+             display l-filtre 
+    end-evaluate
+    .
+*
+ yardimlar.
+    evaluate control-id
+      when 12
+      when 13 perform ara-acenta
+      when 16
+      when 17 perform ara-grup
+    end-evaluate
+    .
+*
+ ara-acenta.
+    initialize acenta-cagir
+    call "/asya/ytl/obj/otel/acenara.asy" 
+      using acenta-cagir  
+      on exception 
+        perform callerr-proc
+      not on exception
+        if acenta-cagir <> spaces
+           move acenta-cagir to acn-kod
+           display acc-04
+        end-if
+    end-call
+    move 4 to accept-control
+    move 13 to control-id
+    .
+*
+ ara-grup.
+    initialize acn-grup-kod
+    call "/asya/ytl/obj/otel/grupara.asy" 
+      using "A", acn-grup-kod  
+      on exception 
+        perform callerr-proc
+      not on exception
+        display acc-08
+    end-call
+    move 4 to accept-control
+    move 17 to control-id
+    .
+*
+*
+ rapor-islem.
+    if karsilastir = 1
+    open input takvim
+    initialize takvim-rec 
+    move secili-sene       to takvim-yil
+    move 01                to takvim-ay
+    move 01                to takvim-gun
+    read takvim no lock invalid 
+       display message box "Hatali Karsilastirma Yili Girdiniz..."
+                       title "Uyari"
+                       icon 1
+                       close takvim
+                exit paragraph 
+    end-read 
+    close takvim
+    end-if
+
+    open input takvim
+    initialize takvim-rec 
+    move rap-yil       to takvim-yil
+    move 01                to takvim-ay
+    move 01                to takvim-gun
+    read takvim no lock invalid 
+       display message box "Rapor Yili Hatali..."
+                       title "Uyari"
+                       icon 1
+                       close takvim
+                exit paragraph 
+    end-read 
+    close takvim
+
+    initialize takas7-rec yanlis-kur
+    move print-no to takasfiyat-no
+         open output takasfiyat
+     close takasfiyat
+     open i-o takasfiyat grup
+        open input kur 
+        move tarih-tasi to kur-tarih
+        move banka-kodu to kur-banka
+        move doviz-kodu to kur-doviz
+        read kur no lock 
+           invalid
+            move 1 to doviz-alis   yanlis-kur
+        end-read
+        move doviz-alis to rapor-kuru
+        perform takas-dosya-yaz
+        close kur
+        close takasfiyat
+       
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "Yillik Ozet Forecast"   to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Yillik Ozet Forecast"   to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move rap-yil        to det-filler(51:04)
+
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "2"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Rapor Tipi :"   to det-filler
+     if rap-tip = 1
+          move "Geceleme"   to  det-filler(13:)
+       else
+          move "Gelen"   to  det-filler(13:)
+     end-if
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "3"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "Acenta Kodu :"   to det-filler
+     if acn-kod = spaces
+          move "Tumu"   to  det-filler(15:)
+       else
+          move acenta-adi  to  det-filler(15:)
+     end-if
+     move " Acenta Grup :"   to det-filler(40:)
+     if acn-grup-kod  = spaces then
+           move "Tumu"   to  det-filler(55:)
+       else
+          move grup-adi   to  det-filler(55:)
+     end-if
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LUUUUUUUUUUUUUUUU" to dokumer-align-occ
+      move "2"  to dokumer-align-occ(50:1)
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay  detay2
+     move "1"          to det-dokumer-20(10:1) det2-dokumer-20(10:1)
+     move "D1"         to det-dokumer-20(1:2)  det2-dokumer-20(1:2)
+     perform varying i from 1 by 1 until i > 12
+             move "AYI    "  to det-3(i)
+             move ay-adi(i)  to det-1(i)  det2-1(i)             
+     end-perform
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1 fil2-2(i) fil2-1 det-2(i)
+     end-perform
+    
+     write dokumer-rec from detay
+   
+  
+        
+     initialize dokumer-rec detay detay2
+     move "Gun"              to det-satir  det2-satir
+     perform varying i from 1 by 1 until i > 12
+             move " Oda"     to det-1(i)  det2-1(i)
+         evaluate kisi-tip
+           when 1
+                move " Pax"     to det-3(i)
+           when 2
+                move " P+C/2"     to det-3(i)
+           when 3
+                move "PCF "     to det-3(i) 
+           when 4
+               move " C  "     to det-3(i)
+           when 5
+               move "Bos Oda"     to det-3(i)
+           when 6
+               move " Fiyat"     to det2-3(i)
+           when 7 
+              move " Rez"     to det-1(i)  det2-1(i) 
+              move "KGrup" to det-3(i)
+           when 8
+              move "PCFB"  to det-3(i)
+           when 9
+              move "PC"   to det-3(i)
+           when 10
+              move "Yuzde"  to det-3(i)
+           when other
+              display message box "Secim hatasi : jh55"
+        end-evaluate
+         move "D2"           to det-dokumer-20(1:2) det2-dokumer-20(1:2)     
+     end-perform
+    
+     write dokumer-rec from detay
+   
+      initialize dokumer-rec detay  detay2
+     move "D3"           to det-dokumer-20(1:2) det2-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1) det2-dokumer-20(5:1)
+     perform varying i from 1 by 1 until i > 12
+             move all "-" to det-0(i)  det2-0(i)
+             
+     end-perform
+   
+     write dokumer-rec from detay
+       
+     
+        
+*********************************
+     initialize son-toplam topla
+     initialize fs-takas7
+     perform varying i from 1 by 1 until i > 31
+             initialize detay dokumer-rec   detay2
+             perform varying ii from 1 by 1 until ii > 12
+                     move i                  to iki-hane
+                     move iki-hane           to det-satir det2-satir
+                     move takas7-oda(ii,i)   to z-2
+                     move z-2                to det-1(ii)  det2-1(ii)
+                     move "|"                to det-2(ii)  det2-2(ii)                     
+                     if kisi-tip = 5
+                       compute  takas7-pax(ii,i) = TAKAS7-H-ODA(ii,i) - takas7-oda(ii,i)
+                       move takas7-pax(ii,i)     to sz-2b   z-f
+                       move sz-2b                to det-3(ii)  det2-3(ii)
+                       compute takas7-pax(ii,32) = takas7-pax(ii,32) + takas7-pax(ii,i)    
+**/***********************alba ekleme*/****************ramazan*/***
+                       compute sat-pax = sat-pax + takas7-pax(ii,i)
+                     else
+                        move takas7-pax(ii,i)    to z-2b   z-f
+                        move z-2b                to det-3(ii)  det2-3(ii)
+                     end-if
+                    if kisi-tip = 6 
+                       move z-f                  to  det2-3(ii)
+                    end-if
+                    if kisi-tip = 10
+                       compute yuzde rounded = 
+                               takas7-oda(ii,i) / TAKAS7-H-ODA(ii,i) * 100                                                      
+                       move yuzde to z-yuz
+                       move z-yuz to det-3(ii)                       
+                    end-if 
+                     move "|"                to fil-2(ii) fil-1   fil2-2(ii) fil2-1
+             end-perform
+              
+                   write dokumer-rec from detay  
+              
+     end-perform
+
+     initialize dokumer-rec detay  detay2
+     move "-"            to det-dokumer-20(5:1)  det2-dokumer-20(5:1)
+     perform varying i from 1 by 1 until i > 12
+             move all "-" to det-0(i)   det2-0(i)
+     end-perform
+     
+     write dokumer-rec from detay
+            
+     initialize dokumer-rec detay detay2
+*************32 inci  indeks toplamdýr yalarimmmmm
+     move "Top."             to det-satir   det2-satir
+     perform varying ii from 1 by 1 until ii > 12
+             move takas7-oda(ii,32)   to z-2
+             move z-2                 to det-1(ii) det2-1(ii)
+             move "|"                 to det-2(ii)  det2-2(ii)
+             move takas7-pax(ii,32)   to z-2b   z-f
+             move z-2b                to det-3(ii)
+ 
+             if kisi-tip = 6 then 
+                 move z-f                 to det2-3(ii)
+             end-if
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1
+     end-perform.
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1   fil2-2(i) fil2-1
+     end-perform
+     move "A"          to det-dokumer-20(3:1) det2-dokumer-20(3:1)
+*             move "T"          to det-dokumer-20(1:1)
+     move 481          to det-renk1                 det2-renk1             
+     move "1"          to det-dokumer-20(10:1)      det2-dokumer-20(10:1)      
+     write dokumer-rec from detay
+            
+     initialize dokumer-rec detay  detay2
+     move "Max"             to det-satir det2-satir
+     perform varying ii from 1 by 1 until ii > 12
+             move takas7-h-oda(ii,32)    to z-2
+             move z-2                 to det-1(ii)  det2-1(ii)  
+             move "|"                 to det-2(ii)  det2-2(ii)  
+             
+             move takas7-h-yatak(ii,32) to z-2b
+             move Z-2b                 to det-3(ii)           det2-3(ii)             
+             move "|"                 to fil-2(ii) fil-1     fil2-2(ii) fil2-1       
+     end-perform.
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1  fil2-2(i) fil2-1
+     end-perform
+     move "A"          to det-dokumer-20(3:1)  det2-dokumer-20(3:1) 
+     move 481          to det-renk1            det2-renk1           
+     move "1"          to det-dokumer-20(10:1) det2-dokumer-20(10:1)
+     
+                   write dokumer-rec from detay
+           
+
+     initialize dokumer-rec detay  detay2
+     move "Dol"             to det-satir  det2-satir
+     perform varying ii from 1 by 1 until ii > 12
+             compute yuzde rounded =
+                     (takas7-oda(ii,32) / takas7-h-oda(ii,32)) * 100
+             move yuzde               to yuzde-goster
+             move yuzde-goster        to det-1(ii) det2-1(ii)
+             move "|"                 to det-2(ii) det2-2(ii)
+             compute yuzdeb rounded =
+                     ( (takas7-pax(ii,32) / (takas7-h-yatak(ii,32)) * 100 ))
+             move yuzdeb               to yuzde-gosterb
+             move yuzde-gosterb        to det-3(ii)         det2-3(ii)       
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1 
+     end-perform.
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1    fil2-2(i) fil2-1
+     end-perform
+     move "A"          to det-dokumer-20(3:1)  det2-dokumer-20(3:1)
+*             move "T"          to det-dokumer-20(1:1)
+     move 481          to det-renk1               det2-renk1               
+     move "1"          to det-dokumer-20(10:1)    det2-dokumer-20(10:1)    
+     
+                   write dokumer-rec from detay
+             
+     initialize dokumer-rec detay  detay2
+     move "-"            to det-dokumer-20(5:1) det2-dokumer-20(5:1)
+     perform varying i from 1 by 1 until i > 12
+             move all "-" to det-0(i)  det2-0(i)
+     end-perform
+     
+                   write dokumer-rec from detay
+             
+     if karsilastir = 1 
+
+         if kisi-tip = 5
+           perform varying ii from 1 by 1 until ii > 12
+              compute  TAKAS7-g-bugun-pax(ii)  =  TAKAS7-g-H-ODA(ii)   - TAKAS7-g-bugun-ODA(ii) 
+              compute  TAKAS7-g-son-pax(ii)  =  TAKAS7-g-H-ODA(ii)   - TAKAS7-g-son-ODA(ii) 
+             compute  TAKAS7-g-son15-pax(ii)  =  TAKAS7-g-H-ODA(ii)   - TAKAS7-g-son15-ODA(ii) 
+             compute  TAKAS7-g-son30-pax(ii)  =  TAKAS7-g-H-ODA(ii)   - TAKAS7-g-son30-ODA(ii) 
+             compute  TAKAS7-g-son60-pax(ii)  =  TAKAS7-g-H-ODA(ii)   - TAKAS7-g-son60-ODA(ii) 
+            end-perform 
+             
+          end-if
+
+          perform kar-yaz
+
+
+
+
+
+     end-if
+************* Kumulatif toplamlar 
+
+     initialize dokumer-rec detay detay2
+     move "Satilan"            to det-3(6)   det2-0(6)  
+     move "Kapasite"           to det-3(7)   det2-0(7)  
+     move "Dolu(%)"            to det-3(8)   det2-0(8)  
+     move "|"                  to fil-2(6) fil-2(7) fil-2(8) fil-2(5)
+                                  fil2-2(6) fil2-2(7) fil2-2(8) fil2-2(5)
+     move "A"          to det-dokumer-20(3:1)   det2-dokumer-20(3:1)    
+     move 481          to det-renk1             det2-renk1              
+     move "1"          to det-dokumer-20(10:1)  det2-dokumer-20(10:1)   
+    
+                   write dokumer-rec from detay
+             
+
+     initialize dokumer-rec detay   detay2
+     move "-"            to det-dokumer-20(5:1)    det2-dokumer-20(5:1)
+     perform varying i from 6 by 1 until i > 8
+             move all "-" to det-0(i)  det2-0(i)
+     end-perform
+    
+                   write dokumer-rec from detay
+           
+     initialize detay dokumer-rec  detay2
+     move "Oda"             to det-3(5)     det2-0(5)
+     if kisi-tip = 7 then 
+         move "Rez"             to det-3(5)     det2-0(5)
+     end-if
+     move sat-top           to z-2b           
+     move z-2b              to det-3(6)     det2-0(6)
+     move haz-top           to z-2b            
+     move z-2b              to det-3(7)     det2-0(7)
+     compute yuzdeb = (sat-top / haz-top ) * 100
+     move yuzdeb             to yuzde-gosterb
+     move yuzde-gosterb      to det-3(8)        det2-3(8)
+     move "|"               to fil-2(6) fil-2(7) fil-2(8) fil-2(5)
+                               fil2-2(6) fil2-2(7) fil2-2(8) fil2-2(5)
+     move "A"               to det-dokumer-20(3:1)    det2-dokumer-20(3:1)    
+     move 481               to det-renk1              det2-renk1              
+     move "1"               to det-dokumer-20(10:1)   det2-dokumer-20(10:1)   
+     
+                   write dokumer-rec from detay
+             
+
+
+     
+     initialize detay dokumer-rec detay2
+     move "Yatak"             to det-3(5)  det2-0(5)
+      if kisi-tip = 7 then 
+       move "Bek. Grup"             to det-3(5)     det2-0(5)
+     end-if
+     move sat-pax           to z-2b   z-f
+     move z-2b              to det-3(6)   det2-0(6)
+    
+     compute topla = haz-top-y 
+     move topla             to z-2b
+     move z-2b              to det-3(7)   det2-0(7)
+
+     compute yuzdeb = ((sat-pax ) / (haz-top-y)) * 100
+     move yuzdeb             to yuzde-gosterb
+     move yuzde-gosterb      to det-3(8)    det2-3(8)
+     move "|" to fil-2(6) fil-2(7) fil-2(8) fil-2(5)
+                 fil2-2(6) fil2-2(7) fil2-2(8) fil2-2(5)
+     move "A"          to det-dokumer-20(3:1)    det2-dokumer-20(3:1)   
+     move 481          to det-renk1              det2-renk1             
+     move "1"          to det-dokumer-20(10:1)   det2-dokumer-20(10:1)  
+    
+                   write dokumer-rec from detay
+ 
+     initialize dokumer-rec detay  detay2
+     move "-"            to det-dokumer-20(5:1)    det2-dokumer-20(5:1)
+     perform varying i from 6 by 8 until i > 3
+             move all "-" to det-0(i)    det2-0(i)
+     end-perform
+     
+                   write dokumer-rec from detay
+             
+
+*/***********************************************************************
+     initialize detay dokumer-rec  detay2
+     move       kars-yil to    det-1(5) 
+     move "Bugun"                      to det-3(5)     det2-0(5)
+   
+     move GECEN-SENE-BUGUN           to z-2b           
+     move z-2b                       to det-3(6)     det2-0(6)
+     move haz-top           to z-2b            
+     move z-2b              to det-3(7)     det2-0(7)
+     compute yuzdeb = (GECEN-SENE-BUGUN / haz-top ) * 100
+     move yuzdeb            to yuzde-gosterb
+     move yuzde-gosterb     to det-3(8)        det2-3(8)
+     move "|"               to fil-2(6) fil-2(7) fil-2(8) fil-2(5)
+                               fil2-2(6) fil2-2(7) fil2-2(8) fil2-2(5)
+     move "A"               to det-dokumer-20(3:1)    det2-dokumer-20(3:1)    
+     move 481               to det-renk1              det2-renk1              
+     move "1"               to det-dokumer-20(10:1)   det2-dokumer-20(10:1)   
+     
+     write dokumer-rec from detay
+*/**************************************************************************
+     initialize detay dokumer-rec  detay2
+     move       kars-yil to    det-1(5) 
+     move "Sonu"                      to det-3(5)     det2-0(5)
+   
+     move GECEN-SENE-SONU           to z-2b           
+     move z-2b                       to det-3(6)     det2-0(6)
+     move haz-top           to z-2b            
+     move z-2b              to det-3(7)     det2-0(7)
+     compute yuzdeb = (GECEN-SENE-SONU / haz-top ) * 100
+     move yuzdeb            to yuzde-gosterb
+     move yuzde-gosterb     to det-3(8)        det2-3(8)
+     move "|"               to fil-2(6) fil-2(7) fil-2(8) fil-2(5)
+                               fil2-2(6) fil2-2(7) fil2-2(8) fil2-2(5)
+     move "A"               to det-dokumer-20(3:1)    det2-dokumer-20(3:1)    
+     move 481               to det-renk1              det2-renk1              
+     move "1"               to det-dokumer-20(10:1)   det2-dokumer-20(10:1)   
+     
+     write dokumer-rec from detay
+*/********************************************************************************
+
+     initialize detay dokumer-rec  detay2
+     move       kars-yil to    det-1(5) 
+     move "Son 15"                      to det-3(5)     det2-0(5)
+   
+     move gecen-sene-son-15           to z-2b           
+     move z-2b                       to det-3(6)     det2-0(6)
+     move haz-top           to z-2b            
+     move z-2b              to det-3(7)     det2-0(7)
+     compute yuzdeb = (gecen-sene-son-15 / haz-top ) * 100
+     move yuzdeb            to yuzde-gosterb
+     move yuzde-gosterb     to det-3(8)        det2-3(8)
+     move "|"               to fil-2(6) fil-2(7) fil-2(8) fil-2(5)
+                               fil2-2(6) fil2-2(7) fil2-2(8) fil2-2(5)
+     move "A"               to det-dokumer-20(3:1)    det2-dokumer-20(3:1)    
+     move 481               to det-renk1              det2-renk1              
+     move "1"               to det-dokumer-20(10:1)   det2-dokumer-20(10:1)   
+     
+     write dokumer-rec from detay
+
+     initialize detay dokumer-rec  detay2
+     move       kars-yil to    det-1(5) 
+     move "Son 30"                      to det-3(5)     det2-0(5)
+   
+     move gecen-sene-son-30           to z-2b           
+     move z-2b                       to det-3(6)     det2-0(6)
+     move haz-top           to z-2b            
+     move z-2b              to det-3(7)     det2-0(7)
+     compute yuzdeb = (gecen-sene-son-30 / haz-top ) * 100
+     move yuzdeb            to yuzde-gosterb
+     move yuzde-gosterb     to det-3(8)        det2-3(8)
+     move "|"               to fil-2(6) fil-2(7) fil-2(8) fil-2(5)
+                               fil2-2(6) fil2-2(7) fil2-2(8) fil2-2(5)
+     move "A"               to det-dokumer-20(3:1)    det2-dokumer-20(3:1)    
+     move 481               to det-renk1              det2-renk1              
+     move "1"               to det-dokumer-20(10:1)   det2-dokumer-20(10:1)   
+     
+     write dokumer-rec from detay
+
+     initialize detay dokumer-rec  detay2
+     move       kars-yil to    det-1(5) 
+     move "Son 60"                      to det-3(5)     det2-0(5)
+   
+     move gecen-sene-son-60           to z-2b           
+     move z-2b                       to det-3(6)     det2-0(6)
+     move haz-top           to z-2b            
+     move z-2b              to det-3(7)     det2-0(7)
+     compute yuzdeb = (gecen-sene-son-60 / haz-top ) * 100
+     move yuzdeb            to yuzde-gosterb
+     move yuzde-gosterb     to det-3(8)        det2-3(8)
+     move "|"               to fil-2(6) fil-2(7) fil-2(8) fil-2(5)
+                               fil2-2(6) fil2-2(7) fil2-2(8) fil2-2(5)
+     move "A"               to det-dokumer-20(3:1)    det2-dokumer-20(3:1)    
+     move 481               to det-renk1              det2-renk1              
+     move "1"               to det-dokumer-20(10:1)   det2-dokumer-20(10:1)   
+     
+     write dokumer-rec from detay
+*/***********************************************************************
+     close dokumer grup
+     if yanlis-kur = 1 then 
+          continue
+*       display message box "Gunluk Kurlarda eksik var " new-line 
+*       "Rapor yanlis deger verebilir" title " DIKKAT " 
+     end-if
+**********************************************************************pdf conv
+     if link-var > 0 
+        perform pdf-olustur                  
+        string dokumer-dosya(17:4) delimited by "    "
+               ".pdf"              delimited by size     
+        into forlink-donus-dosya-adi
+     else
+        call  dokumer-prog on exception
+             perform callerr-proc
+        not on exception
+             cancel dokumer-prog
+        end-call
+     end-if
+**********************************************************************pdf conv
+     delete file dokumer
+**********************************************************************pdf conv
+     if link-var > 0 
+        set exit-pushed to true
+     end-if 
+**********************************************************************pdf conv
+     .
+  
+
+ takas-dosya-yaz.
+    initialize takas7-rec sat-top sat-pax haz-top    haz-top-y
+
+    open input takvim takvim2 cast rez  konuk fiyat gruplar odalar
+     romhrk fiyatana aksiyhrk  kodlar02 bilbord cast3  konum konumek
+    open i-o fiyatind
+    initialize takvim-rec toplam .
+    move rap-yil to takvim-anah.
+    move 0 to gecmis
+    start takvim key not < takvim-anah invalid 
+          continue
+    not invalid,
+
+          move spaces to eh,
+          perform with test after until evet,
+              read takvim next no lock end move "E" to eh,
+
+                  not end,
+
+                  move takvim-gun to rap-gun,
+                  if takvim-yil <> rap-yil  
+                     exit perform cycle
+                  end-if
+                 
+                  perform cast-oku
+                  if bilb =  1 then 
+                     perform bilbord-ekle
+                  end-if
+                  
+                if rapor-ref2-kullan = 1 
+                   perform hazir-bul-alt2
+                else
+                  if fiyat-ref > 0 then 
+                     move takvim-ref-hazir-oda (fiyat-ref) to  takvim-hazir-oda
+                     
+                      move takvim-ref-hazir-yatak (fiyat-ref) to  takvim-hazir-yatak
+                  end-if
+                  if oda-ref > 0 then 
+                      move takvim-ref-hazir-oda (oda-ref) to  takvim-hazir-oda  
+                      move takvim-ref-hazir-yatak (oda-ref) to  takvim-hazir-yatak
+                  end-if
+                end-if
+                   move takvim-hazir-oda to  takas7-h-oda(takvim-ay,takvim-gun)
+                   compute takas7-h-oda(takvim-ay,32) = 
+                 takas7-h-oda(takvim-ay,32) + takvim-hazir-oda
+                
+                compute haz-top = haz-top + takvim-hazir-oda
+              if kisi-tip  = 7 
+                  compute takas7-h-yatak(takvim-ay,32) = 
+                 takas7-h-yatak(takvim-ay,32) + takvim-hazir-oda
+                compute haz-top-y = haz-top-y + takvim-hazir-yatak
+              else
+                compute takas7-h-yatak(takvim-ay,32) = 
+                 takas7-h-yatak(takvim-ay,32) + takvim-hazir-yatak
+                compute haz-top-y = haz-top-y + takvim-hazir-yatak
+              end-if
+              end-read,
+*********              display takvim-anah
+          end-perform,
+    end-start.
+
+     move   rap-yil    to takas-blok-bas-tar(1:4)    takas-blok-bit-tar(1:4)
+     move "0101"   to  takas-blok-bas-tar(5:4)    
+     move "1231" to    takas-blok-bit-tar(5:4)
+     move 1 to takas-blok-konumlu
+   
+     if  beklenen-grup = 1
+        
+       perform grup-takas-al
+       perform gruplari-takasa-ekle
+     end-if
+
+
+    
+
+        
+
+       if karsilastir = 1 
+
+          move 1 to gecmis
+
+          move tarih-tasi to gecen-Bugun
+          move yil-tasi   to gecen-bugun-yil
+
+***    subtract 1 from  gecen-bugun-yil
+         move secili-sene  to gecen-bugun-yil
+       
+         move secili-sene to kars-yil
+    if secili-sene = yil-tasi        
+       compute gecen-bugun-yil =  kars-yil - 1       
+    end-if 
+
+
+    initialize takvim-rec 
+*    SUBTRACT 1 FROM rap-yil
+    move secili-sene to rap-yil
+    move rap-yil to kars-yil
+ 
+
+
+    display acc-01    
+    move rap-yil to takvim-anah
+
+
+       
+    start takvim key not < takvim-anah invalid 
+          continue
+    not invalid,
+
+          move spaces to eh,
+          perform with test after until evet,
+              read takvim next no lock end move "E" to eh,
+
+                  not end,
+
+                  move takvim-gun to rap-gun,
+                  if takvim-yil <> rap-yil  
+                     exit perform cycle
+                  end-if
+
+                  if takvim-sirket not = isyeri-adres-tasi then 
+                     if  takvim-sirket = spaces
+                         exit perform cycle 
+                     end-if 
+                        move takvim-sirket to konuk-dosya-adres cast-dosya-adres odalar-dosya-adres
+                             cast3-dosya-adres rez-dosya-adres konum-dosya-adres konumek-dosya-adres
+                        close  konuk  cast  rez   odalar  cast3 konum konumek
+                        open input   konuk  cast  rez   odalar  cast3   konum konumek
+                  end-if
+
+
+                  perform cast-oku
+                 
+                  
+                if rapor-ref2-kullan = 1 
+                   perform hazir-bul-alt2
+                else
+                  if fiyat-ref > 0 then 
+                      move takvim-ref-hazir-oda (fiyat-ref) to  takvim-hazir-oda                     
+                      move takvim-ref-hazir-yatak (fiyat-ref) to  takvim-hazir-yatak
+                  end-if
+                  if oda-ref > 0 then 
+                      move takvim-ref-hazir-oda (oda-ref) to  takvim-hazir-oda  
+                      move takvim-ref-hazir-yatak (oda-ref) to  takvim-hazir-yatak
+                  end-if
+                end-if  
+                   compute takas7-g-h-oda(takvim-ay) = 
+                 takas7-g-h-oda(takvim-ay)  + takvim-hazir-oda
+                    compute takas7-g-h-yatak(takvim-ay) = 
+                 takas7-g-h-yatak(takvim-ay)  + takvim-hazir-yatak
+                compute haz-top2 = haz-top2 + takvim-hazir-oda
+                compute haz-top-y2 = haz-top-y2 + takvim-hazir-yatak
+              end-read,
+*********              display takvim-anah
+          end-perform,
+    end-start
+    move yil-tasi to  rap-yil
+    display acc-01
+    move 0 to gecmis
+
+      end-if
+
+
+
+    close takvim konuk takvim2 cast romhrk rez  gruplar odalar
+      bilbord fiyat fiyatana fiyatind aksiyhrk kodlar02 cast3 konum konumek.
+      perform adresleri-tasi.
+ 
+ cast-oku.
+    initialize cast-rec.
+    move takvim-anah to cast-tarih.
+    start cast key not < cast-tarih invalid continue,
+        not invalid,
+
+        move spaces to var-yok,
+        perform with test after until var,
+            read cast next no lock end move "V" to var-yok,
+                 not end,
+
+                 if cast-tarih > takvim-anah 
+                    move "V" to var-yok,
+                 else,
+                     if cast-tarih not > takvim-anah,
+                        initialize rez-rec,
+                        move cast-rez-no to rez-no,
+                        read rez no lock invalid continue,
+                                     not invalid
+
+                         if sil-gelsin = 1                        |||| firat 18/01/2021
+                            if karsilastir = 1 and gecmis = 1
+                               continue
+                            else
+                               if rez-durumu not = "I"                               
+                                  exit perform cycle 
+                               end-if
+                            end-if                            
+                         else
+                            if rez-durumu not = "I"                               
+                               exit perform cycle 
+                            end-if
+                         end-if
+ 
+                                 if rez-k-g-b  not = "K" and  not = "O"
+                                       exit perform cycle
+                                 end-if,
+                                 if rez-k-g-b   = "O" and cb-infox-val = 0
+                                        exit perform cycle
+                                 end-if
+ 
+                        if acn-grup-kod not = spaces
+                              initialize grup-rec
+                              set grup-acenta to true
+                              move acn-grup-kod to grup-kodu
+                              move rez-acenta   to grup-alt
+                              read grup no lock
+                                invalid
+                                  exit perform cycle
+                              end-read
+                        end-if
+                        if acn-kod not = spaces and 
+                           rez-acenta not = acn-kod  
+                            exit perform cycle
+                        end-if
+                        if rap-tip = 1 and   rez-cik-tar  = cast-tarih
+                              exit perform cycle
+                        end-if
+                        
+                        if tumu > 1 then
+                            move "B" to kodlar02-tipi
+                            move rez-odeme-tipi to kodlar02-kodu
+                            read kodlar02 no lock invalid 
+                              move spaces to kodlar02-rec
+                               move rez-odeme-tipi to kodlar02-kodu
+                            end-read
+                                  if ( ode-tipi = "D" or  ode-tipi = "F" or  ode-tipi = "O")   and tumu = 2 then
+                                     exit perform cycle
+                                  end-if
+                                  if ( ode-tipi not = "D" and ode-tipi not = "F" and ode-tipi not = "O") and tumu = 3 then
+                                    exit perform cycle
+                                  end-if
+
+                        end-if
+
+                          if CAST-ODA-NO not = spaces 
+                            move cast-oda-no to rez-odano
+                         end-if
+*                           if rez-odano not = spaces and 
+*                               ( hayali-haric = 1 or dis-haric = 1 ) then
+*                                    initialize odalar-rec
+*                                      move rez-odano to odalar-anah
+*                                      read odalar no lock invalid continue
+*                                      not invalid
+*                                      if ( odalar-hayali = "H" and hayali-haric = 1 )  then
+*                                               move 0 to eklenecek-oda
+*                                      end-if
+*                                       if ( dis-haric = 1 and odalar-dis = 1 )  then
+*                                                 exit perform cycle
+*                                      end-if 
+*                                      end-read
+*                            end-if  
+
+                        if rez-gir-tar not = cast-tarih and 
+                           rap-tip = 2 then 
+                           continue
+                        else
+                         if filtre-var = 1 then
+                             perform filtre
+                             if filtre-gecti = 1 then 
+                                perform takas-kaydet 
+                             end-if
+                          else
+                             perform takas-kaydet  
+                         end-if   
+                        end-if             
+                                     
+                        end-read,
+                     end-if,
+                 end-if,
+            end-read,
+        end-perform,
+    end-start.
+*
+ bilbord-ekle.
+     
+    initialize bilbord-rec
+     move takvim-anah     to bilbord-tarih
+     start bilbord key not < bilbord-anah2 invalid
+           exit paragraph
+     not invalid
+     initialize fs-bilbord  son-acenta  eklenecek-oda
+
+     perform with test after until fs-bilbord = "10"
+     read bilbord next no lock end move "10" to fs-bilbord
+     not at end
+          if bilbord-tarih <> takvim-anah
+             move "10" to fs-bilbord
+             exit perform
+          end-if
+          initialize gec-gecme
+
+           move bilbord-oda-tip   to konum-anahtar xx rez-oda-konumu rez-fiyat-konumu  cast-oda-konumu cast-fiyat-konumu
+          read konum no lock invalid 
+               exit perform cycle
+          end-read
+
+          if onkpara-referans-var = 1 then 
+              perform ref-filtre
+             if  not ref-gecti then
+               
+
+              exit perform cycle
+            end-if
+          end-if
+
+
+
+          if acn-grup-kod not = spaces
+             initialize grup-rec
+             set grup-acenta       to true
+             move acn-grup-kod     to grup-kodu
+             move bilbord-acenta   to grup-alt
+             read grup no lock invalid 
+                  exit perform cycle
+             end-read
+          else
+             if acn-kod not = spaces and 
+                acn-kod <> bilbord-acenta
+                    exit perform cycle
+                end-if
+          end-if
+          if konumlar-ayri = 1
+          if  bilbord-oda > bilbord-sat-oda then
+           compute eklenecek-oda  = 
+            bilbord-oda - bilbord-sat-oda,
+
+             initialize pax-sayisi
+    evaluate kisi-tip
+        when 1
+            compute pax-sayisi =  eklenecek-oda * 2
+            
+        when 2
+             compute pax-sayisi = eklenecek-oda * 2
+        when 3
+             compute pax-sayisi = eklenecek-oda * 2
+        when 4
+              compute pax-sayisi = eklenecek-oda * 0
+        when 5
+             compute pax-sayisi = eklenecek-oda * 0
+        when 8
+             compute pax-sayisi = eklenecek-oda * 2
+        when 9
+           compute pax-sayisi = eklenecek-oda * 2  
+        when 6
+             compute pax-sayisi = eklenecek-oda * 0
+        when 7 
+             compute pax-sayisi = eklenecek-oda * 1
+        when 10
+             continue 
+        when other
+             display message box "Secim hatasi : jh55"
+    end-evaluate
+
+
+
+
+
+
+          | compute pax-sayisi =  eklenecek-oda * 2
+         
+           compute takas7-oda(takvim-ay,takvim-gun) = 
+                takas7-oda(takvim-ay,takvim-gun) + eklenecek-oda,
+           compute takas7-pax(takvim-ay,takvim-gun) = 
+                takas7-pax(takvim-ay,takvim-gun) + pax-sayisi ,
+********* 32 inci indekis ay toplamlari içüünnn
+           compute takas7-oda(takvim-ay,32) = 
+                takas7-oda(takvim-ay,32) + eklenecek-oda,
+           compute takas7-pax(takvim-ay,32) = 
+                takas7-pax(takvim-ay,32) + pax-sayisi,
+           compute sat-top =
+                sat-top + eklenecek-oda
+           compute sat-pax =
+                sat-pax + pax-sayisi
+          end-if
+          else
+              if son-acenta not = bilbord-acenta
+                   if eklenecek-oda > 0 then 
+                           compute pax-sayisi =  eklenecek-oda * 2
+                         
+                           compute takas7-oda(takvim-ay,takvim-gun) = 
+                                takas7-oda(takvim-ay,takvim-gun) + eklenecek-oda,
+                           compute takas7-pax(takvim-ay,takvim-gun) = 
+                                takas7-pax(takvim-ay,takvim-gun) + pax-sayisi ,
+********************** 32 inci indekis ay toplamlari içüünnn
+                           compute takas7-oda(takvim-ay,32) = 
+                                takas7-oda(takvim-ay,32) + eklenecek-oda,
+                           compute takas7-pax(takvim-ay,32) = 
+                                takas7-pax(takvim-ay,32) + pax-sayisi,
+                           compute sat-top =
+                                sat-top + eklenecek-oda
+                           compute sat-pax =
+                                sat-pax + pax-sayisi
+                   end-if
+                    initialize eklenecek-oda
+                    move bilbord-acenta to son-acenta
+              end-if
+              compute eklenecek-oda  = eklenecek-oda +
+                    bilbord-oda - bilbord-sat-oda,
+          end-if
+     end-read
+     end-perform
+         if eklenecek-oda > 0 and konumlar-ayri not = 1 then 
+                   compute pax-sayisi =  eklenecek-oda * 2
+                   compute takas7-oda(takvim-ay,takvim-gun) = 
+                        takas7-oda(takvim-ay,takvim-gun) + eklenecek-oda,
+                   compute takas7-pax(takvim-ay,takvim-gun) = 
+                        takas7-pax(takvim-ay,takvim-gun) + pax-sayisi ,
+********************** 32 inci indekis ay toplamlari içüünnn
+                   compute takas7-oda(takvim-ay,32) = 
+                        takas7-oda(takvim-ay,32) + eklenecek-oda,
+                   compute takas7-pax(takvim-ay,32) = 
+                        takas7-pax(takvim-ay,32) + pax-sayisi,
+                   compute sat-top =
+                        sat-top + eklenecek-oda
+                   compute sat-pax =
+                        sat-pax + pax-sayisi
+        end-if
+     end-start.
+
+
+*
+ takas-kaydet. 
+*   TRACE Uygulamasi Acik ise kisi sayilari cast'tan alinacak
+    move 1 to  eklenecek-oda
+    if rezpara-trace = 1
+       move cast-share        to rez-share
+       move cast-oda-no       to rez-odano
+       move cast-fiyat-konumu to rez-fiyat-konumu
+       move cast-oda-konumu   to rez-oda-konumu
+       if rez-kisi not = cast-kisi
+          move cast-kisi to rez-kisi
+       end-if
+       if rez-share = 1 then 
+          move 0 to eklenecek-oda 
+       else
+          move 1 to eklenecek-oda
+       end-if
+    else 
+       move 1 to eklenecek-oda
+    end-if
+
+    if onkpara-referans-var = 1 then 
+       perform ref-filtre
+       if not ref-gecti then 
+          exit paragraph
+       end-if
+    end-if
+
+    if rez-odano not = spaces and 
+       (hayali-haric = 1 or dis-haric = 1) then 
+       move rez-odano to odalar-anah
+       read odalar no lock invalid 
+            continue
+       not invalid
+           if (odalar-hayali = "H" and hayali-haric = 1) then
+              move 0 to eklenecek-oda
+           end-if
+           if (dis-haric = 1 and odalar-dis = 1) then
+              exit paragraph 
+           end-if 
+       end-read
+    end-if  
+*
+    initialize pax-sayisi
+    evaluate kisi-tip
+        when 1
+             add rez-buyuk to pax-sayisi
+        when 2
+             compute pax-sayisi = rez-buyuk + rez-kucuk  / 2
+        when 3
+             add rez-buyuk rez-kucuk rez-free  to pax-sayisi 
+        when 4
+             add rez-kucuk to pax-sayisi 
+        when 5
+             add rez-free rez-bebek to pax-sayisi 
+        when 8
+             add rez-buyuk rez-kucuk rez-free rez-bebek to pax-sayisi
+        when 9
+             compute pax-sayisi = rez-buyuk + rez-kucuk               
+        when 6
+             move rez-no      to takasfiyat-rez-no
+             move takvim-anah to takasfiyat-tarih
+             move rez-banka   to kur-banka
+             move rez-doviz   to kur-doviz
+             read kur no lock invalid 
+                  move 1 to doviz-alis yanlis-kur
+             end-read
+             move doviz-alis to folio-kuru
+             read takasfiyat no lock invalid
+                  perform peryot-fiyat-bul
+                  perform varying jj from 1 by 1 until  jj > 200
+                     if fiyatt-tar(jj) = takvim-anah
+                        compute pax-sayisi rounded = pax-sayisi +
+                        (fiyatt-fiy(jj) * folio-kuru / rapor-kuru)
+                     end-if
+                  end-perform
+             not invalid 
+                 compute pax-sayisi rounded = pax-sayisi +
+                        (takasfiyat-fiyat  * folio-kuru / rapor-kuru)
+             end-read
+        when 7 
+             continue
+        when 10
+             continue 
+        when other
+             display message box "Secim hatasi : jh55"
+    end-evaluate
+    if gecmis = 0
+*********oda ve pax toplamlari
+       compute takas7-oda(takvim-ay,takvim-gun) = 
+               takas7-oda(takvim-ay,takvim-gun) + eklenecek-oda,
+       compute takas7-pax(takvim-ay,takvim-gun) = 
+               takas7-pax(takvim-ay,takvim-gun) + pax-sayisi ,
+********* 32 inci indekis ay toplamlari içüünnn
+       compute takas7-oda(takvim-ay,32) = 
+               takas7-oda(takvim-ay,32) + eklenecek-oda,
+
+       compute takas7-pax(takvim-ay,32) = 
+               takas7-pax(takvim-ay,32) + pax-sayisi,
+       compute sat-top =
+               sat-top + eklenecek-oda
+       compute sat-pax =
+               sat-pax + pax-sayisi
+    else
+
+       compute  takas7-g-son-oda(takvim-ay)  = takas7-g-son-oda(takvim-ay) + eklenecek-oda      ||firat
+       compute  takas7-g-son-pax (takvim-ay) = takas7-g-son-pax(takvim-ay) + pax-sayisi         
+       
+       move rez-al-tar  to starih
+       move gecen-bugun to s2tarih
+
+*       if k-kodu-tasi = "ASYA" stop " " end-if
+
+       if function integer-of-date(s2tarih) - 
+          function integer-of-date(starih) >= 0
+          compute takas7-g-bugun-oda(takvim-ay) =          ||firat
+                  takas7-g-bugun-oda(takvim-ay) +   
+                  eklenecek-oda
+          compute takas7-g-bugun-pax(takvim-ay) = 
+                  takas7-g-bugun-pax(takvim-ay) + 
+                  pax-sayisi        
+       end-if
+       move takvim-anah to s2tarih
+       if function integer-of-date(s2tarih) - function INTEGER-OF-DATE(starih) > 15
+          compute  takas7-g-son15-oda(takvim-ay)  = TAKAS7-g-son15-ODA(takvim-ay) +   eklenecek-oda
+          compute  takas7-g-son15-pax(takvim-ay)  = TAKAS7-g-son15-pax(takvim-ay) + pax-sayisi    
+       end-if
+       if function integer-of-date(s2tarih) - function INTEGER-OF-DATE(starih) > 30
+          compute  takas7-g-son30-oda(takvim-ay)  = TAKAS7-g-son30-ODA(takvim-ay) +   eklenecek-oda
+          compute  takas7-g-son30-pax(takvim-ay)  = TAKAS7-g-son30-pax(takvim-ay) + pax-sayisi    
+       end-if
+       if function INTEGER-OF-DATE(s2tarih) - function INTEGER-OF-DATE(starih) > 60
+          compute  TAKAS7-g-son60-ODA(takvim-ay)  = TAKAS7-g-son60-ODA(takvim-ay) +   eklenecek-oda
+          compute  TAKAS7-g-son60-pax(takvim-ay)  = TAKAS7-g-son60-pax(takvim-ay) + pax-sayisi    
+       end-if
+    end-if
+        .
+*
+ acc-08-Aft-Procedure.
+     open input grup
+     if acn-grup-kod = spaces
+        if acn-kod = spaces
+           move "Tum Gruplar"   to grup-adi
+        end-if
+     else
+        initialize grup-rec
+        set grup-acenta to true
+        move acn-grup-kod    to grup-kodu
+        read grup no lock invalid
+             move "Tanimsiz Acenta Grubu..." to grup-adi
+             move 4 to accept-control
+             move 17 to control-id
+        end-read
+        initialize acn-kod
+        move "Grup Filtresi" to acenta-adi
+        display acc-04 lb-acenadi
+     end-if
+     display lb-acngrupadi
+     close grup .
+*
+*
+ acc-04-Aft-Procedure.
+     open input acenta
+     if acn-kod = spaces
+        if acn-grup-kod = spaces
+           move "Tum Acentalar"   to acenta-adi
+        end-if
+     else
+        move acn-kod    to acenta-kodu
+        read acenta no lock invalid
+             move "Tanimsiz Acenta ..." to acenta-adi
+             move 4 to accept-control
+             move 12 to control-id
+        end-read
+        initialize acn-grup-kod
+        move "Acenta Filtresi" to grup-adi
+        display acc-08 lb-acngrupadi
+     end-if
+     display lb-acenadi
+     close acenta
+     .
+*
+ banka-after.                   
+      open input banka.
+       read banka        no lock invalid 
+            move 4         to accept-control
+             move "Tanimsiz           " to banka-adi
+       end-read
+       move banka-adi     to b-adi-goster.
+       display accept-banka  lb-banka-e
+       close banka.
+*
+ doviz-after.
+        open input doviz.
+       read doviz       no lock invalid 
+            move 4         to accept-control
+             move "Tanimsiz           " to d-kisa-adi
+       end-read
+       move d-kisa-adi     to d-adi-goster.
+       display accept-doviz  lb-doviz-e
+       close doviz.
+*
+*
+
+
+ gruplari-takasa-ekle2.
+  
+     if takas-blok-konumlu = 1 then 
+     move takas-blok-konum to rez-oda-konumu rez-fiyat-konumu
+      if onkpara-referans-var = 1 then 
+       perform ref-filtre
+       if  not ref-gecti then 
+           exit paragraph
+       end-if
+      end-if
+     end-if
+    
+   
+    if acn-kod not = spaces and gruplar-acenta not = acn-kod, exit paragraph
+    end-if
+    
+    
+***************************************
+   
+      if tumu > 1 then
+          move "B" to kodlar02-tipi
+          move gruplar-odeme  to kodlar02-kodu
+          read kodlar02 no lock invalid 
+              move spaces to kodlar02-adi
+          end-read
+         if ( ode-tipi = "D" or  ode-tipi = "F" or  ode-tipi = "O")   and tumu = 2 then
+          exit paragraph
+          end-if
+          if ( ode-tipi not = "D" and ode-tipi not = "F" and ode-tipi not = "O") and tumu = 3 then
+            exit paragraph
+          end-if
+    end-if
+    
+
+     if acn-grup-kod not = spaces
+      initialize grup-rec
+      set grup-acenta to true
+      move acn-grup-kod to grup-kodu
+      move gruplar-acenta   to grup-alt
+      read grup no lock
+        invalid
+         exit paragraph
+      end-read
+    end-if
+
+
+      compute geklenecek-oda = takas-blok-ayrilan-oda  - takas-blok-satilan-oda
+     if geklenecek-oda < 0 then 
+         move 0 to geklenecek-oda
+     end-if
+      
+          compute geklenecek-pax = takas-blok-ayrilan-pax - takas-blok-satilan-pax
+           if   gruplar-kalanlar-double = 1 then 
+             compute geklenecek-pax = takas-blok-kalan-oda * 2
+        end-if
+          
+     if geklenecek-pax < 0 then 
+         move 0 to geklenecek-pax
+     end-if
+
+          compute geklenecek-chi = takas-blok-ayrilan-child - takas-blok-satilan-child
+        
+          
+     if geklenecek-chi < 0 then 
+         move 0 to geklenecek-chi
+     end-if
+******** ara pazar toplamlari
+    
+          move takas-blok-tarih to takvim-anah
+  
+           
+               initialize pax-sayisi
+        evaluate kisi-tip
+           when 1
+               add  geklenecek-pax   to pax-sayisi              
+           when 2
+             
+               compute pax-sayisi = pax-sayisi + geklenecek-pax   + geklenecek-chi
+           when 3
+               compute pax-sayisi = pax-sayisi + geklenecek-pax   + geklenecek-chi
+           when 4
+              add geklenecek-chi to pax-sayisi
+           when 5
+               continue
+           when 6
+              display message box "Hata"
+           when 7 
+                    initialize pax-sayisi oda-sayisi
+                evaluate gruplar-grup-statu   
+                   when "1"
+                       move geklenecek-oda    to   pax-sayisi          
+                   when "2"                                     
+                        move geklenecek-oda    to   pax-sayisi                                           
+                    when "3"                                   
+                        move geklenecek-oda    to   pax-sayisi 
+                    when "4"
+                          move geklenecek-oda    to   oda-sayisi
+                    when other
+                          move geklenecek-oda    to   oda-sayisi
+                end-evaluate
+            
+           when 8
+              compute pax-sayisi = pax-sayisi + geklenecek-pax   + geklenecek-chi
+           when 9
+              compute pax-sayisi = pax-sayisi + geklenecek-pax   + geklenecek-chi 
+           when 10
+               continue 
+           when other 
+            display message box "Secim hatasi : jh55"
+             
+        end-evaluate
+
+
+*********oda ve pax toplamlari
+        if kisi-tip not = 7
+                   compute takas7-oda(takvim-ay,takvim-gun) = 
+                        takas7-oda(takvim-ay,takvim-gun) + geklenecek-oda,
+                   compute takas7-oda(takvim-ay,32) = 
+                        takas7-oda(takvim-ay,32) + geklenecek-oda,
+                       compute sat-top =
+                        sat-top + geklenecek-oda
+
+            else
+
+                   compute takas7-oda(takvim-ay,takvim-gun) = 
+                        takas7-oda(takvim-ay,takvim-gun) + oda-sayisi,
+                   compute takas7-oda(takvim-ay,32) = 
+                        takas7-oda(takvim-ay,32) + oda-sayisi,
+                       compute sat-top =
+                        sat-top + oda-sayisi
+        end-if
+
+
+
+
+
+        compute takas7-pax(takvim-ay,takvim-gun) = 
+                takas7-pax(takvim-ay,takvim-gun) + pax-sayisi ,
+********* 32 inci indekis ay toplamlari içüünnn
+       
+        compute takas7-pax(takvim-ay,32) = 
+                takas7-pax(takvim-ay,32) + pax-sayisi,
+       
+        compute sat-pax =
+                sat-pax + pax-sayisi
+   
+        
+ 
+
+
+       .
+*
+ kar-yaz.
+
+ 
+     initialize dokumer-rec detay  detay2
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Butce"             to det-satir(6:)   
+      perform varying ii from 1 by 1 until ii > 12
+             move TAKAS7-butce-ODA(ii)   to z-2
+             move z-2                 to det-1(ii)
+             move "|"                 to det-2(ii)  
+            if kisi-tip not = 5
+             move TAKAS7-butce-pax(ii)   to z-2b  
+             move z-2b                 to det-3(ii) 
+             end-if
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1
+     end-perform.
+    
+     move "A"          to det-dokumer-20(3:1) det2-dokumer-20(3:1)
+
+     move 481          to det-renk1                 det2-renk1             
+     move "1"          to det-dokumer-20(10:1)      det2-dokumer-20(10:1)  
+     write dokumer-rec from detay
+             
+    
+     initialize dokumer-rec detay  detay2
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Butce %"             to det-satir(6:)   
+     perform varying ii from 1 by 1 until ii > 12
+             compute yuzde rounded =
+                     TAKAS7-butce-ODA(ii) /  takas7-h-oda(ii,32)  * 100
+             move yuzde               to yuzde-goster
+             move yuzde-goster        to det-1(ii) det2-1(ii)
+             move "|"                 to det-2(ii) det2-2(ii)
+              if kisi-tip not = 5
+             compute yuzdeb rounded =
+                     (  TAKAS7-butce-pax(ii) /  takas7-h-yatak(ii,32)  * 100)
+             move yuzdeb               to yuzde-gosterb
+             move yuzde-gosterb        to det-3(ii)         det2-3(ii)  
+             end-if
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1 
+     end-perform.
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1    fil2-2(i) fil2-1
+     end-perform
+     move "A"          to det-dokumer-20(3:1)  det2-dokumer-20(3:1)
+
+     move 481          to det-renk1               det2-renk1               
+     move "1"          to det-dokumer-20(10:1)    det2-dokumer-20(10:1)    
+    
+                   write dokumer-rec from detay .
+****************************************************************************************************
+********************************************************************************
+     initialize dokumer-rec detay  detay2  gecen-sene-alt-toplam
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Bugun"             to det-satir(6:)   
+      perform varying ii from 1 by 1 until ii > 12
+         move TAKAS7-g-bugun-ODA(ii)   to z-2
+         move z-2                 to det-1(ii)
+         move "|"                 to det-2(ii)  
+         compute gecen-sene-bugun = gecen-sene-bugun + TAKAS7-g-bugun-ODA(ii)
+         if kisi-tip not = 5
+            move TAKAS7-g-bugun-pax(ii)   to z-2b  
+            move z-2b                     to det-3(ii) 
+         end-if
+         move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1
+     end-perform.
+    
+     move "A"          to det-dokumer-20(3:1) det2-dokumer-20(3:1)
+
+     move 481          to det-renk1                 det2-renk1             
+     move "1"          to det-dokumer-20(10:1)      det2-dokumer-20(10:1)  
+     write dokumer-rec from detay
+             
+    
+     initialize dokumer-rec detay  detay2
+     move       kars-yil to    det-satir(1:4) 
+ 
+     move "Bugun %"             to det-satir(6:)   
+     perform varying ii from 1 by 1 until ii > 12
+        compute yuzde rounded =
+                TAKAS7-g-bugun-ODA(ii) /  TAKAS7-g-H-ODA(ii)  * 100
+        move yuzde               to yuzde-goster
+        move yuzde-goster        to det-1(ii) det2-1(ii)
+        move "|"                 to det-2(ii) det2-2(ii)
+        if kisi-tip not = 5
+           compute yuzdeb rounded =
+                   (  TAKAS7-g-bugun-pax(ii) /  TAKAS7-g-H-yatak(ii)  * 100)
+           move yuzdeb               to yuzde-gosterb
+           move yuzde-gosterb        to det-3(ii)         det2-3(ii)  
+        end-if
+        move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1 
+     end-perform.
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1    fil2-2(i) fil2-1
+     end-perform
+     move "A"          to det-dokumer-20(3:1)  det2-dokumer-20(3:1)
+
+     move 481          to det-renk1               det2-renk1               
+     move "1"          to det-dokumer-20(10:1)    det2-dokumer-20(10:1)    
+    
+                   write dokumer-rec from detay .
+****************************************************************************************************
+ 
+      initialize dokumer-rec detay  detay2  
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Sonu"             to det-satir(6:)   
+      perform varying ii from 1 by 1 until ii > 12
+         move TAKAS7-g-son-ODA(ii) to z-2
+         move z-2                  to det-1(ii)
+         move "|"                  to det-2(ii)  
+         compute gecen-sene-sonu = gecen-sene-sonu + TAKAS7-g-son-ODA(ii)
+         if kisi-tip not = 5
+            move TAKAS7-g-son-pax(ii) to z-2b  
+            move z-2b                 to det-3(ii) 
+         end-if
+         move "|"                  to fil-2(ii) fil-1   fil2-2(ii) fil2-1
+     end-perform.
+    
+     move "A"          to det-dokumer-20(3:1) det2-dokumer-20(3:1)
+
+     move 481          to det-renk1                 det2-renk1             
+     move "1"          to det-dokumer-20(10:1)      det2-dokumer-20(10:1)  
+     write dokumer-rec from detay
+             
+    
+     initialize dokumer-rec detay  detay2
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Sonu %"             to det-satir(6:)   
+     perform varying ii from 1 by 1 until ii > 12
+             compute yuzde rounded =
+                     TAKAS7-g-son-ODA(ii) /  TAKAS7-g-H-ODA(ii)  * 100
+             move yuzde               to yuzde-goster
+             move yuzde-goster        to det-1(ii) det2-1(ii)
+             move "|"                 to det-2(ii) det2-2(ii)
+              if kisi-tip not = 5
+             compute yuzdeb rounded =
+                     (  TAKAS7-g-son-pax(ii) /  TAKAS7-g-H-yatak(ii)  * 100)
+             move yuzdeb               to yuzde-gosterb
+             move yuzde-gosterb        to det-3(ii)         det2-3(ii)  
+             end-if
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1 
+     end-perform.
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1    fil2-2(i) fil2-1
+     end-perform
+     move "A"          to det-dokumer-20(3:1)  det2-dokumer-20(3:1)
+
+     move 481          to det-renk1               det2-renk1               
+     move "1"          to det-dokumer-20(10:1)    det2-dokumer-20(10:1)    
+    
+                   write dokumer-rec from detay .
+          
+****************************************************************************************************
+ 
+      initialize dokumer-rec detay  detay2
+      move kars-yil             to det-satir(1:4)  
+      move "Son 15"             to det-satir(6:)   
+      perform varying ii from 1 by 1 until ii > 12
+             move TAKAS7-g-son15-ODA(ii)   to z-2
+             move z-2                 to det-1(ii)
+             move "|"                 to det-2(ii)
+             compute gecen-sene-son-15 = gecen-sene-son-15 + TAKAS7-g-son15-ODA(ii)
+            if kisi-tip not = 5
+             move TAKAS7-g-son15-pax(ii)   to z-2b  
+             move z-2b                 to det-3(ii) 
+             end-if
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1
+     end-perform.
+    
+     move "A"          to det-dokumer-20(3:1) det2-dokumer-20(3:1)
+
+     move 481          to det-renk1                 det2-renk1             
+     move "1"          to det-dokumer-20(10:1)      det2-dokumer-20(10:1)  
+     write dokumer-rec from detay
+             
+    
+     initialize dokumer-rec detay  detay2
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Son 15 %"             to det-satir(6:)   
+     perform varying ii from 1 by 1 until ii > 12
+             compute yuzde rounded =
+                     TAKAS7-g-son15-ODA(ii) /  TAKAS7-g-H-ODA(ii)  * 100
+             move yuzde               to yuzde-goster
+             move yuzde-goster        to det-1(ii) det2-1(ii)
+             move "|"                 to det-2(ii) det2-2(ii)
+              if kisi-tip not = 5
+             compute yuzdeb rounded =
+                     (  TAKAS7-g-son15-pax(ii) /  TAKAS7-g-H-yatak(ii)  * 100)
+             move yuzdeb               to yuzde-gosterb
+             move yuzde-gosterb        to det-3(ii)         det2-3(ii)  
+             end-if
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1 
+     end-perform.
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1    fil2-2(i) fil2-1
+     end-perform
+     move "A"          to det-dokumer-20(3:1)  det2-dokumer-20(3:1)
+
+     move 481          to det-renk1               det2-renk1               
+     move "1"          to det-dokumer-20(10:1)    det2-dokumer-20(10:1)    
+    
+                   write dokumer-rec from detay .
+****************************************************************************************************
+ 
+      initialize dokumer-rec detay  detay2
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Son 30 "             to det-satir(6:)   
+      perform varying ii from 1 by 1 until ii > 12
+             move TAKAS7-g-son30-ODA(ii)   to z-2
+             move z-2                 to det-1(ii)
+             move "|"                 to det-2(ii)  
+             compute gecen-sene-son-30 = gecen-sene-son-30 + TAKAS7-g-son30-ODA(ii)
+            if kisi-tip not = 5
+             move TAKAS7-g-son30-pax(ii)   to z-2b  
+             move z-2b                 to det-3(ii) 
+             end-if
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1
+     end-perform.
+    
+     move "A"          to det-dokumer-20(3:1) det2-dokumer-20(3:1)
+
+     move 481          to det-renk1                 det2-renk1             
+     move "1"          to det-dokumer-20(10:1)      det2-dokumer-20(10:1)  
+     write dokumer-rec from detay
+             
+    
+     initialize dokumer-rec detay  detay2
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Son 30 %"             to det-satir(6:)   
+     perform varying ii from 1 by 1 until ii > 12
+             compute yuzde rounded =
+                     TAKAS7-g-son30-ODA(ii) /  TAKAS7-g-H-ODA(ii)  * 100
+             move yuzde               to yuzde-goster
+             move yuzde-goster        to det-1(ii) det2-1(ii)
+             move "|"                 to det-2(ii) det2-2(ii)
+              if kisi-tip not = 5
+             compute yuzdeb rounded =
+                     (  TAKAS7-g-son30-pax(ii) /  TAKAS7-g-H-yatak(ii)  * 100)
+             move yuzdeb               to yuzde-gosterb
+             move yuzde-gosterb        to det-3(ii)         det2-3(ii)  
+             end-if
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1 
+     end-perform.
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1    fil2-2(i) fil2-1
+     end-perform
+     move "A"          to det-dokumer-20(3:1)  det2-dokumer-20(3:1)
+
+     move 481          to det-renk1               det2-renk1               
+     move "1"          to det-dokumer-20(10:1)    det2-dokumer-20(10:1)    
+    
+                   write dokumer-rec from detay .
+          
+****************************************************************************************************
+ 
+      initialize dokumer-rec detay  detay2
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Son 60"             to det-satir(6:)   
+      perform varying ii from 1 by 1 until ii > 12
+             move TAKAS7-g-son60-ODA(ii)   to z-2
+             move z-2                 to det-1(ii)
+             move "|"                 to det-2(ii)
+             compute gecen-sene-son-60 = gecen-sene-son-60 + TAKAS7-g-son60-ODA(ii)
+            if kisi-tip not = 5
+               move TAKAS7-g-son60-pax(ii)   to z-2b  
+               move z-2b                     to det-3(ii) 
+            end-if
+             move "|"                        to fil-2(ii) fil-1   fil2-2(ii) fil2-1
+     end-perform.
+    
+     move "A"          to det-dokumer-20(3:1) det2-dokumer-20(3:1)
+
+     move 481          to det-renk1                 det2-renk1             
+     move "1"          to det-dokumer-20(10:1)      det2-dokumer-20(10:1)  
+     write dokumer-rec from detay
+             
+    
+     initialize dokumer-rec detay  detay2
+      move       kars-yil to    det-satir(1:4) 
+ 
+      move "Son 60 %"             to det-satir(6:)   
+     perform varying ii from 1 by 1 until ii > 12
+             compute yuzde rounded =
+                     TAKAS7-g-son60-ODA(ii) /  TAKAS7-g-H-ODA(ii)  * 100
+             move yuzde               to yuzde-goster
+             move yuzde-goster        to det-1(ii) det2-1(ii)
+             move "|"                 to det-2(ii) det2-2(ii)
+              if kisi-tip not = 5
+                compute yuzdeb rounded =
+                     (  TAKAS7-g-son60-pax(ii) /  TAKAS7-g-H-yatak(ii)  * 100)
+                move yuzdeb               to yuzde-gosterb
+                move yuzde-gosterb        to det-3(ii)         det2-3(ii)  
+             end-if
+             move "|"                 to fil-2(ii) fil-1   fil2-2(ii) fil2-1 
+     end-perform.
+     perform varying i from 1 by 1 until i > 12
+             move "|" to fil-2(i) fil-1    fil2-2(i) fil2-1
+     end-perform
+     move "A"          to det-dokumer-20(3:1)  det2-dokumer-20(3:1)
+
+     move 481          to det-renk1               det2-renk1               
+     move "1"          to det-dokumer-20(10:1)    det2-dokumer-20(10:1)        
+     write dokumer-rec from detay .   
+*
+ pdf-olustur.
+    initialize pdf-link-tum
+    move dokumer-dosya               to pdf-dokumer-adres
+    call "/asya/ytl/obj/otel/dok2pdf.asy" using  pdf-link-tum 
+       on exception 
+          perform callerr-proc
+          exit paragraph
+    not on exception
+    cancel "/asya/ytl/obj/otel/dok2pdf.asy"
+    end-call.
+   
+
+ 

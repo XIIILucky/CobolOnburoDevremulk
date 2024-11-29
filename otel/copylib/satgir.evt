@@ -1,0 +1,2408 @@
+* satgir.evt
+* satgir.evt is generated from D:\asya\acugt.ytl\otel_ramazan\satgir.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Acu-Form1-Ta-1-Cmd-Tabchanged.
+     EVALUATE Event-Type
+     WHEN Cmd-Tabchanged
+        MOVE Event-Data-1 TO Form1-Ta-1-Value
+        MOVE 0 TO Form1-Pg-1-Visible, Form1-Pg-2-Visible
+        EVALUATE Event-Data-1
+        WHEN 1
+           MOVE 1 TO Form1-Pg-1-Visible
+        WHEN 2
+           MOVE 1 TO Form1-Pg-2-Visible
+        END-EVALUATE
+*       Before-Tabchg-Display
+        DISPLAY Form1
+*       After-Tabchg-Display
+     END-EVALUATE
+     .
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-2-Event-Proc.
+     PERFORM Form1-Gd-2-Ev-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM Form1-Gd-1-Ev-Other
+     .
+
+ cb-pazar-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-pazar-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+
+ cb-ind-tip-uygula-Exception-Proc.
+* 
+     IF Event-Occurred
+        EVALUATE Event-Type
+        WHEN Ntf-Selchange
+           PERFORM cb-ind-tip-uygula-Ex-Ntf-Selchange
+        END-EVALUATE
+     END-IF
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+     open input genel
+     initialize genel-rec
+     move 1 to genel-anahtar
+     read genel no lock invalid 
+          continue 
+     end-read 
+     close genel
+
+     call "c$narg" using link-var
+     move aceanlas-dosya  to ace2-dosya.
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 7
+        perform on-izle
+     when 6
+         perform Acu-Form2-Routine
+     when 1005
+         perform resim-ekle
+         perform dosya-oku
+     when 2
+        if anlas-kbl-bas-tarih > anlas-kbl-bit-tarih
+           display message box "Anlasma Baslama Tarihi Bitis Tarihinden Buyuk Olamaz..."
+                           title "Uyari"
+                           icon 1
+                move 4  to accept-control
+                move 11 to control-id 
+               exit paragraph 
+        end-if 
+        if anlas-don-bas-tarih > anlas-don-bit-tarih
+           display message box "Donem Baslama Tarihi Bitis Tarihinden Buyuk Olamaz..."
+                           title "Uyari"
+                           icon 1
+                move 4  to accept-control
+                move 27 to control-id 
+               exit paragraph 
+        end-if 
+
+        display message box "Kaydedilecektir..." new-line
+                            "Emin misiniz?"
+                        title "Uyari"
+                        icon 1 
+                        type 2
+                        default 2
+                        returning return-code
+
+        if return-code = 2
+           exit paragraph 
+        end-if 
+
+        perform form-kaydet
+        set exit-pushed to true 
+     when 3
+        display message box "Kayit Iptal Edilecektir..." new-line
+                            "Emin misiniz?"
+                        title "Uyari"
+                        icon 1 
+                        type 2
+                        default 2
+                        returning return-code
+
+        if return-code = 2
+           exit paragraph 
+        end-if 
+                                
+        perform form-sil
+        set exit-pushed to true 
+     when 4
+        if dosya-yolu = spaces
+           display message box "Dosya Yolu bos gecilemez..."
+                           title "Uyari"
+                           icon 1
+                  exit paragraph 
+        end-if 
+        if konu = spaces
+           display message box "Konu bos gecilemez..."
+                           title "Uyari"
+                           icon 1
+                  exit paragraph            
+        end-if 
+        perform mail-gonder 
+        perform mail-gonder-tarih-yaz
+     when 1002    
+        move 0 to kayit-bulundu 
+        inquire Form1-Gd-2,last-row in kayit-grid-son-satir 
+        perform varying i from 1 by 1 until i > kayit-grid-son-satir
+            inquire form1-gd-2(i,1),hidden-data in gizli-kayit
+            if gizli-kayit-tesis = tesis-kod(1:2)
+               display message box "Secilen Tesis Listede Ekli..." new-line
+                                   "Diger Tesislerden secim yapiniz..."
+                               title "Uyari"
+                               icon 1
+                     move 1 to kayit-bulundu 
+                     exit perform 
+            end-if 
+        end-perform
+        if kayit-bulundu = 1
+           exit paragraph
+        end-if 
+        perform kayit-ekle 
+     end-evaluate.
+*
+ on-izle.
+    perform genelfis-no-al
+    move ekran-fis-1           to mutamdok-dosya-no
+    move mutamdok-dosya        to mutamdok-link-dosya
+
+    open output mutamdok close mutamdok open i-o mutamdok 
+ 
+       move all low-values to from-dosya to-dosya
+       string from-dosya 
+              "/asya/ytl/data/otel/standart/bmp/" delimited by low-values
+                dosya-yolu(34:) delimited by "                     "
+       into from-dosya
+       inspect from-dosya replacing all low-values by spaces
+       
+       string to-dosya 
+              "@[DISPLAY]:C:\acucorp\acucbl701\acugt\pdf_temp\" delimited by low-values
+                dosya-yolu(34:) delimited by "                     "
+              into to-dosya
+       inspect to-dosya replacing all low-values by spaces                      
+       call "c$copy" using from-dosya to-dosya
+                     giving copy-status
+
+       initialize mutamdok-rec 
+       set mutamdok-mutabakat                          to true    
+       move mutamdok-kaynak                            to mutamdok-hedef               
+       write mutamdok-rec end-write
+
+       string mutamdok-link-dizayn-dosya
+                dosya-yolu(34:) delimited by "               "
+              into mutamdok-link-dizayn-dosya
+       inspect mutamdok-link-dizayn-dosya replacing trailing spaces by low-values
+    close mutamdok
+    call "/asya/ytl/obj/otel/mutamdok.asy" using mutamdok-link
+    on exception 
+       perform callerr-proc
+    not on exception
+       cancel "/asya/ytl/obj/otel/mutamdok.asy"
+    end-call.
+
+*
+  genelfis-no-al.
+    open i-o genelfis
+    initialize genelfis-rec
+    move 1 to genelfis-anahtar
+    read genelfis no lock invalid 
+       continue 
+    end-read 
+       add 1 to ekran-fis-1
+       rewrite genelfis-rec end-rewrite 
+    close genelfis.
+*
+ mail-gonder-tarih-yaz.
+    open i-o sathrk
+    initialize sathrk-rec 
+    move fis-no             to sathrk-fis-no
+    start sathrk key not < sathrk-alt-anah invalid 
+        continue 
+    not invalid 
+    perform until fs-sathrk = "10"
+    read sathrk next no lock end move "10"  to fs-sathrk
+    not at end
+          if sathrk-fis-no <> fis-no
+              exit perform
+          end-if 
+          accept sathrk-mail-gon-tarih from century-date
+          move k-kodu-tasi             to sathrk-mail-staf
+          rewrite sathrk-rec end-rewrite 
+    end-read 
+    end-perform
+    end-start
+    close sathrk.  
+*
+ resim-ekle.
+    move "Tum dosyalar (*.*)|*.*" to opnsav-filters          
+    call "c$opensavebox" using opensave-open-box,
+                               opensave-data,
+                         giving opensave-return.
+    if opensave-return > 0
+       perform resim-upload
+    end-if.
+*
+ resim-upload.
+    move low-values           to komut1 komut2
+    inspect opnsav-filename 
+            replacing trailing spaces by low-values
+    inspect opnsav-basename 
+            replacing trailing spaces by low-values
+    inspect opnsav-basename,
+            replacing all spaces by "_"
+    if is-remote
+       string komut1,
+              "@[DISPLAY]:"      delimited by low-values,
+              opnsav-filename    delimited by low-values,
+              into komut1
+       
+       initialize birles-uzak-dosya-adi
+       string birles-uzak-dosya-adi
+              fis-no           delimited by "         "
+              opnsav-basename    delimited by low-values          
+       into birles-uzak-dosya-adi
+
+       inspect  birles-uzak-dosya-adi replacing trailing spaces by low-values
+       string komut2,
+              base-dir           delimited by low-values
+              birles-uzak-dosya-adi delimited by low-values
+       into komut2
+    end-if.
+    call "c$copy" using komut1
+                        komut2
+                  giving copy-status.
+    move komut2               to dosya-yolu
+    display acc-dosya-yolu
+    if copy-status <> 0
+       display message box 
+               opnsav-filename, " dosyasi",x"0a0d",
+               base-dir," klasorune kopyalanamadi ..."
+               icon mb_error_icon
+               title "Hata"
+    end-if.
+* 
+ fis-al. 
+    open i-o genelfis
+    initialize genelfis-rec
+    move 1 to genelfis-anahtar
+    read genelfis no lock invalid 
+        continue 
+    end-read 
+       add 1         to ekran-fis-1
+       rewrite genelfis-rec end-rewrite 
+       move ekran-fis-1  to fis-no
+    close genelfis.
+*
+ form-kaydet.
+    inquire form1-gd-1,last-row in son-satir
+    open i-o sathrk
+    initialize sathrk-rec
+    move fis-no             to sathrk-fis-no
+    perform varying i from 2 by 1 until i > 30 
+       inquire form1-gd-2(i,1),hidden-data in gizli-kayit                 
+       if gizli-kayit-tesis = spaces
+          exit perform cycle  
+       end-if 
+       move gizli-kayit-tesis        to sathrk-tesis-kodu    
+       move gizli-kayit-ind-tip      to sathrk-ind-tip   
+       move gizli-kayit-anlasma-tar  to sathrk-anlasma-tar   
+       move gizli-kayit-sat-bas-tar  to sathrk-sat-bas-tar   
+       move gizli-kayit-sat-bit-tar  to sathrk-sat-bit-tar   
+       move gizli-kayit-kon-bas-tar  to sathrk-kon-bas-tar   
+       move gizli-kayit-kon-bit-tar  to sathrk-kon-bit-tar   
+       move gizli-kayit-ind-oran     to sathrk-ind-yuzde   
+
+       move gizli-kayit-mevcut-sat-bas-tar  to sathrk-mevcut-sat-bas-tar   
+       move gizli-kayit-mevcut-sat-bit-tar  to sathrk-mevcut-sat-bit-tar   
+       move gizli-kayit-mevcut-kon-bas-tar  to sathrk-mevcut-kon-bas-tar   
+       move gizli-kayit-mevcut-kon-bit-tar  to sathrk-mevcut-kon-bit-tar   
+       move gizli-kayit-mevcut-ind-oran     to sathrk-mevcut-ind-yuzde   
+
+       perform varying k from 2 by 1 until k > son-satir
+          inquire form1-gd-1(k,5),hidden-data in secim-durumu
+          if secim-durumu not = "E"
+             exit perform cycle 
+          end-if 
+          inquire form1-gd-1(k,1),hidden-data in gizli-bilgi
+          move paz-kod         to cb-grup-ana
+          move cb-grup-alt-kod to sathrk-grup-kodu
+
+          if gizli-bilgi-grup-kodu not = spaces and 
+             gizli-bilgi-acenta-kodu not = spaces
+                move gizli-bilgi-acenta-kodu to sathrk-acenta-kodu
+                move konu                    to sathrk-mail-konu
+
+                read sathrk no lock invalid 
+                    accept sathrk-kayit-tarih from century-date
+                    move k-kodu-tasi  to sathrk-kayit-staf
+                end-read 
+
+                move dosya-yolu       to sathrk-dosya-yolu
+
+                perform varying t from 1 by 1 until t > 10
+                    move ramco(t)                to sathrk-mail-aciklama(t)
+                end-perform
+
+                write sathrk-rec invalid 
+                    rewrite sathrk-rec end-rewrite 
+                end-write                 
+          end-if 
+       end-perform 
+    end-perform
+    close sathrk.
+*
+ form-sil.     
+    open i-o sathrk
+    initialize sathrk-rec 
+    move fis-no             to sathrk-fis-no
+    start sathrk key not < sathrk-alt-anah invalid 
+        continue 
+    not invalid 
+    perform until fs-sathrk = "10"
+    read sathrk next no lock end move "10"  to fs-sathrk
+    not at end
+          if sathrk-fis-no <> fis-no
+              exit perform
+          end-if 
+          move "S"            to sathrk-durumu
+          accept sathrk-iptal-tarih from century-date
+          move k-kodu-tasi    to sathrk-iptal-staf
+          rewrite sathrk-rec end-rewrite 
+    end-read 
+    end-perform
+    end-start
+    close sathrk.
+*
+ mail-gonder.
+     initialize mailsend-link 
+                ek-dosya
+     move dosya-yolu(34:)      to csvyap-link-nereye-cek
+     perform mail-send-add-mail-attach
+ 
+    open input onbkodlar10
+    initialize onbkodlar10-rec
+    move "SM"                 to onbkodlar10-tipi
+    start onbkodlar10 key not < onbkodlar10-anahtar invalid
+               continue 
+    not invalid 
+    perform with test after until fs-onbkodlar10 = "10"
+    read onbkodlar10 next no lock end move "10" to fs-onbkodlar10
+    not at end 
+            if onbkodlar10-tipi <> "SM"
+                exit perform 
+            end-if
+               string mailsend-link-bilgi
+                     onbkodlar10-adi delimited by "     "
+                     ";" delimited by size 
+               into mailsend-link-bilgi
+    end-read 
+    end-perform
+    end-start         
+    close onbkodlar10
+
+     inquire form1-gd-1,last-row in son-satir
+     perform varying g from 1 by 1 until g > son-satir        
+        inquire form1-gd-1(g,5),hidden-data in secim-durumu
+        if secim-durumu not = "E"
+            exit perform cycle 
+        end-if 
+        inquire form1-gd-1(g,4),cell-data mailsend-link-to
+        if mailsend-link-to = spaces
+           exit perform cycle 
+        end-if 
+        perform mail-send-call-mail
+     end-perform.
+*
+ mail-send-call-mail.
+     move konu                        to mailsend-link-konu 
+     perform varying t from 1 by 1 until t > 10
+         move ramco(t)                to mailsend-link-aciklama(t)
+     end-perform
+     move 0                           to mailsend-link-konu(99:1) |otomatik mail ---mail ekranýnýn açýlmamasý için 1 gelirse açýlmýyor
+     call "/asya/ytl/obj/otel/mailsend.asy" using mailsend-link
+          on exception 
+             perform callerr-proc
+     not on exception
+          cancel "/asya/ytl/otel/otel/mailsend.asy"
+     end-call.     
+*
+ mail-send-add-mail-attach.
+     initialize server-yol local-adres
+     string server-yol
+           base-dir delimited by "            "
+           csvyap-link-nereye-cek delimited by size
+     into server-yol
+
+     string local-adres
+          "@[DISPLAY]:C:\acucorp\acucbl701\acugt\pdf_temp\" delimited by "   "
+           csvyap-link-nereye-cek delimited by size             
+     into local-adres
+     inspect server-yol replacing trailing spaces by low-values
+     inspect local-adres replacing trailing spaces by low-values
+     call "c$copy" using server-yol,local-adres
+    
+     add  1                       to ek-dosya
+     move local-adres(12:)        to mailsend-link-dosya(ek-dosya) 
+     move local-adres(48:)        to mailsend-link-dosya-aciklama(ek-dosya)
+     inspect mailsend-link-dosya(ek-dosya) replacing trailing spaces by low-values
+     inspect mailsend-link-dosya-aciklama(ek-dosya) replacing trailing spaces by low-values. 
+*
+ kayit-ekle-grid-baslik.
+     modify form1-gd-2,reset-grid = 1
+                       mass-update = 1
+     initialize form1-gd-2-record
+     move "Tesis"       to gd-2-col-1
+     move "Ind Tipi"    to gd-2-col-2
+     move "A.Tarihi"    to gd-2-col-3
+     move "S.Bas.Tar"   to gd-2-col-4
+     move "S.Bit.Tar"   to gd-2-col-5
+     move "K.Bas.Tar"   to gd-2-col-6
+     move "K.Bit.Tar"   to gd-2-col-7
+     move "Ind"         to gd-2-col-8
+
+     move "M.S.Bas.Tar"         to gd-2-col-9
+     move "M.S.Bit.Tar"         to gd-2-col-10
+     move "M.K.Bas.Tar"         to gd-2-col-11
+     move "M.K.Bit.Tar"         to gd-2-col-12
+     move "M.Ind"         to gd-2-col-13
+
+     modify form1-gd-2,record-to-add(form1-gd-2-record)
+     modify form1-gd-2,mass-update = 0.
+*
+ kayit-ekle.
+     initialize form1-gd-2-record gizli-kayit
+     move tesis-kod(1:2)         to gd-2-col-1 gizli-kayit-tesis
+     move ind-tip(3:)            to gd-2-col-2 
+     move ind-tip(1:1)           to gizli-kayit-ind-tip
+
+     move anlas-yil              to eyil
+     move anlas-ay               to eay
+     move anlas-gun              to egun
+     move etarih                 to gd-2-col-3
+     move anlas-tarih            to gizli-kayit-anlasma-tar
+
+     move kbl-bas-yil            to eyil
+     move kbl-bas-ay             to eay
+     move kbl-bas-gun            to egun
+     move etarih                 to gd-2-col-4
+     move anlas-kbl-bas-tarih    to gizli-kayit-sat-bas-tar
+
+     move kbl-bit-yil            to eyil
+     move kbl-bit-ay             to eay
+     move kbl-bit-gun            to egun
+     move etarih                 to gd-2-col-5
+     move anlas-kbl-bit-tarih    to gizli-kayit-sat-bit-tar
+
+     move don-bas-yil            to eyil
+     move don-bas-ay             to eay
+     move don-bas-gun            to egun
+     move etarih                 to gd-2-col-6
+     move anlas-don-bas-tarih    to gizli-kayit-kon-bas-tar
+
+     move don-bit-yil            to eyil
+     move don-bit-ay             to eay
+     move don-bit-gun            to egun
+     move etarih                 to gd-2-col-7
+     move anlas-don-bit-tarih    to gizli-kayit-kon-bit-tar
+
+     move ind-oran               to zind  gizli-kayit-ind-oran
+     move zind                   to gd-2-col-8 
+     
+     move mevcut-kbl-bas-yil     to eyil
+     move mevcut-kbl-bas-ay      to eay
+     move mevcut-kbl-bas-gun     to egun
+     move etarih                 to gd-2-col-9
+     move mevcut-kbl-bas-tar   to gizli-kayit-mevcut-sat-bas-tar
+
+     move mevcut-kbl-bit-yil     to eyil
+     move mevcut-kbl-bit-ay      to eay
+     move mevcut-kbl-bit-gun     to egun
+     move etarih                 to gd-2-col-10
+     move mevcut-kbl-bit-tar   to gizli-kayit-mevcut-sat-bit-tar
+
+**********************************************
+     move mevcut-kon-bas-yil     to eyil
+     move mevcut-kon-bas-ay      to eay
+     move mevcut-kon-bas-gun     to egun
+     move etarih                 to gd-2-col-11
+     move mevcut-kon-bas-tar   to gizli-kayit-mevcut-kon-bas-tar
+
+     move mevcut-kon-bit-yil     to eyil
+     move mevcut-kon-bit-ay      to eay
+     move mevcut-kon-bit-gun     to egun
+     move etarih                 to gd-2-col-12
+     move mevcut-kon-bit-tar   to gizli-kayit-mevcut-kon-bit-tar
+
+     move mevcut-ind-oran        to zind  gizli-kayit-mevcut-ind-oran
+     move zind                   to gd-2-col-13 
+
+     modify form1-gd-2,
+            record-to-add(form1-gd-2-record)
+     add 1                       to kayit-adet
+     modify form1-gd-2(kayit-adet,1),
+            hidden-data gizli-kayit
+
+     move 4   to accept-control
+     move 45  to control-id.    
+*
+ Form1-Aft-Initdata.
+     perform tesis-yukle
+     perform kayit-ekle-grid-baslik
+     perform acenta-grup-baslik-yukle
+     perform acenta-grup-yukle
+     if link-fis-no = 0
+        perform fis-al
+     else
+        perform ekran-yukle 
+        perform pazar-yukle  
+        modify cb-pazar, ENABLED = false    
+     end-if.
+*
+ tesis-yukle.
+    open input onbkodlar10
+    initialize onbkodlar10-rec
+    move "OT"                 to onbkodlar10-tipi
+    start onbkodlar10 key not < onbkodlar10-anahtar invalid
+               continue 
+    not invalid 
+    perform with test after until fs-onbkodlar10 = "10"
+    read onbkodlar10 next no lock end move "10" to fs-onbkodlar10
+    not at end 
+            if onbkodlar10-tipi <> "OT"
+                exit perform 
+            end-if
+            initialize tesis-kod
+            string tesis-kod
+                   onbkodlar10-kodu1 delimited by "         "
+                   "-"       delimited by "            "
+                   onbkodlar10-adi delimited by size 
+            into tesis-kod
+
+            modify cb-tesis, ITEM-TO-ADD(tesis-kod)
+    end-read 
+    end-perform
+    end-start         
+    close onbkodlar10
+
+    modify cb-tesis , value = "00".
+*
+ ekran-yukle.
+     open i-o genelfis
+     initialize genelfis-rec
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid 
+        continue 
+     end-read 
+         add 1 to print-no
+         rewrite genelfis-rec end-rewrite 
+     close genelfis
+     move print-no   to takask-no
+     open output takask close takask open i-o takask
+
+     inquire form1-gd-1,last-row in son-satir
+
+     open input sathrk
+     initialize sathrk-rec
+     move link-fis-no     to sathrk-fis-no
+     start sathrk key not < sathrk-alt-anah invalid 
+          continue 
+     not invalid 
+     perform until fs-sathrk = "10"
+     read sathrk next no lock end move "10"  to fs-sathrk
+     not at end
+          if sathrk-fis-no <> link-fis-no
+              exit perform 
+          end-if
+          if sathrk-durumu = "S"
+              exit perform cycle 
+          end-if 
+             if sathrk-fis-no > 0
+                initialize takask-rec
+                move sathrk-fis-no          to takask-fis-no
+                move sathrk-tesis-kodu      to takask-tesis-kodu
+                read takask no lock invalid 
+                    continue 
+                end-read
+                    move sathrk-diger to takask-diger
+                  write takask-rec invalid 
+                      rewrite takask-rec end-rewrite 
+                  end-write 
+             end-if
+             move sathrk-grup-kodu  to cb-grup-alt-kod
+             move cb-grup-alt-kod   to paz-kod    
+     end-read 
+     end-perform
+     end-start
+     display cb-pazar
+
+     initialize takask-rec
+     start takask key not < takask-anah invalid 
+        continue 
+     not invalid 
+     perform until fs-takask = "10"
+     read takask next no lock end move "10" to fs-takask
+     not at end 
+          move takask-fis-no       to fis-no
+          move takask-tesis-kodu   to tesis-kod(1:2)
+**          move takask-ind-tip      to ind-tip(1:1)
+          evaluate takask-ind-tip
+          when "0"
+              move "0-Eb Uzatma"  to ind-tip
+          when "A"
+              move "A-Aksion"  to ind-tip
+          when "E"
+              move "E-EB"  to ind-tip
+          end-evaluate 
+          move takask-anlasma-tar  to anlas-tarih
+          move takask-sat-bas-tar  to anlas-kbl-bas-tarih
+          move takask-sat-bit-tar  to anlas-kbl-bit-tarih
+          move takask-kon-bas-tar  to anlas-don-bas-tarih
+          move takask-kon-bit-tar  to anlas-don-bit-tarih
+          move takask-ind-yuzde    to ind-oran
+
+          move takask-mevcut-sat-bas-tar  to mevcut-kbl-bas-tar
+          move takask-mevcut-sat-bit-tar  to mevcut-kbl-bit-tar
+          move takask-mevcut-kon-bas-tar  to mevcut-kon-bas-tar
+          move takask-mevcut-kon-bit-tar  to mevcut-kon-bit-tar
+          move takask-mevcut-ind-yuzde    to mevcut-ind-oran
+
+          move takask-mail-konu    to konu
+
+          move takask-dosya-yolu   to dosya-yolu       
+
+          perform varying t from 1 by 1 until t > 10
+              move  takask-mail-aciklama(t)  to ramco(t)     
+          end-perform
+
+          perform kayit-ekle 
+      
+     end-read 
+     end-perform
+     end-start
+      display acc-konu acc-not acc-dosya-yolu
+     close takask sathrk
+
+     delete file takask.     
+*
+ acenta-grup-baslik-yukle.
+     modify form1-gd-1,reset-grid = 1                        
+                       mass-update = 1
+     initialize form1-gd-1-record
+     move "G.Kodu"        to gd-1-col-1
+     move "Kod"           to gd-1-col-2
+     move "Adi"           to gd-1-col-3
+     move "Mail"          to gd-1-col-4
+     move "SEC"           to gd-1-col-5
+     move "Gon.Tar."      to gd-1-col-6
+     modify form1-gd-1,record-to-add(form1-gd-1-record).
+*
+ acenta-grup-yukle.  
+     open i-o genelfis
+     initialize genelfis-rec
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid  
+          continue 
+     end-read 
+     move ekran-fis-1  to takasg-no
+     add 1 to ekran-fis-1
+     rewrite genelfis-rec end-rewrite 
+     close genelfis
+     open output takasg close takasg open i-o takasg
+
+     open input grup 
+     initialize grup-rec
+     set grup-acenta      to true  
+     start grup key not < grup-tip-kod invalid
+         continue 
+     not invalid 
+     perform until fs-grup = "10"
+     read grup next no lock end move "10"  to fs-grup
+     not at end 
+             if not grup-acenta
+                 exit perform 
+             end-if 
+             initialize takasg-rec
+             move grup-kodu  to takasg-kodu
+             read takasg no lock invalid 
+                initialize cb-grup-ana
+                move grup-adi  to cb-grup-alt-adi
+                move grup-kodu to cb-grup-alt-kod
+                modify cb-pazar,item-to-add(cb-grup-ana) 
+             end-read 
+                move grup-adi   to takasg-adi
+             write takasg-rec invalid 
+                 rewrite takasg-rec end-rewrite 
+             end-write 
+     end-read 
+     end-perform
+     end-start
+
+     close takasg grup.
+
+*
+ Form1-Gd-1-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+         move event-action-fail to event-action
+     when msg-bitmap-clicked        
+         evaluate event-data-1
+         when 5
+             move event-action-fail to event-action  
+             inquire form1-gd-1(event-data-2,1),hidden-data in gizli-bilgi
+             if gizli-bilgi-grup-kodu not = spaces and 
+                gizli-bilgi-acenta-kodu not = spaces
+                    inquire form1-gd-1(event-data-2,5),hidden-data secim-durumu
+                    if secim-durumu = "H"
+                       modify form1-gd-1(event-data-2,5),
+                              bitmap = yes-bmp
+                              bitmap-width = 16
+                              bitmap-number = 1
+                              hidden-data = "E"                    
+                    else  
+                       modify form1-gd-1(event-data-2,5),
+                              bitmap = no-bmp
+                              bitmap-width = 16
+                              bitmap-number = 1
+                              hidden-data = "H"
+                    end-if                   
+             end-if 
+
+             if gizli-bilgi-grup-kodu not = spaces and 
+                gizli-bilgi-acenta-kodu = spaces
+                inquire form1-gd-1(event-data-2,1),hidden-data in temp-grup-kod
+                inquire form1-gd-1,last-row in son-satir
+                perform varying i from event-data-2 by 1 until i > son-satir
+
+                    inquire form1-gd-1(i,1),hidden-data in gizli-bilgi
+                    if gizli-bilgi-grup-kodu not = temp-grup-kod
+                        exit perform 
+                    end-if 
+        
+                    inquire form1-gd-1(i,5),hidden-data secim-durumu
+                    if secim-durumu = "H"
+                       modify form1-gd-1(i,5),
+                              bitmap = yes-bmp
+                              bitmap-width = 16
+                              bitmap-number = 1
+                              hidden-data = "E" 
+                   
+                       modify form1-gd-1(event-data-2,5),
+                              bitmap = yes-bmp
+                              bitmap-width = 16
+                              bitmap-number = 1
+                              hidden-data = "E" 
+                    else  
+                       modify form1-gd-1(i,5),
+                              bitmap = no-bmp
+                              bitmap-width = 16
+                              bitmap-number = 1
+                              hidden-data = "H"
+
+                       modify form1-gd-1(event-data-2,5),
+                              bitmap = no-bmp
+                              bitmap-width = 16
+                              bitmap-number = 1
+                              hidden-data = "H"
+                    end-if 
+                end-perform
+             end-if 
+         when other 
+             move event-action-fail to event-action                   
+         end-evaluate 
+     end-evaluate.
+*
+ Form1-Gd-2-Ev-Other.
+     evaluate event-type
+     when msg-begin-entry
+          move event-action-fail to event-action                   
+     end-evaluate.
+*
+ dosya-oku.
+       move fis-no      to text-oku-kayit-no text2-oku-kayit-no
+       move all low-values to text2-oku-dosya-adi
+       move opnsav-basename           to text-oku-dosya-adi 
+                      
+       unstring opnsav-basename delimited by ".rtf"
+       into text2-oku-dosya-adi-ana   
+       inspect text2-oku-dosya-adi-ana replacing trailing spaces by low-values
+       inspect text-oku-adres replacing trailing spaces by low-values 
+       inspect text2-oku-adres replacing trailing spaces by low-values 
+                            
+       open input text-oku  onbkodlar10
+       open output text2-oku
+       initialize  text-oku-rec  
+       perform with test after until fs-text-oku = "10"
+       initialize text-oku-rec
+       read text-oku next no lock end move "10" to fs-text-oku
+       not end
+              move paz-kod  to cb-grup-ana              
+              inspect text-oku-1 replacing all "PAZ_ADI________________" by cb-grup-alt-adi(1:23)
+
+              perform varying k from 2 by 1 until k > 15
+                  initialize temp-ind-tip   txt-tarih
+                  inquire form1-gd-2(k,1),hidden-data gizli-kayit
+                  initialize tesis-adi
+                  evaluate (k - 1)
+                  when 1
+                      move gizli-kayit-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-kon-bas-tar(7:)    to egun
+                      inspect text-oku-1 replacing all "KON_0_BAS_" by etarih
+
+                      move gizli-kayit-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-kon-bit-tar(7:)    to egun
+                      inspect text-oku-1 replacing all "KON_0_BIT_" by etarih
+
+                      move gizli-kayit-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-sat-bas-tar(7:)    to egun
+                      inspect text-oku-1 replacing all "SAT_0_BAS_" by etarih
+
+                      move gizli-kayit-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-sat-bit-tar(7:)    to egun
+                      inspect text-oku-1 replacing all "SAT_0_BIT_" by etarih
+
+                      if gizli-kayit-ind-oran > 0
+                         move gizli-kayit-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y0????" by zind
+                      else
+                         inspect text-oku-1 replacing all "Y0????" by spaces
+                      end-if 
+
+
+**************************************************************************************
+                      move gizli-kayit-mevcut-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bas-tar(7:)    to egun
+                      inspect text-oku-1 replacing all "KON_0M_BAS" by etarih
+
+                      move gizli-kayit-mevcut-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bit-tar(7:)    to egun
+                      inspect text-oku-1 replacing all "KON_0M_BIT" by etarih
+
+                      move gizli-kayit-mevcut-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bas-tar(7:)    to egun
+                      inspect text-oku-1 replacing all "SAT_0M_BAS" by etarih
+
+                      move gizli-kayit-mevcut-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bit-tar(7:)    to egun
+                      inspect text-oku-1 replacing all "SAT_0M_BIT" by etarih
+
+                      if gizli-kayit-mevcut-ind-oran > 0
+                         move gizli-kayit-mevcut-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y0M???" by zind
+                      else
+                         inspect text-oku-1 replacing all "Y0M???" by spaces
+                      end-if 
+
+****************************************************************************************
+                      evaluate gizli-kayit-ind-tip
+                      when "0"
+                         move "EB"                    to temp-ind-tip
+                         inspect text-oku-1 replacing all "IN_0_??" by temp-ind-tip
+                      when other 
+                          move spaces          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_0_??" by temp-ind-tip
+                      end-evaluate  
+                        
+
+                        initialize onbkodlar10-rec
+                        move gizli-kayit-tesis   to onbkodlar10-kodu1
+                        move "OT"                to onbkodlar10-tipi
+                        read onbkodlar10 no lock invalid
+                              continue 
+                        end-read 
+                             move onbkodlar10-adi to tesis-adi
+                                                                       
+                      inspect text-oku-1 replacing all "TESIS_ADI_0____________" by tesis-adi(1:23)
+                                           
+                  when 2
+                      move gizli-kayit-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+                      inspect text-oku-1 replacing all "KON_1_BAS_" by txt-tarih
+                      move gizli-kayit-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+                      inspect text-oku-1 replacing all "KON_1_BIT_" by txt-tarih
+
+                      move gizli-kayit-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_1_BAS_" by txt-tarih
+
+                      move gizli-kayit-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_1_BIT_" by txt-tarih
+
+                      if gizli-kayit-ind-oran >  0
+                         move gizli-kayit-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y1????" by zind
+                      else
+                        inspect text-oku-1 replacing all "Y1????" by spaces
+                      end-if 
+**************************************************************************************
+                      move gizli-kayit-mevcut-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_1M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_1M_BIT" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_1M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_1M_BIT" by txt-tarih
+
+                      if gizli-kayit-mevcut-ind-oran > 0
+                         move gizli-kayit-mevcut-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y1M???" by zind
+                      else
+                         inspect text-oku-1 replacing all "Y1M???" by spaces
+                      end-if 
+
+****************************************************************************************
+                      evaluate gizli-kayit-ind-tip
+                      when "0"
+                          move "EB"          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_1_??" by temp-ind-tip
+                      when other 
+                          move spaces          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_1_??" by temp-ind-tip
+
+                      end-evaluate  
+                        initialize onbkodlar10-rec
+                        move gizli-kayit-tesis   to onbkodlar10-kodu1
+                        move "OT"                to onbkodlar10-tipi
+                        read onbkodlar10 no lock invalid
+                              continue 
+                        end-read 
+                             move onbkodlar10-adi to tesis-adi
+                      inspect text-oku-1 replacing all "TESIS_ADI_1____________" by tesis-adi(1:23)
+                     
+                  when 3
+                      move gizli-kayit-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_2_BAS_" by txt-tarih
+                      move gizli-kayit-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_2_BIT_" by txt-tarih
+                      if gizli-kayit-ind-oran > 0
+                      move gizli-kayit-ind-oran    to zind
+                      inspect text-oku-1 replacing all "Y2????" by zind
+                      else
+                      inspect text-oku-1 replacing all "Y2????" by spaces
+                      end-if 
+                      
+                      evaluate gizli-kayit-ind-tip
+                      when "0"
+                          move "EB"          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_2_??" by temp-ind-tip
+                      when other 
+                          move spaces          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_2_??" by temp-ind-tip
+
+                      end-evaluate        
+                      move gizli-kayit-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_2_BAS_" by txt-tarih
+
+                      move gizli-kayit-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+
+                      inspect text-oku-1 replacing all "SAT_2_BIT_" by txt-tarih
+                        initialize onbkodlar10-rec
+                        move gizli-kayit-tesis   to onbkodlar10-kodu1
+                        move "OT"                to onbkodlar10-tipi
+                        read onbkodlar10 no lock invalid
+                              continue 
+                        end-read 
+                             move onbkodlar10-adi to tesis-adi
+
+                     inspect text-oku-1 replacing all "TESIS_ADI_2____________" by tesis-adi(1:23)
+
+**************************************************************************************
+                      move gizli-kayit-mevcut-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_2M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_2M_BIT" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_2M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_2M_BIT" by txt-tarih
+
+                      if gizli-kayit-mevcut-ind-oran > 0
+                         move gizli-kayit-mevcut-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y2M???" by zind
+                      else
+                         inspect text-oku-1 replacing all "Y2M???" by spaces
+                      end-if 
+
+****************************************************************************************               
+                  when 4
+                      move gizli-kayit-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_3_BAS_" by txt-tarih
+                      move gizli-kayit-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_3_BIT_" by txt-tarih
+                      if gizli-kayit-ind-oran > 0
+                         move gizli-kayit-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y3????" by zind
+                      else
+                         inspect text-oku-1 replacing all "Y3????" by spaces
+                      end-if 
+**************************************************************************************
+                      move gizli-kayit-mevcut-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_3M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_3M_BIT" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_3M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_3M_BIT" by txt-tarih
+
+                      if gizli-kayit-mevcut-ind-oran > 0
+                         move gizli-kayit-mevcut-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y3M???" by zind
+                      else
+                         inspect text-oku-1 replacing all "Y3M???" by spaces
+                      end-if 
+
+****************************************************************************************
+                      evaluate gizli-kayit-ind-tip
+                      when "0"
+                          move "EB"          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_3_??" by temp-ind-tip
+                      when other 
+                          move spaces          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_3_??" by temp-ind-tip
+
+                      end-evaluate       
+                      move gizli-kayit-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_3_BAS_" by txt-tarih
+
+                      move gizli-kayit-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_3_BIT_" by txt-tarih
+                        initialize onbkodlar10-rec
+                        move gizli-kayit-tesis   to onbkodlar10-kodu1
+                        move "OT"                to onbkodlar10-tipi
+                        read onbkodlar10 no lock invalid
+                              continue 
+                        end-read 
+                             move onbkodlar10-adi to tesis-adi
+                       
+                      inspect text-oku-1 replacing all "TESIS_ADI_3____________" by tesis-adi(1:23)
+                
+                  when 5
+                      move gizli-kayit-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_4_BAS_" by txt-tarih
+                      move gizli-kayit-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_4_BIT_" by txt-tarih
+                      if  gizli-kayit-ind-oran > 0
+                        move gizli-kayit-ind-oran    to zind
+                        inspect text-oku-1 replacing all "Y4????" by zind
+                      else
+                        inspect text-oku-1 replacing all "Y4????" by spaces
+                      end-if 
+                      
+                      evaluate gizli-kayit-ind-tip
+                      when "0"
+                          move "EB"          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_4_??" by temp-ind-tip
+                      when other 
+                          move spaces          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_4_??" by temp-ind-tip
+
+                      end-evaluate     
+                      move gizli-kayit-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_4_BAS_" by txt-tarih
+
+                      move gizli-kayit-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_4_BIT_" by txt-tarih
+                        initialize onbkodlar10-rec
+                        move gizli-kayit-tesis   to onbkodlar10-kodu1
+                        move "OT"                to onbkodlar10-tipi
+                        read onbkodlar10 no lock invalid
+                              continue 
+                        end-read 
+                             move onbkodlar10-adi to tesis-adi
+                        
+                      inspect text-oku-1 replacing all "TESIS_ADI_4____________" by tesis-adi(1:23)
+**************************************************************************************
+                      move gizli-kayit-mevcut-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_4M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_4M_BIT" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_4M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_4M_BIT" by txt-tarih
+
+                      if gizli-kayit-mevcut-ind-oran > 0
+                         move gizli-kayit-mevcut-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y4M???" by zind
+                      else
+                         inspect text-oku-1 replacing all "Y4M???" by spaces
+                      end-if 
+
+****************************************************************************************
+                  
+                  when 6
+                      move gizli-kayit-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_5_BAS_" by txt-tarih
+                      move gizli-kayit-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_5_BIT_" by txt-tarih
+                      if gizli-kayit-ind-oran > 0
+                      move gizli-kayit-ind-oran    to zind
+                      inspect text-oku-1 replacing all "Y5????" by zind
+                      else
+                      inspect text-oku-1 replacing all "Y5????" by spaces
+                      end-if 
+
+**************************************************************************************
+                      move gizli-kayit-mevcut-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_5M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_5M_BIT" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_5M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_5M_BIT" by txt-tarih
+
+                      if gizli-kayit-mevcut-ind-oran > 0
+                         move gizli-kayit-mevcut-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y5M???" by zind
+                      else
+                         inspect text-oku-1 replacing all "Y5M???" by spaces
+                      end-if 
+
+****************************************************************************************
+
+****************************************************************************************
+                      evaluate gizli-kayit-ind-tip
+                      when "0"
+                          move "EB"          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_5_??" by temp-ind-tip
+                      when other 
+                          move spaces          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_5_??" by temp-ind-tip
+
+                      end-evaluate    
+                      move gizli-kayit-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_5_BAS_" by txt-tarih
+
+                      move gizli-kayit-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_5_BIT_" by txt-tarih
+                        initialize onbkodlar10-rec
+                        move gizli-kayit-tesis   to onbkodlar10-kodu1
+                        move "OT"                to onbkodlar10-tipi
+                        read onbkodlar10 no lock invalid
+                              continue 
+                        end-read 
+                             move onbkodlar10-adi to tesis-adi
+                       
+                      inspect text-oku-1 replacing all "TESIS_ADI_5____________" by tesis-adi(1:23)
+                   
+                  when 7
+                      move gizli-kayit-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+
+
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_6_BAS_" by txt-tarih
+                      move gizli-kayit-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "KON_6_BIT_" by txt-tarih
+                      if  gizli-kayit-ind-oran > 0
+                      move gizli-kayit-ind-oran    to zind
+                      inspect text-oku-1 replacing all "Y6????" by zind
+                      else
+                      inspect text-oku-1 replacing all "Y6????" by spaces
+                      end-if 
+                      evaluate gizli-kayit-ind-tip
+                      when "0"
+                          move "EB"          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_6_??" by temp-ind-tip
+                      when other 
+                          move spaces          to temp-ind-tip
+                          inspect text-oku-1 replacing all "IN_6_??" by temp-ind-tip
+
+                      end-evaluate 
+                      move gizli-kayit-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_6_BAS_" by txt-tarih
+
+                      move gizli-kayit-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if 
+
+                      inspect text-oku-1 replacing all "SAT_6_BIT_" by txt-tarih  
+
+
+**************************************************************************************
+                      move gizli-kayit-mevcut-kon-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_6M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-kon-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-kon-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-kon-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "KON_6M_BIT" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bas-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bas-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bas-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_6M_BAS" by txt-tarih
+
+                      move gizli-kayit-mevcut-sat-bit-tar(1:4)   to eyil
+                      move gizli-kayit-mevcut-sat-bit-tar(5:2)   to eay
+                      move gizli-kayit-mevcut-sat-bit-tar(7:)    to egun
+                      move etarih                         to txt-tarih
+
+                      if eyil = spaces and eay = spaces and egun = spaces 
+                          inspect txt-tarih replacing all "/" by spaces
+                      end-if
+                      inspect text-oku-1 replacing all "SAT_6M_BIT" by txt-tarih
+
+                      if gizli-kayit-mevcut-ind-oran > 0
+                         move gizli-kayit-mevcut-ind-oran    to zind
+                         inspect text-oku-1 replacing all "Y6M???" by zind
+                      else
+                         inspect text-oku-1 replacing all "Y6M???" by spaces
+                      end-if 
+
+****************************************************************************************
+                        initialize onbkodlar10-rec
+                        move gizli-kayit-tesis   to onbkodlar10-kodu1
+                        move "OT"                to onbkodlar10-tipi
+                        read onbkodlar10 no lock invalid
+                              continue 
+                        end-read 
+                             move onbkodlar10-adi to tesis-adi
+                      inspect text-oku-1 replacing all "TESIS_ADI_6____________" by tesis-adi(1:23)
+                    
+                  end-evaluate 
+              end-perform
+             initialize text2-oku-rec
+             move text-oku-1       to text2-oku-1
+             write text2-oku-rec end-write 
+       end-read
+       end-perform,
+       close text-oku text2-oku onbkodlar10
+       delete file text-oku
+       
+       call "RENAME" using text2-oku-adres,text-oku-adres.
+*
+ Form1-Mn-1-MI-Sil-Link.
+    initialize satir
+    inquire form1-gd-2,cursor-y in satir
+    perform varying j from 1 by 1 until j > 15
+       modify form1-gd-2(satir,j),cell-data spaces      
+    end-perform.
+*
+ cb-pazar-Ex-Ntf-Selchange.
+     perform pazar-yukle.
+*
+ pazar-yukle.
+     perform Acenta-Grup-Baslik-Yukle
+     open input acenta onbkodlar10 takasg grup sathrk
+
+     move 1                  to grid-sayi
+     initialize takasg-rec
+     move paz-kod           to cb-grup-ana
+     move cb-grup-alt-kod  to takasg-kodu
+     start takasg key not < takasg-kodu invalid 
+         continue 
+     not invalid 
+     perform until fs-takasg = "10"
+     read takasg next no lock end move "10"  to fs-takasg
+     not at end 
+             if takasg-kodu <> cb-grup-alt-kod
+                 exit perform 
+             end-if 
+             initialize form1-gd-1-record gizli-bilgi
+             move takasg-kodu        to gd-1-col-1 gizli-bilgi-grup-kodu
+             move takasg-adi         to gd-1-col-3
+             move takasg-mail-gon-gun to egun
+             modify form1-gd-1,record-to-add(form1-gd-1-record)
+             add 1                 to grid-sayi
+             modify form1-gd-1(grid-sayi),row-color = 480
+             modify form1-gd-1(grid-sayi,1),hidden-data = gizli-bilgi
+
+           move "H"                 to secim-durumu
+           modify form1-gd-1(grid-sayi,5),
+                  hidden-data = secim-durumu
+           if secim-durumu = "H"
+                  modify form1-gd-1(grid-sayi,5),
+                         bitmap = no-bmp
+                         bitmap-width = 16
+                         bitmap-number = 1
+           end-if 
+
+             initialize grup-rec
+             set grup-acenta       to true 
+             move takasg-kodu      to grup-kodu
+             start grup key not < grup-tip-kod invalid
+                 continue 
+             not invalid 
+             perform until fs-grup = "10"
+             read grup next no lock end move "10"  to fs-grup
+             not at end 
+                     if not grup-acenta
+                         exit perform 
+                     end-if 
+                     if takasg-kodu <> grup-kodu
+                         exit perform   
+                     end-if
+                     initialize form1-gd-1-record acenta-rec gizli-bilgi
+                     move takasg-kodu        to gizli-bilgi-grup-kodu
+                     move grup-alt           to gd-1-col-2 acenta-kodu gizli-bilgi-acenta-kodu
+                     read acenta no lock invalid 
+                          exit perform cycle 
+                     end-read                         
+                     add 1                 to grid-sayi
+                     move acenta-adi       to gd-1-col-3
+
+                     initialize onbkodlar10-rec
+                     move "MA"        to onbkodlar10-tipi
+                     start onbkodlar10 key not < onbkodlar10-anahtar invalid
+                          continue 
+                     not invalid 
+                     perform until fs-onbkodlar10 = "10"
+                     read onbkodlar10 next no lock end move "10" to fs-onbkodlar10
+                     not at end 
+                              if onbkodlar10-tipi <> "MA"
+                                  exit perform 
+                              end-if 
+                              if onbkodlar10-kodu1 <> acenta-kodu
+                                   exit perform cycle 
+                              end-if
+                              string gd-1-col-4
+                                     onbkodlar10-adi delimited by "     "
+                                     ";" delimited by size 
+                               into gd-1-col-4 
+                     end-read 
+                     end-perform
+                     end-start
+
+                     perform kayit-var-kontrol
+                     if acenta-bulundu = 1
+                        move sathrk-mail-gon-gun  to egun
+                        move sathrk-mail-gon-ay   to eay
+                        move sathrk-mail-gon-yil  to eyil
+                        move etarih               to gd-1-col-6
+                     end-if    
+                     
+                     modify form1-gd-1,record-to-add(form1-gd-1-record)              
+                     modify form1-gd-1(grid-sayi,1),hidden-data = gizli-bilgi
+
+                     move "H"                 to secim-durumu
+                     modify form1-gd-1(grid-sayi,5),
+                            hidden-data = secim-durumu
+                     if secim-durumu = "H"
+                            modify form1-gd-1(grid-sayi,5),
+                                   bitmap = no-bmp
+                                   bitmap-width = 16
+                                   bitmap-number = 1
+                     end-if 
+
+
+
+                     perform kayit-var-kontrol
+                     if acenta-bulundu = 1
+                        move "E"                 to secim-durumu
+                        modify form1-gd-1(grid-sayi,5),
+                               hidden-data = secim-durumu
+                        if secim-durumu = "E"
+                               modify form1-gd-1(grid-sayi,5),
+                                      bitmap = yes-bmp
+                                      bitmap-width = 16
+                                      bitmap-number = 1
+                        end-if                         
+                     end-if 
+             end-read 
+             end-perform
+             end-start
+     end-read 
+     end-perform
+     end-start
+
+     modify form1-gd-1,mass-update = 0     
+    close acenta onbkodlar10 takasg grup sathrk.
+*
+ kayit-var-kontrol.
+     initialize sathrk-rec  acenta-bulundu
+     move link-fis-no     to sathrk-fis-no
+     start sathrk key not < sathrk-alt-anah invalid 
+          continue 
+     not invalid 
+     perform until fs-sathrk = "10"
+     read sathrk next no lock end move "10"  to fs-sathrk
+     not at end
+          if sathrk-fis-no <> link-fis-no
+              exit perform 
+          end-if
+          if sathrk-durumu = "S"
+              exit perform cycle 
+          end-if 
+             if sathrk-fis-no > 0
+                if sathrk-acenta-kodu = gizli-bilgi-acenta-kodu
+                   move 1 to acenta-bulundu
+                   exit perform 
+                end-if 
+             end-if  
+     end-read 
+     end-perform
+     end-start.
+
+*
+ kayit-olustur.
+     open input takvim onbkodlar10
+     open i-o  sathrk 
+     initialize fiyatana-rec son-dig2
+    perform varying k from 2 by 1 until k > 15
+       inquire form1-gd-2(k,1),hidden-data gizli-kayit
+       if gizli-kayit-tesis = spaces
+          exit perform cycle 
+       end-if 
+        perform frame-ac
+       initialize onbkodlar10-rec yerel-server 
+       move "OT"              to onbkodlar10-tipi
+       move gizli-kayit-tesis to onbkodlar10-kodu1
+       read onbkodlar10 no lock invalid 
+           continue 
+       end-read            
+           if onbkodlar10-kodu1 = "00"
+              move 0 to yerel-server
+           else
+              move 1 to yerel-server              
+           end-if
+ 
+       evaluate ind-tip-uygula(1:1)
+       when "0"
+           if yerel-server = 0
+              open i-o fiyatana fiyat aceanlas ace2 
+                 perform eb-uzatma
+              close fiyatana fiyat aceanlas ace2 
+           else
+              perform onb-adres-aktar
+              open i-o fana2 fiyat2 ace2 aceuzak
+                 perform eb-uzatma-uzak
+              close fana2 fiyat2 ace2 aceuzak
+           end-if 
+       when "A"
+           inquire form1-gd-1,last-row in son-satir
+           perform varying j from 1 by 1 until j > son-satir
+              inquire form1-gd-1(j,5),hidden-data in secim-durumu
+              if secim-durumu not = "E"
+                  exit perform cycle 
+              end-if 
+              inquire form1-gd-1(j,1),hidden-data gizli-bilgi
+              if gizli-bilgi-acenta-kodu not = spaces 
+                 if yerel-server = 0
+                   open i-o fiyatana fiyat aceanlas ace2 
+                     perform aksiyon-gir
+                     perform aceanlas-gir
+                     perform sathrk-onay-yaz
+                   close fiyatana fiyat aceanlas ace2
+                 else
+                     perform onb-adres-aktar
+                   open i-o fana2 fiyat2 aceuzak ace23
+                     perform aksiyon-gir-uzak
+                     perform aceanlas-gir-uzak 
+                     perform sathrk-onay-yaz
+                   close fana2 fiyat2 aceuzak ace23
+                 end-if 
+              end-if 
+           end-perform           
+       when "E" 
+           inquire form1-gd-1,last-row in son-satir
+           perform varying j from 1 by 1 until j > son-satir
+              inquire form1-gd-1(j,5),hidden-data in secim-durumu
+              if secim-durumu not = "E"
+                  exit perform cycle 
+              end-if 
+              inquire form1-gd-1(j,1),hidden-data gizli-bilgi
+              if gizli-bilgi-acenta-kodu not = spaces 
+                 if yerel-server = 0
+                   open i-o fiyatana fiyat aceanlas ace2  
+                     perform aksiyon-gir
+                     perform aceanlas-gir
+                     perform sathrk-onay-yaz
+                   close fiyatana fiyat aceanlas ace2                     
+                 else
+                   perform onb-adres-aktar
+                   open i-o fana2 fiyat2 aceuzak ace23
+                     perform aksiyon-gir-uzak
+                     perform aceanlas-gir-uzak 
+                     perform sathrk-onay-yaz
+                   close fana2 fiyat2 aceuzak ace23
+                 end-if 
+              end-if 
+           end-perform           
+       end-evaluate
+        perform frame-kapat
+    end-perform 
+    close sathrk takvim onbkodlar10
+    set exit-pushed to true.
+*
+ sathrk-onay-yaz.
+     initialize sathrk-rec
+     move fis-no          to sathrk-fis-no
+     start sathrk key not < sathrk-alt-anah invalid
+        continue 
+     not invalid 
+     perform until fs-sathrk = "10"
+     read sathrk next no lock end move "10" to fs-sathrk
+     not at end    
+           if sathrk-fis-no <> fis-no
+               exit perform
+           end-if           
+           move 1         to sathrk-kayit-edildi
+           rewrite sathrk-rec end-rewrite 
+     end-read 
+     end-perform
+     end-start.  
+*
+ onb-adres-aktar.
+        inspect onbkodlar10-aciklama-2 replacing trailing spaces by low-values
+        move onbkodlar10-aciklama-2 to     
+                               fiyatana-dosya-adres  
+                               aceanlas-dosya-adres  
+                               fiyat-dosya-adres     
+ 
+            string "@" delimited by low-values
+                   onbkodlar10-aciklama-1 delimited by "           "
+                    ":" delimited by low-values
+                   fiyatana-dosya           delimited "           "
+                   into fana2-ACUSERVE-DOSYA      
+
+            string "@" delimited by low-values
+                   onbkodlar10-aciklama-1 delimited by "           "
+                    ":" delimited by low-values
+                   aceanlas-dosya           delimited "           "
+                   into aceuzak-ACUSERVE-DOSYA      
+
+            string "@" delimited by low-values
+                   onbkodlar10-aciklama-1 delimited by "           "
+                    ":" delimited by low-values
+                   aceanlas-dosya           delimited "           "
+                   into ace23-ACUSERVE-DOSYA      
+   
+            string "@" delimited by low-values
+                   onbkodlar10-aciklama-1 delimited by "           "
+                    ":" delimited by low-values
+                   fiyat-dosya           delimited "           "
+                   into fiyat2-ACUSERVE-DOSYA      
+
+        move isyeri-adres-tasi to fiyatana-dosya-adres    
+                                  aceanlas-dosya-adres  
+                                  fiyat-dosya-adres.
+*
+ aceanlas-gir.
+    initialize aceanlas-rec
+    move gizli-bilgi-acenta-kodu to aceanlas-acenta
+    move kaynak-anlasma(1:2)          to aceanlas-anlasma
+    start aceanlas key not < aceanlas-ANAH invalid 
+        continue 
+    not invalid 
+    perform until fs-aceanlas = "10"
+    read aceanlas next no lock end move "10" to fs-aceanlas
+    not at end 
+             if aceanlas-acenta <> gizli-bilgi-acenta-kodu
+                exit perform 
+             end-if 
+             if aceanlas-anlasma <> kaynak-anlasma(1:2)
+                exit perform
+             end-if 
+             if aceanlas-donem-bas not = gizli-kayit-mevcut-kon-bas-tar
+                exit perform cycle 
+             end-if 
+             if aceanlas-donem-bit not = gizli-kayit-mevcut-kon-bit-tar
+                exit perform cycle 
+             end-if 
+
+             initialize ace2-rec
+             move aceanlas-rec            to ace2-rec 
+             move hedef-anlasma(1:2)      to ace2-anlasma
+             move gizli-kayit-sat-bas-tar to ace2-kabul-bas
+             move gizli-kayit-sat-bit-tar to ace2-kabul-bit
+             move gizli-kayit-kon-bas-tar to ace2-donem-bas
+             move gizli-kayit-kon-bit-tar to ace2-donem-bit
+             move gizli-kayit-anlasma-tar to ace2-anlasma-tar
+             write ace2-rec invalid 
+                 continue 
+             end-write 
+    end-read 
+    end-perform
+    end-start.
+*
+ aceanlas-gir-uzak.
+    initialize aceuzak-rec
+    move gizli-bilgi-acenta-kodu  to aceuzak-acenta
+    move kaynak-anlasma(1:2)      to aceuzak-anlasma
+    start aceuzak key not < aceuzak-ANAH invalid 
+        continue 
+    not invalid 
+    perform until fs-aceuzak = "10"
+    read aceuzak next no lock end move "10" to fs-aceuzak
+    not at end 
+             if aceuzak-acenta <> gizli-bilgi-acenta-kodu
+                exit perform 
+             end-if 
+             if aceuzak-anlasma <> kaynak-anlasma(1:2)
+                exit perform
+             end-if 
+             if aceuzak-donem-bas not = gizli-kayit-mevcut-kon-bas-tar
+                exit perform cycle 
+             end-if 
+             if aceuzak-donem-bit not = gizli-kayit-mevcut-kon-bit-tar
+                exit perform cycle 
+             end-if 
+
+             initialize ace23-rec
+             move aceuzak-rec             to ace23-rec 
+             move hedef-anlasma(1:2)      to ace23-anlasma
+             move gizli-kayit-sat-bas-tar to ace23-kabul-bas
+             move gizli-kayit-sat-bit-tar to ace23-kabul-bit
+             move gizli-kayit-kon-bas-tar to ace23-donem-bas
+             move gizli-kayit-kon-bit-tar to ace23-donem-bit
+             move gizli-kayit-anlasma-tar to ace23-anlasma-tar
+             write ace23-rec invalid 
+                 continue 
+             end-write 
+    end-read 
+    end-perform
+    end-start.
+*
+ eb-uzatma.
+     initialize sathrk-rec
+     move fis-no          to sathrk-fis-no
+     start sathrk key not < sathrk-alt-anah invalid
+        continue 
+     not invalid 
+     perform until fs-sathrk = "10"
+     read sathrk next no lock end move "10" to fs-sathrk
+     not at end    
+           if sathrk-fis-no <> fis-no
+               exit perform
+           end-if
+           perform aceanlas-duzelt
+           perform fiyat-duzelt
+           move 1         to sathrk-kayit-edildi
+           rewrite sathrk-rec end-rewrite 
+     end-read 
+     end-perform
+     end-start.
+*
+ eb-uzatma-uzak.
+     initialize sathrk-rec
+     move fis-no          to sathrk-fis-no
+     start sathrk key not < sathrk-alt-anah invalid
+        continue 
+     not invalid 
+     perform until fs-sathrk = "10"
+     read sathrk next no lock end move "10" to fs-sathrk
+     not at end    
+           if sathrk-fis-no <> fis-no
+               exit perform
+           end-if
+           perform aceanlas-duzelt-uzak
+           perform fiyat-duzelt-uzak
+           move 1         to sathrk-kayit-edildi
+           rewrite sathrk-rec end-rewrite 
+     end-read 
+     end-perform
+     end-start.
+*
+ aksiyon-gir.
+     initialize fiyatana-rec
+     move gizli-kayit-kon-bas-tar      to fiyatana-ilk-tarih
+     move gizli-bilgi-acenta-kodu      to fiyatana-acenta hedef-acenta
+     start fiyatana key > fiyatana-anah invalid 
+        continue
+     not invalid
+     perform until fs-fiyatana = "10"
+     read fiyatana next no lock end move "10" to fs-fiyatana
+     not end
+          if fiyatana-acenta    <> gizli-bilgi-acenta-kodu or 
+             fiyatana-ilk-tarih <  gizli-kayit-kon-bas-tar or
+             fiyatana-son-tarih >  gizli-kayit-kon-bit-tar   then 
+              move "10" to fs-fiyatana
+          else
+            if fiyatana-anlasma = kaynak-anlasma(1:2)
+              if fiyatana-diger-anah not = son-dig2
+                 move fiyatana-diger-anah to son-dig2
+                 perform  tek-anlasma-kopyala                                                          
+              end-if
+            end-if
+          end-if  
+     end-read
+     end-perform
+     end-start.
+*
+ tek-anlasma-kopyala.
+        compute carpan rounded = ((100 - gizli-kayit-ind-oran) / 100)
+        if carpan <= zeroes 
+           display message box "Yanlis Oranlama..."
+           exit paragraph 
+        end-if 
+        perform until fiyatana-diger-anah not = son-dig2       
+               move hedef-acenta                  to fiyatana-acenta
+               move hedef-anlasma(1:2)            to fiyatana-anlasma
+               move k-kodu-tasi                   to fiyatana-staf               
+               evaluate ind-tip-uygula(1:1)
+               when "E"
+                   move "E"                       to fiyatana-eb-eh
+                   move gizli-kayit-sat-bas-tar   to fiyatana-eb-bas-tarih
+                   move gizli-kayit-sat-bit-tar   to fiyatana-eb-bit-tarih
+                   move gizli-kayit-ind-oran      to fiyatana-eb-oran
+                   compute fiyatana-eb-kusur = (gizli-kayit-ind-oran - fiyatana-eb-oran ) * 100                   
+               when "A"
+                   perform varying kadk from 1 by 1 until kadk > 40
+                     compute fiyatana-oda-fiyati(kadk) rounded = 
+                             fiyatana-oda-fiyati(kadk) * carpan
+                   end-perform
+               end-evaluate 
+
+               write fiyatana-rec invalid 
+                    continue
+               end-write
+               perform log-operation-fiyatana
+
+               initialize takvim-rec 
+               move fiyatana-ilk-tarih   to takvim-anah
+               start takvim key not < takvim-anah invalid
+                     continue
+               not invalid
+               initialize fs-takvim
+               perform with test after until fs-takvim = "10"
+               read takvim next no lock end move "10" to fs-takvim
+               not at end
+                    if takvim-anah > fiyatana-son-tarih
+                       move "10" to fs-takvim
+                       exit perform
+                    end-if
+
+                       initialize fiyat-rec
+                       move hedef-acenta        to fiyat-acenta
+                       move takvim-anah         to fiyat-tarih
+                       move fiyatana-rez-tipi   to fiyat-rez-tipi
+                       move fiyatana-pan-tipi   to fiyat-pan-tipi
+                       move fiyatana-banka      to fiyat-banka
+                       move fiyatana-doviz      to fiyat-doviz
+                       move fiyatana-anlasma    to fiyat-anlasma
+                       move fiyatana-buyuk      to fiyat-buyuk
+                       move fiyatana-kucuk      to fiyat-kucuk
+                       move fiyatana-ilk-tarih  to fiyat-bas-tarih
+                       move fiyatana-son-tarih  to fiyat-bit-tarih
+                       write fiyat-rec invalid
+                           continue
+                       end-write 
+               end-read
+               end-perform
+               end-start
+            read fiyatana next no lock 
+                    end move "10" to fs-fiyatana 
+                    exit perform
+            end-read 
+
+         end-perform.
+          if fs-fiyatana not = "10" then 
+                  read fiyatana previous 
+                          end display message box "BEKLENMEYEN MDURUM 2fgdfg" 
+                  end-read
+           end-if.
+
+***************************************************************
+*
+ aksiyon-gir-uzak.
+     initialize fana2-rec
+     move gizli-kayit-kon-bas-tar      to fana2-ilk-tarih
+     move gizli-bilgi-acenta-kodu      to fana2-acenta hedef-acenta
+     start fana2 key > fana2-anah invalid 
+        continue
+     not invalid
+     perform until fs-fana2 = "10"
+     read fana2 next no lock end move "10" to fs-fana2
+     not end
+          if fana2-acenta    <> gizli-bilgi-acenta-kodu or 
+             fana2-ilk-tarih <  gizli-kayit-kon-bas-tar or
+             fana2-son-tarih >  gizli-kayit-kon-bit-tar   then 
+              move "10" to fs-fana2
+          else
+            if fana2-anlasma = kaynak-anlasma(1:2)
+              if fana2-diger-anah not = son-dig2
+                 move fana2-diger-anah to son-dig2
+                 perform tek-anlasma-kopyala-uzak                                                          
+              end-if
+            end-if
+          end-if  
+     end-read
+     end-perform
+     end-start.
+*
+ tek-anlasma-kopyala-uzak.
+        compute carpan rounded = ((100 - gizli-kayit-ind-oran) / 100)
+        if carpan <= zeroes 
+           display message box "Yanlis Oranlama..."
+           exit paragraph 
+        end-if 
+        perform until fana2-diger-anah not = son-dig2       
+               move hedef-acenta                  to fana2-acenta
+               move hedef-anlasma(1:2)            to fana2-anlasma
+               move k-kodu-tasi                   to fana2-staf               
+               evaluate ind-tip-uygula(1:1)
+               when "E"
+                   move "E"                       to fana2-eb-eh
+                   move gizli-kayit-sat-bas-tar   to fana2-eb-bas-tarih
+                   move gizli-kayit-sat-bit-tar   to fana2-eb-bit-tarih
+                   move gizli-kayit-ind-oran      to fana2-eb-oran
+                   compute fana2-eb-kusur = (gizli-kayit-ind-oran - fana2-eb-oran ) * 100                   
+               when "A"
+                   perform varying kadk from 1 by 1 until kadk > 40
+                     compute fana2-oda-fiyati(kadk) rounded = 
+                             fana2-oda-fiyati(kadk) * carpan
+                   end-perform
+               end-evaluate 
+
+               write fana2-rec invalid 
+                    continue
+               end-write
+
+               initialize takvim-rec 
+               move fana2-ilk-tarih   to takvim-anah
+               start takvim key not < takvim-anah invalid
+                     continue
+               not invalid
+               initialize fs-takvim
+               perform with test after until fs-takvim = "10"
+               read takvim next no lock end move "10" to fs-takvim
+               not at end
+                    if takvim-anah > fana2-son-tarih
+                       move "10" to fs-takvim
+                       exit perform
+                    end-if
+                    initialize fiyat2-rec
+                    move hedef-acenta     to fiyat2-acenta
+                    move takvim-anah      to fiyat2-tarih
+                    move fana2-rez-tipi   to fiyat2-rez-tipi
+                    move fana2-pan-tipi   to fiyat2-pan-tipi
+                    move fana2-banka      to fiyat2-banka
+                    move fana2-doviz      to fiyat2-doviz
+                    move fana2-anlasma    to fiyat2-anlasma
+                    move fana2-buyuk      to fiyat2-buyuk
+                    move fana2-kucuk      to fiyat2-kucuk
+                    move fana2-ilk-tarih  to fiyat2-bas-tarih
+                    move fana2-son-tarih  to fiyat2-bit-tarih
+                    write fiyat2-rec invalid
+                        continue
+                    end-write 
+               end-read
+               end-perform
+               end-start
+            read fana2 next no lock end move "10" to fs-fana2 
+               exit perform
+            end-read 
+         end-perform.
+         if fs-fana2 not = "10" then 
+            read fana2 previous end 
+               display message box "BEKLENMEYEN DURUM 2fgdfg" 
+            end-read
+         end-if.
+*
+ fiyat-duzelt.
+    initialize fiyatana-rec
+    move sathrk-acenta-kodu        to fiyatana-acenta
+    move sathrk-mevcut-kon-bas-tar to fiyatana-ilk-tarih
+    start fiyatana key not < fiyatana-anah invalid 
+         continue 
+    not invalid 
+    perform until fs-fiyatana = "10"
+    read fiyatana next no lock end move "10" to fs-fiyatana
+    not at end 
+         if fiyatana-acenta <> sathrk-acenta-kodu
+            exit perform 
+         end-if 
+         if fiyatana-ilk-tarih > sathrk-mevcut-kon-bit-tar
+              exit perform 
+         end-if 
+         if fiyatana-eb-bit-tarih = sathrk-mevcut-sat-bit-tar
+            move sathrk-sat-bit-tar to fiyatana-eb-bit-tarih
+            rewrite fiyatana-rec end-rewrite 
+            perform log-operation-fiyatana
+         end-if               
+    end-read 
+    end-perform
+    end-start.
+*
+ aceanlas-duzelt.
+    initialize aceanlas-rec
+    move sathrk-acenta-kodu  to aceanlas-acenta
+    start aceanlas key not < aceanlas-anah invalid 
+       continue 
+    not invalid 
+    perform until fs-aceanlas = "10"
+    read aceanlas next no lock end move "10"  to fs-aceanlas
+    not at end 
+        if aceanlas-acenta <> sathrk-acenta-kodu
+            exit perform 
+        end-if 
+        if aceanlas-donem-bit = sathrk-mevcut-kon-bit-tar
+          if aceanlas-kabul-bit = sathrk-mevcut-sat-bit-tar
+              move sathrk-sat-bit-tar  to aceanlas-kabul-bit
+              rewrite aceanlas-rec end-rewrite 
+              perform log-operation-aceanlas
+          end-if 
+        end-if 
+    end-read 
+    end-perform
+    end-start.
+*
+ fiyat-duzelt-uzak.
+    initialize fiyatana-rec
+    move sathrk-acenta-kodu        to fana2-acenta
+    move sathrk-mevcut-kon-bas-tar to fana2-ilk-tarih
+    start fana2 key not < fana2-anah invalid 
+         continue 
+    not invalid 
+    perform until fs-fana2 = "10"
+    read fana2 next no lock end move "10"  to fs-fana2
+    not at end 
+              if fana2-acenta <> sathrk-acenta-kodu
+                 exit perform 
+              end-if 
+              if fana2-ilk-tarih > sathrk-mevcut-kon-bit-tar
+                   exit perform 
+              end-if 
+              if fana2-eb-bit-tarih = sathrk-mevcut-sat-bit-tar
+                 move sathrk-sat-bit-tar to fana2-eb-bit-tarih
+                 rewrite fana2-rec end-rewrite 
+              end-if               
+    end-read 
+    end-perform
+    end-start.
+*
+ aceanlas-duzelt-uzak.
+    initialize aceuzak-rec
+    move sathrk-acenta-kodu  to aceuzak-acenta
+    start aceuzak key not < aceuzak-anah invalid 
+       continue 
+    not invalid 
+    perform until fs-aceuzak = "10"
+    read aceuzak next no lock end move "10"  to fs-aceuzak
+    not at end 
+            if aceuzak-acenta <> sathrk-acenta-kodu
+                exit perform 
+            end-if 
+            if aceuzak-donem-bit = sathrk-mevcut-kon-bit-tar
+              if aceuzak-kabul-bit = sathrk-mevcut-sat-bit-tar
+                  move sathrk-sat-bit-tar  to aceuzak-kabul-bit
+                  rewrite aceuzak-rec end-rewrite 
+***                  perform log-operation-aceanlas
+              end-if 
+            end-if 
+    end-read 
+    end-perform
+    end-start.
+*
+ Form2-Aft-Initdata.
+    perform visler
+    perform anlasma-yukle.
+*
+ visler.
+    evaluate ind-tip-uygula(1:1)
+    when "0"
+        move 0  to vis1
+        display lb-hedef-anlasma lb-kaynak-anlasma cb-kaynak-anlasma cb-hedef-anlasma       
+    when "A"
+        move 1 to vis1
+        display lb-hedef-anlasma lb-kaynak-anlasma cb-kaynak-anlasma cb-hedef-anlasma       
+    when "E"
+        move 1 to vis1
+        display lb-hedef-anlasma lb-kaynak-anlasma cb-kaynak-anlasma cb-hedef-anlasma             
+    end-evaluate.
+*
+ anlasma-yukle.
+    open input kodlar02
+    initialize kodlar02-rec
+    move "D"           to kodlar02-tipi
+    start kodlar02 key not < kodlar02-anah invalid 
+        continue 
+    not invalid 
+    perform until fs-kodlar02 = "10"
+    read kodlar02 next no lock end move "10"  to fs-kodlar02
+    not at end  
+          if kodlar02-tipi <> "D"
+               exit perform 
+          end-if
+          if kodlar02-kodu = spaces
+             exit perform cycle 
+          end-if 
+          if kodlar02-adi = spaces
+             exit perform cycle 
+          end-if 
+          initialize kaynak-anlasma hedef-anlasma
+          string kaynak-anlasma
+                 kodlar02-kodu delimited by "       "
+                 "-"  delimited by size 
+                 kodlar02-adi delimited by "          "
+          into kaynak-anlasma
+          modify cb-kaynak-anlasma,item-to-add(kaynak-anlasma)
+
+          string hedef-anlasma
+                 kodlar02-kodu delimited by "       "
+                 "-"  delimited by size 
+                 kodlar02-adi delimited by "          "
+          into hedef-anlasma
+          modify cb-hedef-anlasma,item-to-add(hedef-anlasma)
+
+    end-read 
+    end-perform
+    end-start
+    close kodlar02.
+*
+ Form2-Ex-Other.
+    evaluate key-status
+    when 2
+        display message box "Kayit Olusturulacaktir.." new-line
+                            "Emin misiniz?"
+                        title "Uyari"
+                        icon 1 
+                        type 2
+                        default 2
+                        returning return-code
+
+        if return-code = 2
+           exit paragraph 
+        end-if 
+        perform kayit-olustur
+    end-evaluate.
+*
+ Form2-Bef-Create.     
+    move "0-"   to ind-tip-uygula.
+*
+ cb-ind-tip-uygula-Ex-Ntf-Selchange.
+    perform visler.
+
+ 

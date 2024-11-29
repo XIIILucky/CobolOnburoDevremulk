@@ -1,0 +1,589 @@
+* onodebul.evt
+* onodebul.evt is generated from D:\asya\acugt.ytl\otel\onodebul.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+      open input genel
+      initialize genel-rec
+      move 1         to genel-anahtar
+      read genel no lock invalid
+           display message box "Genel Parametre Hatali.."
+                           title "Uyari"
+                           icon 1
+                 close genel
+                 exit paragraph 
+      end-read 
+      close genel
+       call "c$narg" using link-var
+      move tarih-tasi       to ilk-tarih son-tarih.
+*
+ Form1-Ex-Other.
+      evaluate key-status
+      when 2
+         evaluate rap-tip(1:1)
+           when "O"
+             perform takas-yaz
+            
+           when "I"
+           when "C"
+      end-evaluate.   
+       perform dokumer-yaz   .
+*
+ takas-yaz.
+      open i-o genelfis
+      initialize genelfis-rec
+      move 1        to genelfis-anahtar
+      read genelfis no lock invalid 
+           continue 
+      not invalid 
+           add 1 to ekran-fis-1
+           rewrite genelfis-rec end-rewrite 
+           move ekran-fis-1      to takas-no takasdv-no
+      end-read 
+      close genelfis
+      move k-kodu-tasi           to takas-k-kodu takasdv-k-kodu
+      open output takas close takas open i-o takas 
+      open output takasdv close takasdv open i-o takasdv 
+
+      open input konuk yromhrk rez nt depkod dov-boz
+      initialize konuk-rec tl-toplam
+      move "I"                  to konuk-durumu
+      move genel-onodeme-odano  to konuk-odano
+      start konuk key not < konuk-oda invalid 
+           continue 
+      not invalid 
+      perform with test after until fs-konuk = "10"
+      read konuk next no lock end move "10" to fs-konuk
+      not at end 
+              if konuk-durumu <> "I"
+                  exit perform 
+              end-if 
+              if konuk-odano <> genel-onodeme-odano
+                 exit perform 
+              end-if 
+              perform onodeme-takas-yaz
+      end-read 
+      end-perform
+      end-start
+      close konuk takas takasdv yromhrk rez nt depkod dov-boz.
+
+
+*
+ onodeme-takas-yaz.
+      initialize yromhrk-rec
+      move konuk-folio          to yromhrk-folio
+      move ilk-tarih            to yromhrk-tarih
+      start yromhrk key not < yROMHRK-ANAH1 invalid 
+           continue 
+      not invalid 
+      perform with test after until fs-yromhrk = "10"
+      read yromhrk next no lock end move "10"  to fs-yromhrk
+      not at end 
+              if yromhrk-folio <> konuk-folio
+                  exit perform 
+              end-if
+              if yromhrk-tarih > son-tarih
+                  exit perform 
+              end-if
+              if ( yromhrk-derle-kaydi= 1 or 2 ) and derleme-yok = 1 
+                  exit perform cycle
+              end-if
+
+ 
+              initialize takas-rec
+              move yromhrk-rez-no      to takas-rez-no
+              move yromhrk-islem       to takas-islem
+              read takas no lock invalid 
+                   continue 
+              end-read 
+                   initialize rez-rec
+                   move yromhrk-rez-no   to rez-no
+                   read rez no lock invalid
+                      continue 
+                   not invalid 
+                       move rez-acenta   to takas-acenta 
+                       move rez-gir-tar  to takas-gir-tar
+                       move rez-cik-tar  to takas-cik-tar
+                       move rez-adi      to takas-adi
+                       move rez-soyadi   to takas-soyadi
+                   end-read
+
+                    if onkpara-referans-var = 1 and oda-ref > 0 then 
+                       if xkonum-kasa(rez-oda-konumu) not = oda-ref
+                           exit perform cycle
+                       end-if
+                    end-if
+
+                   initialize depkod-rec
+                   move yROMHRK-DEPKOD        to depkod-anah
+                   read depkod no lock invalid 
+                        continue 
+                   not invalid 
+                       if depkod-ba = "B" and depkod-turu = 2
+                          subtract yromhrk-tl-tutar  from takas-tl-tutar
+                          subtract yromhrk-dv-tutar  from takas-dv-tutar
+                       end-if 
+                       move yROMHRK-DEPKOD to takas-depkod
+                   end-read 
+
+                   if yromhrk-ba = "A" 
+                      add yromhrk-tl-tutar  to takas-tl-tutar
+                      add yromhrk-dv-tutar  to takas-dv-tutar
+                   end-if 
+
+               initialize not-rec
+               if konuk-fol-kodu = "R"
+                  move  "RHR"     to NOT-DOS
+                  move yromhrk-anah to  NOT-DOS-ANAH 
+               else
+                  move  "EHR"      to NOT-DOS
+                  move yromhrk-anah to  NOT-DOS-ANAH 
+               end-if
+               
+               read nt no lock invalid 
+                   initialize not1
+               end-read
+               move  not1        to takas-aciklama
+               move yromhrk-staf to takas-staf
+               move yromhrk-doviz-kodu to takas-dv-kodu
+
+              write takas-rec invalid 
+                  rewrite takas-rec end-rewrite 
+              end-write 
+                  
+
+              move 0 to dtah-islem 
+              if yromhrk-dovboz-anah not = spaces       
+                     move  yromhrk-dovboz-anah to  dov-boz-anah 
+                     read dov-boz no lock 
+                       invalid 
+                          continue
+                       not invalid 
+                         
+                           move 1 to dtah-islem
+                       
+                      end-read
+              else 
+               if yromhrk-dovizli-kk = 1
+                  move 2  to dtah-islem
+                end-if 
+              end-if
+                
+                 if dtah-islem = 1 or dtah-islem = 2 
+                    initialize takasdv-rec
+                    move yromhrk-doviz-kodu  to takasdv-anah
+                    read takasdv no lock invalid 
+                         continue 
+                    end-read                     
+                         
+                            add yromhrk-doviz-tut  to takasdv-tut 
+                        
+                    
+                      write takasdv-rec invalid 
+                          rewrite takasdv-rec end-rewrite 
+                      end-write
+                 end-if 
+ 
+                         if dtah-islem not = 1 and  not = 2
+                             add takas-tl-tutar  to tl-toplam                                                                                                                                            
+                         end-if
+                     
+      end-read 
+      end-perform 
+      end-start.
+*
+ dokumer-yaz.
+     open input takas  acenta kllnc depkod exthrk takasdv doviz
+     open i-o genelfis
+     move 1 to genelfis-anahtar
+     read genelfis no lock invalid
+          accept print-no from time
+     not invalid
+          add 1 to print-no
+          rewrite genelfis-rec end-rewrite
+     end-read
+     close genelfis
+**************************
+     initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                dokumer-dosya
+
+     set  dokumer-asya-set to true
+     move print-no         to dokumer-dosya-adi
+     open output dokumer
+*/WINDOW TITLE
+     initialize dokumer-rec detay
+     move "W"                  to det-dokumer-20(1:)
+     move "On Odemeler Raporu" to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR
+     initialize dokumer-rec detay
+     move "1"          to det-dokumer-20(10:1)
+     move "B"                  to det-dokumer-20(1:1)
+     move "On Odemeler Raporu" to det-filler
+     move "Tarih..:"     to det-filler(41:10)
+     move ilk-gun        to det-filler(51:02)
+     move "/"            to det-filler(53:01)
+     move ilk-ay         to det-filler(54:02)
+     move "/"            to det-filler(56:01)
+     move ilk-yil        to det-filler(57:04)
+     move "-"            to det-filler(61:01)
+     move son-gun        to det-filler(62:02)
+     move "/"            to det-filler(64:01)
+     move son-ay         to det-filler(65:02)
+     move "/"            to det-filler(67:01)
+     move son-yil        to det-filler(68:04)
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "B"                  to det-dokumer-20(1:1)
+     write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+     initialize dokumer-rec detay
+     move "O" to det-dokumer-20(1:)
+     move "E" to dokumer-oto-sayfa-basi
+     move 56  to dokumer-oto-sayfa-satir
+     move "|" to dokumer-detay-kolon-ayirici
+     move "LLLLLLLRRLL" to dokumer-align-occ
+     move dokumer-ozellikler-rec     to det-filler
+     write dokumer-rec from detay
+*/ BASLIKLAR  
+
+     initialize dokumer-rec detay 
+     move "1"          to det-dokumer-20(10:1)
+     move "D1"                          to det-dokumer-20(1:2)     
+     move "Tarih"                       to det-1
+     move "Rez. No."                    to det-2
+     move "Adi       "                  to det-3
+     move "Soyadi    "                  to det-4
+     move "C-in Tarihi"                 to det-5
+     move "C-Out Tarihi"                to det-6
+     move "A.Kodu"                      to det-7
+     move "A.Adi"                       to det-8
+     move "TL Tutar"                    to det-9
+     move "DV Tutar"                    to det-10
+     move "Aciklama"                    to det-11
+     move "Staf"                        to det-12
+     move "Doviz"                       to det-13
+     move "Departman"                   to det-14
+     move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+                 fil-14
+ 
+     write dokumer-rec from detay
+
+     initialize dokumer-rec detay
+     move "D2"           to det-dokumer-20(1:2)
+     move "-"            to det-dokumer-20(5:1)
+     move all "-" to det-1 det-2  det-3 det-4 det-5 det-6 det-7 det-8 det-9 det-10 det-11 det-12 det-13 
+                     det-14                    
+     write dokumer-rec from detay
+**************************
+              initialize fs-takas top-tl-tutar genel-topla
+              perform with test after until fs-takas = "10"
+              read takas next no lock end move "10" to fs-takas
+              not at end
+                  initialize dokumer-rec detay
+                  move takas-rez-no      to det-2
+                  move takas-adi         to det-3
+                  move takas-soyadi      to det-4
+                  
+                  move takas-gir-yil     to eyil
+                  move takas-gir-ay      to eay
+                  move takas-gir-gun     to egun
+                  move etarih            to det-5
+                 
+                  move takas-cik-yil     to eyil
+                  move takas-cik-ay      to eay
+                  move takas-cik-gun     to egun
+                  move etarih            to det-6
+
+                  initialize acenta-rec 
+                  move takas-acenta      to det-7 acenta-kodu
+                  read acenta no lock invalid 
+                      move "Acenta Hata" to acenta-adi
+                  end-read 
+                      move acenta-adi    to det-8
+
+                  move takas-tl-tutar    to z-tut
+                  move z-tut             to det-9
+                  move takas-dv-tutar    to z-tut
+                  move z-tut             to det-10
+                  move takas-aciklama    to det-11
+                  
+                  add takas-tl-tutar     to top-tl-tutar
+
+                  initialize kllnc-rec
+                  move takas-staf     to k-kodu
+                  read kllnc no lock invalid
+                       continue 
+                  end-read 
+                      move k-adi         to det-12
+
+                  initialize doviz-rec
+                  move takas-dv-kodu     to doviz-kodu
+                  read doviz no lock invalid 
+                      continue 
+                  end-read 
+                      move d-kisa-adi    to det-13
+                  add 1 to genel-oda
+
+                  initialize depkod-rec
+                  move takas-depkod  to depkod-anah
+                  read depkod no lock invalid
+                      move "-Hatali Departman" to depkod-adi
+                  end-read 
+                     move depkod-adi to det-14
+                  move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13
+                              fil-14
+                  write dokumer-rec from detay                  
+                end-read
+              end-perform
+
+              initialize dokumer-rec detay
+              move "-"            to det-dokumer-20(5:1)
+              move all "-" to det-1 det-2  det-3 det-4 det-5 det-6 det-7 det-8 det-9 det-10 det-11  det-12 det-13        
+                              det-14
+              write dokumer-rec from detay
+
+              initialize dokumer-rec detay
+              move "Toplam"     to det-2
+              move top-tl-tutar to z-tut
+              move z-tut        to det-9
+              move genel-oda    to det-3 
+              move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-14
+              move "A"          to det-dokumer-20(3:1)
+              move 481          to det-renk1
+              move "1"          to det-dokumer-20(10:1)
+              write dokumer-rec from detay
+
+              perform doviz-detay-ver
+
+              close dokumer acenta kllnc exthrk  doviz depkod
+              call dokumer-prog on exception
+                   perform callerr-proc
+              not on exception
+                   cancel dokumer-prog
+              end-call
+              close takas takasdv 
+*/***********************************************************
+              delete file takasdv takas dokumer.
+*
+ doviz-detay-ver.
+              initialize dokumer-rec detay
+              move "Doviz Dagilim"      to det-8                       
+              move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12  fil-13 fil-14
+              move "A"          to det-dokumer-20(3:1)
+              move 176          to det-renk1
+              move "1"          to det-dokumer-20(10:1)
+              write dokumer-rec from detay
+
+        initialize takasdv-rec
+        start takasdv key not < takasdv-anah invalid 
+             continue 
+        not invalid 
+        perform with test after until fs-takasdv = "10"
+        read takasdv next no lock end move "10"  to fs-takasdv
+        not at end 
+              initialize dokumer-rec detay
+
+              initialize doviz-rec
+              move takasdv-anah to doviz-kodu
+              read doviz no lock invalid 
+                  continue 
+              end-read 
+                  move d-kisa-adi   to det-8                       
+                  move takasdv-tut  to z-tut
+                  move z-tut        to det-10
+
+
+              move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-14
+              move "A"          to det-dokumer-20(3:1)
+              move 176          to det-renk1
+              move "1"          to det-dokumer-20(10:1)
+              write dokumer-rec from detay
+               
+        end-read 
+        end-perform
+        end-start
+        
+        initialize dokumer-rec detay
+        move "TL"         to det-8
+        move tl-toplam    to z-tut
+        move z-tut        to det-10
+        move "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9 fil-10 fil-11 fil-12 fil-13 fil-14
+        move "A"          to det-dokumer-20(3:1)
+        move 176          to det-renk1
+        move "1"          to det-dokumer-20(10:1)
+        write dokumer-rec from detay.
+*
+ Form1-Aft-Initdata.
+     if link-var = 1 then 
+        open input rez konuk yromhrk  rezweb  cast kur
+        perform tek-rez-bul
+        set exit-pushed to true
+        
+        move ode-dov-top to lnk-odeme
+        move borc-dov-top to lnk-oda
+        move borc-extra-dov-top to lnk-extra
+        compute lnk-kalan = lnk-oda + lnk-extra - lnk-odeme
+         close  rez konuk yromhrk   rezweb  cast      kur
+     end-if
+     .
+*
+ tek-rez-bul.
+      initialize rez-rec
+     move lnk-rez to rez-no
+     read rez no lock invalid 
+        continue
+     end-read
+     if rez-folio > 0 then 
+        move rez-folio to bak-folio konuk-folio
+        read konuk no lock invalid continue
+        end-read
+
+        
+        perform odeme-bul
+        
+
+     end-if
+
+      perform borc-bul
+
+   
+     initialize konuk-rec 
+      move "I"                  to konuk-durumu
+      move genel-onodeme-odano  to konuk-odano
+      start konuk key not < konuk-oda invalid 
+           continue 
+      not invalid 
+      perform with test after until fs-konuk = "10"
+      read konuk next no lock end move "10" to fs-konuk
+      not at end 
+              if konuk-durumu <> "I"
+                  exit perform 
+              end-if 
+              if konuk-odano <> genel-onodeme-odano
+                 exit perform 
+              end-if 
+                move konuk-folio to bak-folio
+               
+                 perform onodeme-bul
+      end-read 
+      end-perform
+      end-start.
+    
+*
+ onodeme-bul.
+       initialize yromhrk-rec
+       move bak-folio to yromhrk-folio
+       start yromhrk key > yromhrk-ANAH1   invalid continue
+          not invalid 
+             perform until fs-yromhrk="10" 
+                read yromhrk next no lock end move "10" to fs-yromhrk
+                    not end
+                        if yromhrk-folio not = bak-folio
+                              move "10" to fs-yromhrk
+                               exit perform 
+                        end-if
+                       if yromhrk-rez-no = rez-no
+                        if  yromhrk-dovizli-kk = 1 and  yromhrk-doviz-kodu = rez-doviz 
+                          continue
+                          else
+                           
+                                MOVE TARih-tasi to kur-tarih
+                                move rez-doviz to kur-doviz
+                                move ONKPARA-MERKEZ-BANKA-KODU to kur-banka
+                                read kur no lock invalid move 0 to yromhrk-doviz-tut
+                                  not invalid 
+                                  if doviz-alis = 0 
+                                            move 0 to yromhrk-doviz-tut
+                                            else
+                                     compute   yromhrk-doviz-tut rounded = yromhrk-tl-tutar / doviz-alis
+                                     end-if
+                                end-read
+                            
+                          end-if
+                          if yromhrk-ba = "A"
+                            
+                                add yromhrk-doviz-tut  to ode-dov-top
+                                
+                           end-if
+                           if yromhrk-ba = "B"
+                             
+                                subtract yromhrk-doviz-tut  from ode-dov-top
+                             end-if
+                       
+                       end-if
+                  end-read
+            end-perform 
+       end-start.
+*
+ odeme-bul.
+     initialize yromhrk-rec
+      move bak-folio to yromhrk-folio
+     
+       start yromhrk key > yromhrk-ANAH1   invalid continue
+          not invalid 
+             perform until fs-yromhrk="10" 
+                read yromhrk next no lock end move "10" to fs-yromhrk
+                    not end
+                       if yromhrk-folio = bak-folio
+                          if yromhrk-ba = "A"
+                               
+                              compute ode-dov-top rounded = yromhrk-tl-tutar / konuk-kur-degeri
+                            end-if
+                         else
+                           move "10" to fs-yromhrk
+                   end-if
+                       
+                  end-read
+            end-perform 
+       end-start
+
+       .
+                        
+ borc-bul.
+     initialize rezweb-rec 
+    move rez-no to REZweb-rezno
+    
+    read rezweb no lock invalid continue
+      not invalid
+
+       compute  borc-extra-dov-top = borc-extra-dov-top +
+       ( rezweb-extra-dv-tutar(1) * 
+       function numval( rezweb-extra-aciklama(1)(1:3)))
+         compute  borc-extra-dov-top = borc-extra-dov-top + ( rezweb-extra-dv-tutar(2) * function numval( rezweb-extra-aciklama(2)(1:3)))
+           compute  borc-extra-dov-top = borc-extra-dov-top + ( rezweb-extra-dv-tutar(3) * function numval( rezweb-extra-aciklama(3)(1:3)))
+       
+       
+    end-read.
+    move rez-no to CAST-REZ-NO
+    start cast key > CAST-ANAH1 invalid continue
+        not invalid 
+        perform until fs-cast = "10"
+           read cast next no lock end move "10" to fs-cast
+               not end
+                  if  CAST-REZ-NO not = rez-no exit perform 
+                     move "10" to fs-cast
+                  end-if
+                  if cast-tarih < REZ-CIK-TAR
+                        add CAST-FIYATI to  borc-dov-top
+   
+                  end-if
+            end-read
+      end-perform
+    end-start
+    .
+
+ 

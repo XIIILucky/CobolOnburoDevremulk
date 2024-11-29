@@ -1,0 +1,395 @@
+* fatiptl1.evt
+* fatiptl1.evt is generated from C:\Asya\acugt.ytl\otel\fatiptl1.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form2-Event-Proc.
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Bef-Create-Form1.
+     perform adresleri-tasi.
+      call "c$narg" using link-var.
+   
+     .
+*
+ Form1-Aft-Initdata.
+
+       if link-var > 0 then 
+          move link-fat-no to acc-fatura-no
+          display acc-fatura
+        end-if
+
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\* 
+*
+ islem.
+        initialize fatura-rec gtop-top gtop-ind gtop-kdv gtop-gen
+
+          display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+          perform dil-ayarla-proc
+*/-----------------------------\*         
+          if acc-fatura-no = zeroes
+             move 4 to accept-control
+             move 4103 to control-id
+             exit paragraph
+          end-if
+
+          open input fatura
+          move acc-fatura-no            to fatura-no
+          move 0                        to fatura-sira
+          read fatura no lock invalid
+          display message box 
+                  acc-fatura-no," numarali fatura bulunamadi !"
+                  icon mb_warning_icon
+                  title "Hata"
+                  close fatura
+                  move 4 to accept-control
+                  move 4103 to control-id
+                  exit paragraph
+          end-read
+            display form1
+             if link-var > 1 
+               if FATURA-TIPI not = "A" 
+                  display message box "Folio Faturasi Lutfen menuden siliniz" title "   " 
+               else
+                if FATURA-TIPI not = "A" or link-tar not = fatura-tarihi 
+                     display message box "Gunluk Faturalarin tumu silindi" title "   "
+                     set exit-pushed to true
+                     exit paragraph
+                end-if
+               end-if
+             end-if
+          if fatura-durumu <> "D" and fatura-durumu <>  "I"
+                    display message box 
+                  acc-fatura-no," numarali fatura kesilmemis ya da daha once iptal edilmis !"
+                  icon mb_warning_icon
+                  title "Hata"
+*                  close fatura
+*                  move 4 to accept-control
+*                  move 4103 to control-id
+*                  exit paragraph
+          end-if
+          move fatura-matrah      to gtop-top
+          move fatura-indirim     to gtop-ind
+          move fatura-kdv         to gtop-kdv
+          move fatura-g-toplam    to gtop-gen
+         
+             display form1
+         
+          close fatura.
+         
+ 
+ 
+    
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 17
+         if acc-fatura-no = 12345678 and 
+            k-kodu-tasi = "ASYA"
+               perform Acu-Form2-Routine
+         end-if 
+     when 2
+           perform islem
+     when 3
+     when 4
+          if acc-fatura-no = zeroes
+             move 4 to accept-control
+             move 4103 to control-id
+             exit paragraph
+          end-if
+           if link-var = 0 then 
+                  display message box 
+                          acc-fatura-no," numarali fatura iptal edilecektir",new-line
+                          new-line
+                          "Emin misiniz ?"
+                          icon mb_warning_icon
+                          title "Fatura iptali"
+                          type mb_yes_no
+                          default 2
+                          returning return-code
+                   if return-code <> 1
+                     move 4 to accept-control
+                     move 4103 to control-id
+                     exit paragraph
+                  end-if
+            end-if
+          
+              
+
+          open i-o fatura
+          move acc-fatura-no            to fatura-no
+          move 0                        to fatura-sira
+          read fatura no lock invalid
+          display message box 
+                  acc-fatura-no," numarali fatura bulunamadi !"
+                  icon mb_warning_icon
+                  title "Hata"
+                  close fatura
+                  exit paragraph
+          end-read
+
+          if fatura-durumu <> "D"
+          display message box 
+                  acc-fatura-no," numarali fatura kesilmemis ya da daha once iptal edilmis !"
+                  icon mb_warning_icon
+                  title "Hata"
+*                  close fatura
+*                  move 4 to accept-control
+*                  move 4103 to control-id
+*                  exit paragraph
+          end-if
+
+          move fatura-matrah      to gtop-top
+          move fatura-indirim     to gtop-ind
+          move fatura-kdv         to gtop-kdv
+          move fatura-g-toplam    to gtop-gen
+          display form1
+   
+
+
+          perform fatura-sifirla
+          initialize fatura-rec gtop-top gtop-ind gtop-kdv gtop-gen
+          display form1
+     
+
+          close fatura
+          display message box 
+                  acc-fatura-no," numarali fatura iptal edildi "
+                  title "Bilginize ..."
+          if link-var > 0 then 
+             add 1 to acc-fatura-no 
+             display acc-fatura
+               move 4 to accept-control
+          move 4103 to control-id
+          perform islem
+             else
+             initialize  acc-fatura-no 
+              display acc-fatura
+         end-if
+          move 4 to accept-control
+          move 4103 to control-id
+        
+          
+
+     end-evaluate.
+     
+     .
+
+
+*
+ fatura-sifirla.
+     open i-o fatdetay exthrk romhrk 
+     open input konuk
+     initialize fatdetay-rec
+     move fatura-tarihi to fatdetay-fat-tar
+      start fatdetay key > fatdetay-anah invalid
+        continue
+        not invalid
+        perform until fs-fatdetay = "10" 
+          read fatdetay next no lock end 
+            move "10" to fs-fatdetay
+            not end
+            if fatura-tarihi not = fatdetay-fat-tar
+                move "10" to fs-fatdetay
+                else
+              if function numval(fatdetay-fat-no) = acc-fatura-no then
+               delete fatdetay  invalid stop " " end-delete
+                perform romhrk-fatura-sil
+                perform exthrk-fatura-sil
+             end-if
+           end-if
+          end-read
+
+        end-perform 
+      end-start
+
+
+    
+     initialize fatura-rec
+     move acc-fatura-no            to fatura-no
+     start fatura key not < fatura-anah invalid
+           continue
+     not invalid
+     initialize fs-fatura
+     perform with test after until fs-fatura = "10"
+     read fatura next no lock end move "10" to fs-fatura
+     not at end
+          if fatura-no <> acc-fatura-no
+             exit PERFORM
+          else
+             if key-status = 4  
+                move "B" to fatura-durumu
+             else
+                move "I" to fatura-durumu
+             end-if
+             rewrite fatura-rec end-rewrite
+          end-if
+     end-read
+     end-perform
+     end-start.
+      close  konuk exthrk romhrk fatdetay.
+
+
+
+*
+ romhrk-fatura-sil.
+     initialize romhrk-rec
+         move fatdetay-folio to romhrk-folio
+     start romhrk key not < romhrk-anah invalid
+           exit paragraph.
+
+     initialize fs-romhrk
+     perform with test after until fs-romhrk = "10"
+     read romhrk next no lock end move "10" to fs-romhrk
+     not at end
+       if romhrk-folio not = fatdetay-folio
+            move "10" to fs-romhrk
+            else   
+          if romhrk-fatura-no = acc-fatura-no
+             initialize romhrk-fatura-no
+             rewrite romhrk-rec end-rewrite
+          end-if
+       end-if
+     end-read
+     end-perform.
+
+ exthrk-fatura-sil.
+     initialize exthrk-rec
+        move fatdetay-folio to exthrk-folio
+     start exthrk key not < exthrk-anah invalid
+           exit paragraph.
+
+     initialize fs-exthrk
+     perform with test after until fs-exthrk = "10"
+     read exthrk next no lock end move "10" to fs-exthrk
+     not at end
+          if exthrk-folio not = fatdetay-folio
+            move "10" to fs-exthrk
+            else  
+          if exthrk-fatura-no = acc-fatura-no
+             initialize exthrk-fatura-no
+             rewrite exthrk-rec end-rewrite
+          end-if
+         end-if
+     end-read
+     end-perform.
+*
+ Form2-Ex-Other.
+     evaluate key-status
+     when 2
+         perform folio-fatura-sifirla
+     end-evaluate
+     
+     .
+*
+ folio-fatura-sifirla.
+     if sifirlanacak-fat-no = zeroes or 
+        sifirlanacak-fat-no = spaces 
+           display message box "Sifirlacanak Fatura Numarasi Bos Gecilemez..."
+                           title "[ Uyari ]"
+                           icon 1
+             exit paragraph 
+     end-if 
+     if folio-no-val = zeroes or 
+        folio-no-val = spaces 
+           display message box "Folio Numarasi Bos Gecilemez..."
+                           title "[ Uyari ]"
+                           icon 1
+             exit paragraph 
+           
+     end-if
+     if hata = 1
+        exit paragraph 
+     end-if 
+     display message box "Fatura Numarasi Sifirlacaktir.Eminmisiniz.."
+                     title "[ Uyari ]"
+                     icon 1
+                     type 2
+                     default 2
+                     returning return-code 
+     if return-code = 2
+         exit paragraph 
+     end-if 
+     open i-o romhrk exthrk
+     initialize romhrk-rec  
+     move folio-no-val    to romhrk-folio
+     start romhrk key not < romhrk-anah invalid
+           exit paragraph.
+
+     initialize fs-romhrk
+     perform with test after until fs-romhrk = "10"
+     read romhrk next no lock end move "10" to fs-romhrk
+     not at end
+       if romhrk-folio not = folio-no-val
+            move "10" to fs-romhrk
+            else   
+          if romhrk-fatura-no = sifirlanacak-fat-no
+             initialize romhrk-fatura-no
+             rewrite romhrk-rec end-rewrite
+          end-if
+       end-if
+     end-read
+     end-perform.
+ 
+     initialize exthrk-rec
+     move folio-no-val    to exthrk-folio
+     start exthrk key not < exthrk-anah invalid
+           exit paragraph.
+
+     initialize fs-exthrk
+     perform with test after until fs-exthrk = "10"
+     read exthrk next no lock end move "10" to fs-exthrk
+     not at end
+          if exthrk-folio not = folio-no-val
+            move "10" to fs-exthrk
+            else  
+          if exthrk-fatura-no = sifirlanacak-fat-no
+             initialize exthrk-fatura-no
+             rewrite exthrk-rec end-rewrite
+          end-if
+         end-if
+     end-read
+     end-perform
+     close romhrk exthrk
+           display message box "Islem Tamamlandi."new-line
+                               "Kontrol Ediniz."
+                           title "[ Uyari ]"
+                           icon 1.
+*
+ acc-folio-no-Aft-Procedure.
+     open input konuk
+     initialize konuk-rec hata
+     move folio-no-val to konuk-folio
+     read konuk no lock invalid 
+          display message box "Folio Bulunamadi..."
+                          title "[ Uyari ]"
+                          icon 1
+              close konuk
+              move 1     to hata
+          exit paragraph 
+     not invalid 
+          move konuk-adi        to acc-fol-adi
+          move konuk-soyadi     to acc-fol-soy
+     end-read
+     close konuk
+     display Form2-Ef-1aa Form2-Ef-1a
+     
+     .
+
+ 

@@ -1,0 +1,290 @@
+* anlasduz.evt
+* anlasduz.evt is generated from D:\asya\acugt.ytl\otel\anlasduz.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Gd-1-Event-Proc.
+* 
+     EVALUATE Event-Type
+     WHEN Msg-Finish-Entry
+        PERFORM Form1-Gd-1-Ev-Msg-Finish-Entry
+     END-EVALUATE
+     .
+***   start event editor code   ***
+*
+ Form1-Aft-Initdata.
+      open i-o genelfis
+      initialize genelfis-rec 
+      move 1          to genelfis-anahtar
+      read genelfis no lock invalid 
+           continue 
+      not invalid 
+           add 1        to EKRAN-FIS-1
+      end-read          
+      close genelfis
+      move EKRAN-FIS-1        to takas-no
+
+      open output takas close takas open i-o takas 
+
+      open input rez
+      initialize rez-rec
+      start rez key not < rez-anah invalid 
+           continue 
+      not invalid 
+      perform with test after until fs-rez = "10"
+      read rez next no lock end move "10"  to fs-rez 
+      not at end
+
+              initialize takas-rec 
+              move rez-acenta   to takas-acenta 
+              move rez-anlasma  to takas-anlasma 
+              read takas no lock invalid  
+                   move 1       to takas-rez-adet
+                   write takas-rec invalid 
+                      stop " " 
+                   end-write
+              not invalid 
+                    add 1       to takas-rez-adet
+                    rewrite takas-rec invalid 
+                       stop " " 
+                    end-rewrite 
+              end-read 
+      end-read 
+      end-perform
+      end-start
+      close rez takas 
+         perform grid-baslik-yukle
+      open input takas acenta 
+      initialize takas-rec
+      start takas key not < takas-anahtar invalid 
+          continue 
+      not invalid 
+      perform with test after until fs-takas = "10"
+      read takas next no lock end move "10"  to fs-takas
+      not at end 
+             initialize form1-gd-1-record
+             move takas-acenta            to gd-1-col-1
+             initialize acenta-rec
+             move takas-acenta            to acenta-kodu
+             read acenta no lock invalid 
+                  move "Silinmis Acenta " to acenta-adi
+             end-read 
+                  move acenta-adi         to gd-1-col-2
+             move takas-anlasma           to gd-1-col-3
+             move takas-rez-adet          to z-adet
+             move z-adet                  to gd-1-col-5
+             modify form1-gd-1,record-to-add(form1-gd-1-record)
+      end-read 
+      end-perform
+      end-start 
+      close takas acenta
+      modify form1-gd-1,mass-update = 0
+     
+     .
+*
+ grid-baslik-yukle.
+      modify form1-gd-1,reset-grid = 1
+                        mass-update = 1
+      initialize form1-gd-1-record
+      move "Kodu"          to gd-1-col-1
+      move "Adi"           to gd-1-col-2
+      move "Anlasma"       to gd-1-col-3
+      move "Duzeltilecek Anlasma" to gd-1-col-4
+      move "Rez Adet"             to gd-1-col-5
+      modify form1-gd-1,record-to-add(form1-gd-1-record)
+
+     .
+*
+ Form1-Bef-Create.
+      perform adresleri-tasi
+     
+     .
+*
+ Form1-Gd-1-Ev-Msg-Finish-Entry.   
+          
+      initialize ydk-anlasma-kodu ydk-acenta-kodu kaynak-anlasma-kodu
+
+      inquire form1-gd-1(event-data-2,event-data-1), 
+                              cell-data in ydk-anlasma-kodu
+
+      inquire form1-gd-1(event-data-2,3), 
+                              cell-data in kaynak-anlasma-kodu
+
+      inquire form1-gd-1(event-data-2,1), 
+                              cell-data in ydk-acenta-kodu
+
+      if event-data-1 = 4
+          perform rez-duzelt
+          perform fiyat-duzelt
+          perform anlasma-kabul-duzelt
+          perform konuk-duzelt
+      end-if.
+*
+ rez-duzelt.
+         open input kodlar02 
+         initialize kodlar02-rec 
+         move "D"              to kodlar02-tipi
+         move ydk-anlasma-kodu to kodlar02-kodu
+         read kodlar02 no lock invalid 
+              display message box "Anlasma Kodu Tanimsiz..."
+                              title "[ Uyari ]"
+                              icon 1
+                   modify form1-gd-1(event-data-2,event-data-1), 
+                                     cell-data "  "
+                   close kodlar02
+                   exit paragraph 
+         end-read          
+         close kodlar02
+ 
+      display message box "Anlasmalar Duzeltilecek Eminmisiniz??"
+                      title "[ Uyari ]"
+                      icon 1
+                      type 2
+                      default 2
+                      returning return-code 
+     if return-code = 2
+        modify form1-gd-1(event-data-2,event-data-1), 
+                         cell-data "  "
+         exit paragraph 
+     end-if 
+
+     open i-o rez
+     initialize rez-rec
+     start rez key not < rez-anah invalid
+          continue 
+     not invalid 
+     perform with test after until fs-rez = "10"
+     read rez next no lock end move "10"  to fs-rez
+     not at end 
+             if rez-acenta not = ydk-acenta-kodu
+                   exit perform cycle    
+             end-if 
+             if rez-anlasma not = kaynak-anlasma-kodu
+                 exit perform cycle 
+             end-if 
+                
+             move ydk-anlasma-kodu     to rez-anlasma
+
+             accept rez-edit-tarih from century-date  |firat amonra için konuldu 03/11/2020
+             accept rez-edit-zaman from time          |                           
+
+             rewrite rez-rec invalid stop " " end-rewrite 
+
+     end-read 
+     end-perform
+     end-start
+     close rez
+     display message box "Transfer Islemi Tamamlandi." new-line
+                         "Kontrol Ediniz."
+                     title "[ Uyari ]"
+                     icon 1.
+*
+ konuk-duzelt.
+         open input kodlar02 
+         initialize kodlar02-rec 
+         move "D"              to kodlar02-tipi
+         move ydk-anlasma-kodu to kodlar02-kodu
+         read kodlar02 no lock invalid 
+              display message box "Anlasma Kodu Tanimsiz..."
+                              title "[ Uyari ]"
+                              icon 1
+                   modify form1-gd-1(event-data-2,event-data-1), 
+                                     cell-data "  "
+                   close kodlar02
+                   exit paragraph 
+         end-read          
+         close kodlar02
+ 
+*      display message box "Anlasmalar Duzeltilecek Eminmisiniz??"
+*                      title "[ Uyari ]"
+*                      icon 1
+*                      type 2
+*                      default 2
+*                      returning return-code 
+*     if return-code = 2
+*        modify form1-gd-1(event-data-2,event-data-1), 
+*                         cell-data "  "
+*         exit paragraph 
+*     end-if 
+
+     open i-o konuk
+     initialize konuk-rec
+     start konuk key not < konuk-anah invalid
+          continue 
+     not invalid 
+     perform with test after until fs-konuk = "10"
+     read konuk next no lock end move "10"  to fs-konuk
+     not at end 
+             if konuk-acenta not = ydk-acenta-kodu
+                   exit perform cycle    
+             end-if 
+             if konuk-anlasma not = kaynak-anlasma-kodu
+                 exit perform cycle 
+             end-if 
+                
+             move ydk-anlasma-kodu     to konuk-anlasma
+                     
+             rewrite konuk-rec invalid stop " " end-rewrite 
+
+     end-read 
+     end-perform
+     end-start
+     close konuk.
+*     display message box "Transfer Islemi Tamamlandi." new-line
+*                         "Kontrol Ediniz."
+*                     title "[ Uyari ]"
+*                     icon 1.
+*
+ fiyat-duzelt.
+     open i-o fiyatana
+     initialize fiyatana-rec
+     start fiyatana key not < fiyatana-anah invalid
+          continue 
+     not invalid 
+     perform with test after until fs-fiyatana = "10"
+     read fiyatana next no lock end move "10"  to fiyatana-rec 
+     not at end 
+             if fiyatana-acenta not = ydk-acenta-kodu
+                 exit perform cycle 
+             end-if
+
+             if fiyatana-anlasma not = kaynak-anlasma-kodu
+                 exit perform cycle 
+             end-if
+           
+             delete fiyatana end-delete 
+             perform log-operation-fiyatana          ||| firat 19-10-2019
+
+             move ydk-anlasma-kodu     to fiyatana-anlasma
+             write fiyatana-rec invalid 
+*              if d = 1 stop " " end-if 
+                  rewrite fiyatana-rec end-rewrite 
+             end-write  
+
+     end-read 
+     end-perform
+     end-start
+     close fiyatana
+         .
+*
+ anlasma-kabul-duzelt.
+     open i-o aceanlas
+     initialize aceanlas-rec 
+     move ydk-acenta-kodu     to aceanlas-acenta
+     move kaynak-anlasma-kodu to aceanlas-anlasma
+     read aceanlas no lock invalid 
+          if d = 1 stop " "  end-if 
+     not invalid
+          delete aceanlas end-delete 
+          move ydk-anlasma-kodu to aceanlas-anlasma
+          write aceanlas-rec invalid 
+               rewrite aceanlas-rec end-rewrite 
+          end-write 
+     end-read 
+     close aceanlas
+        .
+
+ 

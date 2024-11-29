@@ -1,0 +1,998 @@
+****************************************************
+****************************************************
+****************************************************
+*******UYARI PROSIF-TIP YANLIS BIR SEY GELDIYSE KONTROL ET
+******* GRIDTEKI BITMAPLARI CELLE SET EDERKEN
+******** k-kodu accepti inquire edilmeden icindeki
+******** deger alinamiyor dikkat ******************
+****************************************************
+****************************************************
+****************************************************
+*
+ Form1-Ta-1-Bef-Procedure.
+     evaluate form1-ta-1-value
+         when 1 perform tab-1-islem
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+         perform dil-ayarla-proc
+*/-----------------------------\*         
+         when 2 perform tab-2-islem
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+         perform dil-ayarla-proc
+*/-----------------------------\*         
+         when 3 perform tab-3-islem
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+         perform dil-ayarla-proc
+*/-----------------------------\*         
+     end-evaluate.
+ tab-1-islem.
+     initialize kllnc-rec
+     move 0 to tab-1-accept-enabled.
+     perform tab-1-accept-goster.
+     modify grid-1,
+            reset-grid  = 1
+            mass-update = 1
+     move "Kodu"             to gd-1-col-1
+     move "Adi"              to gd-1-col-2
+     move "Soyadi"           to gd-1-col-3
+     modify grid-1,
+            record-to-add(grid-1-record-data)
+     modify combo-1,
+            reset-list = 1
+            mass-update = 1
+     open input kllnc.
+     initialize kllnc-rec i
+     start kllnc key not < k-kodu invalid
+           continue
+     not invalid
+     initialize fs-kllnc
+     perform with test after until fs-kllnc = "10"
+           read kllnc next no lock end move "10" to fs-kllnc
+           not at end
+                if sadece-aktif = 1 and K-KULLANIMDA = "H"  
+                      exit perform cycle
+                end-if
+         
+
+               
+                initialize grid-1-record-data combo-1-value
+                add 1 to i
+                move k-kodu        to gd-1-col-1 combo-1-kodu
+                move k-adi         to gd-1-col-2 combo-1-adi
+                move k-soyadi      to gd-1-col-3 combo-1-soyadi
+
+                move K-grup-kodu   to cmb-grup
+                modify grid-1,
+                       record-to-add(grid-1-record-data)
+
+                       
+                if k-grup-kodu= spaces
+                        modify combo-1,item-to-add(combo-1-value)
+                end-if
+              
+                if i = 1 
+                   move combo-1-value to xcombo-1-value
+                end-if
+           end-read
+     end-perform
+     end-start.
+     close kllnc.
+
+     modify grid-1,
+            mass-update = 0.
+     modify combo-1,
+            mass-update = 0
+            value xcombo-1-value.
+ tab-2-islem.
+     initialize kllnc-rec.
+     perform grid-2-bilgi-doldur.
+
+ tab-3-islem.
+     initialize kllnc-rec.
+*
+ grid-1-Ev-Other.
+    evaluate event-type
+        when msg-goto-cell
+        when msg-goto-cell-mouse
+        when msg-begin-drag
+        when msg-end-drag
+        when msg-goto-cell-drag
+             inquire grid-1,
+                     y in grid-1-yeni-y
+             if grid-1-yeni-y < 2
+                move 2 to grid-1-yeni-y grid-1-eski-y
+             end-if
+             if grid-1-eski-y > zeroes 
+                modify grid-1(grid-1-eski-y),
+                       x = 1
+                       row-color = 0
+                       cell-color = 0
+             end-if
+             modify grid-1,
+                    y = grid-1-yeni-y,
+                    x = 1,
+                    row-color = 256
+                    cell-color = 256
+             move grid-1-yeni-y to grid-1-eski-y
+             initialize kllnc-rec
+             inquire grid-1,
+                     record-data in grid-1-record-data
+             move gd-1-col-1    to k-kodu
+             display acc1-kodu
+             perform  acc1-kodu-Aft-Procedure
+    end-evaluate.
+*
+ Form1-Pb-3-Link.
+ grid-2-bilgi-doldur.
+     modify grid-2,  
+            reset-grid = 1
+            mass-update = 1
+     initialize grid-2-record-data kisayol-i
+     move "Program ismi"           to gd-2-col-1
+     move "Giris"                  to gd-2-col-2
+     move "Yazma"                  to gd-2-col-3
+     move "Duzel"                  to gd-2-col-4
+     move "Silme"                  to gd-2-col-5
+     move "Rapor"                  to gd-2-col-6
+     move "01"                     to gd-2-col-7
+     move "02"                     to gd-2-col-8
+     move "03"                     to gd-2-col-9
+     move "04"                     to gd-2-col-10
+     move "05"                     to gd-2-col-11
+     move "06"                     to gd-2-col-12
+     move "07"                     to gd-2-col-13
+     move "08"                     to gd-2-col-14
+     move "09"                     to gd-2-col-15
+     move "10"                     to gd-2-col-16
+     modify grid-2,
+            record-to-add(grid-2-record-data)
+     open input menutext 
+     open i-o   prosif
+*     open output prosif close prosif open i-o prosif.
+     initialize fs-menutext durum toplam-menu
+     move 1 to sayac
+     perform with test after until fs-menutext = "10"
+         initialize menutext-rec
+         read menutext next no lock end move "10" to fs-menutext
+         not at end
+              if menutext-str = spaces or
+                 menutext-str(1:1) = "#" or
+                 menutext-str(1:1) = "!" or
+                 menutext-str(1:1) = "+"
+                       exit perform cycle
+              end-if
+              if menutext-str(1:10) = "MENU_BASLA"
+                 move "A" to durum
+                 exit perform cycle
+              end-if
+              if menutext-str(1:8) = "MENU_BIT"
+                 move "B" to durum
+                 exit perform cycle
+              end-if
+              if menutext-str(1:19) = "KISAYOL_TANIM_BASLA"
+                 move "C" to durum
+                 exit perform cycle
+              end-if
+              if menutext-str(1:17) = "KISAYOL_TANIM_BIT"
+                 move "D" to durum
+                 exit perform cycle
+              end-if
+              if durum = "A" or "C" 
+                 continue
+              else
+                 exit perform cycle
+              end-if
+
+              if durum = "C"
+                 add 1 to kisayol-i
+                 move menutext-str     to kisayol(kisayol-i)
+                 exit perform cycle
+              end-if
+
+              initialize grid-2-record-data
+              evaluate true
+                 when menutext-menu-handle1 = 0 and menutext-menu-handle2 = 0
+                      move menutext-menu-aciklama   to gd-2-col-1
+                      move 128                      to renk
+                      add 1                         to sayac
+                 when menutext-menu-handle1 = 0 and menutext-menu-handle2 <> 0
+                      move high-values              to gd-2-col-1(1:3)
+                      move menutext-menu-aciklama   to gd-2-col-1(4:)
+                      move 2                        to renk
+                      add 1                         to sayac
+                 when menutext-menu-handle1 <> 0 and menutext-menu-handle2 <> 0
+                      move high-values              to gd-2-col-1(1:2)
+                      move menutext-menu-aciklama   to gd-2-col-1(2:)
+                      move 78                       to renk
+                      add 1                         to sayac
+                 when other 
+                      move menutext-menu-aciklama   to gd-2-col-1
+                      move 789                      to renk
+              end-evaluate
+
+              initialize prog-adi
+              perform varying temp-a from 1 by 1 until temp-a > max-kisayol
+                      if kisayol(temp-a) <> spaces
+                         if kisayol(temp-a)(1:6) = menutext-menu-prog(1:6)
+                            string prog-adi
+                            kisayol(temp-a)(8:),
+                            menutext-menu-prog(7:),
+                            ".asy"
+                            delimited by space into prog-adi
+                            exit perform
+                         end-if
+                      end-if
+              end-perform
+*/ ana menulerde $...$ olmaz MENUXX diye adlandirilir ...
+              if prog-adi = spaces
+                 move menutext-menu-prog  to prog-adi
+              end-if
+              add 1 to toplam-menu
+              modify grid-2,
+                     record-to-add(grid-2-record-data)
+              modify grid-2(sayac,1)
+                     cell-color = renk
+                     hidden-data = prog-adi
+
+              initialize prosif-rec
+              move combo-1-kodu        to prosif-kim
+              move prog-adi            to prosif-cob
+              move "Y"                 to prosif-tipi
+              move no-bmp              to bmp-handle
+              read prosif no lock invalid
+                   move yes-bmp         to bmp-handle
+              not invalid
+                   if prosif-giris not = "H"
+                      move yes-bmp  to bmp-handle
+                   end-if
+              end-read
+              perform grid-2-bitmap-set
+         end-read
+     end-perform
+     close menutext prosif.
+     modify grid-2,
+            mass-update = 0 .
+
+ Form1-Ex-Other.
+     evaluate key-status
+         when 17 
+             move kllnc-dosya         to link-logview-dosya-adi
+             set link-logview-pointer  to address of kllnc-rec
+             set link-logview-rec-size to size of kllnc-rec
+             perform logview-call
+             initialize key-status
+          when 2
+               inquire acc1-kodu,value in k-kodu of kllnc
+               if k-kodu = spaces 
+                  exit paragraph
+               end-if
+               open i-o kllnc  
+               if cb1-kullanimda-value = 1   
+                  move "E" to k-kullanimda
+               else
+                  move "H" to k-kullanimda
+               end-if
+               if cb-grup-value = 1   
+                  move "E" to k-grup
+               else
+                  move "H" to k-grup
+               end-if
+               if cb1-supervisor-value = 1  
+                  move "E" to k-super
+                  move "H" to k-user
+               else
+                  move "H" to k-super
+                  move "E" to k-user
+               end-if
+
+
+               if cb-sirket-acma-yetki = 1 
+                  move "E"    to k-sirket-yetki
+               else
+                  move "H"    to k-sirket-yetki
+               end-if
+               if cb-ozel-islem-yetki = 1
+                  move "E"    to k-ozl-isl-yetki
+               else
+                  move "H"    to k-ozl-isl-yetki
+               end-if
+               if cb-peryot-uyar = 1
+                  move "E"    to k-peryot-uyar
+               else
+                  move "H"    to k-peryot-uyar
+               end-if
+               if cb-mahsup-gir-yetki = 1
+                  move "E"    to k-mahsup-yetki
+               else
+                  move "H"    to k-mahsup-yetki
+               end-if
+               if cb-tahsil-gir-yetki = 1
+                  move "E"    to k-tahsil-yetki
+               else
+                  move "H"    to k-tahsil-yetki
+               end-if
+               if cb-tediye-gir-yetki = 1
+                  move "E"    to k-tediye-yetki
+               else
+                  move "H"    to k-tediye-yetki
+               end-if
+
+               move cmb-grup(1:4) to k-grup-kodu
+               move k-kodu-tasi    to k-staf
+
+**********************************************
+               if k-grup-kodu <> spaces
+                   perform k2-to-k-gelismis-yetkileri-aktar
+               end-if
+********************************************************
+
+               write kllnc-rec invalid
+                     rewrite kllnc-rec end-rewrite
+               end-write
+               perform log-operation-kllnc
+
+               close kllnc  
+
+               if k-grup = "E"
+                  move k-grup-kodu to ydk-grup-kodu
+                  open i-o kllnc kllnc2
+                      start kllnc key not < K-KODU invalid
+                              continue
+                      not invalid
+                      perform until fs-kllnc = "10"
+                      read kllnc next no lock end move "10" to fs-kllnc
+                      not end
+                           if K-KULLANIMDA = "H"  
+                                 exit perform cycle
+                           end-if
+
+                           if k-grup-kodu <> ydk-grup-kodu
+                                  exit perform cycle
+                           end-if
+
+                           perform K2-TO-K-GELISMIS-YETKILERI-AKTAR
+                      end-read
+                      end-perform
+                      end-start
+
+                  close kllnc kllnc2
+
+               end-if
+
+               perform tab-1-islem
+               move 4 to accept-control
+               move 6 to control-id
+          when 3 
+               if (control-id = 31 or 
+                   control-id = 32 or 
+                   control-id = 33)
+               inquire acc1-kodu,value in k-kodu of kllnc
+               if k-kodu = spaces 
+                  exit paragraph
+               end-if
+               initialize i 
+               display message box 
+                       "Kayit silinsin mi ?",
+                       title "Bilginize ..."
+                       icon mb_warning_icon
+                       type mb_yes_no
+                       returning i 
+                       default 2
+               if i <> 1 
+                  exit paragraph
+               end-if
+               open i-o kllnc
+               read kllnc no lock invalid continue end-read
+               delete kllnc invalid continue 
+               end-delete
+               perform log-operation-kllnc
+               close kllnc
+               move 4 to accept-control
+               move 6 to control-id
+               end-if
+          when 4
+             move k-kodu to ydk-k-kodu
+             perform Acu-Form4-Routine
+             move 25 to control-ID
+             move 4  to accept-control
+
+          when 2001
+               inquire combo-1,value in combo-1-value
+               move combo-1-kodu to k-kodu
+               open input kllnc
+               read kllnc no lock invalid
+                    close kllnc
+                    move 4 to accept-control
+                    move 40 to control-id
+                    exit paragraph
+               end-read
+               close kllnc
+               perform grid-2-bilgi-doldur
+          when 2002
+               inquire grid-2,
+                       last-row in ii
+               if ii < 2
+                  exit paragraph
+               end-if
+               open i-o prosif               
+               initialize frame-degiskenler
+               move ii              to frame-kayit-sayi
+               move 20              to frame-win-line
+               move 20              to frame-win-pos
+               move "Kaydediliyor " to frame-title
+               perform frame-ac
+               perform varying i from 2 by 1 until i > ii
+                       perform frame-goster
+                       initialize prosif-rec
+                       move combo-1-kodu    to prosif-kim
+                       move "Y"             to prosif-tipi
+                       inquire grid-2(i,01),hidden-data in prosif-cob
+                       inquire grid-2(i,02),hidden-data in prosif-giris
+                       inquire grid-2(i,03),hidden-data in prosif-write
+                       inquire grid-2(i,04),hidden-data in prosif-rewrite
+                       inquire grid-2(i,05),hidden-data in prosif-delete
+                       inquire grid-2(i,06),hidden-data in prosif-rapor
+                       inquire grid-2(i,07),hidden-data in prosif-diger-1
+                       inquire grid-2(i,08),hidden-data in prosif-diger-2
+                       inquire grid-2(i,09),hidden-data in prosif-diger-3
+                       inquire grid-2(i,10),hidden-data in prosif-diger-4
+                       inquire grid-2(i,11),hidden-data in prosif-diger-5 
+                       inquire grid-2(i,12),hidden-data in prosif-diger-6
+                       inquire grid-2(i,13),hidden-data in prosif-diger-7
+                       inquire grid-2(i,14),hidden-data in prosif-diger-8
+                       inquire grid-2(i,15),hidden-data in prosif-diger-9
+                       inquire grid-2(i,16),hidden-data in prosif-diger-10
+                       write prosif-rec invalid 
+                             rewrite prosif-rec end-rewrite
+                       end-write
+*                       perform log-operation-prosif
+               end-perform
+               perform frame-kapat
+               close prosif
+          when 2003
+               perform acu-form2-routine
+          when 2004
+               perform acu-form3-routine
+               MOVE 4 TO ACCEPT-CONTROL
+               move 43 to control-id
+     end-evaluate.
+ grid-2-bitmap-set.
+****************GIRIS********************
+     move  2 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-giris   not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************WRITE********************
+     move  3 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-write   not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************REWRITE********************
+     move  4 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-rewrite not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DELETE********************
+     move  5 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-delete  not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************RAPOR*********************
+     move  6 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-rapor   not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-01********************
+     move  7 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-1 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-02********************
+     move  8 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-2 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-03********************
+     move 9  to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-3 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-04********************
+     move 10 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-4 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-05********************
+     move 11 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-5 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-06********************
+     move 12 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-6 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-07********************
+     move 13 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-7 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-08********************
+     move 14 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-8 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-09********************
+     move 15 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-9 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+****************DEG-10********************
+     move 16 to bmp-x      move no-bmp  to bmp-handle.
+     if prosif-diger-10 not = "H" move yes-bmp to bmp-handle.
+     perform bmp-set.
+
+ bmp-set.
+     if bmp-handle = yes-bmp
+        modify grid-2, 
+            y = sayac
+            x = bmp-x
+            bitmap           = bmp-handle
+            bitmap-number    = 1
+            bitmap-trailing  = 0
+            bitmap-width     = 16
+            hidden-data = "E"
+     else
+        modify grid-2, 
+            y = sayac
+            x = bmp-x
+            bitmap           = bmp-handle
+            bitmap-number    = 1
+            bitmap-trailing  = 0
+            bitmap-width     = 16
+            hidden-data = "H"
+     end-if.
+
+*
+ grid-2-Ev-Msg-Begin-Entry.
+     inquire grid-2,
+             y in i
+             x in ii
+             hidden-data in char
+     if ii < 2 
+        move event-action-fail to event-action
+        exit paragraph.
+     if char not = "H"
+        move no-bmp  to bmp-handle
+        move "H"     to char
+     else
+        move yes-bmp to bmp-handle
+        move "E"     to char
+     end-if.
+     move i  to sayac
+     move ii to bmp-x
+     perform bmp-set.
+     modify grid-2,
+            y = i
+            x = ii
+            bitmap-trailing = 0
+            hidden-data = char
+            cell-data = x"ff"
+     move event-action-fail   to event-action.
+ tab-1-accept-goster.
+     display acc1-adi acc1-soyadi acc1-unvani
+     acc1-adres-1 acc1-adres-2 acc1-telefon acc1-cep
+     acc1-email acc1-dog-gun acc1-ref acc1-dog-ay acc1-dog-yil
+     cb1-supervisor cb1-kullanimda pb-gelismis pb-eposta cb-grup
+     but1-kaydet acc1-sifre acc1-email acc1-kasa   pb-yetki sc-cmb-grup
+     .
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+         perform dil-ayarla-proc.
+*/-----------------------------\*         
+*
+ acc1-kodu-Aft-Procedure.
+     initialize cb-yetkiler.
+     inquire acc1-kodu value in k-kodu.
+     if k-kodu = spaces 
+        exit paragraph.
+     open input kllnc.
+     read kllnc no lock invalid
+          move "E" to k-tahsil-yetki
+                      k-mahsup-yetki
+                      k-tediye-yetki
+     end-read
+
+     if k-sirket-evet
+         move 1 to cb-sirket-acma-yetki
+     end-if
+     if k-ozl-isl-evet
+         move 1 to cb-ozel-islem-yetki
+     end-if
+     if k-peryot-uyar = "E"
+         move 1 to cb-peryot-uyar
+     end-if
+     if k-mahsup-yetki = "E"
+         move 1 to cb-mahsup-gir-yetki
+     end-if
+     if k-tahsil-yetki = "E"
+         move 1 to cb-tahsil-gir-yetki
+     end-if
+     if k-tediye-yetki = "E"
+         move 1 to cb-tediye-gir-yetki
+     end-if
+     close kllnc.
+     if k-kullanimda = "E"
+        move 1 to cb1-kullanimda-value
+     else
+        move 0 to cb1-kullanimda-value
+     end-if
+     if k-grup = "E"
+         move 1 to cb-grup-value 
+     else
+         move 0 to cb-grup-value 
+     end-if
+
+     if k-super = "E"
+        move 1 to cb1-supervisor-value
+     else
+        move 0 to cb1-supervisor-value
+     end-if
+
+     if k-grup-kodu <> spaces
+        move k-grup-kodu to cmb-grup
+     else
+        move "    -Ozel Grup" to cmb-grup
+     end-if
+     if K-grup-kodu <> spaces
+             move 0 to tab1-yetki
+             move 0 to tab1-gelismis
+     else
+             move 1 to tab1-yetki
+             move 1 to tab1-gelismis
+     end-if
+     move 1 to tab-yetki
+     move 1 to tab-1-accept-enabled
+     perform tab-1-accept-goster.
+*
+ acc1-kodu-Bef-Procedure.
+     move 0 to tab-1-accept-enabled.
+     move 0 to tab-yetki
+     initialize kllnc-rec
+     perform tab-1-accept-goster.
+*
+ grid-1-Ev-Msg-Begin-Entry.
+     move event-action-fail to event-action.
+     initialize kllnc-rec
+     inquire grid-1,
+             record-data in grid-1-record-data
+     move gd-1-col-1    to k-kodu
+     display acc1-kodu.
+     perform  acc1-kodu-Aft-Procedure.
+     move 4 to accept-control
+     move 9 to control-id.
+     exit paragraph.
+*
+ combo-1-Ex-Ntf-Selchange.
+     inquire combo-1,value in combo-1-value
+     move combo-1-kodu to k-kodu
+     perform grid-2-bilgi-doldur.
+     .
+*
+ Form1-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc
+     open input  kllnc
+     initialize kllnc-rec i k-grup-dizi k-grup-var
+     start kllnc key not < k-kodu invalid
+           continue
+     not invalid
+     initialize fs-kllnc
+     perform with test after until fs-kllnc = "10"
+           read kllnc next no lock end move "10" to fs-kllnc
+           not at end
+                if k-grup <> "H" and k-grup <> spaces 
+                     perform varying i from 1 by 1 until i > 100
+                            if k-kodu = k-grup-dizi-kodu(i)
+                                  move 1 to k-grup-var
+                                  exit perform 
+                            end-if
+                     end-perform
+                     if k-grup-var =1
+                           exit perform cycle
+                     end-if
+                     perform varying i from 1 by 1 until i > 100
+                            if k-grup-dizi-kodu(i) = spaces  OR k-grup-dizi = SPACES
+                                   move k-kodu  to k-grup-dizi-kodu(i)
+                                   move k-adi   to k-grup-dizi-adi(i)
+                                   exit perform 
+                            end-if
+                     end-perform
+             
+                end-if
+           end-read
+     end-perform
+     end-start
+     close kllnc
+     modify sc-cmb-grup,reset-list = 1
+     modify sc-cmb-grup,item-to-add("    -Ozel Grup")
+     perform varying i from 1 by 1 until i > 100
+            if k-grup-dizi-kodu(i) = spaces
+                  exit perform 
+            end-if
+            move k-grup-dizi-kodu(i) to k-grup-kodux
+            move k-grup-dizi-adi(i)  to k-grup-adi
+            modify sc-cmb-grup,item-to-add(k-grup-combo)
+     end-perform
+     display sc-cmb-grup.
+*/-----------------------------\* 
+ 
+     .
+*
+ grid-2-Ev-Msg-Heading-Dblclick.
+     move all low-values to m
+     inquire grid-2,
+             y in i
+             x in ii
+             cell-data in m-1
+     move ii to bmp-x
+     if i = 1 
+        if ii = 1 exit paragraph end-if
+        move "Yetkisi tum programlar icin verilecektir " to m-2
+        move new-line to m-new-line
+        move "Yetki verilsin mi ?" to m-3
+        display message box m
+                icon mb_default_icon
+                title "Bilginize"
+                type mb_yes_no
+                default = 2
+                returning i
+        if i = 2 
+           exit paragraph
+        end-if
+        perform varying ii from 2 by 1 until ii > (toplam-menu + 1)
+                move ii      to sayac
+                move "E"     to char
+                move yes-bmp to bmp-handle
+                perform bmp-set
+     modify grid-2,
+            y = sayac
+            x = bmp-x
+            bitmap-trailing = 0
+            hidden-data = char
+            cell-data = x"ff"
+        end-perform
+     end-if.
+*
+ Form2-Aft-Initdata.
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\*         
+     .
+*
+ Form2-Bef-Create.
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi.
+     open input genel
+     initialize genel-rec
+     move 1  to genel-anahtar
+     read genel no lock invalid 
+          continue 
+     end-read 
+     close genel.
+
+ Form3-Ex-Other.
+     evaluate key-status
+     when 02
+          perform mail-kaydet
+     when 03
+          perform mail-sil
+     end-evaluate.
+     
+     .
+*
+ mail-sil.
+
+*
+ mail-kaydet.
+     open i-o otlortak.
+     set otlortak-tipi-mail                 to true
+     move k-kodu                            to otlortak-kodu1
+     perform varying i
+             from 1
+             by 1
+             until i > 3
+                  if form3-ssl(i) = 1 
+                     move "E" to otlortak-mail-ssl(i)
+                  else
+                     move "H" to otlortak-mail-ssl(i)
+                  end-if
+                  if form3-spa(i) = 1 
+                     move "E" to otlortak-mail-spa(i)
+                  else
+                     move "H" to otlortak-mail-spa(i)
+                  end-if
+                  if form3-kendim(i) = 1 
+                     move "E" to otlortak-mail-kendim(i)
+                  else
+                     move "H" to otlortak-mail-kendim(i)
+                  end-if
+
+     end-perform
+
+     move form3-rb-1-value         to k-default-email.
+
+*/ mail ozelliklerini yaz     
+     write otlortak-rec invalid
+           rewrite otlortak-rec end-rewrite
+     end-write
+*/ imzayi yaz
+     set mem-otlortak-tipi-mail-imza  to true
+     move mem-otlortak-rec            to otlortak-rec
+     write otlortak-rec invalid
+           rewrite otlortak-rec end-rewrite
+     end-write
+
+     close otlortak.
+
+     initialize otlortak-rec mem-otlortak-rec
+
+     open i-o kllnc
+     write kllnc-rec invalid
+           rewrite kllnc-rec end-rewrite
+     end-write
+     close kllnc.
+     set exit-pushed to true.
+
+*
+ Form3-Bef-Create.
+
+     open i-o otlortak.
+*/ imza ayarlarini oku dkkat önce okunmasý lazim çünkü ayný dosyada
+     initialize otlortak-rec mem-otlortak-rec form3-deg
+     set otlortak-tipi-mail-imza              to true
+     move k-kodu                              to otlortak-kodu1
+     read otlortak no lock invalid
+          initialize otlortak-mail-imza
+     end-read
+     move otlortak-rec                        to mem-otlortak-rec
+
+*/ mail ayarlarini oku
+     initialize otlortak-rec form3-deg
+     set otlortak-tipi-mail                 to true
+     move k-kodu                              to otlortak-kodu1
+     read otlortak no lock invalid
+          initialize otlortak-mail
+     end-read
+     close otlortak.
+
+     perform varying i
+             from 1
+             by 1
+             until i > 3
+                  if otlortak-mail-ssl(i) = "E"
+                     move 1 to form3-ssl(i)
+                  end-if
+                  if otlortak-mail-spa(i) = "E"
+                     move 1 to form3-spa(i)
+                  end-if
+                  if otlortak-mail-kendim(i) = "E"
+                     move 1 to form3-kendim(i)
+                  end-if
+     end-perform
+
+     move k-default-email        to form3-rb-1-value.
+     
+
+     
+     .
+
+ 
+*
+ Form4-Ex-Other.
+     open i-o kllnc2 kllnc prosif prosif2
+      initialize PROSIF-REC PROSIF2-REC  kllnc2-rec 
+     
+      evaluate key-status
+          when 2
+          
+          move hedef-k-kodu to k2-kodu
+          read kllnc2 no lock invalid  Display message box "Hatali Kullanici Kodu !"
+          not invalid
+             
+             display message box hedef-k-kodu " Kodlu Kullanicinin Tum Yetkileri " new-line
+             k-kodu " Kodlu Kullaniciya Aktarilacaktir ! Devam Etmek Istiyor musunuz ?"
+             type 2
+             icon 1 
+             returning return-code
+             if return-code = 1 then 
+
+             move hedef-k-kodu to PROSIF-KIM  
+             start prosif key > prosif-anah
+             invalid
+             not invalid
+             perform until fs-prosif = "10"
+             read prosif next no lock end move "10" to fs-prosif
+             not end
+             initialize PROSIF2-REC 
+             if hedef-k-kodu not = PROSIF-KIM exit perform end-if
+
+             move PROSIF-REC to PROSIF2-REC
+             move ydk-k-kodu to prosif2-kim
+           
+             rewrite PROSIF2-REC  
+             invalid     
+             write PROSIF2-REC end-write
+             end-rewrite   
+
+             end-read
+             end-perform
+             end-start
+
+             display message box "Yetkiler Alinmistir !"
+          
+             end-if
+             set exit-pushed to true
+          end-read      
+      end-evaluate
+      close kllnc kllnc2 prosif prosif2
+     .
+*
+ Form4-Ef-1-Aft-Procedure.
+     open input kllnc2 kllnc
+     move hedef-k-kodu to k2-kodu
+     read kllnc2 no lock invalid  continue
+     not invalid
+     move all low-values to kullanici-ad
+     string kullanici-ad 
+     k2-adi   delimited by low-values
+     " "      delimited by low-values
+     k2-soyadi delimited by low-values
+     into kullanici-ad
+     display lb-k-adi
+     end-read
+      close kllnc kllnc2
+     .
+*
+ Form4-Bef-Create.
+      initialize hedef-k-kodu kullanici-ad
+     .
+*
+ sc-cmb-grup-Ex-Ntf-Selchange.
+       if cmb-grup(1:4) <> spaces
+             move 0 to tab1-yetki
+             move 0 to tab1-gelismis
+     else
+             move 1 to tab1-yetki
+             move 1 to tab1-gelismis
+     end-if
+     display pb-gelismis pb-yetki
+     .
+
+*
+ K2-TO-K-GELISMIS-YETKILERI-AKTAR.
+         open i-o kllnc2
+         initialize kllnc2-rec
+         move k-grup-kodu to k2-kodu
+         read kllnc2 no lock invalid
+                 display message box "Yetkileri Alinacak Kullanici Bulunamadi!!!"
+         not invalid
+              move k2-mahsup-yetki             to k-mahsup-yetki
+              move k2-tahsil-yetki             to k-tahsil-yetki
+              move k2-tediye-yetki             to k-tediye-yetki
+
+              move k2-fiy-sup                  to k-fiy-sup   
+              move k2-kisi-goremez             to k-kisi-goremez
+              move K2-SIRKET-YETKI             to K-SIRKET-YETKI
+              move K2-OZL-ISL-YETKI            to K-OZL-ISL-YETKI            
+              move K2-FIS-YETKI                to K-FIS-YETKI               
+              move K2-PERYOT-UYAR              to K-PERYOT-UYAR                
+              move k2-cek-silemez              to k-cek-silemez                         
+              move K2-REST-SUP                 to K-REST-SUP                          
+              move K2-muh-SUP                  to K-muh-SUP                  
+              move K2-DEV-TAH-YETKI            to K-DEV-TAH-YETKI           
+              move K2-DEV-PRIM-YETKI           to K-DEV-PRIM-YETKI          
+              move k2-blok-kitler              to k-blok-kitler             
+              move k2-blok-acar                to k-blok-acar               
+              move K2-DEV-YETKI                to K-DEV-YETKI                
+              move k2-durum-degistiremez       to k-durum-degistiremez      
+              move k2-kirli-odaya-cin-yapamaz  to k-kirli-odaya-cin-yapamaz 
+         end-read
+         close kllnc2.

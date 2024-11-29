@@ -1,0 +1,550 @@
+* blokupg.evt
+* blokupg.evt is generated from D:\asya\acugt.ytl\otel\blokupg.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Screen1-Event-Proc.
+     .
+
+ Screen1-Exception-Proc.
+     PERFORM Screen1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Screen1-Bef-Create.         
+    perform adresleri-tasi.
+    open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+      open input genel2
+      initialize genel2-rec
+      move 1  to genel2-anah
+      read genel2 no lock invalid 
+          continue 
+      end-read 
+      close genel2
+    call "c$narg" using link-var
+    if link-var > 0
+       open input kllnc
+       initialize kllnc-rec
+       move k-kodu-tasi        to k-kodu
+       read kllnc no lock invalid 
+            display message box "Hatali Kullanici Kodu..."
+                            title "Uyari"
+                            icon 1
+            close kllnc 
+            exit paragraph 
+            set exit-pushed to true
+       end-read 
+          if k-upgrade-supervisor = 1  ||| Alba Hotel Sevilay haným talebi üzerine FreshDesk kaydý var
+             move 1          to l-yapabilir  
+             set exit-pushed to true
+          end-if 
+       close kllnc
+      if l-eski-konum = spaces 
+         move 1 to yeni-rez
+         move 0 to upg-vis
+         move "Rezervasyon Konfirme Ekrani"  to  ftitle
+      else
+         move 0 to yeni-rez
+         move 1 to upg-vis
+         move "Konum Upgrade Ekrani..." to ftitle
+       open input konum
+       initialize konum-rec
+       move l-eski-konum   to konum-anahtar
+       read konum no lock invalid
+             move "Hatali Konum"  to konum-adi
+       end-read 
+             move konum-adi        to eski-konum-adi
+             move KONUM-TUTAR-SIRA to eski-konum-siralamasi
+       initialize konum-rec
+       move l-yeni-konum   to konum-anahtar
+       read konum no lock invalid
+             move "Hatali Konum"  to konum-adi
+       end-read 
+             move konum-adi        to yeni-konum-adi       
+             move KONUM-TUTAR-SIRA to yeni-konum-siralamasi
+       close konum
+      end-if
+    end-if.
+*
+ Screen1-Aft-Initdata.      
+    if link-var > 0 then
+*********************** bigi iþlem kadir delphin ve rez md. Tolga bey
+       open input konumek
+       initialize konumek-rec 
+       move l-yeni-konum to konumek-anahtar
+       read konumek no lock invalid 
+            continue 
+       not invalid 
+           if konumek-upg-olarak-kullanma = 1
+              display message box "Bu Oda Tipine Upgrade Islemi Yapilamaz"
+                              title "Uyari"
+                              icon 1
+                 close konumek
+                 move 0          to l-yapabilir  
+                 set exit-pushed to true
+                 exit paragraph
+                 
+           end-if 
+       end-read 
+       close konumek
+*********************** bigi iþlem kadir delphin ve rez md. Tolga bey
+       perform neden-combo-yukle
+       perform ekran-basla
+       perform upganlasbul   
+    end-if.  
+*
+ neden-combo-yukle. 
+     modify cb-1, RESET-LIST = 1
+                  mass-update = 1
+     open input kodlar02
+     initialize kodlar02-rec
+     move "U"                 to kodlar02-tipi
+     start kodlar02 key not < kodlar02-anah invalid 
+           continue 
+     not invalid 
+     perform until fs-kodlar02 = "10"
+     read kodlar02 next no lock end move "10" to fs-kodlar02
+     not at end
+            if kodlar02-tipi <> "U"
+                exit perform 
+            end-if 
+            move kodlar02-kodu   to neden-combo(1:2)
+            move "-"             to neden-combo(3:1)
+            move kodlar02-adi    to neden-combo(5:)
+            modify cb-1,item-to-add(neden-combo)
+     end-read
+     end-perform
+     end-start
+     close kodlar02
+     modify cb-1,value = neden-combo
+     modify cb-1,mass-update = 0.
+*
+ ekran-basla.
+**/***********performans degerli esitse sormadan ciksin  
+*     stop " "  
+     if eski-konum-siralamasi = yeni-konum-siralamasi and yeni-rez not = 1 
+        move 1          to l-yapabilir
+        set exit-pushed to true 
+     else 
+        perform stopara
+     end-if.
+*
+ stopara.
+     initialize konstop-rec konumda-stop-var.
+    open i-o konstop
+    move l-yeni-konum to konstop-konum.
+***    if k-kodu-tasi = "X   " then stop " " end-if
+    move l-rez-rec to rez-rec.
+    if tarih-tasi > rez-gir-tar move tarih-tasi to ilk-tar
+      else move rez-gir-tar to ilk-tar
+      end-if
+      move rez-cik-tar to son-tar
+    start konstop key >= konstop-ANAH1 invalid continue
+       not invalid
+       perform until fs-konstop = "10"
+         read konstop next no lock end move "10" to fs-konstop
+           not end
+              if  l-yeni-konum not = konstop-konum move  "10" to fs-konstop
+                exit perform cycle move "10" to fs-konstop
+               end-if
+              if (ilk-tar <= konstop-son-tarih  and son-tar > konstop-ilk-tarih)
+             | yanþis or            (son-tar > konstop-ilk-tarih  and son-tar < konstop-son-tarih) or 
+                
+                   move 1 to konumda-stop-var
+*                   move  konstop-ilk-tarih to ebas
+                   move konstop-ilk-gun to bas-gun
+                   move konstop-ilk-ay  to bas-ay
+                   move konstop-ilk-yil to bas-yil
+*                   move  konstop-son-tarih to ebit
+                   move konstop-son-gun to bit-gun
+                   move konstop-son-ay  to bit-ay
+                   move konstop-son-yil to bit-yil
+
+                   display message box e-bas-tar " ile " e-bit-tar "tarihleri arasinda " new-line
+                     "Konum upgrade icin " yeni-konum-adi " konumu STOPLU" new-line 
+                     "Eger upgrade yapmak zorunda iseniz " new-line
+                     tarih-tasi "-" rez-no " nolu tutanak tutup FOM imzasi ile kredilere teslim etmelisiniz."
+                   exit perform cycle move "10" to fs-konstop
+
+
+              end-if
+
+         end-read
+       end-perform
+    end-start
+
+
+
+      .
+
+*
+ Screen1-Ex-Other.
+     evaluate key-status
+     when 2
+              if neden-aciklama = spaces
+                 display message box "Aciklama Girilmesi Zorunludur..." new-line
+                                     "Islem iptal edildi.."
+                                 title "Uyari"
+                                 icon 1
+                move 0     to l-yapabilir
+                exit paragraph                                  
+              end-if 
+
+         if neden-combo = spaces  and  yeni-rez not = 1 
+            display message box "Upgrade Nedeni Girilmeden isleme devam edilemez..."
+                            title "Uyari"
+                            icon 1
+            move 0         to l-yapabilir
+            exit paragraph 
+         end-if 
+         if k-konum-upgrade-yapabilir not = 1
+            if neden-sifre = spaces
+                display message box "Sifre girilmeden isleme devam edilemez.."
+                                title "Sifre Hatasi"
+                                icon 2
+                move 0     to l-yapabilir
+                exit paragraph
+            else
+*              if genel-konum-upgrade-sifresi = spaces
+*                 display message box "Parametredeki Sifre Bos..." new-line
+*                                     "Islem iptal edildi.."
+*                                 title "Uyari"
+*                                 icon 1
+*                move 0     to l-yapabilir
+*                exit paragraph
+*              end-if 
+              perform hangi-sifre-kullanildi
+              if yetki-var = 0
+                 display message box "Girilen Sifre Hatali..." new-line
+                                     "Islem iptal edildi.."
+                                 title "Uyari"
+                                 icon 1
+                move 0     to l-yapabilir
+                exit paragraph                 
+              end-if
+*              if neden-sifre not = genel-konum-upgrade-sifresi 
+*                 display message box "Girilen Sifre Hatali..." new-line
+*                                     "Islem iptal edildi.."
+*                                 title "Uyari"
+*                                 icon 1
+*                move 0     to l-yapabilir
+*                exit paragraph
+*              end-if 
+            end-if 
+         end-if 
+
+
+         if l-rezno > 0 
+           if yeni-rez not = 1 
+             
+             perform form-kaydet
+             else
+             move 1                     to l-yapabilir
+           end-if
+         end-if 
+        
+         set exit-pushed to true 
+     end-evaluate.
+*
+ hangi-sifre-kullanildi.
+     open input kllnc
+     initialize kllnc-rec yetki-var yetkili-k-kodu
+     start kllnc key not < k-kodu invalid
+        continue 
+     not invalid 
+     perform with test after until fs-kllnc = "10"
+     read kllnc next no lock end move "10"  to fs-kllnc
+     not at end 
+              if k-konum-upgrade-sifresi <> neden-sifre
+                 move 0       to yetki-var 
+                 initialize yetkili-k-kodu
+                 exit perform cycle
+              end-if
+              initialize yetki-var yetkili-k-kodu
+              move k-kodu     to yetkili-k-kodu
+              move 1          to yetki-var
+              move yetkili-k-kodu  to l-rez-rec(950:4)
+              move "10"       to fs-kllnc
+              exit perform 
+     end-read 
+     end-perform
+     end-start
+     close kllnc.
+*
+ form-kaydet.  
+     open i-o genelfis
+     initialize genelfis-rec
+     move 1        to genelfis-anahtar
+     read genelfis no lock invalid  
+          move 1   to FIHRIST-OTO
+     end-read 
+         add 1     to FIHRIST-OTO
+         write genelfis-rec invalid 
+             rewrite genelfis-rec end-rewrite 
+         end-write 
+     close genelfis
+
+     open i-o blokupg
+     initialize blokupg-rec 
+     move fihrist-oto               to blokupg-fis-no
+     read blokupg no lock invalid
+          continue 
+     end-read 
+           perform ekran-at
+         write blokupg-rec invalid 
+             rewrite blokupg-rec end-rewrite
+         end-write 
+         move 1                     to l-yapabilir
+     close blokupg.
+***
+*
+ ekran-at.
+         
+         move tarih-tasi            to blokupg-upgrade-tarih 
+         accept blokupg-upgrade-zaman from time
+         move l-rez-rec             to blokupg-rez-rec rez-rec
+         move client-machine-name   to blokupg-hangi-bilgisayar
+         move neden-combo(1:2)      to blokupg-upgrade-nedeni
+         move l-rezno               to blokupg-rezno
+         move k-kodu-tasi           to blokupg-kim-yapti
+         move l-eski-konum          to blokupg-eski-konum
+         move l-yeni-konum          to blokupg-yeni-konum
+         move neden-aciklama        to blokupg-aciklama
+         move yetkili-k-kodu        to blokupg-yetkili-sifre-k-kodu.
+         move konumda-stop-var      to blokupg-stopta
+         if konumda-stop-var = 1
+         string  tarih-tasi delimited by size
+              "-" delimited by size
+              rez-no delimited by size   into blokupg-tutanak-no
+              move konstop-ilk-gun to bas-gun
+                   move konstop-ilk-ay  to bas-ay
+                   move konstop-ilk-yil to bas-yil
+*                   move  konstop-son-tarih to ebit
+                   move konstop-son-gun to bit-gun
+                   move konstop-son-ay  to bit-ay
+                   move konstop-son-yil to bit-yil
+             display message box e-bas-tar " ile " e-bit-tar "tarihleri arasinda " new-line
+                     "Konum upgrade icin " yeni-konum-adi " konumu STOPLU" new-line 
+                     "Eger upgrade yapmak zorunda iseniz " new-line new-line
+                     blokupg-tutanak-no " nolu tutanak tutup FOM imzasi ile kredilere teslim etmelisiniz." new-line
+        
+             else
+              initialize konumda-stop-var blokupg-tutanak-no
+
+              
+              end-if
+              .
+*
+ 
+ upganlasbul.
+
+****      if rez-no = 174394  then stop " " end-if
+       initialize blokupg-rec
+       perform ekran-at
+      open  i-o bupgfiy bupgind doviz
+***      if k-kodu-tasi = "ASYA" then stop " " end-if
+      initialize upg-birim-tutar bupgfiy-rec
+      move  blokupg-upgrade-tarih to gecerli-tarih
+       if rez-gir-tar >  blokupg-upgrade-tarih
+          move rez-gir-tar to gecerli-tarih
+       end-if
+      move  xkonum-tutar-sira(blokupg-eski-konum) to bupgfiy-eski-konum
+      move  xkonum-tutar-sira(blokupg-yeni-konum) to bupgfiy-yeni-konum      
+      start bupgfiy key > bupgfiy-alt-anah  invalid continue
+        not invalid
+        perform until fs-bupgfiy = "10"
+          read bupgfiy next no lock end move "10" to fs-bupgfiy
+             not end
+               if xkonum-tutar-sira(blokupg-eski-konum) not  = bupgfiy-eski-konum
+                  or xkonum-tutar-sira(blokupg-yeni-konum) not =  bupgfiy-yeni-konum
+                  or gecerli-tarih < bupgfiy-bas-tar
+                     exit perform 
+               end-if
+               initialize tl-oda-var
+               move rez-doviz to xrez-doviz
+               if bupgfiy-dvz-kodu not = zeroes
+                   if genel2-upg-sabit-doviz-kodu not = spaces and 
+                      genel2-upg-sabit-doviz-kodu not = zeroes 
+                       if bupgfiy-dvz-kodu not = genel2-upg-sabit-doviz-kodu 
+                          exit perform cycle
+                       end-if
+                   else
+                    if genel2-upg-eur-alsin = 1
+                       initialize doviz-rec 
+                       move rez-doviz  to doviz-kodu
+                       read doviz no lock invalid 
+                          continue 
+                      end-read 
+                         if d-merkez-banka-kodu = "TL"
+                             initialize doviz-rec
+                             start doviz key not < doviz-kodu invalid 
+                                continue 
+                             not invalid 
+                             perform until fs-doviz = "10"
+                             read doviz next no lock end move "10" to fs-doviz
+                             not at end 
+                                    if d-merkez-banka-kodu = "EUR"
+                                        move doviz-kodu to xrez-doviz 
+                                         move 1 to tl-oda-var
+                                        exit perform 
+                                    end-if 
+                             end-read 
+                             end-perform
+                             end-start
+                        end-if 
+                     end-if
+                        if bupgfiy-dvz-kodu not = xrez-doviz 
+                           exit perform cycle
+                        end-if                           
+                   end-if
+               end-if
+               if  gecerli-tarih < bupgfiy-bit-tar
+                  move bupgfiy-tutar  to upg-birim-tutar
+                  perform toplam-anl-bul
+                   exit perform 
+               end-if
+          end-read
+        end-perform
+      end-start 
+      perform ind-bul
+      close bupgfiy  bupgind
+      compute fiyat-upg-indli rounded =  fiyat-upg * (( 100 - bulunan-ind ) / 100 )
+       move  fiyat-upg-indli to z-tutarind
+      move  fiyat-upg to z-tutar
+      move upg-birim-tutar  to z-btutar
+     compute gun =  function integer-of-date(s2) - function integer-of-date(s1) 
+     move   gun to z-gun
+     move upg-carpan to  z-carpan
+     initialize doviz-rec
+     if genel2-upg-sabit-doviz-kodu not = spaces and 
+         genel2-upg-sabit-doviz-kodu not = zeroes 
+           move genel2-upg-sabit-doviz-kodu to  doviz-kodu
+     else
+       move rez-doviz to doviz-kodu
+     end-if 
+     read doviz no lock invalid continue
+     end-read
+      display l-dov
+       close doviz
+     if  bupgfiy-kisi-oda-basi = "O"
+             move " Oda " to p-acik
+             else
+             move " Pax " to p-acik
+     end-if
+     string z-btutar delimited by size
+            " X "  delimited by size
+             z-carpan  delimited by size
+             p-acik   delimited by size
+             " X "  delimited by size
+             z-gun  delimited by size
+             "geceleme "   delimited by size
+             " = "  delimited by size
+             z-tutar delimited by size
+             into tutar-aciklamasi2
+      if bulunan-ind > 0 
+          move  bulunan-ind to z-ind
+           string tutar-aciklamasi2 delimited by "            "
+            " -%"  delimited by size
+             z-ind  delimited by size
+             
+             " indirim ="  delimited by size
+            
+            
+             z-tutarind delimited by size
+             into tutar-aciklamasi2
+      end-if
+             display t-acika
+      
+
+
+      string "Oda Upgrade Bedeli :" delimited by size
+             z-tutarind delimited by size
+             into tutar-aciklamasi
+             display t-acik
+
+       .
+*
+ toplam-anl-bul.
+     if tl-oda-var = 1
+        open input kur 
+          initialize kur-rec 
+          move rez-banka to kur-banka
+          move tarih-tasi to kur-tarih
+          move xrez-doviz to kur-doviz
+          read kur no lock invalid 
+              continue 
+          not invalid 
+                compute upg-birim-tutar = upg-birim-tutar * doviz-alis
+          end-read 
+          close kur
+     end-if 
+     evaluate true
+           when bupgfiy-kisi-oda-basi = "O"
+              move 1 to upg-carpan
+           when other
+             evaluate rez-buyuk
+                when 1
+                  compute upg-carpan = 
+                  ( 1 + ( bupgfiy-ss / 100)) + 
+                  ( rez-kucuk * ( (100 - bupgfiy-cocuk-ind) ) / 100 )
+                when 2
+                   compute upg-carpan = 
+                   ( 2 ) + ( rez-kucuk * ( (100 - bupgfiy-cocuk-ind) ) / 100 )
+                when 3
+                  compute upg-carpan = 
+                  ( 2 + (( 100 - (bupgfiy-uc-kisi-ind))/100) ) + 
+                  ( rez-kucuk * ( (100 - bupgfiy-cocuk-ind) ) / 100 )
+                when 4
+                    compute upg-carpan = 
+                    ( 2 + (( 100 - (bupgfiy-uc-kisi-ind))/100) + 
+                    ( 100 - ((bupgfiy-dort-kisi-ind))/100) ) + 
+                    ( rez-kucuk * ( (100 - bupgfiy-cocuk-ind) ) / 100 )         
+             end-evaluate
+     end-evaluate
+
+     move gecerli-tarih to s1
+     move rez-cik-tar   to s2
+     
+     compute  fiyat-upg rounded = ( upg-birim-tutar *  upg-carpan  ) *
+           ( function integer-of-date(s2) - function integer-of-date(s1) ).
+*
+ ind-bul.
+
+     initialize bupgind-REC
+        initialize bulunan-ind bupgind-rec
+      move  blokupg-upgrade-tarih to gecerli-tarih
+       if rez-gir-tar >  blokupg-upgrade-tarih
+          move rez-gir-tar to gecerli-tarih
+       end-if
+   
+      start bupgind key > bupgind-alt-anah  invalid continue
+        not invalid
+        perform until fs-bupgind = "10"
+          read bupgind next no lock end move "10" to fs-bupgind
+             not end
+               if  gecerli-tarih < bupgind-bas-tar 
+                            exit perform 
+               end-if
+
+               if  gecerli-tarih <= bupgind-bit-tar and ( bupgind-tum-upgrade-gecerli = 1 or
+                   ( xkonum-tutar-sira(blokupg-eski-konum)   = bupgind-eski-konum
+                  and xkonum-tutar-sira(blokupg-yeni-konum)  =  bupgind-yeni-konum  ))
+
+
+                  move bupgind-ind-tutar  to bulunan-ind
+                  
+                   exit perform 
+               end-if
+           end-read
+        end-perform
+     end-start .    
+
+
+         
+
+ 

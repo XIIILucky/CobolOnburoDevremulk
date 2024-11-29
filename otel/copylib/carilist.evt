@@ -1,0 +1,864 @@
+* carilist.evt
+* carilist.evt is generated from D:\asya\acugt.ytl\otel\carilist.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+
+ Form1-Gd-1-Event-Proc.
+     PERFORM grd1-Ev-Other
+     .
+
+ Form2-Exception-Proc.
+     PERFORM Form2-Ex-Other
+     .
+***   start event editor code   ***
+*
+ accept-0101-Aft-Procedure.
+     open input fcari
+         read fcari no lock invalid
+                   initialize FCARI-DETAY
+                   DISPLAY Form1-Ef-1 Form1-Ef-1a 
+         end-read
+     close fcari
+     DISPLAY Form1-Ef-1 Form1-Ef-1a
+     .
+*
+ Form1-Aft-Initdata.
+      move "A" to fcari-tipi
+      display Form1-Cm-1
+     .
+*
+ Form1-Bef-Create.
+        perform adresleri-tasi
+        open i-o fcari fcarihrk close fcari fcarihrk
+     .
+*
+ Form1-Ex-Other.
+        evaluate key-status
+            when 1
+             if control-id = 5
+                     initialize acenta-cagir
+                     call "/asya/ytl/obj/otel/cariaraf.asy" using fcari-cagir fcari-tipi
+                         on exception perform callerr-proc
+                         not on exception
+                         cancel "/asya/ytl/obj/otel/cariaraf.asy" 
+                      end-call
+                      move fcari-cagir     to fcari-kodu OF fcari
+                      display accept-0101
+               else
+                    if fcari-kodu <> spaces
+                            open input fcari
+                               read fcari no lock invalid
+                                     display message box "Tanimsiz Cari Kodu !"
+                               not invalid
+                                     perform Acu-Form2-Routine
+                                     perform grd1-guncelle
+                               end-read
+                            close fcari
+                    end-if
+               end-if
+                
+            when 2
+             if fcari-kodu <> spaces
+              open input fcari
+                  read fcari no lock invalid
+                        display message box "Tanimsiz Cari Kodu !"
+                  not invalid
+                         perform grd1-guncelle
+                  end-read
+               CLOSE fcari
+             end-if
+            when 4 
+             if fcari-kodu <> spaces
+               open input fcari
+                  read fcari no lock invalid
+                        display message box "Tanimsiz Cari Kodu !"
+                  not invalid
+                         perform raporla
+                  end-read
+               close fcari
+             end-if
+            when 5
+                  perform raporla-mizan
+        end-evaluate
+     .
+*
+ temizle.
+         initialize FCARI-DETAY
+         DISPLAY Form1-Ef-1 Form1-Ef-1a 
+         move 5 to control-id
+         move 4 to accept-control.
+*
+ Form2-Bef-Create.
+
+     .
+*
+ Form2-Aft-Initdata.
+        open input banka doviz  
+
+         initialize BANKA-rec
+         start BANKA key not < BANKA-KODU invalid
+                 continue
+         not invalid
+         perform until fs-banka = "10"
+         read banka next no lock end move "10" to fs-banka
+         not end
+                  move BANKA-KODU to xdeger(1:2)
+                  move "-"        to xdeger(3:1)
+                  move BANKA-ADI  to xdeger(4:)
+                  modify sc-banka,item-to-add(xdeger)
+         end-read
+         end-perform
+         end-start
+         display sc-banka
+
+         initialize doviz-rec
+         start doviz key not < doviz-KODU invalid
+                 continue
+         not invalid
+         perform until fs-doviz = "10"
+         read doviz next no lock end move "10" to fs-doviz
+         not end
+                  move doviz-KODU to xdeger(1:2)
+                  move "-"        to xdeger(3:1)
+                  move d-kisa-ADI to xdeger(4:)
+                  modify sc-doviz,item-to-add(xdeger)
+         end-read
+         end-perform
+         end-start
+         display sc-doviz
+
+        | perform kur-oku
+     close banka doviz 
+ 
+     initialize txt-tl txt-doviz txt-aciklama
+     display  Form2-Ef-1 Form2-Ef-1a Form2-Ef-2
+
+     move tarih-tasi(7:2) to xtarih-gun
+     move tarih-tasi(5:2) to xtarih-ay
+     move tarih-tasi(1:4) to xtarih-yil
+     move xtarih to lbl-tarih
+     display sc-tarih
+     if kayit-sil = 1
+          OPEN input fcarihrk
+
+             modify Form2-Pb-1, enabled = false
+             move fcarihrk-anah-sec to fcarihrk-anahtar
+             read fcarihrk no lock invalid
+                     display message box "Hatali Secim ! Tekrar Deneyiniz"
+                     set exit-pushed to true
+             end-read
+         
+                    move fcarihrk-kodu  to fcari-kodu  
+                    move fcarihrk-islem to hrk-no      
+
+                    move FCARIHRK-BA                 to cmb-islem
+                    move FCARIHRK-TUTAR-BANKA        to cmb-banka
+                    move FCARIHRK-TUTAR-DOVIZ-KODU   to cmb-doviz
+                    move FCARIHRK-TUTAR-KUR          to DOVIZ-ALIS   
+                    move FCARIHRK-TUTAR-TL           to txt-tl       
+                    move FCARIHRK-TUTAR-DOVIZ        to txt-doviz     
+                    MOVE FCARIHRK-ACIKLAMA           to txt-aciklama  
+        
+                    move FCARIHRK-TARIH-GUN to xtarih-gun
+                    move FCARIHRK-TARIH-ay  to xtarih-ay
+                    move FCARIHRK-TARIH-yil to xtarih-yil
+                    move xtarih to lbl-tarih
+
+                    display Form2-Cm-1 sc-banka sc-doviz Form2-Ef-1 Form2-Ef-1a Form2-Ef-2  sc-tarih
+ 
+            close fcarihrk
+     end-if
+
+     .
+*
+ kur-oku.
+       open input kur
+           initialize kur-yok
+           move tarih-tasi     to KUR-TARIH
+           move cmb-banka(1:2) to kur-banka
+           move cmb-doviz(1:2) to kur-doviz
+           read kur no lock invalid
+                   display message box "Kur Kaydi Bulunmadi"
+                   MOVE 1 TO kur-yok
+                   |set exit-pushed to true
+                   move "0.000000" to lbl-kur
+           not invalid
+                   if DOVIZ-ALIS = zeroes then
+                        display message box "Kur Kaydi Bulunmadi"
+                        MOVE 1 TO kur-yok
+                   end-if
+                   move DOVIZ-ALIS to z-kur
+                   move z-kur      to lbl-kur
+           end-read
+           display sc-kur
+       close kur.
+*
+ sc-doviz-Aft-Procedure.
+        perform kur-oku
+     .
+*
+ Form2-Ef-1-Aft-Procedure.
+        if DOVIZ-ALIS > 0.00001 then 
+             compute hesapla-tl rounded = txt-tl / DOVIZ-ALIS 
+             move hesapla-tl to txt-doviz
+        end-if
+        display Form2-Ef-1a.
+*
+ Form2-Ef-1a-Aft-Procedure.
+
+          if DOVIZ-ALIS > 0.00001 then 
+               compute hesapla-tl rounded = txt-doviz * DOVIZ-ALIS 
+              if NOT (( txt-tl - 0.01 ) =  hesapla-tl OR ( txt-tl + 0.01 )  =  hesapla-tl )then
+                      move hesapla-tl to txt-tl
+              end-if
+          END-IF
+          display Form2-Ef-1.
+*
+ Form2-Ex-Other.
+     EVALUATE key-status
+         when 2
+           if kayit-sil = 1
+                   exit paragraph
+           end-if
+            if txt-tl = zeroes then
+                    display message box "Tutar TL '0.00' Olamaz !"
+                    icon 3
+                    exit paragraph
+            end-if
+
+
+            read fcari no lock invalid
+                    display message box "Cari Okunamadi. Tekrar Deneyiniz !"
+                    icon 3
+                    exit paragraph
+            end-read
+
+            perform fcarihrk-sira-no-al
+                    OPEN i-o fcarihrk
+                    initialize fcarihrk-rec
+                    move fcari-kodu to fcarihrk-kodu
+                    move hrk-no     to fcarihrk-islem
+                    move fcari-tipi to FCARIHRK-TIPI 
+                    move tarih-tasi to FCARIHRK-TARIH 
+                    accept FCARIHRK-zaman from time
+        
+                    move cmb-islem(1:1) to FCARIHRK-BA
+                    move cmb-banka(1:2) to FCARIHRK-TUTAR-BANKA
+                    move cmb-doviz(1:2) to FCARIHRK-TUTAR-DOVIZ-KODU
+                    move DOVIZ-ALIS     to FCARIHRK-TUTAR-KUR
+                    move txt-tl         to FCARIHRK-TUTAR-TL
+                    move txt-doviz      to FCARIHRK-TUTAR-DOVIZ
+                    MOVE txt-aciklama   TO FCARIHRK-ACIKLAMA 
+                    MOVE K-KODU-TASI    TO FCARIHRK-STAF 
+
+                    perform kur-oku
+                    if kur-yok = 1 then 
+                          close fcarihrk
+                          exit paragraph 
+                    end-if
+
+                    display message box "Tutar Kaydedilecek. Devam Edilsin mi ? "
+                    default 1
+                    type 2
+                    returning return-code 
+                    if return-code <> 1 
+                          close fcarihrk
+                          exit paragraph
+                    end-if
+        
+                    write fcarihrk-rec invalid
+                            stop "Kayit Yazilamadi !!!"
+                    end-write
+
+                    set exit-pushed to true
+            close fcarihrk
+         when 3
+               if kayit-sil = 1
+                  OPEN i-o fcarihrk
+                      move fcarihrk-anah-sec to fcarihrk-anahtar
+                      read fcarihrk no lock invalid
+                             display message box "Hatali Islem !"
+                      not invalid
+                            if fcarihrk-tarih < tarih-tasi
+                                  display message box "Gecmise Ait Haraket Silinemez !"
+                                  icon 3
+                                  close fcarihrk
+                                  exit paragraph
+                            end-if
+                            display message box "Tutar Silinecektir. Devam Edilsin mi ? "
+                            default 1
+                            type 2
+                            returning return-code 
+                            if return-code <> 1 
+                                  exit paragraph
+                            end-if
+                            delete fcarihrk end-delete
+                            set exit-pushed to true
+                      end-read
+                  
+                   close fcarihrk
+               end-if   
+     end-evaluate
+     .
+*
+ fcarihrk-sira-no-al.
+         initialize hrk-no
+         open i-o genelfis
+         move 1 to genelfis-anahtar
+         read genelfis no lock invalid
+              initialize genelfis-rec 
+              move 1 to genelfis-anahtar
+              not invalid continue 
+         end-read
+         add 1 to cekgir-oto
+         move cekgir-oto to hrk-no
+         rewrite genelfis-rec invalid 
+                 write genelfis-rec 
+        
+                 end-write continue
+         end-rewrite
+         close genelfis.
+        
+*         open input fcarihrk
+*         initialize fcarihrk-rec hrk-no
+*         move high-values to FCARIHRK-ANAHTAR
+*         start fcarihrk key not > FCARIHRK-ANAHTAR invalid
+*                   move 1 to hrk-no
+*         not invalid
+*         perform until fs-fcarihrk = "10"
+*         read fcarihrk backward no lock end move "10" to fs-fcarihrk
+*         not end
+*                  move FCARIHRK-ISLEM to  hrk-no
+*                  add 1 to hrk-no
+*                  exit perform
+*         end-read
+*         end-perform 
+*         end-start
+*         close fcarihrk.
+
+
+*
+ grd1-guncelle.
+         modify grd1,reset-grid = 1 , mass-update = 1
+         move "Tarih"         to grd1-col-1
+         move "Aciklama"      to grd1-col-2
+         move "Doviz"         to grd1-col-11
+         move "B/A"           to grd1-col-3 
+         move "Kur"           to grd1-col-4
+         move "Borc-Doviz"    to grd1-col-5
+         move "Borc-TL-Tut." to grd1-col-6
+         move "Alac-Doviz"    to grd1-col-7
+         move "Alac-TL-Tut." to grd1-col-8
+         move "Zaman"         to grd1-col-9
+         modify grd1,record-to-add(grd1-record)
+
+         open input fcarihrk doviz
+         initialize fcarihrk-rec hrk-no alt-toplam grid-sayi
+         move 1 to grid-sayi
+         move fcari-tipi  to fcarihrk-tipi
+         move fcari-kodu  to fcarihrk-kodu
+         start fcarihrk key not < FCARIHRK-ANAHTAR invalid
+                   move 1 to hrk-no
+         not invalid
+         perform until fs-fcarihrk = "10"
+         read fcarihrk next no lock end move "10" to fs-fcarihrk
+         not end
+                  if fcarihrk-tipi <> fcari-tipi
+                        exit perform
+                  end-if
+                  if fcarihrk-kodu <> fcari-kodu
+                        exit perform
+                  end-if
+
+                  add 1 to grid-sayi
+                  initialize grd1-record
+                  move fcarihrk-tarih-gun         to xtarih-gun
+                  move fcarihrk-tarih-ay          to xtarih-ay
+                  move fcarihrk-tarih-yil         to xtarih-yil
+                  move xtarih to grd1-col-1
+
+                  move fcarihrk-zaman-saat        to xtarih-saat
+                  move fcarihrk-zaman-dakika      to xtarih-dakika
+                  move fcarihrk-zaman-saniye      to xtarih-saniye
+                  move xzaman to grd1-col-9
+
+                  move fcarihrk-aciklama          to grd1-col-2
+                  move fcarihrk-tutar-kur         to z-kur
+                  move z-kur                      to grd1-col-4
+                  move fcarihrk-ba to grd1-col-3
+
+                  if fcarihrk-ba = "B" then
+                        move fcarihrk-tutar-doviz to z-tutar    move z-tutar to grd1-col-5
+                        move fcarihrk-tutar-tl    to z-tutar    move z-tutar to grd1-col-6
+                        add fcarihrk-tutar-doviz to alt-top-borc-dov
+                        add fcarihrk-tutar-tl    to alt-top-borc-tl
+                  end-if
+                  if fcarihrk-ba = "A" then
+                        move fcarihrk-tutar-doviz to z-tutar    move z-tutar to grd1-col-7
+                        move fcarihrk-tutar-tl    to z-tutar    move z-tutar to grd1-col-8
+                        add fcarihrk-tutar-doviz  to alt-top-alac-dov
+                        add fcarihrk-tutar-tl     to alt-top-alac-tl
+                  end-if
+
+                  initialize doviz-rec
+                  move FCARIHRK-TUTAR-DOVIZ-KODU to DOVIZ-KODU
+                  read doviz no lock invalid
+                           continue
+                  end-read
+                  move D-KISA-ADI        to grd1-col-11
+                  move FCARIHRK-STAF     to grd1-col-12
+                  move fcarihrk-anahtar  to grd1-col-10
+                  modify grd1,record-to-add(grd1-record)
+                 
+
+         end-read
+         end-perform 
+         end-start
+         close fcarihrk doviz
+
+         add 1 to grid-sayi
+         initialize grd1-record
+         move "TOPLAM"           to grd1-col-2
+         move alt-top-borc-dov   to z-tutar    move z-tutar to grd1-col-5
+         move alt-top-borc-tl    to z-tutar    move z-tutar to grd1-col-6
+
+         move alt-top-alac-dov   to z-tutar    move z-tutar to grd1-col-7
+         move alt-top-alac-tl    to z-tutar    move z-tutar to grd1-col-8
+         modify grd1,record-to-add(grd1-record)
+         modify grd1(grid-sayi),row-color = 481
+
+         initialize grd1-record
+         move "BAKIYE - MERKEZ BANKASI"           to grd1-col-2
+         open input doviz kur 
+         initialize doviz-rec
+         start doviz key not < doviz-KODU invalid
+                 continue
+         not invalid
+         perform until fs-doviz = "10"
+         read doviz next no lock end move "10" to fs-doviz
+         not end
+
+                 initialize kur-rec
+                 move tarih-tasi     to KUR-TARIH
+                 move 01             to kur-banka
+                 move doviz-kodu     to kur-doviz
+                 read kur no lock invalid
+                       exit perform cycle
+                 end-read
+ 
+                 add 1 to grid-sayi   
+                 MOVE d-kisa-ADI               TO GRD1-COL-4
+        
+                 COMPUTE hesapla-tl         = alt-top-borc-tl -  alt-top-alac-tl
+                 compute hesapla-tl rounded = hesapla-tl / DOVIZ-ALIS
+                 move hesapla-tl   to z-tutar   move z-tutar to grd1-col-5
+                
+                 modify grd1,record-to-add(grd1-record)
+                 modify grd1(grid-sayi),row-color = 112
+                 if d-kisa-ADI = "TL" then
+                       modify grd1(grid-sayi,5),cell-color = 176
+                       modify grd1(grid-sayi,6),cell-color = 176
+                 end-if
+                 initialize grd1-record
+         end-read
+         end-perform
+         end-start
+         close doviz kur
+         modify grd1, mass-update = 0.
+*
+ accept-0101-Bef-Procedure.
+        modify grd1,reset-grid = 1
+     .
+*
+ grd1-Ev-Other.
+      evaluate event-type
+          when msg-begin-entry
+              inquire grd1,x in sutun , y in satir
+              inquire grd1(satir,12),cell-data  fcarihrk-anah-sec
+              if fcarihrk-anah-sec <> spaces  
+                      move 1 to kayit-sil
+                      perform Acu-Form2-Routine
+                      perform grd1-guncelle
+                      move 0 to kayit-sil
+              end-if
+              move event-action-fail to event-action
+      end-evaluate
+     .
+*
+ raporla.
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+              initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                         dokumer-dosya
+
+              set  dokumer-asya-set to true
+              move print-no         to dokumer-dosya-adi
+              open output dokumer
+*/WINDOW TITLE
+              initialize dokumer-rec detay
+              move "W"                    to det-dokumer-20(1:)
+              move "Cari Ekstre Raporu" to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR
+              initialize dokumer-rec detay
+              move "B"                  to det-dokumer-20(1:)
+              move "Cari Ekstre Raporu" to det-filler
+              write dokumer-rec from detay
+
+              initialize dokumer-rec detay
+              move "B"                  to det-dokumer-20(1:)
+              move fcari-kodu to det-filler(1:5)
+              move "-"  to det-filler(6:1)
+              move fcari-adi  to det-filler(7:)
+              write dokumer-rec from detay
+
+*/ DOKUMER OZELLIKLER-REC
+              initialize dokumer-rec detay
+              move "O"                        to det-dokumer-20(1:)
+              move "E" to dokumer-oto-sayfa-basi
+              move 56  to dokumer-oto-sayfa-satir
+              move "|" to dokumer-detay-kolon-ayirici
+              move "LLLLLLLLLLLLLLLLLLLLLLLL" to dokumer-align-occ
+              move dokumer-ozellikler-rec     to det-filler
+              write dokumer-rec from detay
+*/ BASLIKLAR 
+              initialize dokumer-rec detay
+              move "D1"               to det-dokumer-20(1:)     
+              move "Tarih"         to det-1
+              move "Aciklama"      to det-2
+              move "Doviz"         to det-11
+              move "B/A"           to det-3
+              move "Kur"           to det-4
+              move "Borc-Doviz"    to det-5
+              move "Borc-TL-Tut."  to det-6
+              move "Alac-Doviz"    to det-7
+              move "Alac-TL-Tut."  to det-8
+              move "Zaman"         to det-9
+              move "Staf"          to det-12
+              move all "|" to fil-1 fil-2 fil-3 fil-4 fil-5 fil-6 fil-7 fil-8 fil-9 fil-11 fil-12
+              write dokumer-rec from detay
+              initialize dokumer-rec detay
+              move "D2"               to det-dokumer-20(1:)     
+              move "-"                to det-dokumer-20(5:1)
+              move all "-" to det-1 det-2 det-3 det-4 det-5 det-6 det-7 det-8 det-9 det-11 det-12
+              write dokumer-rec from detay
+
+             open input fcarihrk doviz
+             initialize fcarihrk-rec hrk-no alt-toplam grid-sayi
+             move 1 to grid-sayi
+             move fcari-tipi  to fcarihrk-tipi
+             move fcari-kodu  to fcarihrk-kodu
+             start fcarihrk key not < FCARIHRK-ANAHTAR invalid
+                   move 1 to hrk-no
+             not invalid
+             perform until fs-fcarihrk = "10"
+             read fcarihrk next no lock end move "10" to fs-fcarihrk
+             not end
+
+                  if fcarihrk-tipi <> fcari-tipi
+                        exit perform
+                  end-if
+                  if fcarihrk-kodu <> fcari-kodu
+                        exit perform
+                  end-if
+                      initialize detay dokumer-rec
+                      move fcarihrk-tarih-gun         to xtarih-gun
+                      move fcarihrk-tarih-ay          to xtarih-ay
+                      move fcarihrk-tarih-yil         to xtarih-yil
+                      move xtarih to det-1
+             
+                      move fcarihrk-zaman-saat        to xtarih-saat
+                      move fcarihrk-zaman-dakika      to xtarih-dakika
+                      move fcarihrk-zaman-saniye      to xtarih-saniye
+                      move xzaman to det-9
+             
+                      move fcarihrk-aciklama          to det-2
+                      move fcarihrk-tutar-kur         to z-kur
+                      move z-kur                      to det-4
+                      move fcarihrk-ba to det-3
+             
+                      if fcarihrk-ba = "B" then
+                            move fcarihrk-tutar-doviz to z-tutar    move z-tutar to det-5
+                            move fcarihrk-tutar-tl    to z-tutar    move z-tutar to det-6
+                            add fcarihrk-tutar-doviz to alt-top-borc-dov
+                            add fcarihrk-tutar-tl    to alt-top-borc-tl
+                      end-if
+                      if fcarihrk-ba = "A" then
+                            move fcarihrk-tutar-doviz to z-tutar    move z-tutar to det-7
+                            move fcarihrk-tutar-tl    to z-tutar    move z-tutar to det-8
+                            add fcarihrk-tutar-doviz  to alt-top-alac-dov
+                            add fcarihrk-tutar-tl     to alt-top-alac-tl
+                      end-if
+             
+                      initialize doviz-rec
+                      move FCARIHRK-TUTAR-DOVIZ-KODU to DOVIZ-KODU
+                      read doviz no lock invalid
+                               continue
+                      end-read
+                      move D-KISA-ADI to det-11
+                      move FCARIHRK-STAF to det-12
+                       
+                      write dokumer-rec from detay
+
+             end-read
+             end-perform 
+             end-start
+             close fcarihrk doviz
+             
+
+             initialize detay dokumer-rec
+             move "TOPLAM"           to det-2
+             move alt-top-borc-dov   to z-tutar    move z-tutar to det-5
+             move alt-top-borc-tl    to z-tutar    move z-tutar to det-6
+             
+             move alt-top-alac-dov   to z-tutar    move z-tutar to det-7
+             move alt-top-alac-tl    to z-tutar    move z-tutar to det-8
+
+             
+             move "A"          to det-dokumer-20(3:1)
+             move 481          to det-renk1
+             move "1"          to det-dokumer-20(10:1)
+
+             write dokumer-rec from detay
+             
+             initialize detay dokumer-rec
+             move "BAKIYE - MERKEZ BANKASI"           to det-2
+             open input doviz kur 
+             initialize doviz-rec
+             start doviz key not < doviz-KODU invalid
+                     continue
+             not invalid
+             perform until fs-doviz = "10"
+             read doviz next no lock end move "10" to fs-doviz
+             not end
+             
+                     initialize kur-rec
+                     move tarih-tasi     to KUR-TARIH
+                     move 01             to kur-banka
+                     move doviz-kodu     to kur-doviz
+                     read kur no lock invalid
+                           exit perform cycle
+                     end-read
+             
+                     add 1 to grid-sayi   
+                     MOVE d-kisa-ADI               TO det-4
+             
+                     COMPUTE hesapla-tl         = alt-top-borc-tl -  alt-top-alac-tl
+                     compute hesapla-tl rounded = hesapla-tl / DOVIZ-ALIS
+                     move hesapla-tl   to z-tutar   move z-tutar to det-5
+                    
+                     move "A"          to det-dokumer-20(3:1)
+                     move 112          to det-renk1
+                     move "1"          to det-dokumer-20(10:1)
+
+                     write dokumer-rec from detay
+                    
+                     initialize detay dokumer-rec
+             end-read
+             end-perform
+             end-start
+             close doviz kur
+
+             close dokumer
+             call dokumer-prog on exception
+                   perform callerr-proc
+             not on exception
+                   cancel dokumer-prog
+             end-call
+             delete file dokumer .
+*
+ raporla-mizan.
+              open i-o genelfis
+              move 1 to genelfis-anahtar
+              read genelfis no lock invalid
+                   accept print-no from time
+              not invalid
+                   add 1 to print-no 
+                   rewrite genelfis-rec end-rewrite
+              end-read
+              close genelfis
+              initialize dokumer-rec dokumer-anah dokumer-ozellikler-rec
+                         dokumer-dosya
+
+              set  dokumer-asya-set to true
+              move print-no         to dokumer-dosya-adi takas-cari-no
+              open output dokumer
+*/WINDOW TITLE
+              initialize dokumer-rec detay2
+              move "W"                    to det2-dokumer-20(1:)
+              move "Cari Mizan Raporu" to det2-filler
+              write dokumer-rec from detay2
+*/ BASLIKLAR
+              initialize dokumer-rec detay2
+              move "B"                  to det2-dokumer-20(1:)
+              move "Cari Mizan Raporu" to det2-filler
+              write dokumer-rec from detay2
+
+              initialize dokumer-rec detay
+              move "B"                  to det2-dokumer-20(1:)
+              move "Tum Mizan" to det2-filler
+              write dokumer-rec from detay2
+ 
+*/ DOKUMER OZELLIKLER-REC
+              initialize dokumer-rec detay2
+              move "O"                        to det2-dokumer-20(1:)
+              move "E" to dokumer-oto-sayfa-basi
+              move 56  to dokumer-oto-sayfa-satir
+              move "|" to dokumer-detay-kolon-ayirici
+              move "LLLRRRRRRRRRRR" to dokumer-align-occ
+              move dokumer-ozellikler-rec     to det2-filler
+              write dokumer-rec from detay2
+*/ BASLIKLAR 
+              initialize dokumer-rec detay2
+              move "D1"            to det2-dokumer-20(1:) 
+              move "Tipi"          to det2-7
+              move "Kodu"          to det2-1
+              move "Cari Adi"      to det2-2
+              move "Borc"          to det2-3
+              move "Alacak"         to det2-4
+              move "Bakiye"        to det2-5
+              move "Unvan"         to det2-6
+              move all "|" to fil2-1 fil2-2 fil2-3 fil2-4 fil2-5  fil2-6  fil2-7
+              write dokumer-rec from detay2
+              initialize dokumer-rec detay2
+              move "D2"               to det2-dokumer-20(1:)     
+              move "-"                to det2-dokumer-20(5:1)
+              move all "-" to det2-1 det2-2 det2-3 det2-4 det2-5 det2-6  det2-7
+              write dokumer-rec from detay2
+
+             open output takas-cari close takas-cari
+             open input fcarihrk fcari doviz
+             open i-o takas-cari
+             initialize fcarihrk-rec hrk-no alt-toplam grid-sayi
+             move 1 to grid-sayi
+             start fcarihrk key not < FCARIHRK-ANAHTAR invalid
+                       move 1 to hrk-no
+             not invalid
+             perform until fs-fcarihrk = "10"
+             read fcarihrk next no lock end move "10" to fs-fcarihrk
+             not end
+
+                      initialize fcari-rec
+                      move fcarihrk-tipi to fcari-tipi
+                      move fcarihrk-kodu to fcari-kodu
+                      read fcari no lock invalid
+                              continue
+                      end-read
+   
+                      initialize TAKAS-CARI-rec
+                      move FCARIHRK-kodu to TAKAS-CARI-KODU
+                      move fcarihrk-tipi to TAKAS-CARI-tipi
+                      if fcari-tipi = "A" then move "Acenta" to TAKAS-CARI-tip-adi  end-if
+                      if fcari-tipi = "F" then move "Firma"  to TAKAS-CARI-tip-adi  end-if
+                      if fcari-tipi = "D" then move "Diger"  to TAKAS-CARI-tip-adi  end-if
+
+                      read takas-cari no lock invalid
+                             move fcari-adi to TAKAS-CARI-ADI
+                             move FCARI-UNVANI to takas-cari-unvan
+                             if fcarihrk-ba = "B" then 
+                                  move fcarihrk-tutar-tl to TAKAS-CARI-BORC 
+                                  add fcarihrk-tutar-tl  to alt-top-BORC-tl
+                             end-if
+                             if fcarihrk-ba = "A" then
+                                  move fcarihrk-tutar-tl to TAKAS-CARI-alacak
+                                  add fcarihrk-tutar-tl   to alt-top-alac-tl
+                             end-if
+                             write takas-cari-rec invalid
+                                    stop " "
+                             end-write
+                      not invalid
+                            if fcarihrk-ba = "B" then 
+                                  add fcarihrk-tutar-tl to TAKAS-CARI-BORC 
+                                  add fcarihrk-tutar-tl  to alt-top-BORC-tl
+                            end-if
+                            if fcarihrk-ba = "A" then
+                                  add fcarihrk-tutar-tl  to TAKAS-CARI-alacak
+                                  add fcarihrk-tutar-tl   to alt-top-alac-tl
+                            end-if
+                            rewrite takas-cari-rec invalid
+                                    stop " "
+                            end-rewrite
+                          
+                    
+                      end-read
+
+ 
+                      
+
+             end-read
+             end-perform 
+             end-start
+             close fcarihrk fcari doviz takas-cari
+             
+
+             open input takas-cari 
+             initialize takas-cari-rec  
+             move 1 to grid-sayi
+             start takas-cari key not < takas-cari-kodu invalid
+                       move 1 to hrk-no
+             not invalid
+             perform until fs-takas-cari = "10"
+             read takas-cari next no lock end move "10" to fs-takas-cari
+             not end
+                       initialize dokumer-rec detay2
+                       move takas-cari-kodu  to det2-1
+                       move takas-cari-adi   to det2-2
+                       move takas-cari-unvan to det2-6
+                       move takas-cari-borc   to z-tutar 
+                       move z-tutar to det2-3
+
+                       move takas-cari-alacak to z-tutar
+                       move z-tutar to det2-4
+
+                       compute hesapla-tl = takas-cari-borc -  takas-cari-alacak
+                       move hesapla-tl to z-tutar
+                       move z-tutar to det2-5
+ 
+                       move TAKAS-CARI-tip-adi to det2-7
+                       write dokumer-rec from detay2
+
+             end-read
+             end-perform 
+             end-start
+             close takas-cari 
+ 
+             initialize detay2  dokumer-rec
+             move "TOPLAM"           to det2-2
+             move alt-top-borc-tl    to z-tutar    move z-tutar to det2-3
+             move alt-top-alac-tl    to z-tutar    move z-tutar to det2-4
+             COMPUTE hesapla-tl =  alt-top-borc-tl - alt-top-alac-tl
+             move hesapla-tl         to z-tutar
+             move z-tutar            to det2-5
+
+             move "A"          to det2-dokumer-20(3:1)
+             move 481          to det2-renk1
+             move "1"          to det2-dokumer-20(10:1)
+
+             write dokumer-rec from detay2
+
+             close dokumer
+             call dokumer-prog on exception
+                   perform callerr-proc
+             not on exception
+                   cancel dokumer-prog
+             end-call
+             delete file dokumer .
+
+
+
+
+
+
+
+ 

@@ -1,0 +1,1048 @@
+* fatiptal.evt
+* fatiptal.evt is generated from D:\asya\acugt.ytl\otel\fatiptal.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Bef-Create-Form1.
+     perform adresleri-tasi.
+       open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+    open input kllnc
+    initialize kllnc-rec 
+    move k-kodu-tasi  to k-kodu
+    read kllnc no lock invalid 
+       continue 
+    end-read 
+    close kllnc
+    perform acuserve-adres-aktar.
+      call "c$narg" using link-var.
+         
+     .
+*
+ Form1-Aft-Initdata.
+
+       if link-var > 0 then 
+          move link-fat-no to acc-fatura-no
+          display acc-fatura
+        end-if
+
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+     perform dil-ayarla-proc.
+*/-----------------------------\* 
+*
+ islem.
+
+        
+        initialize fatura-rec   rap-ger-no  rap-ger-seri  gtop-top gtop-ind gtop-kdv gtop-gen
+
+          display form1
+*/-----------------------------\*  
+*/---------DIL AYARLA----------\*    
+*/-----------------------------\*    
+          perform dil-ayarla-proc
+*/-----------------------------\*         
+          if acc-fatura-no = zeroes
+             move 4 to accept-control
+             move 4103 to control-id
+             exit paragraph
+          end-if
+
+          open input fatura
+          move acc-fatura-no            to fatura-no
+          move 0                        to fatura-sira
+          read fatura no lock invalid
+          display message box 
+                  acc-fatura-no," numarali fatura bulunamadi !"
+                  icon mb_warning_icon
+                  title "Hata"
+                  close fatura
+                  move 4 to accept-control
+                  move 4103 to control-id
+                  exit paragraph                
+          end-read
+          if k-fatura-iptal-edemez = 1
+              if FATURA-TARIHI <> tarih-tasi
+                          display message box 
+                                  "Gecmis Tarihli Fatura Iptal Edilemez..Kullanici Yetkilerini Kontrol Ediniz.!!"
+                                  icon mb_warning_icon
+                                  title "Hata"
+                                  close fatura
+                                  move 4 to accept-control
+                                  move 4103 to control-id
+                                  exit paragraph                  
+              end-if 
+          end-if 
+            open i-o gerfat
+                    initialize gerfat-rec
+        
+                    move fatura-anah to gerfat-anah
+                    read gerfat no lock invalid continue
+                    end-read
+
+                    if k-kodu-tasi = "ASYA" or "X   "
+                           display message box    "gerfat-SERI      :"        gerfat-SERI    new-line        
+                                                  "gerfat-NO        :"         gerfat-NO         new-line      
+                                                                                                   
+                                                  "gerfat-onek      :"         gerfat-onek       new-line      
+                                                  "gerfat-gerfatno  :"         gerfat-gerfatno  new-line       
+                                                  "GERFAT-gonderim  :"         GERFAT-gonderim  new-line       
+                                                  "gerfat-fat-tar   :"         gerfat-fat-tar   new-line       
+                                                  "gerfat-durumu    :"         gerfat-durumu    new-line       
+                                                  "gerfat-no-alindi :"         gerfat-no-alindi  new-line      
+                                                  "gerfat-muhagerfat:"         gerfat-muhagerfat new-line
+                    end-if
+          
+            close gerfat
+************************************************************************ 
+          move FATURA-TARIHI  to muhasebe-tar          || muhasebe gecen sene sirketine kesilen fatura iptali... firat
+          perform muhasebe-entegre-kontrol
+          if  muh-isl-durdur = 1 
+            exit paragraph
+          end-if
+***********************************************************************
+          move fatura-matrah      to gtop-top
+          move fatura-indirim     to gtop-ind
+          move fatura-kdv         to gtop-kdv
+          move fatura-g-toplam    to gtop-gen
+          move FATURA-GERCEK-FAT to rap-ger-no
+         move FATURA-onek        to rap-ger-seri
+         if gerfat-no-alindi not = 1 
+               initialize  rap-ger-no 
+               if gerfat-no-alindi = 0
+                 initialize  rap-ger-seri
+               end-if
+         end-if
+          display form1
+
+
+          
+           if fatura-E-tipi = "E" 
+                   display message box 
+                  acc-fatura-no," numarali fatura Elektronik Fatura Onayi beklemektedir." new-line
+                  "Portaldan da silinecektir "
+                  icon mb_warning_icon
+                  title "Uyari"
+                
+                    
+           
+           end-if
+           if fatura-E-tipi = "O"
+                  display message box 
+                  acc-fatura-no," numarali fatura Elektronik olarak onaylanmis   edilemez"
+                  icon mb_warning_icon
+                  title "Hata"
+                   set exit-pushed to true
+                     exit paragraph
+           
+           end-if
+          if fatura-durumu <> "D" and fatura-durumu <>  "I"
+                    display message box 
+                  acc-fatura-no," numarali fatura kesilmemis ya da daha once iptal edilmis !"
+                  icon mb_warning_icon
+                  title "Hata"
+*                  close fatura
+*                  move 4 to accept-control
+*                  move 4103 to control-id
+*                  exit paragraph
+          end-if
+          move fatura-matrah      to gtop-top
+          move fatura-indirim     to gtop-ind
+          move fatura-kdv         to gtop-kdv
+          move fatura-g-toplam    to gtop-gen
+          move FATURA-GERCEK-FAT to rap-ger-no
+          move FATURA-onek        to rap-ger-seri
+     
+             display form1
+         
+          close fatura.
+         
+ 
+ 
+    
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 5         
+          open input fatura
+          initialize fatura-rec
+          move acc-fatura-no            to fatura-no
+          move 0                        to fatura-sira
+          read fatura no lock invalid
+          display message box 
+                  acc-fatura-no," numarali fatura bulunamadi !"
+                  icon mb_warning_icon
+                  title "Hata"
+                  close fatura
+                  move 4 to accept-control
+                  move 4103 to control-id
+                  exit paragraph                
+          end-read
+          close fatura 
+          if fatura-e-tipi not = "E"
+             perform e-arsiv-yeniden-yazdir
+          else
+             display message box "E-Fatura Yeniden Yazdirilamaz.."
+                             title "Uyari"
+                             icon 1
+          end-if 
+     when 2
+         perform islem
+     when 3
+     when 4   
+          move isyeri-adres-tasi to muha-sirket-kontrol
+          if muhasebe-entegre-sirketi <> spaces 
+             move muhasebe-entegre-sirketi to muha-sirket-kontrol
+          end-if              
+
+*         move FATURA-TARIHI  to muhasebe-tar          || muhasebe gecen sene sirketine kesilen fatura iptali... firat
+*          perform muhasebe-entegre-kontrol
+*          if  muh-isl-durdur = 1 
+*            exit paragraph
+*          end-if
+
+          if acc-fatura-no = zeroes
+             move 4 to accept-control
+             move 4103 to control-id
+             exit paragraph
+          end-if
+          if link-var = 0 then 
+             display message box 
+                     acc-fatura-no," numarali fatura iptal edilecektir",new-line
+                     new-line
+                     "Emin misiniz ?"
+                          icon mb_warning_icon
+                          title "Fatura iptali"
+                          type mb_yes_no
+                          default 2
+                          returning return-code
+             if return-code <> 1
+                move 4 to accept-control
+                move 4103 to control-id
+                exit paragraph
+             end-if
+          end-if
+          
+              
+           
+          open i-o fatura
+          move acc-fatura-no            to fatura-no
+          move 0                        to fatura-sira
+          read fatura no lock invalid
+               display message box 
+                       acc-fatura-no," numarali fatura bulunamadi !"
+                       icon mb_warning_icon
+                       title "Hata"
+                       close fatura
+                       exit paragraph
+          end-read
+          if k-fatura-iptal-edemez = 1
+              if FATURA-TARIHI <> tarih-tasi
+                          display message box 
+                                  "Gecmis Tarihli Fatura Iptal Edilemez..Kullanici Yetkilerini Kontrol Ediniz.!!"
+                                  icon mb_warning_icon
+                                  title "Hata"
+                                  close fatura
+                                  move 4 to accept-control
+                                  move 4103 to control-id
+                                  exit paragraph                  
+              end-if 
+          end-if 
+          if fatura-tipi = "O"
+                  display message box 
+                  acc-fatura-no," numarali fatura Elektronik olarak onaylanmis Iptal edilemez"
+                  icon mb_warning_icon
+                  title "Hata"
+                     close fatura
+                  exit paragraph
+           
+          end-if
+         
+          if fatura-durumu <> "D"
+          display message box 
+                  acc-fatura-no," numarali fatura kesilmemis ya da daha once iptal edilmis !"
+                  icon mb_warning_icon
+                  title "Hata"
+*                  close fatura
+*                  move 4 to accept-control
+*                  move 4103 to control-id
+*                  exit paragraph
+          end-if
+
+          move fatura-matrah      to gtop-top
+          move fatura-indirim     to gtop-ind
+          move fatura-kdv         to gtop-kdv
+          move fatura-g-toplam    to gtop-gen
+          move FATURA-GERCEK-FAT to rap-ger-no
+          move FATURA-onek        to rap-ger-seri
+    
+          display form1
+          move 0 to durdur
+         
+          if fatura-e-tipi = "E" then
+             open i-o alsat alsatek
+*             perform alsat-sira-bul
+             initialize alsat-rec
+             move "O" to alsat-kaynak 
+
+             move isyeri-adres-tasi to alsat-kaynak-kutuphane          |firat gecen sene kutuphanesi için düzenlendi  
+*             move muha-sirket-kontrol to alsat-kaynak-kutuphane
+
+             move fatura-no(3:)     to alsat-belge-no
+             move "S"               to alsat-tipi      
+             move FATURA-TARIHI     to alsat-tarih
+             move 1                 to alsat-sira
+*             move xiii              to alsat-sira
+             move  fatura-e-cari    to alsat-toplam-hesap    
+             read alsat no lock invalid             
+                    display message box "Portalda Yok"  icon 2 
+             not invalid 
+
+                 if alsat-kaynak-kutuphane not = spaces and         | firat gecen sene sirketi için düzenlendi
+                    alsat-kaynak-kutuphane = isyeri-adres-tasi
+*                 if alsat-kaynak-kutuphane not = spaces and 
+*                   alsat-kaynak-kutuphane = muha-sirket-kontrol
+
+                    initialize alsatek-rec
+                    move alsat-ana-anahtar to alsatek-ana-anahtar
+                    read alsatek invalid 
+                         continue
+                    not invalid
+                        delete alsatek invalid stop  "  "
+                        end-delete
+                    end-read
+                    if alsat-efatura-mi not = "E" then 
+                       display message box "Onayli Fatura iptal edilecektir.."
+                                    title "Uyari"
+                                    icon 1
+                    else
+                       delete alsat invalid 
+                           display message box "Elektronik Fatura Portalindan Bulunamadi"
+                       not invalid
+                           move alsat-ana-anahtar to yedek-alsat-anahtar
+                           move 1                 to alsat-sira
+                           start alsat key > alsat-anahtar invalid 
+                                 continue
+                           not invalid 
+                           perform until fs-alsat = "10"
+                           read alsat next no lock end move "10" to fs-alsat
+                           not end
+                               if alsat-ana-anahtar not = yedek-alsat-anahtar 
+                                  move "10" to fs-alsat
+                               else
+                                  delete alsat invalid continue  end-delete
+                               end-if
+                           end-read
+                           end-perform
+                           end-start
+                           display message box "Elektronik Fatura Portalindan Silindi" title "Bilgi"
+                       end-delete
+                    end-if
+                 end-if
+             end-read
+             close alsat alsatek
+          else
+             open i-o alsat alsatek
+*             perform alsat-sira-bul
+             initialize alsat-rec
+             move "O"               to alsat-kaynak 
+
+             move isyeri-adres-tasi to alsat-kaynak-kutuphane         | firat gecen sene sirketi için düzenlendi
+*             move muha-sirket-kontrol to alsat-kaynak-kutuphane
+
+             move fatura-no(3:)     to alsat-belge-no
+             move "S"               to alsat-tipi      
+             move FATURA-TARIHI     to alsat-tarih
+             move 1                 to alsat-sira
+*             move xiii              to alsat-sira
+             move fatura-e-cari     to alsat-toplam-hesap    
+             read alsat no lock invalid             
+                    continue 
+             not invalid 
+
+                 if alsat-kaynak-kutuphane not = spaces and         | firat gecen sene sirketi için düzenlendi
+                    alsat-kaynak-kutuphane  = isyeri-adres-tasi
+*                 if alsat-kaynak-kutuphane not = spaces and 
+*                    alsat-kaynak-kutuphane  = muha-sirket-kontrol
+
+                    initialize alsatek-rec
+                    move alsat-ana-anahtar to alsatek-ana-anahtar
+                    read alsatek invalid 
+                         continue
+                    not invalid
+                        delete alsatek invalid 
+                               stop  "  "
+                        end-delete
+                    end-read
+                    delete alsat invalid 
+                                |display message box "Elektronik Fatura Portalindan Bulunamadi"
+                       continue
+                    not invalid
+                        move alsat-ana-anahtar to yedek-alsat-anahtar
+                        move 1                 to alsat-sira
+                        start alsat key > alsat-anahtar invalid 
+                              continue
+                        not invalid 
+                        perform until fs-alsat = "10"
+                        read alsat next no lock end move "10" to fs-alsat
+                        not end
+                            if alsat-ana-anahtar not = yedek-alsat-anahtar 
+                               move "10" to fs-alsat
+                            else
+                               delete alsat invalid stop " "   end-delete
+                            end-if
+                        end-read
+                        end-perform
+                        end-start
+                                   |display message box "Elektronik Fatura Portalindan Silindi" title "Bilgi"
+                    end-delete
+                 end-if
+             end-read
+             close alsat  alsatek
+          end-if
+          if durdur not = 1
+             perform fatura-sifirla
+          end-if
+          initialize fatura-rec gtop-top gtop-ind gtop-kdv gtop-gen     rap-ger-no   rap-ger-seri
+     
+          display form1
+     
+
+          close fatura
+          display message box 
+                  acc-fatura-no," numarali fatura iptal edildi "
+                  title "Bilginize ..."
+         
+             initialize  acc-fatura-no 
+              display acc-fatura
+        
+          move 4 to accept-control
+          move 4103 to control-id
+        
+          
+
+     end-evaluate.
+     
+     .
+*
+ alsat-sira-bul.    
+     initialize alsat-rec xiii
+     move "O"               to alsat-kaynak 
+     move "S"               to alsat-tipi      
+     move 1                 to alsat-sira
+     move FATURA-TARIHI     to alsat-tarih 
+     move fatura-no         to alsat-belge-no | 29.11.2019 Kadir burayý deðiþtirdi. Eski Hali --> fatura-no(3:)
+*     move fatura-e-cari     to alsat-toplam-hesap    
+*     move isyeri-adres-tasi to alsat-kaynak-kutuphane
+     start alsat key not < alsat-anahtar invalid
+           continue
+     not invalid
+     perform with test after until fs-alsat = "10"
+     read alsat next no lock end move "10" to fs-alsat 
+     not at end 
+
+         if FATURA-TARIHI <> alsat-tarih
+            exit perform
+         end-if
+
+         if "O"           = alsat-kaynak       and 
+            FATURA-TARIHI = alsat-tarih    and     
+            "S"           = alsat-tipi         and 
+            fatura-no     = alsat-belge-no and
+            fatura-e-cari = alsat-toplam-hesap and 
+*            isyeri-adres-tasi = alsat-kaynak-kutuphane      | firat gecen sene sirketi için düzenlendi 
+            muha-sirket-kontrol = alsat-kaynak-kutuphane 
+            move alsat-sira to xiii
+            exit perform 
+         end-if
+
+     end-read 
+     end-perform 
+     end-start
+
+     .
+
+*
+ dev-fatura-sil.             
+        if fatura-tipi = "D" AND  GENEL-DEVREMULK  of genel = 1 then
+               open i-o devremulk
+               move FATDETAY-DEVREMULK-NO to devremulk-no
+               read devremulk no lock invalid
+                       stop " "
+               not invalid
+                   if devremulk-fatura-no <> acc-fatura-no then
+                       display message box "Devremulk Faturasi Iptal Edilemedi"
+                       close devremulk 
+                       exit paragraph
+                   end-if
+                   initialize devremulk-fatura-no devremulk-fatura-saati  devremulk-fatura-tarihi
+                   rewrite devremulk-rec invalid
+                           stop " "
+                   end-rewrite
+               end-read
+               close devremulk 
+         open i-o odemeler
+         initialize odemeler-rec
+         move FATDETAY-DEVREMULK-NO  to odemeler-devremulk-no
+         move 1            to odemeler-sira
+         start odemeler key not < odemeler-anah invalid
+                 continue
+         not invalid
+         perform until fs-odemeler = "10"
+         read odemeler next no lock end move "10" to fs-odemeler
+         not end
+                 if FATDETAY-DEVREMULK-NO <> odemeler-devremulk-no then
+                       exit perform
+                 end-if
+                 if odemeler-fatura-no <> acc-fatura-no then
+                       exit perform cycle
+                 end-if
+ 
+                 evaluate odemeler-islem-turu
+                   when "SO"
+                       continue 
+                   when "IO"
+                       continue 
+                   when "SP"               
+                   when "NP"               
+                   when "PM"
+                   when "AG"               
+                   when "DP"                
+                   when "GS"               
+                   when "GN"
+                   WHEN "PP"
+                   WHEN "SS"
+                   when "AV"
+                   WHEN "AI"
+                   WHEN "AO"
+                   WHEN "BO"
+                   WHEN "BK"
+                        exit perform cycle 
+                   when "FO"
+                       continue                 
+                   when "PI"
+                       continue 
+                   WHEN OTHER 
+                        exit perform cycle 
+                end-evaluate
+
+                 initialize odemeler-fatura-no
+                 rewrite odemeler-rec invalid
+                             stop " "
+                 end-rewrite
+
+         end-read
+         end-perform
+         end-start
+         close odemeler
+        end-if 
+        if fatura-tipi = "Y" AND  GENEL-DEVREMULK  of genel = 1 then
+                
+         open i-o odemeler
+         initialize odemeler-rec
+         move FATDETAY-DEVREMULK-NO  to odemeler-devremulk-no
+         move 1            to odemeler-sira
+         start odemeler key not < odemeler-anah invalid
+                 continue
+         not invalid
+         perform until fs-odemeler = "10"
+         read odemeler next no lock end move "10" to fs-odemeler
+         not end
+                 if FATDETAY-DEVREMULK-NO <> odemeler-devremulk-no then
+                       exit perform
+                 end-if
+                 if odemeler-fatura-no <> acc-fatura-no then
+                       exit perform cycle
+                 end-if
+ 
+                 evaluate odemeler-islem-turu
+                   WHEN "AI"
+                   WHEN "AO"
+                       continue 
+                   WHEN OTHER 
+                        exit perform cycle 
+                 end-evaluate
+
+                 initialize odemeler-fatura-no
+                 rewrite odemeler-rec invalid
+                             stop " "
+                 end-rewrite
+         end-read
+         end-perform
+         end-start
+         close odemeler
+        end-if.
+
+*
+ fatura-sifirla.
+   
+     open i-o fatdetay exthrk romhrk  yromhrk hrk2 gerfat  fatdetayek
+     open input konuk
+     initialize fatdetay-rec
+     move fatura-tarihi to fatdetay-fat-tar
+      start fatdetay key > fatdetay-anah invalid
+        continue
+        not invalid
+        perform until fs-fatdetay = "10" 
+          read fatdetay next no lock end 
+            move "10" to fs-fatdetay
+            not end
+            if fatura-tarihi not = fatdetay-fat-tar
+                move "10" to fs-fatdetay
+            else
+              if function numval(fatdetay-fat-no) = acc-fatura-no then
+              PERFORM dev-fatura-sil
+               delete fatdetay  invalid stop " " end-delete
+               if tam-sil = 0
+                  perform romhrk-fatura-sil
+                  perform exthrk-fatura-sil
+               end-if
+             end-if
+           end-if
+          end-read
+
+        end-perform 
+      end-start
+       initialize fatdetayek-rec
+     move fatura-tarihi to fatdetayek-fat-tar
+      start fatdetayek key > fatdetayek-anah invalid
+        continue
+        not invalid
+        perform until fs-fatdetayek = "10" 
+          read fatdetayek next no lock end 
+            move "10" to fs-fatdetayek
+            not end
+            if fatura-tarihi not = fatdetayek-fat-tar
+                move "10" to fs-fatdetayek
+            else
+              if function numval(fatdetayek-fat-no) = acc-fatura-no then
+             
+               delete fatdetayek  invalid stop " " end-delete
+               
+             end-if
+           end-if
+          end-read
+
+        end-perform 
+      end-start
+          if tam-sil = 1
+            initialize fatdetay-rec
+                 start fatdetay key > fatdetay-anah invalid
+                continue
+                not invalid
+                perform until fs-fatdetay = "10" 
+                  read fatdetay next no lock end 
+                    move "10" to fs-fatdetay
+                    not end
+                      if function numval(fatdetay-fat-no) = acc-fatura-no then
+                         delete fatdetay  invalid stop " " end-delete
+                      end-if
+                  end-read
+        
+                end-perform 
+              end-start
+                perform romhrk-fatura-sil
+                perform exthrk-fatura-sil
+          end-if
+
+    
+     initialize fatura-rec
+     move acc-fatura-no            to fatura-no
+     start fatura key not < fatura-anah invalid
+           continue
+     not invalid
+     initialize fs-fatura
+     perform with test after until fs-fatura = "10"
+     read fatura next no lock end move "10" to fs-fatura
+     not at end
+          if fatura-no <> acc-fatura-no
+             exit PERFORM
+          else
+             if key-status = 4 
+                move FATURA-onek to yedek-onek 
+                move FATURA-GERCEK-FAT   to yedek-gercek-fat
+             
+               initialize fatura-data
+               move yedek-onek to FATURA-onek
+               move yedek-gercek-fat to   FATURA-GERCEK-FAT
+                move "B" to fatura-durumu
+                move k-kodu-tasi to fatura-staf
+               
+
+             else
+                move "I" to fatura-durumu
+             end-if
+             if fatura-sira = 0 
+               
+
+                 move fatura-anah to gerfat-anah
+                 read gerfat no lock invalid continue
+                 end-read
+                  move fatura-durumu to gerfat-durumu
+                   if key-status = 4 then 
+                     initialize gerfat-no-alindi fatura-no-alindi
+                   end-if
+                write gerfat-rec invalid rewrite gerfat-rec
+            
+             end-if
+
+
+             rewrite fatura-rec invalid display message box "Gecici" end-rewrite
+                
+          end-if
+     end-read
+     end-perform
+     end-start.
+      close  hrk2 konuk exthrk romhrk fatdetay yromhrk gerfat fatdetayek.
+
+
+
+
+
+
+*
+ romhrk-fatura-sil.
+     initialize romhrk-rec
+     if tam-sil not = 1 then 
+         move fatdetay-folio to romhrk-folio
+     end-if
+
+     start romhrk key not < romhrk-anah invalid
+           exit paragraph.
+
+     initialize fs-romhrk
+     perform with test after until fs-romhrk = "10"
+     read romhrk next no lock end move "10" to fs-romhrk
+     not at end
+       if romhrk-folio not = fatdetay-folio and tam-sil not = 1 
+            move "10" to fs-romhrk
+       else 
+          if romhrk-fatura-no =  acc-fatura-no 
+            or ( romhrk-fatura-no = 0 and tam-sil = 0)
+
+             move romhrk-anah to hrk2-anah yromhrk-anah
+             read hrk2 no lock invalid 
+                 stop " "
+              not invalid
+                  move hrk2-kaynak-folio to yromhrk-folio
+                  read yromhrk no lock 
+                       invalid 
+                       stop " "
+                    not invalid
+                          initialize yromhrk-fatura-no
+                          rewrite yromhrk-rec end-rewrite
+                   end-read
+    
+             end-read
+          end-if
+          if romhrk-fatura-no = acc-fatura-no
+             initialize romhrk-fatura-no
+             rewrite romhrk-rec end-rewrite
+             perform log-operation-romhrk
+          end-if
+       end-if
+     end-read
+     end-perform.
+
+ exthrk-fatura-sil.
+     initialize exthrk-rec
+      if tam-sil not = 1 then 
+        move fatdetay-folio to exthrk-folio
+     end-if
+     start exthrk key not < exthrk-anah invalid
+           exit paragraph.
+
+     initialize fs-exthrk
+     perform with test after until fs-exthrk = "10"
+     read exthrk next no lock end move "10" to fs-exthrk
+     not at end
+          if exthrk-folio not = fatdetay-folio  and  tam-sil not = 1 
+            move "10" to fs-exthrk
+            else 
+             if exthrk-fatura-no =  acc-fatura-no or ( exthrk-fatura-no = 0   and tam-sil = 0 )
+             move exthrk-anah to hrk2-anah yromhrk-anah
+             read hrk2 no lock invalid stop " "
+              not invalid
+                  move hrk2-kaynak-folio to yromhrk-folio
+                  read yromhrk no lock invalid stop " "
+                    not invalid
+                          initialize yromhrk-fatura-no
+                          rewrite yromhrk-rec end-rewrite
+                   end-read
+    
+             end-read
+          end-if
+          if exthrk-fatura-no = acc-fatura-no
+             initialize exthrk-fatura-no
+             rewrite exthrk-rec end-rewrite
+             perform log-operation-exthrk
+          end-if
+         end-if
+     end-read
+     end-perform.
+*
+ acuserve-adres-aktar.
+*    move muha-sirketi of genel-rec to CARI-DOSYA-adres         
+    move muhasebe-entegre-sirketi to CARI-DOSYA-adres         
+                         ISLENEN-DOSYA-adres      
+                         HESAP-DOSYA-adres        
+                         MAHSUP-DOSYA-adres       
+                         alsat-dosya-adres 
+                         alsatek-dosya-adres 
+                         REFERANS-DOSYA-adres     
+                         Mgenel-DOSYA-adres       
+                        
+                       
+                
+
+    move all low-values to      
+                           CARI-ACUSERVE-DOSYA 
+                           alsat-ACUSERVE-DOSYA       
+                           
+                           ISLENEN-ACUSERVE-DOSYA    
+                           HESAP-ACUSERVE-DOSYA      
+                           MAHSUP-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA   
+                           REFERANS-ACUSERVE-DOSYA  
+                           alsatek-ACUSERVE-DOSYA   
+                           Mgenel-ACUSERVE-DOSYA     
+                           genelfis-ACUSERVE-DOSYA  
+                           ip-no.
+
+
+    inspect genel-muha-uzak-ip 
+            replacing trailing spaces by low-values.
+
+    if genel-muha-uzak-ip <> low-values
+       move all low-values to ip-no
+       string ip-no,
+              "@" delimited by low-values
+              genel-muha-uzak-ip delimited by low-values
+              ":" delimited by low-values
+              into ip-no
+    end-if
+
+    string mgenel-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mgenel-dosya                    delimited by low-values
+           into mgenel-acuserve-dosya.
+    string genelfis-acuserve-dosya,
+           ip-no                        delimited by low-values
+           genelfis-dosya                 delimited by low-values
+           into genelfis-acuserve-dosya.
+
+    
+    string hesap-acuserve-dosya,
+           ip-no                        delimited by low-values
+           hesap-dosya                 delimited by low-values
+           into hesap-acuserve-dosya.
+    string mahsup-acuserve-dosya,
+           ip-no                        delimited by low-values
+           mahsup-dosya                 delimited by low-values
+           into mahsup-acuserve-dosya.
+    string cari-acuserve-dosya,
+           ip-no                        delimited by low-values
+           cari-dosya                 delimited by low-values
+           into cari-acuserve-dosya.
+    string alsat-acuserve-dosya,
+           ip-no                        delimited by low-values
+           alsat-dosya                 delimited by low-values
+           into alsat-acuserve-dosya.
+    string alsatek-acuserve-dosya,
+           ip-no                        delimited by low-values
+           alsatek-dosya                 delimited by low-values
+           into alsatek-acuserve-dosya.
+    string islenen-acuserve-dosya,
+           ip-no                        delimited by low-values
+           islenen-dosya               delimited by low-values
+           into islenen-acuserve-dosya.
+    string referans-acuserve-dosya,
+           ip-no                        delimited by low-values
+           referans-dosya                delimited by low-values
+           into referans-acuserve-dosya.
+    inspect alsatek-ACUSERVE-DOSYA     replacing  all spaces by low-values
+    inspect alsat-ACUSERVE-DOSYA       replacing  all spaces by low-values
+    inspect CARI-ACUSERVE-DOSYA        replacing  all spaces by low-values
+    inspect ISLENEN-ACUSERVE-DOSYA     replacing  all spaces by low-values
+    inspect HESAP-ACUSERVE-DOSYA       replacing  all spaces by low-values
+    inspect MAHSUP-ACUSERVE-DOSYA      replacing  all spaces by low-values
+    inspect genelfis-ACUSERVE-DOSYA    replacing  all spaces by low-values
+    inspect REFERANS-ACUSERVE-DOSYA    replacing  all spaces by low-values
+    inspect mgenel-ACUSERVE-DOSYA      replacing  all spaces by low-values
+    inspect genelfis-ACUSERVE-DOSYA    replacing  all spaces by low-values. 
+*
+ e-arsiv-yeniden-yazdir.
+          move isyeri-adres-tasi to muha-sirket-kontrol
+          if muhasebe-entegre-sirketi <> spaces 
+             move muhasebe-entegre-sirketi to muha-sirket-kontrol
+          end-if              
+          if acc-fatura-no = zeroes
+             move 4 to accept-control
+             move 4103 to control-id
+             exit paragraph
+          end-if
+*           if link-var = 0 then 
+*                  display message box 
+*                          acc-fatura-no," numarali fatura iptal edilecektir",new-line
+*                          new-line
+*                          "Emin misiniz ?"
+*                          icon mb_warning_icon
+*                          title "Fatura iptali"
+*                          type mb_yes_no
+*                          default 2
+*                          returning return-code
+*                   if return-code <> 1
+*                     move 4 to accept-control
+*                     move 4103 to control-id
+*                     exit paragraph
+*                  end-if
+*            end-if
+          
+              
+
+          open i-o fatura
+          move acc-fatura-no            to fatura-no
+          move 0                        to fatura-sira
+          read fatura no lock invalid
+          display message box 
+                  acc-fatura-no," numarali fatura bulunamadi !"
+                  icon mb_warning_icon
+                  title "Hata"
+                  close fatura
+                  exit paragraph
+          end-read
+           if fatura-tipi = "O"
+                  display message box 
+                  acc-fatura-no," numarali fatura Elektronik olarak onaylanmis Iptal edilemez"
+                  icon mb_warning_icon
+                  title "Hata"
+                     close fatura
+                  exit paragraph
+           
+           end-if
+         
+          if fatura-durumu <> "D"
+          display message box 
+                  acc-fatura-no," numarali fatura kesilmemis ya da daha once iptal edilmis !"
+                  icon mb_warning_icon
+                  title "Hata"
+ 
+          end-if
+
+ 
+
+////********************************
+                open input genel
+                initialize genel-rec
+                move 1 to genel-anahtar
+                read genel no lock invalid continue
+                     not invalid continue
+                end-read
+                close genel
+     
+        
+                if muha-sirketi(7:2) <> fatura-yil(3:2) and function numval(muha-sirketi(7:2)) > 0 
+                    move fatura-yil(3:2) to muha-sirketi of genel-rec(7:2)
+                end-if
+
+                move muha-sirketi of genel-rec to alsat-dosya-adres
+        
+                move all low-values to alsat-acuserve-dosya
+                
+                inspect genel-muha-uzak-ip 
+                         replacing trailing spaces by low-values
+        
+                if genel-muha-uzak-ip <> low-values
+                     move all low-values to ip-no
+                     string ip-no,
+                           "@" delimited by low-values
+                           genel-muha-uzak-ip delimited by low-values
+                           ":" delimited by low-values
+                           into ip-no
+                 end-if
+                 string alsat-acuserve-dosya,
+                           ip-no                        delimited by low-values
+                           alsat-dosya                delimited by low-values
+                           into alsat-acuserve-dosya
+        
+                 inspect alsat-acuserve-dosya        replacing  all spaces by low-values
+        
+
+//?*********************************
+
+          move fatura-matrah      to gtop-top
+          move fatura-indirim     to gtop-ind
+          move fatura-kdv         to gtop-kdv
+          move fatura-g-toplam    to gtop-gen
+           move FATURA-GERCEK-FAT to rap-ger-no
+      move FATURA-onek        to rap-ger-seri
+    
+          display form1
+          move 0 to durdur  
+                   open i-o alsat
+                   initialize alsat-rec
+                   move "O"                     to alsat-kaynak 
+*                   move isyeri-adres-tasi       to alsat-kaynak-kutuphane
+                   move muha-sirket-kontrol       to alsat-kaynak-kutuphane
+                   move fatura-no(3:)           to alsat-belge-no
+                   move "S"                     to alsat-tipi      
+                   move FATURA-TARIHI           to alsat-tarih
+                   move 1                       to alsat-sira
+                   move  fatura-e-cari          to alsat-toplam-hesap    
+                   read alsat no lock invalid             
+                          display message box "Portalda Yok"  icon 2 
+                   not invalid 
+      
+                        initialize efatr1-lnk
+                        move alsat-ana-anahtar         to efatr1-lnk
+                        move k-kodu-tasi               to yedek-k-kodu-tasi
+                        move isyeri-adres-tasi         to yedek-isyeri-adres-tasi        
+                        move "ASYA"                    to k-kodu-tasi              
+                        move muha-sirketi              to isyeri-adres-tasi  
+                
+                        if genel-muha-uzak-ip not = spaces  and  function numval(genel-muha-uzak-ip(1:1)) > 0 
+                           move "ASYA"             to efatr1-uzak-k-kodu-tasi
+                           move "E"                to efatr1-uzak-call 
+                           move isyeri-adres-tasi  to efatr1-uzak-isyeri-adres-tasi
+                           move genel-muha-uzak-ip to efatr1-uzak-ip       
+                           call "/asya/ytl/obj/muha/earsivprintmanager.asy" using efatr1-lnk
+                           on exception 
+                                 
+                              move yedek-k-kodu-tasi       to k-kodu-tasi
+                              move yedek-isyeri-adres-tasi to isyeri-adres-tasi
+                              perform callerr-proc
+                           not on exception
+                           cancel "/asya/ytl/obj/muha/earsivprintmanager.asy"
+                           end-call                            
+                        else 
+                             move " "                to efatr1-uzak-call 
+                           call "/asya/ytl/obj/muha/earsivprintmanager.asy" using efatr1-lnk
+
+                           on exception 
+                              move yedek-k-kodu-tasi       to k-kodu-tasi
+                              move yedek-isyeri-adres-tasi to isyeri-adres-tasi
+                              perform callerr-proc
+                           not on exception
+                           cancel "/asya/ytl/obj/muha/earsivprintmanager.asy"
+                           end-call
+                        end-if 
+                        
+                        move yedek-k-kodu-tasi       to k-kodu-tasi
+                        move yedek-isyeri-adres-tasi to isyeri-adres-tasi
+                   end-read
+                   close alsat                  
+          close fatura          
+          move 4 to accept-control
+          move 4103 to control-id.       
+
+ 

@@ -1,0 +1,229 @@
+* phesgun.evt
+* phesgun.evt is generated from D:\asya\acugt.ytl\otel\phesgun.Psf
+* This is a generated file. DO NOT modify this file directly.
+
+
+ Form1-Event-Proc.
+     .
+
+ Form1-Exception-Proc.
+     PERFORM Form1-Ex-Other
+     .
+***   start event editor code   ***
+*
+ Form1-Bef-Create.
+     perform adresleri-tasi
+         call "c$narg" using link-var.
+      if link-var = 1 
+        move l-gun-say   to oncele
+       
+        else
+        move 1 to oncele
+    
+     end-if
+   
+        move tarih-tasi to starih
+                    move  function INTEGER-OF-DATE(starih) to s2tarih
+                    subtract oncele from s2tarih
+
+                 move  function date-of-integer(s2tarih) to starih
+                 move starih to ilk-tar
+      open input genel
+    move 1 to genel-anahtar
+    read genel no lock invalid continue
+         not invalid continue
+    end-read
+    close genel.
+
+     .
+
+*
+*
+ Form1-Aft-Initdata.
+      call "w$keybuf" using 3 end-call
+      if link-var =1 then 
+        
+       move 0 to vis-bas
+        display a-bas
+     end-if
+       display   a-oncele
+      move 1 to duzenleme-yaz
+     open input karttip
+     initialize karttip-rec puanlar
+     start karttip key not < karttip-anah invalid 
+         continue 
+     not invalid 
+     perform with test after until fs-karttip = "10"
+     read karttip next no lock end move "10" to fs-karttip
+     not at end 
+             if function numval(karttip-kodu) < 10
+                move function numval(karttip-kodu) to s
+                move karttip-alt-puan to alt-puan(s)
+                move karttip-ust-puan to ust-puan(s)
+             end-if 
+     end-read 
+     end-perform
+     end-start
+     close karttip
+ 
+      display a-gun
+      if link-var =1 then 
+        
+          perform a-oncele-Aft-Procedure
+         perform puanlari-hesapla
+        move 1 to vis-bas
+        display a-bas
+        display message box "Islem Tamamlandi" title "OK"
+      call "w$keybuf" using 1,x"1B" end-call
+      end-if
+     .
+
+
+*
+ Form1-Ex-Other.
+     evaluate key-status
+     when 2
+         perform a-oncele-Aft-Procedure
+         perform puanlari-hesapla
+         display message box "Islem tamamlandi" title "OK"
+         call "w$keybuf" using 1,x"1B" end-call
+     end-evaluate
+     
+     .
+*
+
+*
+ puanlari-hesapla.
+     open i-o genelfis prohrk karttip musteri 
+     open input rez  yanrez yromhrk kur
+
+
+     initialize rez-rec cik-rez-say  gir-rez-say mus-say
+     move "I" to rez-durumu
+     move tarih-tasi to rez-cik-tar
+      start rez key <= REZ-CIK invalid continue
+        not invalid 
+        perform until fs-rez = "10"
+              read rez previous no lock end move "10" to fs-rez
+                not end 
+                  if rez-cik-tar < ilk-tar or  "I" not =  rez-durumu
+                    move "10" to fs-rez
+                    exit perform cycle
+                  end-if
+                     add 1 to cik-rez-say
+                       move cik-rez-say to zcik
+                              display acik
+                  perform tek-rez
+                
+
+              end-read
+        end-perform
+     end-start
+*       initialize rez-rec
+*      move "I" to rez-durumu
+*     move tarih-tasi to rez-gir-tar
+*      start rez key <= REZ-gir invalid continue
+*        not invalid 
+*        perform until fs-rez = "10"
+*              read rez previous no lock end move "10" to fs-rez
+*                not end 
+*                  if rez-gir-tar < ilk-tar or  "I" not =  rez-durumu
+*                    move "10" to fs-rez
+*                    exit perform cycle
+*                  end-if
+*                  add 1 to gir-rez-say
+*                    move gir-rez-say to zgir
+*                              display agir
+*                  perform tek-rez
+*                
+*
+*              end-read
+*        end-perform
+*     end-start
+
+
+
+     close rez  yanrez  musteri yromhrk kur
+     close  genelfis prohrk karttip 
+     .
+
+*
+ tek-rez.
+      initialize yanrez-rec
+       move rez-no to sadece-bu-rez
+         move rez-no to yanrez-rezno 
+       start yanrez key > yanrez-anah
+            invalid continue
+            not invalid 
+           perform until fs-yanrez = "10"
+             read yanrez next  no lock end move "10" to fs-yanrez
+               not end
+                   if yanrez-rezno =  rez-no
+                       if yanrez-profil-no > 0 then 
+                            initialize musteri-rec
+                            move yanrez-profil-anah to m-profil 
+                            read musteri no lock invalid continue
+                              not invalid 
+                              add 1 to mus-say
+                              move mus-say to zmus
+                              display amus
+                                perform tek-mus
+                            end-read
+                        end-if
+                      
+                     else
+                      move "10" to fs-yanrez
+        
+                     end-if
+          end-read
+         end-perform
+      end-start
+
+
+
+      .
+ tek-mus.
+    
+             move musteri-sirket to mis-sirket
+             move musteri-no to mis-no
+             move 0 to transferden
+              
+                 move musteri-anah     to goster
+                 display Form1-La-2
+              
+ 
+              perform puan-hesapla
+              perform varying s 
+                      from 1
+                      by 1
+                      until s > 10
+                         if puanhes-toplam-puan >= alt-puan(s) and
+                            puanhes-toplam-puan < ust-puan(s)
+                              exit perform  
+                         end-if 
+              end-perform
+              if s < 10                 
+                 move s                 to musteri-kart-tipi-2
+              else 
+                 initialize musteri-kart-tipi-2
+              end-if 
+               
+              move puanhes-toplam-puan  to musteri-kazanilan-puan
+              accept  musteri-g-tarih from century-date 
+              rewrite musteri-rec invalid continue end-rewrite
+ 
+  
+     .
+     
+*
+ a-oncele-Aft-Procedure.
+       move tarih-tasi to starih
+                    move  function INTEGER-OF-DATE(starih) to s2tarih
+                    subtract oncele from s2tarih
+
+                 move  function date-of-integer(s2tarih) to starih
+                 move starih to ilk-tar
+                   display a-gun
+     .
+
+ 
